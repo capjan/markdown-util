@@ -41,4 +41,7 @@ public class BreadcrumbsVisitor : IVisitor<MarkdownFile>
     }
 }
 
-public readonly record struct BreadcrumbSettings(string Separator = " \x2022 ");
+public class BreadcrumbSettings
+{
+    public string Separator { get; init; } = " \x2022 ";
+};
