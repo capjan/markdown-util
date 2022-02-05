@@ -9,7 +9,7 @@
     </PropertyGroup>
 
     <ItemGroup>
-      <PackageReference Include="Cap.Core" Version="7.0.3" />
+      <PackageReference Include="Cap.Core" Version="8.0.0" />
       <PackageReference Include="Spectre.Console" Version="0.43.0" />
     </ItemGroup>
 

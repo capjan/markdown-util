@@ -1,21 +1,23 @@
 ﻿using System.Text;
 using System.Text.RegularExpressions;
+using Core.Extensions.ParserRelated;
+using Core.Parser;
 using MarkdownDocument.Model;
 
 namespace MarkdownDocument.Impl;
 
 public class MarkdownDocumentReader : IMarkdownDocumentReader
 {
-    public IMarkdownHeader ReadHeader(FileInfo fileInfo)
+    public IMarkdownHeader ReadHeader(IParserInput input)
     {
-        var content = File.ReadAllText(fileInfo.FullName);
+        var content = input.ReadAll();
         var m = Regex.Match(content, RegExPattern.MarkdownHeader);
 
         var title = string.Empty;
         var breadcrumbNavigation = string.Empty;
 
         if (!m.Success) return new MarkdownHeader(title, breadcrumbNavigation);
-        title = m.Groups["title"].Value;
+        title = m.Groups["titleName"].Value;
         breadcrumbNavigation = m.Groups["breadcrumbs"].Value;
 
         return new MarkdownHeader(title, breadcrumbNavigation);

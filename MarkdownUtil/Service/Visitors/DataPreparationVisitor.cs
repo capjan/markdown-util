@@ -1,3 +1,5 @@
+using System.Text;
+using Core.Parser.Special;
 using MarkdownDocument;
 using MarkdownUtil.Model;
 using MarkdownUtil.Utils.Graph;
@@ -17,7 +19,9 @@ public class DataPreparationVisitor: IVisitor<MarkdownFile>
 
     public bool Process(MarkdownFile entity, int graphDepth)
     {
-        var header = _markdownReader.ReadHeader(entity.FileInfo);
+        using var reader = new StreamReader(entity.FileInfo.FullName, Encoding.UTF8);
+        var input = new ParserInput(reader);
+        var header = _markdownReader.ReadHeader(input);
         entity.Title = header.Title;
         return true;
     }
