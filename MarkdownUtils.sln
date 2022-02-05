@@ -4,6 +4,8 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "MarkdownUtil", "MarkdownUti
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "MarkdownDocument", "MarkdownDocument\MarkdownDocument.csproj", "{58A83050-4B80-44DB-A656-A0CF13FC9D3F}"
 EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "MarkdownDocumentTest", "MarkdownDocumentTest\MarkdownDocumentTest.csproj", "{E623C23A-F5DE-4E67-94CD-0A700952F85B}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -18,5 +20,9 @@ Global
 		{58A83050-4B80-44DB-A656-A0CF13FC9D3F}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{58A83050-4B80-44DB-A656-A0CF13FC9D3F}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{58A83050-4B80-44DB-A656-A0CF13FC9D3F}.Release|Any CPU.Build.0 = Release|Any CPU
+		{E623C23A-F5DE-4E67-94CD-0A700952F85B}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{E623C23A-F5DE-4E67-94CD-0A700952F85B}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{E623C23A-F5DE-4E67-94CD-0A700952F85B}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{E623C23A-F5DE-4E67-94CD-0A700952F85B}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 EndGlobal
