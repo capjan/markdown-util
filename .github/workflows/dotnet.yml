@@ -1,4 +1,4 @@
-name: .NET 5.0 / 6.0
+name: .NET 6.0 Build / Test
 
 on:
   pull_request:
