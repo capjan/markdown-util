@@ -1,0 +1,29 @@
+name: NuGet Deployment
+
+on:
+  release:
+    types:
+      - published
+
+jobs:
+  publish:
+    name: build, test, pack & publish
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v2
+      # Setup of multiple .NET versions at the same time seams to be broken
+      # The multiple versions approach shown at https://github.com/actions/setup-dotnet fails, so I decided to
+      # fall back to 2 separate installation runs.
+      - name: Setup .NET 6
+        uses: actions/setup-dotnet@v1
+        with:
+          dotnet-version: 6.0.x
+
+      - name: Build / Test
+        run: dotnet test -c Release --verbosity quiet
+
+      - name: Create NuGet Package
+        run: cd ./MarkdownUtil && dotnet pack -c Release
+
+      - name: Publishing to NuGet
+        run: dotnet nuget push ./MarkdownUtil/nupkg/*.nupkg --api-key ${{secrets.NUGET_API_KEY}} -s https://api.nuget.org/v3/index.json --skip-duplicate
