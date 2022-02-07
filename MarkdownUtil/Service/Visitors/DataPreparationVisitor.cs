@@ -23,6 +23,7 @@ public class DataPreparationVisitor: IVisitor<MarkdownFile>
         var input = new ParserInput(reader);
         var header = _markdownReader.ReadHeader(input);
         entity.Title = header.Title;
+        entity.FrontMatter = header.FrontMatter;
         return true;
     }
 }

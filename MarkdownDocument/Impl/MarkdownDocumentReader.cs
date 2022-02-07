@@ -13,14 +13,16 @@ public class MarkdownDocumentReader : IMarkdownDocumentReader
         var content = input.ReadAll();
         var m = Regex.Match(content, RegExPattern.MarkdownHeader);
 
+        var frontMatter = string.Empty;
         var title = string.Empty;
         var breadcrumbNavigation = string.Empty;
 
-        if (!m.Success) return new MarkdownHeader(title, breadcrumbNavigation);
+        if (!m.Success) return new MarkdownHeader(title, breadcrumbNavigation, frontMatter);
         title = m.Groups["titleName"].Value;
         breadcrumbNavigation = m.Groups["breadcrumbs"].Value;
+        frontMatter = m.Groups["frontMatter"].Value;
 
-        return new MarkdownHeader(title, breadcrumbNavigation);
+        return new MarkdownHeader(title, breadcrumbNavigation, frontMatter);
     }
 }
 
@@ -32,6 +34,11 @@ public class MarkdownDocumentWriter : IMarkdownDocumentWriter
     {
         var content = File.ReadAllText(fileInfo.FullName);
         var sb = new StringBuilder();
+        if (!string.IsNullOrEmpty(header.FrontMatter))
+        {
+            sb.AppendLine(header.FrontMatter);
+            sb.AppendLine();
+        }
         if (!string.IsNullOrWhiteSpace(header.Title))
         {
             sb.Append("# ");

@@ -34,7 +34,7 @@ public class BreadcrumbsVisitor : IVisitor<MarkdownFile>
             .Append(entity.Title)
             .ToSeparatedString(_settings.Separator);
 
-        var header = new MarkdownHeader(entity.Title, crumbs);
+        var header = new MarkdownHeader(entity.Title, crumbs, entity.FrontMatter);
         _markdownDocumentWriter.WriteHeader(entity.FileInfo, header);
         AnsiConsole.WriteLine(crumbs);
         return true;

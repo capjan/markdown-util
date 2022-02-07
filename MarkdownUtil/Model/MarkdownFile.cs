@@ -15,4 +15,5 @@ public class MarkdownFile: INode<MarkdownFile>
     public MarkdownFile[] Children { get; set; } = Array.Empty<MarkdownFile>();
 
     public string Title { get; set; } = string.Empty;
+    public string FrontMatter { get; set; } = string.Empty;
 }

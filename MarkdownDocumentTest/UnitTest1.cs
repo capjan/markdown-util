@@ -14,6 +14,7 @@ public class UnitTest1
     [InlineData("# h1 ( bla )\n", "h1 ( bla )", "")]
     [InlineData("# h1 /|\\.,.<>1234567890$#()\r\n", "h1 /|\\.,.<>1234567890$#()", "")]
     [InlineData("# Home\n\nHome\n\nOther Text", "Home", "Home")]
+    [InlineData("---\ntitle: pageTitle\n---\n# Headline 1\n\n[Home](../README.md)", "Headline 1", "[Home](../README.md)")]
     public void Test1(string input, string expectedTitle, string expectedBreadcrumbNavigationLine)
     {
         var sut = new MarkdownDocumentReader();

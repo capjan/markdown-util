@@ -7,5 +7,6 @@ namespace MarkdownDocument.Model;
 /// <param name="BreadcrumbNavigationLine">Optional Breadcrumb Navigation Line</param>
 public readonly record struct MarkdownHeader(
     string Title,
-    string BreadcrumbNavigationLine
+    string BreadcrumbNavigationLine,
+    string FrontMatter
 ) : IMarkdownHeader;

@@ -5,7 +5,11 @@
         <TargetFramework>net6.0</TargetFramework>
         <ImplicitUsings>enable</ImplicitUsings>
         <Nullable>enable</Nullable>
+        <PackAsTool>true</PackAsTool>
+        <ToolCommandName>MarkdownUtil</ToolCommandName>
+        <PackageOutputPath>./nupkg</PackageOutputPath>
         <DockerDefaultTargetOS>Linux</DockerDefaultTargetOS>
+        <Version>1.0.0-alpha1</Version>
     </PropertyGroup>
 
     <ItemGroup>

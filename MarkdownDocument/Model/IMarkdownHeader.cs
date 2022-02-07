@@ -5,6 +5,11 @@ namespace MarkdownDocument.Model;
 /// </summary>
 public interface IMarkdownHeader
 {
+    /// <summary>
+    /// Optional Front Matter Area
+    /// </summary>
+    string FrontMatter { get; init; }
+
     /// <summary>Title of the File</summary>
     string Title { get; init; }
 
