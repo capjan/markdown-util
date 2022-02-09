@@ -9,3 +9,4 @@ This command line tool makes creating Markdown based documentation straightforwa
 - Linting - to satisfy my demand for correctness
 - Automatic Linking - because I like a good navigation
 - [Documentation](./Docs/README.md)
+- Deployed as [.NET-Tool](https://www.nuget.org/packages/MarkdownUtil)
