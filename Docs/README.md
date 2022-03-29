@@ -1,5 +1,8 @@
 # Dokumentation
 
-# Linter Rules
+Dokumentation
 
-- Every Markdown File (Page) must have a Title that is defined by a Headline in the first line
+## Contents
+
+- [Install / Setup](./Install/README.md) - How to install the command line tool
+- [Linter Regeln](./Linter/README.md) - Linter Regeln
