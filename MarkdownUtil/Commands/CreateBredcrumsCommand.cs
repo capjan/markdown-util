@@ -3,9 +3,6 @@ using System.Diagnostics.CodeAnalysis;
 using MarkdownDocument.Impl;
 using MarkdownUtil.Service;
 using MarkdownUtil.Service.Visitors;
-using MarkdownUtil.Utils;
-using MarkdownUtil.Utils.Graph;
-using Spectre.Console;
 using Spectre.Console.Cli;
 // ReSharper disable RedundantNullableFlowAttribute
 // ReSharper disable UnusedAutoPropertyAccessor.Global
@@ -15,6 +12,7 @@ namespace MarkdownUtil.Commands;
 public class CreateBredcrumsCommand : Command<CreateBredcrumsCommand.Settings>
 {
 
+    private const string PatternDefaultValue = "README.md";
     public sealed class Settings : CommandSettings
     {
         [Description("Root/Home Path for the Index")]
@@ -22,7 +20,7 @@ public class CreateBredcrumsCommand : Command<CreateBredcrumsCommand.Settings>
         public string? RootPath { get; init; }
 
         [CommandOption("-p|--pattern")]
-        [DefaultValue("*.md")]
+        [DefaultValue(PatternDefaultValue)]
         public string? SearchPattern { get; init; }
 
         [CommandOption("--hidden")]
@@ -41,7 +39,7 @@ public class CreateBredcrumsCommand : Command<CreateBredcrumsCommand.Settings>
         };
 
         var rootPath = settings.RootPath ?? Directory.GetCurrentDirectory();
-        var searchPattern = settings.SearchPattern ?? "*.md";
+        var searchPattern = settings.SearchPattern ?? PatternDefaultValue;
         var markdownReader = new MarkdownDocumentReader();
 
         var rootDirectory = new DirectoryInfo(rootPath);
