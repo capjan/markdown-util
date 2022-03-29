@@ -1,5 +1,6 @@
 # Linter
 
+[Dokumentation](../README.md) • Linter
 
 ## Rules
 
