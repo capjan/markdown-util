@@ -1,6 +1,6 @@
 # MarkdownUtil
 
-[![.NET](https://github.com/capjan/markdown-util/actions/workflows/dotnet.yml/badge.svg)](https://github.com/capjan/markdown-util/actions/workflows/dotnet.yml)
+MarkdownUtil
 
 This command line tool ([.NET Tool Link](https://www.nuget.org/packages/MarkdownUtil)) makes creating Markdown based documentation straightforward.
 

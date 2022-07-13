@@ -3,8 +3,7 @@ namespace MarkdownUtil.Utils.Graph;
 public class NodeGraph<T> where T: INode<T>
 {
     public IEnumerable<T> RootContent { get; init; } = ArraySegment<T>.Empty;
-
-
+    
     public void Visit(IVisitor<T> visitor)
     {
         switch (visitor.Algorithm)

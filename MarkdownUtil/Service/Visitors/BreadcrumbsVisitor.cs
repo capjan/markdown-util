@@ -24,19 +24,44 @@ public class BreadcrumbsVisitor : IVisitor<MarkdownFile>
     public bool Process(MarkdownFile entity, int graphDepth)
     {
         var parents = entity.Parents();
-        var crumbs = parents.Select((parent, index) =>
-            {
-                var distance = parents.Count - index;
-                var link = string.Concat(Enumerable.Repeat("../", distance)) + parent.FileInfo.Name;
-                return $"[{parent.Title}]({link})";
-            })
-            .ToList()
-            .Append(entity.Title)
-            .ToSeparatedString(_settings.Separator);
+      
+        
+        var crumbs = new List<string>();
 
-        var header = new MarkdownHeader(entity.Title, crumbs, entity.FrontMatter);
-        _markdownDocumentWriter.WriteHeader(entity.FileInfo, header);
-        AnsiConsole.WriteLine(crumbs);
+        if (parents.Count != 0)
+        {
+            int upLevel = parents.Count;
+            string lastParentCrumb;
+            var lastParent = parents.Last();
+            if (lastParent.FileInfo.DirectoryName == entity.FileInfo.DirectoryName)
+            {
+                upLevel--;
+                var link = string.Concat("./", lastParent.FileInfo.Name);
+                lastParentCrumb = $"[{lastParent.Title}]({link})";
+            }
+            else
+            {
+                var link = string.Concat("../", lastParent.FileInfo.Name);
+                lastParentCrumb = $"[{lastParent.Title}]({link})";
+            }
+
+
+            for (var index = 0; index < parents.Count -1; index++)
+            {
+                var parent = parents[index];
+                var link = string.Concat(Enumerable.Repeat("../", upLevel)) + parent.FileInfo.Name;
+                crumbs.Add($"[{parent.Title}]({link})");
+                upLevel--;
+            }
+            crumbs.Add(lastParentCrumb);
+        } 
+ 
+        crumbs.Add(entity.Title);
+        var navigationLine = crumbs.ToSeparatedString(_settings.Separator);
+
+        var header = new MarkdownHeader(entity.Title, navigationLine, entity.FrontMatter);
+        _markdownDocumentWriter.WriteHeader(entity.FileInfo, header as IMarkdownHeader);
+        AnsiConsole.WriteLine(navigationLine);
         return true;
     }
 }
