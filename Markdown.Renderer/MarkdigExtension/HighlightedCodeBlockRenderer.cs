@@ -54,7 +54,7 @@ public class HighlightedCodeBlockRenderer : HtmlObjectRenderer<CodeBlock>
     //   return sb.ToString();
     // }
 
-    private static string GetCode(LeafBlock obj, out string firstLine)
+    private static string GetCode(LeafBlock obj, out string? firstLine)
     {
       var stringBuilder = new StringBuilder();
       firstLine = null;
