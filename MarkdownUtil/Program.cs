@@ -29,9 +29,12 @@ registrations.AddScoped<VisitorSettings>();
 
 var registrar = new TypeRegistrar(registrations);
 
+
 var app = new CommandApp(registrar);
+
 app.Configure(config =>
 {
+    config.Settings.ApplicationName = "mdu";
     config.AddCommand<AddBreadcrumbNavigationCommand>("add-breadcrumb-navigation")
         .WithAlias("abn")
         .WithDescription("adds breadcrumb navigation to all matching markdown files");
