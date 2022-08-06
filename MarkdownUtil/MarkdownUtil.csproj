@@ -6,6 +6,7 @@
         <ImplicitUsings>enable</ImplicitUsings>
         <Nullable>enable</Nullable>
         <PackAsTool>true</PackAsTool>
+        <PackageId>MarkdownUtil</PackageId>
         <ToolCommandName>MarkdownUtil</ToolCommandName>
         <Copyright>©2022 Jan Ruhlaender</Copyright>
         <PackageLicenseExpression>MIT</PackageLicenseExpression>
