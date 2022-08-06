@@ -7,12 +7,12 @@
         <Nullable>enable</Nullable>
         <PackAsTool>true</PackAsTool>
         <PackageId>MarkdownUtil</PackageId>
-        <ToolCommandName>MarkdownUtil</ToolCommandName>
+        <ToolCommandName>mdu</ToolCommandName>
         <Copyright>©2022 Jan Ruhlaender</Copyright>
         <PackageLicenseExpression>MIT</PackageLicenseExpression>
         <PackageOutputPath>./nupkg</PackageOutputPath>
         <DockerDefaultTargetOS>Linux</DockerDefaultTargetOS>
-        <Version>2.0.0</Version>
+        <Version>2.0.1</Version>
         <AssemblyName>mdu</AssemblyName>
         <PreserveCompilationContext>true</PreserveCompilationContext>
     </PropertyGroup>
