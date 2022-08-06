@@ -1,6 +1,6 @@
 using System.Text;
 using Core.Parser.Special;
-using MarkdownDocument;
+using Markdown.Document;
 using MarkdownUtil.Model;
 using MarkdownUtil.Utils.Graph;
 

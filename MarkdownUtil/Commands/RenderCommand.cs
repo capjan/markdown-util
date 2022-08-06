@@ -1,5 +1,5 @@
 using System.Diagnostics.CodeAnalysis;
-using MarkdownRenderer;
+using Markdown.Renderer;
 using MarkdownUtil.Commands.Settings;
 using MarkdownUtil.Model;
 using MarkdownUtil.Service;
@@ -32,6 +32,9 @@ public class RenderCommand : Command<RenderCommandSettings>
         var graph = _graphBuilder.CreateGraph(settings);
         graph.Visit(_countNodesVisitor);
         var nodeCount = _countNodesVisitor.NodeCount;
+        AnsiConsole.WriteLine($"Preparing Assets");
+        var assetsVisitor = new LocalAssetsCopy(rootPath, outPath);
+        graph.Visit(assetsVisitor);
         AnsiConsole.WriteLine($"Rendering {nodeCount} Files");
         var rendererVisitor = new MarkdigVisitor(rootPath, outPath, _htmlFoundation);
         graph.Visit(rendererVisitor);

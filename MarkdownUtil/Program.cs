@@ -1,8 +1,8 @@
 ﻿// See https://aka.ms/new-console-template for more information
 
-using MarkdownDocument;
-using MarkdownDocument.Impl;
-using MarkdownRenderer;
+using Markdown.Document;
+using Markdown.Document.Impl;
+using Markdown.Renderer;
 using MarkdownUtil.Commands;
 using MarkdownUtil.Commands.Settings;
 using MarkdownUtil.Model;

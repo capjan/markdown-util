@@ -4,7 +4,7 @@ namespace MarkdownUtil.Service.Renderer;
 
 public class LintResultRenderer
 {
-    private ILinterErrorReceiver _receiver;
+    private readonly ILinterErrorReceiver _receiver;
 
     public LintResultRenderer(ILinterErrorReceiver receiver)
     {

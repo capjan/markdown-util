@@ -1,7 +1,8 @@
 using System.Text;
 using Core.Extensions.CollectionRelated;
-using MarkdownDocument.Impl;
-using MarkdownDocument.Model;
+using Markdown.Document.Impl;
+using Markdown.Document.Model;
+using Markdown.Document.Model.Impl;
 using MarkdownUtil.Model;
 using MarkdownUtil.Utils.Graph;
 using Spectre.Console;
