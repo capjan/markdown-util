@@ -1,19 +1,19 @@
 # Install
 
-[MarkdownUtil](../../README.md) • [Dokumentation](../README.md) • Install
+[Dokumentation](../README.md) • Install
 
-Markdown Util is deployed as .NET Tool.
+For your convenience, the tool is distributed as [.NET Tool](https://docs.microsoft.com/en-us/dotnet/core/tools/global-tools). This simplifies the installation and updating of the tool
 
 ## Step 1: Dependencies
 
-Ensure you have installed the required dependencies for your operating system
+Ensure you have installed the required [.NET](https://dotnet.microsoft.com/en-us/download/dotnet) dependency for your operating system
 
-- [.NET 6](https://dotnet.microsoft.com/en-us/download/dotnet/6.0)
+
 
 ## Step 2: Installation
 
-Now you can install the tool **globally** to your operating system or **locally**
-to a folder and it's subfolders.
+Install the tool. At will **globally** for your whole system or **locally**
+available to a specific folder and it's subfolders.
 
 ### Global
 
@@ -23,8 +23,8 @@ dotnet tool install --global MarkdownUtil
 
 ### Local
 
-- A Local Tool can be used in a specific folder and it's subfolders
-- It requires a Tool-Manifest that provides the information about installed tools
+- A local tool can be used in a specific folder and it's subfolders
+- It requires a "Tool-Manifest" that provides information about installed tools
 
 ```bash
 dotnet new tool-manifest # if you are setting up this repo for the first time
