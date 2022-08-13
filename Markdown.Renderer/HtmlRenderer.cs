@@ -13,7 +13,7 @@ public class HtmlRenderer
 {
     private readonly RazorLightEngine _engine;
     private readonly MarkdownPipeline _pipeline;
-     
+    private readonly LinkReplacer _linkReplacer = new LinkReplacer();
 
     public HtmlRenderer()
     {
@@ -39,6 +39,26 @@ public class HtmlRenderer
 
         WriteCssFileTo(cssFilePath);
     }
+    public async Task WriteHtml(TextWriter writer, string title, string description, int nestingDeep, string markdown)
+    {
+        var prefix = string.Concat(Enumerable.Repeat("../", nestingDeep));
+        var cssFileLink = prefix + "css/main.css";
+        
+        var replacedMarkdown = _linkReplacer.ReplaceAll(markdown);
+        
+        var renderedMarkdown = Markdig.Markdown.ToHtml(replacedMarkdown, _pipeline);
+        var model = new MainModel
+        {
+            Title = title,
+            Description = description,
+            RenderedMarkdown = renderedMarkdown,
+            CssLink = cssFileLink
+        };
+        
+        var renderedHtml = await _engine.CompileRenderAsync("Markdown.Renderer.Res.Html.main.cshtml", model);
+        
+        await writer.WriteAsync(renderedHtml);
+    }
     
     private string GetEnsuredCssFolderPath(string basePath)
     {
@@ -60,36 +80,6 @@ public class HtmlRenderer
         File.WriteAllText(cssFilePath, cssContent, Encoding.UTF8);
     }
     
-    public async Task WriteHtml(TextWriter writer, string title, string description, int nestingDeep, string markdown)
-    {
-        var prefix = string.Concat(Enumerable.Repeat("../", nestingDeep));
-        var cssFileLink = prefix + "css/main.css";
-        
-        var pattern = @"(?<prefix>\[[^\[]+\]\()(?<link>\.{1,2}/[^)]+\.md)\)";
-        var replacedMarkdown = Regex.Replace(markdown, pattern, LinkReplacement);
-        
-        var renderedMarkdown = Markdig.Markdown.ToHtml(replacedMarkdown, _pipeline);
-        var model = new MainModel
-        {
-            Title = title,
-            Description = description,
-            RenderedMarkdown = renderedMarkdown,
-            CssLink = cssFileLink
-        };
-        
-        var renderedHtml = await _engine.CompileRenderAsync("Markdown.Renderer.Res.Html.main.cshtml", model);
-        
-        await writer.WriteAsync(renderedHtml);
-    }
 
-    string LinkReplacement(Match m)
-    {
-        var link = m.Groups["link"].Value;
-        link = link.Substring(0, link.Length - 3);
-        link += ".html";
-        var prefix = m.Groups["prefix"].Value;
-        
-        return $"{prefix}{link})";
-    }
-    
+
 }

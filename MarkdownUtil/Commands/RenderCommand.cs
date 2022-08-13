@@ -4,6 +4,7 @@ using MarkdownUtil.Commands.Settings;
 using MarkdownUtil.Model;
 using MarkdownUtil.Service;
 using MarkdownUtil.Service.Visitors;
+using MarkdownUtil.Utils;
 using Spectre.Console;
 using Spectre.Console.Cli;
 // ReSharper disable RedundantNullableFlowAttribute
@@ -15,29 +16,49 @@ public class RenderCommand : Command<RenderCommandSettings>
 {
     private readonly GraphBuilder _graphBuilder;
     private readonly CountNodesVisitor<MarkdownFile> _countNodesVisitor;
-    private readonly HtmlRenderer _htmlFoundation;
+    private readonly HtmlRenderer _renderer;
 
-    public RenderCommand(GraphBuilder graphBuilder, CountNodesVisitor<MarkdownFile> countNodesVisitor, HtmlRenderer htmlFoundation)
+    public RenderCommand(GraphBuilder graphBuilder, CountNodesVisitor<MarkdownFile> countNodesVisitor, HtmlRenderer renderer)
     {
         _graphBuilder = graphBuilder;
         _countNodesVisitor = countNodesVisitor;
-        _htmlFoundation = htmlFoundation;
+        _renderer = renderer;
     }
 
     public override int Execute([NotNull] CommandContext context, [NotNull] RenderCommandSettings settings)
     {
         var rootPath = settings.RootPath ?? throw new ArgumentNullException(nameof(settings.RootPath));
         var outPath = settings.OutputPath ?? throw new ArgumentNullException(nameof(settings.OutputPath));
-        _htmlFoundation.PrepareBasePath(outPath);
+        
+        _renderer.PrepareBasePath(outPath);
         var graph = _graphBuilder.CreateGraph(settings);
-        graph.Visit(_countNodesVisitor);
-        var nodeCount = _countNodesVisitor.NodeCount;
+        var nodeCount = CountMarkdownNodes(graph);
+        
         AnsiConsole.WriteLine($"Preparing Assets");
+        CopyAssets(rootPath, outPath, graph);
+        
+        AnsiConsole.WriteLine($"Rendering {nodeCount} Files");
+        RenderNodesToHtml(rootPath, outPath, graph);
+        
+        return 0;
+    }
+
+    private void RenderNodesToHtml(string rootPath, string outPath, MarkdownGraph graph)
+    {
+        var rendererVisitor = new MarkdigVisitor(rootPath, outPath, _renderer);
+        graph.Visit(rendererVisitor);
+    }
+
+    private static void CopyAssets(string rootPath, string outPath, MarkdownGraph graph)
+    {
         var assetsVisitor = new LocalAssetsCopy(rootPath, outPath);
         graph.Visit(assetsVisitor);
-        AnsiConsole.WriteLine($"Rendering {nodeCount} Files");
-        var rendererVisitor = new MarkdigVisitor(rootPath, outPath, _htmlFoundation);
-        graph.Visit(rendererVisitor);
-        return 0;
+    }
+
+    private int CountMarkdownNodes(MarkdownGraph graph)
+    {
+        graph.Visit(_countNodesVisitor);
+        var nodeCount = _countNodesVisitor.NodeCount;
+        return nodeCount;
     }
 }

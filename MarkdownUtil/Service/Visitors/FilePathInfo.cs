@@ -60,6 +60,7 @@ public struct FilePathInfo
         var relativeFolderPathToRoot = fullDirectoryPath[rootDirectoryPath.Length..].TrimStart(trimChars);
 
         var outputFullFilePath = Path.Combine(outputDirectoryPath, relativeFilePathToRoot);
+        
         if (outputFileExtension is not null)
         {
             outputFullFilePath = Path.ChangeExtension(outputFullFilePath, outputFileExtension);

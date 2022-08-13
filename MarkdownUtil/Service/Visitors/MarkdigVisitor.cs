@@ -21,7 +21,10 @@ public class MarkdigVisitor : BaseVisitor
         io.CreateOutputDirectory();
         io.DeleteOutputFileIfExists();
 
-        using var fs = new FileStream(io.OutputFullFilePath, FileMode.CreateNew, FileAccess.Write);
+        var outputFileName = io.OutputFullFilePath;
+        if (outputFileName.EndsWith("readme.html", StringComparison.InvariantCultureIgnoreCase))
+            outputFileName = outputFileName.Substring(0, outputFileName.Length - 11) + "index.html";
+        using var fs = new FileStream(outputFileName, FileMode.CreateNew, FileAccess.Write);
         using var sw = new StreamWriter(fs);
         _htmlFoundation.WriteHtml(sw, entity.Title, "", graphDepth, markdown).Wait();
         return true;
