@@ -16,7 +16,7 @@ public class LocalAssetsCopy : BaseVisitor
     {
         var fileContent = io.ReadAllText();
 
-        var assetLinks = Regex.Matches(fileContent, @"(?<=\(\s*)(\.{0,2}/)?(\.{2}/){0,}([\w\.-]+/){0,}[\w\.-]+\.(bmp|png|gif|jpg|svg|pdf|txt)(?=\s*\))");
+        var assetLinks = Regex.Matches(fileContent, @"(?<=\(\s*)(\.{0,2}/)?(\.{2}/){0,}([\w\.-]+/){0,}[\w\.-]+\.(bmp|png|gif|jpg|jpeg|svg|pdf|txt)(?=\s*\))");
         if (assetLinks.Count > 0)
         {
             AnsiConsole.WriteLine($"Found {assetLinks.Count} Assets in {io.InputFullFilePath}");
