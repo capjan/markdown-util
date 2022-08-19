@@ -34,8 +34,12 @@ jobs:
         uses: actions/setup-dotnet@v1
         with:
           dotnet-version: 6.0.x
-      - name: install mdu
-        run: dotnet tool install markdown-util -g
+          
+      - name: install Markdown Utility
+        run: |
+          dotnet tool install markdownutil -g
+          dotnet tool list -g
+          
       - name: prepare output directory
         run: rm -rf /tmp/pages && mkdir /tmp/pages
       - name: look around
