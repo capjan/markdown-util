@@ -1,0 +1,17 @@
+@using RazorLight
+@inherits TemplatePage<Markdown.Renderer.Res.Model.MainModel>
+
+<!DOCTYPE html>
+
+<html>
+<head>
+    <title>@Model.Title</title>
+    <meta charset="utf-8">
+    <meta name="description" content="@Model.Description">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link rel="stylesheet" href="@Model.CssLink">
+</head>
+<body>
+@Raw(@Model.RenderedMarkdown)
+</body>
+</html>

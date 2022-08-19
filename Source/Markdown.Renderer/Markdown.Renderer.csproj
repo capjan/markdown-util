@@ -1,0 +1,26 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+    <PropertyGroup>
+        <TargetFramework>net6.0</TargetFramework>
+        <ImplicitUsings>enable</ImplicitUsings>
+        <Nullable>enable</Nullable>
+        <PreserveCompilationContext>true</PreserveCompilationContext>
+    </PropertyGroup>
+
+    <ItemGroup>
+      <None Remove="Res\Css\main.css" />
+      <EmbeddedResource Include="Res\Css\main.css" />
+      <None Remove="Res\Html\main.cshtml" />
+      <EmbeddedResource Include="Res\Html\main.cshtml" />
+    </ItemGroup>
+
+    <ItemGroup>
+      <PackageReference Include="Markdig" Version="0.30.2" />
+      <PackageReference Include="RazorLight" Version="2.0.0" />
+    </ItemGroup>
+
+    <ItemGroup>
+      <ProjectReference Include="..\StaticCode.Highlighter\StaticCode.Highlighter.csproj" />
+    </ItemGroup>
+
+</Project>
