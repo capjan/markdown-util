@@ -1,4 +1,4 @@
-name: NuGet Deployment
+name: NuGet
 
 on:
   release:
@@ -17,11 +17,10 @@ jobs:
         with:
           dotnet-version: 6.0.x
 
-      - name: Build / Test
+      - name: Build, Test, Pack, Push
         run: |
           cd Source
           dotnet test -c Release --verbosity quiet
-          cd ./MarkdownUtil && dotnet pack -c Release
-
-      - name: Publishing to NuGet
-        run: dotnet nuget push ./MarkdownUtil/nupkg/*.nupkg --api-key ${{secrets.NUGET_API_KEY}} -s https://api.nuget.org/v3/index.json --skip-duplicate
+          cd ./MarkdownUtil
+          dotnet pack -c Release
+          dotnet nuget push nupkg/*.nupkg --api-key ${{secrets.NUGET_API_KEY}} -s https://api.nuget.org/v3/index.json --skip-duplicate
