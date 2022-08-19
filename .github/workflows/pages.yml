@@ -44,7 +44,7 @@ jobs:
       - name: Build
         run: |
           cd Source/MarkdownUtil
-          dotnet build -r Release
+          dotnet build -c Release
       
       - name: Prepare Output Directory
         run: rm -rf /tmp/pages && mkdir /tmp/pages
