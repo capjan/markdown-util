@@ -1,6 +1,6 @@
-# Install
+# Setup
 
-[Dokumentation](../README.md) • Install
+[Dokumentation](../README.md) • Setup
 
 For your convenience, the tool is distributed as [.NET Tool](https://docs.microsoft.com/en-us/dotnet/core/tools/global-tools). This simplifies the installation and updating of the tool
 

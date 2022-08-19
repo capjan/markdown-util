@@ -12,7 +12,7 @@ Dokumentation
 
 ## Contents
 
-- [Install / Setup](./Install/README.md) - How to install the command line tool
+- [Setup](./Setup/README.md) - How to install / setup this tool
 - [Usage](./Usage/README.md) - Explains how to use that tool
 - [Features](./Features/README.md) - List of the Features
 - [Other Tools](./OtherTools/README.md) - Probably more established tools with similar goals
