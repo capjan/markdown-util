@@ -21,7 +21,7 @@ jobs:
 
     - name: Restore, Build, Test
       run: |
-        cd source 
+        cd Source 
         dotnet --info
         dotnet restore
         dotnet build --no-restore
