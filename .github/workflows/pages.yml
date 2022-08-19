@@ -44,13 +44,15 @@ jobs:
         run: rm -rf /tmp/pages && mkdir /tmp/pages
       - name: look around
         run: pwd && ls
+      - name: Render Documentation
+        run: mdu render /home/runner/work/markdown-util/markdown-util/Docs /tmp/pages
       - name: Setup Pages
         uses: actions/configure-pages@v1
       - name: Upload artifact
         uses: actions/upload-pages-artifact@v1
         with:
           # Upload entire repository
-          path: '.'
+          path: '/tmp/pages'
       - name: Deploy to GitHub Pages
         id: deployment
         uses: actions/deploy-pages@main
