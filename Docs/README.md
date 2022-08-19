@@ -4,7 +4,7 @@ Dokumentation
 
 ## Inspiration
 
-- This is for People that want to write their Documentation in Markdown files
+- This tool is for people writing their documentation in as Markdown files (hopefully in a git repository)
 - No vendor lock in. Your documentation is yours and consists of a collection of ordinary Markdown files
 - This Tool helps you to reorder your files by adding a breadcrumb navigation
 - This tool is a static code generator that can render your documentation to HTML
