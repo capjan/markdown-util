@@ -1,5 +1,5 @@
 # Simple workflow for deploying static content to GitHub Pages
-name: Deploy static content to Pages
+name: Deploy Pages
 
 on:
   # Runs on pushes targeting the default branch
@@ -36,24 +36,33 @@ jobs:
         with:
           dotnet-version: 6.0.x
           
-      - name: install Markdown Utility
+      #- name: install Markdown Utility
+      #  run: |
+      #    dotnet tool install markdownutil -g
+      #    dotnet tool list -g
+      
+      - name: Build
         run: |
-          dotnet tool install markdownutil -g
-          dotnet tool list -g
-          
-      - name: prepare output directory
+          cd Source/MarkdownUtil
+          dotnet build -r Release
+      
+      - name: Prepare Output Directory
         run: rm -rf /tmp/pages && mkdir /tmp/pages
-      - name: look around
-        run: pwd && ls
+      
       - name: Render Documentation
-        run: mdu render /home/runner/work/markdown-util/markdown-util/Docs /tmp/pages
+        run: |
+          cd Source/MarkdownUtil/bin/Release/net6.0
+          ./mdu render /home/runner/work/markdown-util/markdown-util/Docs /tmp/pages
+          
       - name: Setup Pages
         uses: actions/configure-pages@v1
+        
       - name: Upload artifact
         uses: actions/upload-pages-artifact@v1
         with:
           # Upload entire repository
           path: '/tmp/pages'
+      
       - name: Deploy to GitHub Pages
         id: deployment
         uses: actions/deploy-pages@main
