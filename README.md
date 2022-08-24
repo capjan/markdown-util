@@ -7,7 +7,7 @@ MarkdownUtil
 
 Project Status: Draft, not recommended for production environments
 
-This command line tool ([.NET Tool Link](https://www.nuget.org/packages/MarkdownUtil)) makes creating Markdown based documentation straightforward.
+This [.NET Tool](https://www.nuget.org/packages/MarkdownUtil) helps to create a Markdown based documentation.
 
 - Take a look at the [Documentation](./Docs/README.md) for a deep drive.
 - Look at the [rendered documentation](https://capjan.github.io/markdown-util/)
