@@ -17,7 +17,7 @@ public sealed class RenderCommandSettings : CommandSettings, IVisitorSettings
     [CommandOption("--editPageRoot")]
     [Description("URL to the root url for editing the source files")]
     [DefaultValue("")]
-    public string EditPageRoot { get; set; }
+    public string EditPageRoot { get; set; } = string.Empty;
     
     [Description("Root/Home Path for the Index")]
     [CommandArgument(0, "[PATH]")]
