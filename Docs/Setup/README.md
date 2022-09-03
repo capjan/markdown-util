@@ -30,3 +30,7 @@ dotnet tool install --global MarkdownUtil
 dotnet new tool-manifest # if you are setting up this repo for the first time
 dotnet tool install --local MarkdownUtil
 ```
+
+---
+
+[Edit Page](https://github.com/capjan/markdown-util/edit/main/Docs/Setup/README.md)

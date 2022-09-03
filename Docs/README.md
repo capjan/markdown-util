@@ -16,3 +16,7 @@ Dokumentation
 - [Usage](./Usage/README.md) - Explains how to use that tool
 - [Features](./Features/README.md) - List of the Features
 - [Other Tools](./OtherTools/README.md) - Probably more established tools with similar goals
+
+---
+
+[Edit Page](https://github.com/capjan/markdown-util/edit/main/Docs/README.md)
