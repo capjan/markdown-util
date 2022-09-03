@@ -39,7 +39,13 @@ public class HtmlRenderer
 
         WriteCssFileTo(cssFilePath);
     }
-    public async Task WriteHtml(TextWriter writer, string title, string description, int nestingDeep, string markdown)
+    public async Task WriteHtml(
+        TextWriter writer,
+        string title,
+        string description,
+        int nestingDeep,
+        string markdown,
+        string editPageLink)
     {
         var prefix = string.Concat(Enumerable.Repeat("../", nestingDeep));
         var cssFileLink = prefix + "css/main.css";
@@ -52,7 +58,8 @@ public class HtmlRenderer
             Title = title,
             Description = description,
             RenderedMarkdown = renderedMarkdown,
-            CssLink = cssFileLink
+            CssLink = cssFileLink,
+            EditPageLink = editPageLink
         };
         
         var renderedHtml = await _engine.CompileRenderAsync("Markdown.Renderer.Res.Html.main.cshtml", model);

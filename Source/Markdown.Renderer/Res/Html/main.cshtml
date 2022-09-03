@@ -13,5 +13,10 @@
 </head>
 <body>
 @Raw(@Model.RenderedMarkdown)
+@if (!string.IsNullOrEmpty(Model.EditPageLink))
+{
+<hr/>
+<a href="@Model.EditPageLink">✎ Edit Page</a>
+}
 </body>
 </html>

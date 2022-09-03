@@ -38,14 +38,14 @@ public class RenderCommand : Command<RenderCommandSettings>
         CopyAssets(rootPath, outPath, graph);
         
         AnsiConsole.WriteLine($"Rendering {nodeCount} Files");
-        RenderNodesToHtml(rootPath, outPath, graph);
+        RenderNodesToHtml(rootPath, outPath, graph, settings.EditPageRoot);
         
         return 0;
     }
 
-    private void RenderNodesToHtml(string rootPath, string outPath, MarkdownGraph graph)
+    private void RenderNodesToHtml(string rootPath, string outPath, MarkdownGraph graph, string editPageRoot)
     {
-        var rendererVisitor = new MarkdigVisitor(rootPath, outPath, _renderer);
+        var rendererVisitor = new MarkdigVisitor(rootPath, outPath, _renderer, editPageRoot);
         graph.Visit(rendererVisitor);
     }
 

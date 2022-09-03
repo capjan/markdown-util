@@ -11,7 +11,7 @@ public class RendererTest
         var renderer = new HtmlRenderer(); 
         var sb = new StringBuilder();
         using var sw = new StringWriter(sb);
-        await renderer.WriteHtml(sw, "test", "", 0, markdown);
+        await renderer.WriteHtml(sw, "test", "", 0, markdown, "");
         var renderedHtml = sb.ToString();
         
         Assert.NotEmpty(renderedHtml);
