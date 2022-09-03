@@ -2,7 +2,7 @@
 
 [Dokumentation](../README.md) • Setup
 
-For your convenience, the tool is distributed as [.NET Tool](https://docs.microsoft.com/en-us/dotnet/core/tools/global-tools). This simplifies the installation and updating of the tool
+For your convenience, the tool is distributed as [.NET Tool](https://docs.microsoft.com/en-us/dotnet/core/tools/global-tools) via [NuGet](https://www.nuget.org/packages/MarkdownUtil). This simplifies the installation and updating of the tool
 
 ## Step 1: Dependencies
 
