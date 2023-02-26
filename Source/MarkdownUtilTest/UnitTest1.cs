@@ -1,3 +1,5 @@
+using System.Runtime.InteropServices;
+
 namespace MarkdownUtilTest;
 
 public class UnitTest1
@@ -8,6 +10,12 @@ public class UnitTest1
     public void Test1(string origin, string target, string expected)
     {
         var result = Path.GetRelativePath(origin, target);
+        if (RuntimeInformation.IsOSPlatform(OSPlatform.Windows))
+        {
+            // replace the windows backslash with an slash to prevent breaking the test
+            result = result.Replace("\\", "/");            
+        }
+
         Assert.Equal(expected, result);
     }
 }
