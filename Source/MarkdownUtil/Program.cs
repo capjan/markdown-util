@@ -34,10 +34,11 @@ var app = new CommandApp(registrar);
 
 app.Configure(config =>
 {
+    
     config.Settings.ApplicationName = "mdu";
     config.AddCommand<AddBreadcrumbNavigationCommand>("add-breadcrumb-navigation")
         .WithAlias("abn")
-        .WithDescription("adds breadcrumb navigation to all matching markdown files");
+        .WithDescription("adds breadcrumb navigation to all matching markdown files.\nAlias: abn");
     config.AddCommand<LintCommand>("lint")
         .WithAlias("l")
         .WithDescription("Runs the Linter and prints the results");

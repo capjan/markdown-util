@@ -1,20 +1,20 @@
 ﻿
 Microsoft Visual Studio Solution File, Format Version 12.00
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "MarkdownUtil", "MarkdownUtil\MarkdownUtil.csproj", "{6023348C-D873-4909-8D23-B22839B1C671}"
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "MarkdownUtil", "Source\MarkdownUtil\MarkdownUtil.csproj", "{6023348C-D873-4909-8D23-B22839B1C671}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Markdown.Document", "Markdown.Document\Markdown.Document.csproj", "{58A83050-4B80-44DB-A656-A0CF13FC9D3F}"
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Markdown.Document", "Source\Markdown.Document\Markdown.Document.csproj", "{58A83050-4B80-44DB-A656-A0CF13FC9D3F}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Markdown.Document.Test", "Markdown.Document.Test\Markdown.Document.Test.csproj", "{E623C23A-F5DE-4E67-94CD-0A700952F85B}"
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Markdown.Document.Test", "Source\Markdown.Document.Test\Markdown.Document.Test.csproj", "{E623C23A-F5DE-4E67-94CD-0A700952F85B}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Markdown.Renderer", "Markdown.Renderer\Markdown.Renderer.csproj", "{C44DB33C-8B9C-461C-82FF-22A318DCFCEA}"
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Markdown.Renderer", "Source\Markdown.Renderer\Markdown.Renderer.csproj", "{C44DB33C-8B9C-461C-82FF-22A318DCFCEA}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Markdown.Renderer.Test", "Markdown.Renderer.Test\Markdown.Renderer.Test.csproj", "{1CF11737-BFFC-4E42-AC7A-6F540FFC0C7E}"
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Markdown.Renderer.Test", "Source\Markdown.Renderer.Test\Markdown.Renderer.Test.csproj", "{1CF11737-BFFC-4E42-AC7A-6F540FFC0C7E}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "StaticCode.Highlighter", "StaticCode.Highlighter\StaticCode.Highlighter.csproj", "{E9E9EC3C-F429-4CCB-BD81-D20611A10E3C}"
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "StaticCode.Highlighter", "Source\StaticCode.Highlighter\StaticCode.Highlighter.csproj", "{E9E9EC3C-F429-4CCB-BD81-D20611A10E3C}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "StaticCode.Highlighter.Test", "StaticCode.Highlighter.Test\StaticCode.Highlighter.Test.csproj", "{87659D48-F474-4CEF-8FF6-3A8FBE14942F}"
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "StaticCode.Highlighter.Test", "Source\StaticCode.Highlighter.Test\StaticCode.Highlighter.Test.csproj", "{87659D48-F474-4CEF-8FF6-3A8FBE14942F}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "MarkdownUtilTest", "MarkdownUtilTest\MarkdownUtilTest.csproj", "{A3495B7E-2733-4967-8EBF-5579322D91E2}"
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "MarkdownUtilTest", "Source\MarkdownUtilTest\MarkdownUtilTest.csproj", "{A3495B7E-2733-4967-8EBF-5579322D91E2}"
 EndProject
 Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Docs", "Docs", "{F60C932C-8E1B-424B-91BC-8CC0B5E7CF0A}"
 	ProjectSection(SolutionItems) = preProject

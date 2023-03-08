@@ -3,6 +3,7 @@ using Spectre.Console.Cli;
 
 namespace MarkdownUtil.Commands.Settings;
 
+
 public sealed class VisitorSettings : CommandSettings, IVisitorSettings
 {
     

@@ -8,6 +8,7 @@ using Spectre.Console.Cli;
 
 namespace MarkdownUtil.Commands;
 
+
 public class AddBreadcrumbNavigationCommand : Command<VisitorSettings>
 {
     private readonly LinterVisitor _linterVisitor;
