@@ -1,0 +1,167 @@
+V |                      | ArgumentsFromParametersFile.OnBuildCreated (150)
+V |                      | Passing value for <unresolved> (MarkdownUtils.sln)
+V |                      | InjectParameterValues.OnBuildCreated (100)
+V |                      | HandleShellCompletion.OnBuildCreated (75)
+V |                      | GenerateBuildServerConfigurations.OnBuildCreated (50)
+V |                      | InvokeBuildServerConfigurationGeneration.OnBuildCreated (45)
+V |                      | UpdateNotification.OnBuildCreated (10)
+V |                      | UnsetVisualStudioEnvironmentVariables.OnBuildCreated (0)
+V |                      | HandleVisualStudioDebugging.OnBuildCreated (0)
+V |                      | HandleSingleFileExecution.OnBuildCreated (-50)
+V |                      | EventInvoker.OnBuildCreated (-3.4028235E+38)
+V |                      | HandleHelpRequests.OnBuildInitialized (5)
+V |                      | Telemetry.OnBuildInitialized (0)
+V |                      | InjectNonParameterValues.OnBuildInitialized (-100)
+V |                      | EventInvoker.OnBuildInitialized (-3.4028235E+38)
+V | Info                 | EventInvoker.OnTargetRunning (-3.4028235E+38)
+I | Info                 | Configuration: Debug
+V | Info                 | Telemetry.OnTargetSucceeded (0)
+V | Info                 | EventInvoker.OnTargetSucceeded (-3.4028235E+38)
+V | Restore              | EventInvoker.OnTargetRunning (-3.4028235E+38)
+I | Restore              | > "C:\Program Files\dotnet\dotnet.exe" restore
+D | Restore              |   Determining projects to restore...
+D | Restore              |   Restored C:\Data\Code\Privat\markdown-util\Source\MarkdownUtil\MarkdownUtil.csproj (in 232 ms).
+D | Restore              |   7 of 8 projects are up-to-date for restore.
+V | Restore              | Telemetry.OnTargetSucceeded (0)
+V | Restore              | EventInvoker.OnTargetSucceeded (-3.4028235E+38)
+V | Compile              | EventInvoker.OnTargetRunning (-3.4028235E+38)
+I | Compile              | > "C:\Program Files\dotnet\dotnet.exe" build --configuration Debug --no-restore
+D | Compile              | MSBuild version 17.5.0-preview-23061-01+040e2a90e for .NET
+D | Compile              |   Markdown.Document -> C:\Data\Code\Privat\markdown-util\Source\Markdown.Document\bin\Debug\net6.0\Markdown.Document.dll
+D | Compile              |   StaticCode.Highlighter -> C:\Data\Code\Privat\markdown-util\Source\StaticCode.Highlighter\bin\Debug\net6.0\StaticCode.Highlighter.dll
+D | Compile              |   MarkdownUtilTest -> C:\Data\Code\Privat\markdown-util\Source\MarkdownUtilTest\bin\Debug\net6.0\MarkdownUtilTest.dll
+D | Compile              |   MarkdownUtilTest -> C:\Data\Code\Privat\markdown-util\Source\MarkdownUtilTest\bin\Debug\net7.0\MarkdownUtilTest.dll
+D | Compile              |   StaticCode.Highlighter -> C:\Data\Code\Privat\markdown-util\Source\StaticCode.Highlighter\bin\Debug\net7.0\StaticCode.Highlighter.dll
+D | Compile              |   Markdown.Document -> C:\Data\Code\Privat\markdown-util\Source\Markdown.Document\bin\Debug\net7.0\Markdown.Document.dll
+D | Compile              |   Markdown.Document.Test -> C:\Data\Code\Privat\markdown-util\Source\Markdown.Document.Test\bin\Debug\net6.0\Markdown.Document.Test.dll
+D | Compile              |   StaticCode.Highlighter.Test -> C:\Data\Code\Privat\markdown-util\Source\StaticCode.Highlighter.Test\bin\Debug\net6.0\StaticCode.Highlighter.Test.dll
+D | Compile              |   Markdown.Renderer -> C:\Data\Code\Privat\markdown-util\Source\Markdown.Renderer\bin\Debug\net6.0\Markdown.Renderer.dll
+D | Compile              |   Markdown.Document.Test -> C:\Data\Code\Privat\markdown-util\Source\Markdown.Document.Test\bin\Debug\net7.0\Markdown.Document.Test.dll
+D | Compile              |   StaticCode.Highlighter.Test -> C:\Data\Code\Privat\markdown-util\Source\StaticCode.Highlighter.Test\bin\Debug\net7.0\StaticCode.Highlighter.Test.dll
+D | Compile              |   Markdown.Renderer -> C:\Data\Code\Privat\markdown-util\Source\Markdown.Renderer\bin\Debug\net7.0\Markdown.Renderer.dll
+D | Compile              |   Markdown.Renderer.Test -> C:\Data\Code\Privat\markdown-util\Source\Markdown.Renderer.Test\bin\Debug\net7.0\Markdown.Renderer.Test.dll
+D | Compile              |   Markdown.Renderer.Test -> C:\Data\Code\Privat\markdown-util\Source\Markdown.Renderer.Test\bin\Debug\net6.0\Markdown.Renderer.Test.dll
+D | Compile              |   MarkdownUtil -> C:\Data\Code\Privat\markdown-util\Source\MarkdownUtil\bin\Debug\net7.0\mdu.dll
+D | Compile              |   MarkdownUtil -> C:\Data\Code\Privat\markdown-util\Source\MarkdownUtil\bin\Debug\net6.0\mdu.dll
+D | Compile              | 
+D | Compile              | Build succeeded.
+D | Compile              |     0 Warning(s)
+D | Compile              |     0 Error(s)
+D | Compile              | 
+D | Compile              | Time Elapsed 00:00:01.25
+V | Compile              | Telemetry.OnTargetSucceeded (0)
+V | Compile              | EventInvoker.OnTargetSucceeded (-3.4028235E+38)
+V | Test                 | EventInvoker.OnTargetRunning (-3.4028235E+38)
+I | Test                 | > "C:\Program Files\dotnet\dotnet.exe" test --configuration Release
+D | Test                 |   Determining projects to restore...
+D | Test                 |   All projects are up-to-date for restore.
+D | Test                 |   Markdown.Document -> C:\Data\Code\Privat\markdown-util\Source\Markdown.Document\bin\Release\net6.0\Markdown.Document.dll
+D | Test                 |   StaticCode.Highlighter -> C:\Data\Code\Privat\markdown-util\Source\StaticCode.Highlighter\bin\Release\net6.0\StaticCode.Highlighter.dll
+D | Test                 |   MarkdownUtilTest -> C:\Data\Code\Privat\markdown-util\Source\MarkdownUtilTest\bin\Release\net6.0\MarkdownUtilTest.dll
+D | Test                 |   StaticCode.Highlighter -> C:\Data\Code\Privat\markdown-util\Source\StaticCode.Highlighter\bin\Release\net7.0\StaticCode.Highlighter.dll
+D | Test                 |   MarkdownUtilTest -> C:\Data\Code\Privat\markdown-util\Source\MarkdownUtilTest\bin\Release\net7.0\MarkdownUtilTest.dll
+D | Test                 |   Markdown.Document -> C:\Data\Code\Privat\markdown-util\Source\Markdown.Document\bin\Release\net7.0\Markdown.Document.dll
+D | Test                 | Test run for C:\Data\Code\Privat\markdown-util\Source\MarkdownUtilTest\bin\Release\net6.0\MarkdownUtilTest.dll (.NETCoreApp,Version=v6.0)
+D | Test                 | Microsoft (R) Test Execution Command Line Tool Version 17.5.0 (x64)
+D | Test                 | Copyright (c) Microsoft Corporation.  All rights reserved.
+D | Test                 | 
+D | Test                 |   StaticCode.Highlighter.Test -> C:\Data\Code\Privat\markdown-util\Source\StaticCode.Highlighter.Test\bin\Release\net6.0\StaticCode.Highlighter.Test.dll
+D | Test                 |   Markdown.Renderer -> C:\Data\Code\Privat\markdown-util\Source\Markdown.Renderer\bin\Release\net6.0\Markdown.Renderer.dll
+D | Test                 | Starting test execution, please wait...
+D | Test                 | A total of 1 test files matched the specified pattern.
+D | Test                 |   Markdown.Renderer -> C:\Data\Code\Privat\markdown-util\Source\Markdown.Renderer\bin\Release\net7.0\Markdown.Renderer.dll
+D | Test                 |   StaticCode.Highlighter.Test -> C:\Data\Code\Privat\markdown-util\Source\StaticCode.Highlighter.Test\bin\Release\net7.0\StaticCode.Highlighter.Test.dll
+D | Test                 | Test run for C:\Data\Code\Privat\markdown-util\Source\StaticCode.Highlighter.Test\bin\Release\net6.0\StaticCode.Highlighter.Test.dll (.NETCoreApp,Version=v6.0)
+D | Test                 |   Markdown.Renderer.Test -> C:\Data\Code\Privat\markdown-util\Source\Markdown.Renderer.Test\bin\Release\net6.0\Markdown.Renderer.Test.dll
+D | Test                 |   Markdown.Document.Test -> C:\Data\Code\Privat\markdown-util\Source\Markdown.Document.Test\bin\Release\net7.0\Markdown.Document.Test.dll
+D | Test                 | Microsoft (R) Test Execution Command Line Tool Version 17.5.0 (x64)
+D | Test                 | Copyright (c) Microsoft Corporation.  All rights reserved.
+D | Test                 | 
+D | Test                 |   Markdown.Document.Test -> C:\Data\Code\Privat\markdown-util\Source\Markdown.Document.Test\bin\Release\net6.0\Markdown.Document.Test.dll
+D | Test                 | Starting test execution, please wait...
+D | Test                 |   MarkdownUtil -> C:\Data\Code\Privat\markdown-util\Source\MarkdownUtil\bin\Release\net6.0\mdu.dll
+D | Test                 | A total of 1 test files matched the specified pattern.
+D | Test                 | Test run for C:\Data\Code\Privat\markdown-util\Source\Markdown.Document.Test\bin\Release\net6.0\Markdown.Document.Test.dll (.NETCoreApp,Version=v6.0)
+D | Test                 | Microsoft (R) Test Execution Command Line Tool Version 17.5.0 (x64)
+D | Test                 | Copyright (c) Microsoft Corporation.  All rights reserved.
+D | Test                 | 
+D | Test                 | Starting test execution, please wait...
+D | Test                 | A total of 1 test files matched the specified pattern.
+D | Test                 |   Markdown.Renderer.Test -> C:\Data\Code\Privat\markdown-util\Source\Markdown.Renderer.Test\bin\Release\net7.0\Markdown.Renderer.Test.dll
+D | Test                 | Test run for C:\Data\Code\Privat\markdown-util\Source\Markdown.Renderer.Test\bin\Release\net6.0\Markdown.Renderer.Test.dll (.NETCoreApp,Version=v6.0)
+D | Test                 |   MarkdownUtil -> C:\Data\Code\Privat\markdown-util\Source\MarkdownUtil\bin\Release\net7.0\mdu.dll
+D | Test                 | Microsoft (R) Test Execution Command Line Tool Version 17.5.0 (x64)
+D | Test                 | Copyright (c) Microsoft Corporation.  All rights reserved.
+D | Test                 | 
+D | Test                 | Starting test execution, please wait...
+D | Test                 | A total of 1 test files matched the specified pattern.
+D | Test                 | 
+D | Test                 | Passed!  - Failed:     0, Passed:     2, Skipped:     0, Total:     2, Duration: 4 ms - MarkdownUtilTest.dll (net6.0)
+D | Test                 | Test run for C:\Data\Code\Privat\markdown-util\Source\MarkdownUtilTest\bin\Release\net7.0\MarkdownUtilTest.dll (.NETCoreApp,Version=v7.0)
+D | Test                 | Microsoft (R) Test Execution Command Line Tool Version 17.5.0 (x64)
+D | Test                 | Copyright (c) Microsoft Corporation.  All rights reserved.
+D | Test                 | 
+D | Test                 | Starting test execution, please wait...
+D | Test                 | A total of 1 test files matched the specified pattern.
+D | Test                 | 
+D | Test                 | Passed!  - Failed:     0, Passed:     3, Skipped:     0, Total:     3, Duration: 10 ms - StaticCode.Highlighter.Test.dll (net6.0)
+D | Test                 | Test run for C:\Data\Code\Privat\markdown-util\Source\StaticCode.Highlighter.Test\bin\Release\net7.0\StaticCode.Highlighter.Test.dll (.NETCoreApp,Version=v7.0)
+D | Test                 | Microsoft (R) Test Execution Command Line Tool Version 17.5.0 (x64)
+D | Test                 | Copyright (c) Microsoft Corporation.  All rights reserved.
+D | Test                 | 
+D | Test                 | 
+D | Test                 | Passed!  - Failed:     0, Passed:     7, Skipped:     0, Total:     7, Duration: 5 ms - Markdown.Document.Test.dll (net6.0)
+D | Test                 | Starting test execution, please wait...
+D | Test                 | Test run for C:\Data\Code\Privat\markdown-util\Source\Markdown.Document.Test\bin\Release\net7.0\Markdown.Document.Test.dll (.NETCoreApp,Version=v7.0)
+D | Test                 | A total of 1 test files matched the specified pattern.
+D | Test                 | Microsoft (R) Test Execution Command Line Tool Version 17.5.0 (x64)
+D | Test                 | Copyright (c) Microsoft Corporation.  All rights reserved.
+D | Test                 | 
+D | Test                 | Starting test execution, please wait...
+D | Test                 | A total of 1 test files matched the specified pattern.
+D | Test                 | 
+D | Test                 | Passed!  - Failed:     0, Passed:     2, Skipped:     0, Total:     2, Duration: 5 ms - MarkdownUtilTest.dll (net7.0)
+D | Test                 | 
+D | Test                 | Passed!  - Failed:     0, Passed:     3, Skipped:     0, Total:     3, Duration: 9 ms - StaticCode.Highlighter.Test.dll (net7.0)
+D | Test                 | 
+D | Test                 | Passed!  - Failed:     0, Passed:     7, Skipped:     0, Total:     7, Duration: 5 ms - Markdown.Document.Test.dll (net7.0)
+D | Test                 | 
+D | Test                 | Passed!  - Failed:     0, Passed:    10, Skipped:     0, Total:    10, Duration: 2 s - Markdown.Renderer.Test.dll (net6.0)
+D | Test                 | Test run for C:\Data\Code\Privat\markdown-util\Source\Markdown.Renderer.Test\bin\Release\net7.0\Markdown.Renderer.Test.dll (.NETCoreApp,Version=v7.0)
+D | Test                 | Microsoft (R) Test Execution Command Line Tool Version 17.5.0 (x64)
+D | Test                 | Copyright (c) Microsoft Corporation.  All rights reserved.
+D | Test                 | 
+D | Test                 | Starting test execution, please wait...
+D | Test                 | A total of 1 test files matched the specified pattern.
+D | Test                 | 
+D | Test                 | Passed!  - Failed:     0, Passed:    10, Skipped:     0, Total:    10, Duration: 1 s - Markdown.Renderer.Test.dll (net7.0)
+V | Test                 | Telemetry.OnTargetSucceeded (0)
+V | Test                 | EventInvoker.OnTargetSucceeded (-3.4028235E+38)
+V | Pack                 | EventInvoker.OnTargetRunning (-3.4028235E+38)
+I | Pack                 | Deleting file C:\Data\Code\Privat\markdown-util\Source\MarkdownUtil\nupkg\MarkdownUtil.2.5.0.nupkg...
+I | Pack                 | > "C:\Program Files\dotnet\dotnet.exe" pack C:\Data\Code\Privat\markdown-util\Source\MarkdownUtil --configuration Release --output C:\Data\Code\Privat\markdown-util\Source\MarkdownUtil\nupkg
+D | Pack                 | MSBuild version 17.5.0-preview-23061-01+040e2a90e for .NET
+D | Pack                 |   Determining projects to restore...
+D | Pack                 |   All projects are up-to-date for restore.
+D | Pack                 |   StaticCode.Highlighter -> C:\Data\Code\Privat\markdown-util\Source\StaticCode.Highlighter\bin\Release\net7.0\StaticCode.Highlighter.dll
+D | Pack                 |   Markdown.Document -> C:\Data\Code\Privat\markdown-util\Source\Markdown.Document\bin\Release\net7.0\Markdown.Document.dll
+D | Pack                 |   Markdown.Renderer -> C:\Data\Code\Privat\markdown-util\Source\Markdown.Renderer\bin\Release\net7.0\Markdown.Renderer.dll
+D | Pack                 |   Markdown.Document -> C:\Data\Code\Privat\markdown-util\Source\Markdown.Document\bin\Release\net6.0\Markdown.Document.dll
+D | Pack                 |   StaticCode.Highlighter -> C:\Data\Code\Privat\markdown-util\Source\StaticCode.Highlighter\bin\Release\net6.0\StaticCode.Highlighter.dll
+D | Pack                 |   Markdown.Renderer -> C:\Data\Code\Privat\markdown-util\Source\Markdown.Renderer\bin\Release\net6.0\Markdown.Renderer.dll
+D | Pack                 |   MarkdownUtil -> C:\Data\Code\Privat\markdown-util\Source\MarkdownUtil\bin\Release\net7.0\mdu.dll
+D | Pack                 |   MarkdownUtil -> C:\Data\Code\Privat\markdown-util\Source\MarkdownUtil\bin\Release\net6.0\mdu.dll
+D | Pack                 |   Successfully created package 'C:\Data\Code\Privat\markdown-util\Source\MarkdownUtil\nupkg\MarkdownUtil.2.5.1.nupkg'.
+V | Pack                 | Telemetry.OnTargetSucceeded (0)
+V | Pack                 | EventInvoker.OnTargetSucceeded (-3.4028235E+38)
+V | Deploy               | EventInvoker.OnTargetRunning (-3.4028235E+38)
+I | Deploy               | > "C:\Program Files\dotnet\dotnet.exe" nuget push C:\Data\Code\Privat\markdown-util\Source\MarkdownUtil\nupkg\*.nupkg --source https://api.nuget.org/v3/index.json --api-key [hidden] --skip-duplicate
+D | Deploy               | Pushing MarkdownUtil.2.5.1.nupkg to 'https://www.nuget.org/api/v2/package'...
+D | Deploy               |   PUT https://www.nuget.org/api/v2/package/
+D | Deploy               |   Created https://www.nuget.org/api/v2/package/ 11671ms
+D | Deploy               | Your package was pushed.
+V | Deploy               | Telemetry.OnTargetSucceeded (0)
+V | Deploy               | EventInvoker.OnTargetSucceeded (-3.4028235E+38)
+V |                      | UpdateNotification.OnBuildFinished (10)
+V |                      | SerializeBuildServerState.OnBuildFinished (0)
+V |                      | EventInvoker.OnBuildFinished (-3.4028235E+38)

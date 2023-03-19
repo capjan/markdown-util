@@ -13,7 +13,4 @@ jobs:
 
     - name: Restore, Build, Test
       run: |
-        dotnet --info
-        dotnet restore
-        dotnet build --no-restore
-        dotnet test --no-build --verbosity normal
+        ./build.sh test
