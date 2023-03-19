@@ -19,8 +19,7 @@ jobs:
 
       - name: Build, Test, Pack, Push
         run: |
-          cd Source
           dotnet test -c Release --verbosity quiet
-          cd ./MarkdownUtil
+          cd ./Source/MarkdownUtil
           dotnet pack -c Release
           dotnet nuget push nupkg/*.nupkg --api-key ${{secrets.NUGET_API_KEY}} -s https://api.nuget.org/v3/index.json --skip-duplicate
