@@ -1,10 +1,10 @@
 using System.Diagnostics.CodeAnalysis;
+using Core.Collections.NodeGraph.Extensions;
 using Markdown.Renderer;
 using MarkdownUtil.Commands.Settings;
 using MarkdownUtil.Model;
 using MarkdownUtil.Service;
 using MarkdownUtil.Service.Visitors;
-using MarkdownUtil.Utils;
 using Spectre.Console;
 using Spectre.Console.Cli;
 // ReSharper disable RedundantNullableFlowAttribute
@@ -43,19 +43,20 @@ public class RenderCommand : Command<RenderCommandSettings>
         return 0;
     }
 
-    private void RenderNodesToHtml(string rootPath, string outPath, MarkdownGraph graph, string editPageRoot)
+    private void RenderNodesToHtml(string rootPath, string outPath, MarkdownFile[] graph, string editPageRoot)
     {
         var rendererVisitor = new MarkdigVisitor(rootPath, outPath, _renderer, editPageRoot);
+        
         graph.Visit(rendererVisitor);
     }
 
-    private static void CopyAssets(string rootPath, string outPath, MarkdownGraph graph)
+    private static void CopyAssets(string rootPath, string outPath, MarkdownFile[] graph)
     {
         var assetsVisitor = new LocalAssetsCopy(rootPath, outPath);
         graph.Visit(assetsVisitor);
     }
 
-    private int CountMarkdownNodes(MarkdownGraph graph)
+    private int CountMarkdownNodes(MarkdownFile[] graph)
     {
         graph.Visit(_countNodesVisitor);
         var nodeCount = _countNodesVisitor.NodeCount;

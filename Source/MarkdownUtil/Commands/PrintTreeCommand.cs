@@ -1,4 +1,5 @@
 using System.Diagnostics.CodeAnalysis;
+using Core.Collections.NodeGraph.Extensions;
 using MarkdownUtil.Commands.Settings;
 using MarkdownUtil.Service;
 using MarkdownUtil.Service.Visitors;

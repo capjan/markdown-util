@@ -1,4 +1,5 @@
-using MarkdownUtil.Utils.Graph;
+
+using Core.Collections.NodeGraph;
 
 namespace MarkdownUtil.Model;
 

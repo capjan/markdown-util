@@ -1,14 +1,14 @@
 using System.Text;
 using Core.Parser.Special;
+using Core.Collections.NodeGraph;
 using Markdown.Document;
 using MarkdownUtil.Model;
-using MarkdownUtil.Utils.Graph;
 
 namespace MarkdownUtil.Service.Visitors;
 
 public class DataPreparationVisitor: IVisitor<MarkdownFile>
 {
-    public GraphTraversalAlgorithm Algorithm => GraphTraversalAlgorithm.DepthFirst;
+    public TraversalAlgorithm Algorithm => TraversalAlgorithm.DepthFirst;
 
     private readonly IMarkdownDocumentReader _markdownReader;
 

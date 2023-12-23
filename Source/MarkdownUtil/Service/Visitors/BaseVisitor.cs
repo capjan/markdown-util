@@ -1,5 +1,6 @@
+using Core.Collections.NodeGraph;
 using MarkdownUtil.Model;
-using MarkdownUtil.Utils.Graph;
+
 
 namespace MarkdownUtil.Service.Visitors;
 
@@ -9,7 +10,7 @@ public abstract class BaseVisitor : IVisitor<MarkdownFile>
     private readonly string _outPath;
     private readonly string? _outputFileExtension;
 
-    protected BaseVisitor(string rootPath, string outPath, string? outputFileExtension = default, GraphTraversalAlgorithm algorithm = GraphTraversalAlgorithm.Default)
+    protected BaseVisitor(string rootPath, string outPath, string? outputFileExtension = default, TraversalAlgorithm algorithm = TraversalAlgorithm.Default)
     {
         _rootPath = rootPath;
         _outPath = outPath;
@@ -17,7 +18,7 @@ public abstract class BaseVisitor : IVisitor<MarkdownFile>
         Algorithm = algorithm;
     }
 
-    public GraphTraversalAlgorithm Algorithm { get; }
+    public TraversalAlgorithm Algorithm { get; }
     
     public bool Process(MarkdownFile entity, int graphDepth)
     {

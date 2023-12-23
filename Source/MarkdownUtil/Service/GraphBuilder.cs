@@ -1,7 +1,7 @@
+using Core.Collections.NodeGraph.Extensions;
 using MarkdownUtil.Commands.Settings;
 using MarkdownUtil.Model;
 using MarkdownUtil.Service.Visitors;
-using MarkdownUtil.Utils;
 
 namespace MarkdownUtil.Service;
 
@@ -18,7 +18,7 @@ public class GraphBuilder
         _dataPreparationVisitor = dataPreparationVisitor;
     }
 
-    public MarkdownGraph CreateGraph(IVisitorSettings settings)
+    public MarkdownFile[] CreateGraph(IVisitorSettings settings)
     {
         var searchOptions = new EnumerationOptions
         {
@@ -38,10 +38,9 @@ public class GraphBuilder
         return graph;
     }
 
-    private MarkdownGraph CreateGraph(DirectoryInfo directoryInfo, string searchPattern, EnumerationOptions searchOptions)
+    private MarkdownFile[] CreateGraph(DirectoryInfo directoryInfo, string searchPattern, EnumerationOptions searchOptions)
     {
-        var list = GetMarkdownFilesAt(null, directoryInfo, searchPattern, searchOptions).ToList();
-        return new MarkdownGraph(list);
+        return GetMarkdownFilesAt(null, directoryInfo, searchPattern, searchOptions).ToArray();
     }
 
     private static IEnumerable<MarkdownFile> GetMarkdownFilesAt(MarkdownFile? parent, DirectoryInfo directoryInfo, string searchPattern, EnumerationOptions searchOptions)

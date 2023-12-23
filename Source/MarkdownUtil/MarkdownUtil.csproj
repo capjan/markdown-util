@@ -8,11 +8,11 @@
         <PackAsTool>true</PackAsTool>
         <PackageId>MarkdownUtil</PackageId>
         <ToolCommandName>mdu</ToolCommandName>
-        <Copyright>©2022 Jan Ruhlaender</Copyright>
+        <Copyright>©2023 Jan Ruhlaender</Copyright>
         <PackageLicenseExpression>MIT</PackageLicenseExpression>
         <PackageOutputPath>./nupkg</PackageOutputPath>
         <DockerDefaultTargetOS>Linux</DockerDefaultTargetOS>
-        <Version>2.4.0</Version>
+        <Version>2.4.1</Version>
         <AssemblyName>mdu</AssemblyName>
         <Authors>Jan Ruhlaender</Authors>
         <Description>Commandline Tool to lint and render a Markdown based documentation</Description>
@@ -31,9 +31,15 @@
     </ItemGroup>
 
     <ItemGroup>
-        <None Include="..\..\README.md" Pack="true" PackagePath="\"/>
+        <None Include="..\..\README.md" Pack="true" PackagePath="\" />
+        <ProjectReference Include="..\Core.Collections.NodeGraph\Core.Collections.NodeGraph.csproj" />
       <ProjectReference Include="..\Markdown.Document\Markdown.Document.csproj" />
+      <ProjectReference Include="..\Markdown.Linter\Markdown.Linter.csproj" />
       <ProjectReference Include="..\Markdown.Renderer\Markdown.Renderer.csproj" />
+    </ItemGroup>
+
+    <ItemGroup>
+      <Folder Include="Utils\Graph" />
     </ItemGroup>
 
 </Project>

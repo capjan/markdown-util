@@ -1,19 +1,21 @@
-using System.Text.RegularExpressions;
+using Core.Collections.NodeGraph;
+using Markdown.Linter.Rules.Rule2;
 using MarkdownUtil.Model;
-using MarkdownUtil.Utils.Graph;
 
 namespace MarkdownUtil.Service.Visitors;
 
 public class LinterVisitor: IVisitor<MarkdownFile>
 {
     public readonly ILinterErrorReceiver ErrorReceiver;
+    private readonly Rule2Validator _rule2Validator = new();
 
     public LinterVisitor(ILinterErrorReceiver errorReceiver)
     {
         ErrorReceiver = errorReceiver;
     }
 
-    public GraphTraversalAlgorithm Algorithm { get; }
+    public TraversalAlgorithm Algorithm { get; }
+    
     public bool Process(MarkdownFile entity, int graphDepth)
     {
         var title = entity.Title;
@@ -26,14 +28,14 @@ public class LinterVisitor: IVisitor<MarkdownFile>
         if (graphDepth > 0 && entity.FileInfo.Name.Equals("README.md", StringComparison.OrdinalIgnoreCase))
         {
             var directoryName = entity.FileInfo.Directory?.Name ?? "";
-            var shortTitle = Regex.Replace(title, "[^A-Za-z0-9-]", "").ToLower();
-            if (!directoryName.Equals(shortTitle, StringComparison.OrdinalIgnoreCase))
+            var rule2Input = new Rule2Input(title, directoryName);
+            var result = _rule2Validator.Validate(rule2Input);
+            if (!result.IsValid)
             {
-                ErrorReceiver.Add(entity.FileInfo.FullName, 1, $"The folder name of a index page must match its shortTitle. expected: {shortTitle}, found: {directoryName}");
+                ErrorReceiver.Add(entity.FileInfo.FullName, 1, result.ToString());
             }
         }
-            
-
+        
         return true;
     }
 }

@@ -1,12 +1,12 @@
+using Core.Collections.NodeGraph;
 using MarkdownUtil.Model;
-using MarkdownUtil.Utils.Graph;
 using Spectre.Console;
 
 namespace MarkdownUtil.Service.Visitors;
 
 public class PrintTreeVisitor : IVisitor<MarkdownFile>
 {
-    public GraphTraversalAlgorithm Algorithm => GraphTraversalAlgorithm.DepthFirst;
+    public TraversalAlgorithm Algorithm => TraversalAlgorithm.DepthFirst;
     public bool Process(MarkdownFile entity, int graphDepth)
     {
         var indentString = new string(' ', graphDepth*2);
