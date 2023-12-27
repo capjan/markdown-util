@@ -31,7 +31,7 @@ public static class VisitorExtension
                     return;
             
             foreach (var node in nodes)
-                if (!ExecuteVisitorBreadthFirst(node.Children, visitor, node.CountDepth()))
+                if (!ExecuteVisitorBreadthFirst(node.Children, visitor, node.CountDepth() + 1))
                     return;
         }
         else if (algorithm is TraversalAlgorithm.DepthFirst)
