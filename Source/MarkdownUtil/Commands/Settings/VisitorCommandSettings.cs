@@ -3,10 +3,9 @@ using Spectre.Console.Cli;
 
 namespace MarkdownUtil.Commands.Settings;
 
+
 public sealed class VisitorSettings : CommandSettings, IVisitorSettings
 {
-    
-    
     [CommandOption("-p|--pattern <PATTERN>")]
     [DefaultValue(Default.SearchPattern)]
     public string? SearchPattern { get; init; }

@@ -1,27 +1,16 @@
-name: .NET 6.0
+name: .NET
 on:
   pull_request:
   push:
 
 jobs:
   build-and-test:
-    runs-on: ubuntu-20.04
+    runs-on: ubuntu-latest
 
     steps:
     - name: Checkout Code
-      uses: actions/checkout@v2
-    # Setup of multiple .NET versions at the same time seams to be broken
-    # The multiple versions approach shown at https://github.com/actions/setup-dotnet fails, so I decided to
-    # fall back to 2 separate installation runs.
-    - name: Setup .NET 6
-      uses: actions/setup-dotnet@v1
-      with:
-        dotnet-version: 6.0.x
+      uses: actions/checkout@v3
 
     - name: Restore, Build, Test
       run: |
-        cd Source 
-        dotnet --info
-        dotnet restore
-        dotnet build --no-restore
-        dotnet test --no-build --verbosity normal
+        ./build.sh test
