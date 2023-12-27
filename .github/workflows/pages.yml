@@ -19,7 +19,7 @@ permissions:
 # Allow one concurrent deployment
 concurrency:
   group: "pages"
-  cancel-in-progress: true
+  cancel-in-progress: false
 
 jobs:
   # Single deploy job since we're just deploying
@@ -57,10 +57,11 @@ jobs:
           ./mdu render --editPageRoot=https://github.com/capjan/markdown-util/edit/main/Docs/ /home/runner/work/markdown-util/markdown-util/Docs /tmp/pages
           
       - name: Setup Pages
-        uses: actions/configure-pages@v1
+        id: pages
+        uses: actions/configure-pages@v4
         
       - name: Upload artifact
-        uses: actions/upload-pages-artifact@v1
+        uses: actions/upload-pages-artifact@v3
         with:
           # Upload entire repository
           path: '/tmp/pages'
