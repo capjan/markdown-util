@@ -31,10 +31,12 @@ jobs:
     steps:
       - name: Checkout
         uses: actions/checkout@v3
-      - name: Setup .NET 8
-        uses: actions/setup-dotnet@v1
+      - name: Setup .NET 6 LTS and .NET 8 LTS
+        uses: actions/setup-dotnet@v3
         with:
-          dotnet-version: 8.0.x
+          dotnet-version: |
+            6.0.x
+            8.0.x
           
       #- name: install Markdown Utility
       #  run: |
