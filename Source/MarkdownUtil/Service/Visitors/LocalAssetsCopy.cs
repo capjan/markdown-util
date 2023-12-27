@@ -1,6 +1,5 @@
 using System.Text.RegularExpressions;
 using MarkdownUtil.Model;
-using MarkdownUtil.Utils.Graph;
 using Spectre.Console;
 
 namespace MarkdownUtil.Service.Visitors;

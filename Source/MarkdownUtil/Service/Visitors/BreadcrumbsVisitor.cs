@@ -1,17 +1,17 @@
 using System.Text;
 using Core.Extensions.CollectionRelated;
+using Core.Collections.NodeGraph;
 using Markdown.Document.Impl;
 using Markdown.Document.Model;
 using Markdown.Document.Model.Impl;
 using MarkdownUtil.Model;
-using MarkdownUtil.Utils.Graph;
 using Spectre.Console;
 
 namespace MarkdownUtil.Service.Visitors;
 
 public class BreadcrumbsVisitor : IVisitor<MarkdownFile>
 {
-    public GraphTraversalAlgorithm Algorithm => GraphTraversalAlgorithm.DepthFirst;
+    public TraversalAlgorithm Algorithm => TraversalAlgorithm.DepthFirst;
 
     private readonly BreadcrumbSettings _settings;
     private readonly MarkdownDocumentWriter _markdownDocumentWriter;

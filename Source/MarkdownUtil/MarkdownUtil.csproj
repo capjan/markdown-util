@@ -2,7 +2,7 @@
 
     <PropertyGroup>
         <OutputType>Exe</OutputType>
-        <TargetFrameworks>net6.0;net7.0</TargetFrameworks>
+        <TargetFramework>net6.0</TargetFramework>
         <ImplicitUsings>enable</ImplicitUsings>
         <Nullable>enable</Nullable>
         <PackAsTool>true</PackAsTool>
@@ -12,7 +12,7 @@
         <PackageLicenseExpression>MIT</PackageLicenseExpression>
         <PackageOutputPath>./nupkg</PackageOutputPath>
         <DockerDefaultTargetOS>Linux</DockerDefaultTargetOS>
-        <Version>2.5.2</Version>
+        <Version>2.6.0</Version>
         <AssemblyName>mdu</AssemblyName>
         <Authors>Jan Ruhlaender</Authors>
         <Description>Commandline Tool to lint and render a Markdown based documentation</Description>
@@ -25,15 +25,16 @@
 
     <ItemGroup>
       <PackageReference Include="Cap.Core" Version="11.0.0" />
-      <PackageReference Include="Markdig" Version="0.30.2" />
       <PackageReference Include="Microsoft.Extensions.DependencyInjection" Version="6.0.0" />
       <PackageReference Include="Spectre.Console" Version="0.44.0" />
     </ItemGroup>
 
     <ItemGroup>
         <None Include="..\..\README.md" Pack="true" PackagePath="\" />
-      <ProjectReference Include="..\Markdown.Document\Markdown.Document.csproj" />
-      <ProjectReference Include="..\Markdown.Renderer\Markdown.Renderer.csproj" />
+        <ProjectReference Include="..\Core.Collections.NodeGraph\Core.Collections.NodeGraph.csproj" />
+        <ProjectReference Include="..\Markdown.Document\Markdown.Document.csproj" />
+        <ProjectReference Include="..\Markdown.Linter\Markdown.Linter.csproj" />
+        <ProjectReference Include="..\Markdown.Renderer\Markdown.Renderer.csproj" />
     </ItemGroup>
 
 </Project>

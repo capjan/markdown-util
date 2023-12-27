@@ -1,0 +1,105 @@
+<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<!-- Created with Inkscape (http://www.inkscape.org/) -->
+
+<svg
+   width="48"
+   height="48"
+   viewBox="0 0 12 12"
+   version="1.1"
+   id="svg5"
+   inkscape:version="1.2.1 (9c6d41e, 2022-07-14)"
+   sodipodi:docname="external_link.svg"
+   xmlns:inkscape="http://www.inkscape.org/namespaces/inkscape"
+   xmlns:sodipodi="http://sodipodi.sourceforge.net/DTD/sodipodi-0.dtd"
+   xmlns="http://www.w3.org/2000/svg"
+   xmlns:svg="http://www.w3.org/2000/svg">
+  <sodipodi:namedview
+     id="namedview7"
+     pagecolor="#ffffff"
+     bordercolor="#000000"
+     borderopacity="0.25"
+     inkscape:showpageshadow="2"
+     inkscape:pageopacity="0.0"
+     inkscape:pagecheckerboard="false"
+     inkscape:deskcolor="#d1d1d1"
+     inkscape:document-units="px"
+     showgrid="true"
+     inkscape:zoom="22.627417"
+     inkscape:cx="29.212349"
+     inkscape:cy="27.731844"
+     inkscape:window-width="1980"
+     inkscape:window-height="1365"
+     inkscape:window-x="2590"
+     inkscape:window-y="122"
+     inkscape:window-maximized="0"
+     inkscape:current-layer="layer1">
+    <inkscape:grid
+       type="xygrid"
+       id="grid113"
+       dotted="false"
+       empspacing="1"
+       spacingx="0.25"
+       spacingy="0.25"
+       originx="0"
+       originy="0" />
+  </sodipodi:namedview>
+  <defs
+     id="defs2" />
+  <g
+     inkscape:label="Ebene 1"
+     inkscape:groupmode="layer"
+     id="layer1">
+    <path
+       id="rect455"
+       style="fill:#000080;stroke-width:0.25"
+       d="m 7.25,1 v 0.5 h 3.5 V 5 h 0.5 V 1 Z" />
+    <g
+       id="g500"
+       style="fill:#0000ff">
+      <path
+         style="fill:#0000ff;stroke-width:0.25"
+         d="M 11.258466,5.5132232 6.75066,1.0054174 l 4.496757,0"
+         id="path462" />
+      <rect
+         style="fill:#0000ff;stroke-width:0.249862"
+         id="rect490"
+         width="1.25"
+         height="6.25"
+         x="7.8181572"
+         y="-4.0742941"
+         transform="rotate(45)" />
+    </g>
+    <path
+       id="path492"
+       style="fill:#0000ff;stroke-width:0.25"
+       d="M 2 2 L 2 10 L 10 10 L 10 7 L 9.5 7 L 9.5 9.5 L 2.5 9.5 L 2.5 2.5 L 5 2.5 L 5 2 L 2 2 z " />
+    <rect
+       style="fill:#0000ff;stroke-width:0.247883"
+       id="rect556"
+       width="3.5"
+       height="1"
+       x="1.75"
+       y="1.75" />
+    <rect
+       style="fill:#0000ff;stroke-width:0.251964"
+       id="rect558"
+       width="1"
+       height="6.5"
+       x="1.75"
+       y="2.75" />
+    <rect
+       style="fill:#0000ff;stroke-width:0.261291"
+       id="rect560"
+       width="8.5"
+       height="1"
+       x="1.75"
+       y="9.25" />
+    <rect
+       style="fill:#0000ff;stroke-width:0.24921"
+       id="rect562"
+       width="1"
+       height="2.5"
+       x="9.25"
+       y="6.75" />
+  </g>
+</svg>

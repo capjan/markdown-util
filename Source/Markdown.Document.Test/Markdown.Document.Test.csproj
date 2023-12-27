@@ -25,4 +25,12 @@
       <ProjectReference Include="..\Markdown.Document\Markdown.Document.csproj" />
     </ItemGroup>
 
+    <ItemGroup>
+      <None Remove="TestFiles\SimpleDocument.md" />
+    </ItemGroup>
+
+    <ItemGroup>
+      <EmbeddedResource Include="EmbeddedResources\Markdown\SimpleDocument.md" />
+    </ItemGroup>
+
 </Project>

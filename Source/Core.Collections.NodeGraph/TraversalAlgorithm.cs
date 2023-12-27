@@ -1,7 +1,13 @@
-namespace MarkdownUtil.Utils.Graph;
+namespace Core.Collections.NodeGraph;
 
-public enum GraphTraversalAlgorithm
+/// <summary>
+/// A graph traversal algorithm
+/// </summary>
+public enum TraversalAlgorithm
 {
+    /// <summary>
+    /// Uses default graph traversal algorithm. Depends on the implementation.
+    /// </summary>
     Default,
     /// <summary>
     /// Uses DepthFirst traversal with preorder. That means visit it first visits a node, than all fist siblings, than the innermost next sibling, etc
