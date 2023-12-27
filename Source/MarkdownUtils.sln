@@ -27,6 +27,10 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Markdown.Linter", "Markdown
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Markdown.Linter.Test", "Markdown.Linter.Test\Markdown.Linter.Test.csproj", "{E7E62157-3BA5-43BB-AEFB-3414D6955078}"
 EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "SuperiorIO", "SuperiorIO\SuperiorIO.csproj", "{DD32BE4C-3634-4E58-A299-F0D0C78B3DB6}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "SuperiorIO.Test", "SuperiorIO.Test\SuperiorIO.Test.csproj", "{9C5E4A46-FD01-4E7A-A4BE-4ED4FC1ADE81}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -77,5 +81,13 @@ Global
 		{E7E62157-3BA5-43BB-AEFB-3414D6955078}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{E7E62157-3BA5-43BB-AEFB-3414D6955078}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{E7E62157-3BA5-43BB-AEFB-3414D6955078}.Release|Any CPU.Build.0 = Release|Any CPU
+		{DD32BE4C-3634-4E58-A299-F0D0C78B3DB6}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{DD32BE4C-3634-4E58-A299-F0D0C78B3DB6}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{DD32BE4C-3634-4E58-A299-F0D0C78B3DB6}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{DD32BE4C-3634-4E58-A299-F0D0C78B3DB6}.Release|Any CPU.Build.0 = Release|Any CPU
+		{9C5E4A46-FD01-4E7A-A4BE-4ED4FC1ADE81}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{9C5E4A46-FD01-4E7A-A4BE-4ED4FC1ADE81}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{9C5E4A46-FD01-4E7A-A4BE-4ED4FC1ADE81}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{9C5E4A46-FD01-4E7A-A4BE-4ED4FC1ADE81}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 EndGlobal

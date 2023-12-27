@@ -7,11 +7,11 @@
     </PropertyGroup>
 
     <ItemGroup>
-      <Folder Include="Rules\" />
+      <PackageReference Include="FluentValidation" Version="11.9.0" />
     </ItemGroup>
 
     <ItemGroup>
-      <PackageReference Include="FluentValidation" Version="11.9.0" />
+      <ProjectReference Include="..\SuperiorIO\SuperiorIO.csproj" />
     </ItemGroup>
 
 </Project>

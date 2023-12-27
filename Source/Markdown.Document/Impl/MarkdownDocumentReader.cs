@@ -2,6 +2,8 @@
 using System.Text.RegularExpressions;
 using Core.Extensions.ParserRelated;
 using Core.Parser;
+using Markdig.Syntax;
+using Markdig.Syntax.Inlines;
 using Markdown.Document.Model;
 using Markdown.Document.Model.Impl;
 
@@ -25,12 +27,34 @@ public class MarkdownDocumentReader : IMarkdownDocumentReader
 
         return new MarkdownHeader(title, breadcrumbNavigation, frontMatter);
     }
+
+    public IEnumerable<IMarkdownLink> ReadLinks(IParserInput input)
+    {
+        var content = input.ReadAll();
+        var document = Markdig.Parsers.MarkdownParser.Parse(content);
+
+        return document.Descendants<LinkInline>().Select(link =>
+        {
+            var url = link.Url ?? "";
+            var literals = link.Descendants<LiteralInline>().ToArray();
+            var text = literals.Length == 1 ? literals[0].ToString() : "";
+            var isImage = link.IsImage;
+            var lineNumber = link.Line + 1;
+            return new MarkdownLink(text, url, isImage, lineNumber);
+        });
+    }
+
+    private bool TryParseLink(IParserInput input, out IMarkdownLink link)
+    {
+        link = Contants.EmptyLink;
+        return false;
+    }
+
 }
 
 public class MarkdownDocumentWriter : IMarkdownDocumentWriter
 {
-
-
+    
     public void WriteHeader(FileInfo fileInfo, IMarkdownHeader header)
     {
         var content = File.ReadAllText(fileInfo.FullName);
@@ -59,6 +83,5 @@ public class MarkdownDocumentWriter : IMarkdownDocumentWriter
         File.Move(fileInfo.FullName, backupFileName);
         File.WriteAllText(fileInfo.FullName, replacedContent);
         File.Delete(backupFileName);
-
     }
 }

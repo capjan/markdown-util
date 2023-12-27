@@ -25,7 +25,6 @@
 
     <ItemGroup>
       <PackageReference Include="Cap.Core" Version="11.0.0" />
-      <PackageReference Include="Markdig" Version="0.30.2" />
       <PackageReference Include="Microsoft.Extensions.DependencyInjection" Version="6.0.0" />
       <PackageReference Include="Spectre.Console" Version="0.44.0" />
     </ItemGroup>
@@ -36,10 +35,6 @@
       <ProjectReference Include="..\Markdown.Document\Markdown.Document.csproj" />
       <ProjectReference Include="..\Markdown.Linter\Markdown.Linter.csproj" />
       <ProjectReference Include="..\Markdown.Renderer\Markdown.Renderer.csproj" />
-    </ItemGroup>
-
-    <ItemGroup>
-      <Folder Include="Utils\Graph" />
     </ItemGroup>
 
 </Project>
