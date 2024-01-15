@@ -1,4 +1,5 @@
 using System.Collections;
+using System.Text.RegularExpressions;
 
 namespace SuperiorIO;
 
@@ -8,15 +9,31 @@ public class SuperiorPath : IEnumerable<PathElement>
     public readonly bool IsFolder;
     public readonly bool IsFile;
     private readonly IList<PathElement> _elements;
+    public readonly bool IsWindowsPath;
+    public readonly string WindowsDriveLetter;
 
     private SuperiorPath(bool isRooted, IEnumerable<PathElement> elements)
     {
+        IsWindowsPath = false;
+        WindowsDriveLetter = "";
         IsRooted = isRooted;
         _elements = elements as IList<PathElement> ?? new List<PathElement>(elements);
         var lastElement = _elements.LastOrDefault();
         IsFolder = lastElement.ElementType == PathElementType.Folder;
         IsFile = lastElement.ElementType == PathElementType.File;
     }
+    
+    private SuperiorPath(string windowsDriveLetter, IEnumerable<PathElement> elements)
+    {
+        IsWindowsPath = true;
+        WindowsDriveLetter = windowsDriveLetter;
+        IsRooted = true;
+        _elements = elements as IList<PathElement> ?? new List<PathElement>(elements);
+        var lastElement = _elements.LastOrDefault();
+        IsFolder = lastElement.ElementType == PathElementType.Folder;
+        IsFile = lastElement.ElementType == PathElementType.File;
+    }
+    
 
     // New method to concatenate a string to SuperiorPath
     public SuperiorPath Concatenate(string path)
@@ -42,6 +59,14 @@ public class SuperiorPath : IEnumerable<PathElement>
     {
         get
         {
+            if (IsWindowsPath)
+            {
+                var winPrefix = IsRooted ? WindowsDriveLetter + ":\\" : "";
+                var winPostfix = IsFolder ? "\\" : ""; 
+                return winPrefix + string.Join("\\", _elements.Select(i => i.Name)) + winPostfix;
+                
+            }
+            
             var prefix = IsRooted ? "/" : "";
             var postfix = IsFolder ? "/" : ""; 
             return prefix + string.Join("/", _elements.Select(i => i.Name)) + postfix;
@@ -83,6 +108,45 @@ public class SuperiorPath : IEnumerable<PathElement>
     public static SuperiorPath Root = Create("/");
     
     public static SuperiorPath Create(string filePath)
+    {
+        var m = Regex.Match(filePath, @"^(?<drive>[A-Z]):\\");
+        if (m.Success)
+        {
+            var windowsDriveLetter = m.Groups["drive"].Value;
+            filePath = filePath[2..];
+            var elements = filePath.Split('\\', StringSplitOptions.TrimEntries | StringSplitOptions.RemoveEmptyEntries);
+            var lastIndex = elements.Length - 1;
+            var pathElements = elements.Select((itm, index) =>
+            {
+                switch (itm)
+                {
+                    case "..":
+                        return new PathElement(itm, PathElementType.Parent);
+                    case ".":
+                        return new PathElement(".", PathElementType.Current);
+                }
+
+                if (index < lastIndex)
+                {
+                    return new PathElement(itm, PathElementType.Folder);
+                }
+
+                if (index == lastIndex && !filePath.EndsWith("\\"))
+                {
+                    return new PathElement(itm, PathElementType.File);
+                }
+                return new PathElement(itm, PathElementType.Unknown);
+            }).ToArray();
+    
+            return new SuperiorPath(windowsDriveLetter: windowsDriveLetter, pathElements);
+        }
+        else
+        {
+            return CreateMacOSPath(filePath);
+        }
+    }
+
+    private static SuperiorPath CreateMacOSPath(string filePath)
     {
         var elements = filePath.Split('/', StringSplitOptions.TrimEntries | StringSplitOptions.RemoveEmptyEntries);
         var isRooted = filePath.StartsWith("/");
