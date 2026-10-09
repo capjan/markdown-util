@@ -1,0 +1,9 @@
+#!/bin/sh
+
+header=$(sed -n '1p' "$1")
+if printf '%s\n' "$header" | grep -Eq '^[[:lower:]][[:lower:][:digit:]-]*(\([^()]+\))?!?: [^[:space:]].*$'; then
+    exit 0
+fi
+
+printf '%s\n' 'Commit type must be lowercase and follow Conventional Commits: <type>[optional scope][!]: <description>' >&2
+exit 1

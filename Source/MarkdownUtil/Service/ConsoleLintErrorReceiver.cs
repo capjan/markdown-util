@@ -1,6 +1,4 @@
 using System.Net.Sockets;
-using Spectre.Console;
-
 namespace MarkdownUtil.Service;
 
 public class ConsoleLintErrorReceiver : ILinterErrorReceiver
@@ -9,7 +7,7 @@ public class ConsoleLintErrorReceiver : ILinterErrorReceiver
 
     public void Add(string filePath, int lineNumber, string message)
     {
-        AnsiConsole.WriteLine($"{filePath}:{lineNumber}: {message}");
+        Console.WriteLine($"{filePath}:{lineNumber}: {message}");
         ErrorCount++;
     }
 }

@@ -5,7 +5,6 @@ using Markdown.Document.Impl;
 using Markdown.Document.Model;
 using Markdown.Document.Model.Impl;
 using MarkdownUtil.Model;
-using Spectre.Console;
 
 namespace MarkdownUtil.Service.Visitors;
 
@@ -62,7 +61,7 @@ public class BreadcrumbsVisitor : IVisitor<MarkdownFile>
 
         var header = new MarkdownHeader(entity.Title, navigationLine, entity.FrontMatter);
         _markdownDocumentWriter.WriteHeader(entity.FileInfo, header as IMarkdownHeader);
-        AnsiConsole.WriteLine(navigationLine);
+        Console.WriteLine(navigationLine);
         return true;
     }
 }

@@ -1,6 +1,5 @@
 using Markdown.Renderer;
 using MarkdownUtil.Model;
-using Spectre.Console;
 
 namespace MarkdownUtil.Service.Visitors;
 
@@ -21,7 +20,7 @@ public class MarkdigVisitor : BaseVisitor
 
     protected override bool ProcessFile(MarkdownFile entity, int graphDepth, FilePathInfo io)
     {
-        AnsiConsole.WriteLine($"{io.InputRelativeFilePathToRootDirectory} => {io.OutputRelativeFilePathToRootDirectory}");
+        Console.WriteLine($"{io.InputRelativeFilePathToRootDirectory} => {io.OutputRelativeFilePathToRootDirectory}");
 
         var markdown = io.ReadAllText();
         io.CreateOutputDirectory();    // ensures that the output directory exits

@@ -1,16 +1,11 @@
-using System.Diagnostics.CodeAnalysis;
 using Core.Collections.NodeGraph.Extensions;
 using MarkdownUtil.Commands.Settings;
 using MarkdownUtil.Service;
 using MarkdownUtil.Service.Visitors;
-using Spectre.Console.Cli;
-// ReSharper disable ClassNeverInstantiated.Global
-// ReSharper disable RedundantNullableFlowAttribute
 
 namespace MarkdownUtil.Commands;
 
-
-public class AddBreadcrumbNavigationCommand : Command<VisitorSettings>
+public class AddBreadcrumbNavigationCommand
 {
     private readonly LinterVisitor _linterVisitor;
     private readonly BreadcrumbsVisitor _breadcrumbsVisitor;
@@ -29,7 +24,7 @@ public class AddBreadcrumbNavigationCommand : Command<VisitorSettings>
         _printTreeVisitor = printTreeVisitor;
     }
 
-    public override int Execute([NotNull] CommandContext context, [NotNull] VisitorSettings settings)
+    public int Execute(VisitorSettings settings)
     {
         var graph = _graphBuilder.CreateGraph(settings);
 

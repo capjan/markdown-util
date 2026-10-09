@@ -1,17 +1,12 @@
-using System.Diagnostics.CodeAnalysis;
 using Core.Collections.NodeGraph.Extensions;
 using MarkdownUtil.Commands.Settings;
 using MarkdownUtil.Service;
 using MarkdownUtil.Service.Renderer;
 using MarkdownUtil.Service.Visitors;
-using Spectre.Console;
-using Spectre.Console.Cli;
-// ReSharper disable RedundantNullableFlowAttribute
-// ReSharper disable ClassNeverInstantiated.Global
 
 namespace MarkdownUtil.Commands;
 
-public class LintCommand : Command<VisitorSettings>
+public class LintCommand
 {
     private readonly GraphBuilder _graphBuilder;
     private readonly LinterVisitor _linterVisitor;
@@ -24,10 +19,9 @@ public class LintCommand : Command<VisitorSettings>
         _graphBuilder = graphBuilder;
     }
 
-    public override int Execute([NotNull] CommandContext context, [NotNull] VisitorSettings settings)
-
+    public int Execute(VisitorSettings settings)
     {
-        AnsiConsole.MarkupLine("Running [green]Linter[/]");
+        Console.WriteLine("Running Linter");
         var graph = _graphBuilder.CreateGraph(settings);
         graph.Visit(_linterVisitor);
         return _lintResultRenderer.Render();

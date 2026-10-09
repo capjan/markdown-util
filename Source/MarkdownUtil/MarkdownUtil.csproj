@@ -2,7 +2,7 @@
 
     <PropertyGroup>
         <OutputType>Exe</OutputType>
-        <TargetFramework>net6.0</TargetFramework>
+        <TargetFramework>net10.0</TargetFramework>
         <ImplicitUsings>enable</ImplicitUsings>
         <Nullable>enable</Nullable>
         <PackAsTool>true</PackAsTool>
@@ -10,7 +10,6 @@
         <ToolCommandName>mdu</ToolCommandName>
         <Copyright>©2023 Jan Ruhlaender</Copyright>
         <PackageLicenseExpression>MIT</PackageLicenseExpression>
-        <PackageOutputPath>./nupkg</PackageOutputPath>
         <DockerDefaultTargetOS>Linux</DockerDefaultTargetOS>
         <Version>2.6.0</Version>
         <AssemblyName>mdu</AssemblyName>
@@ -25,8 +24,8 @@
 
     <ItemGroup>
       <PackageReference Include="Cap.Core" Version="11.0.0" />
-      <PackageReference Include="Microsoft.Extensions.DependencyInjection" Version="6.0.0" />
-      <PackageReference Include="Spectre.Console" Version="0.44.0" />
+      <PackageReference Include="Microsoft.Extensions.DependencyInjection" Version="10.0.7" />
+      <PackageReference Include="System.CommandLine" Version="2.0.12" />
     </ItemGroup>
 
     <ItemGroup>

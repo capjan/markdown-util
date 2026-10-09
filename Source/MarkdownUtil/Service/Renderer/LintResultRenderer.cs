@@ -1,5 +1,3 @@
-using Spectre.Console;
-
 namespace MarkdownUtil.Service.Renderer;
 
 public class LintResultRenderer
@@ -16,16 +14,16 @@ public class LintResultRenderer
         var errorCount = _receiver.ErrorCount;
         if (errorCount == 1)
         {
-            AnsiConsole.WriteLine($"Linter detected [red]{errorCount} error[/].");
+            Console.WriteLine($"Linter detected {errorCount} error.");
             return 1;
         }
         if (errorCount > 1)
         {
-            AnsiConsole.MarkupLine($"Linter detected [red]{errorCount} errors[/].");
+            Console.WriteLine($"Linter detected {errorCount} errors.");
             return 1;
         }
 
-        AnsiConsole.MarkupLine("Party! :partying_face: [green]The Markdown linter does not detect any errors![/]");
+        Console.WriteLine("Party! 🥳 The Markdown linter does not detect any errors!");
         return 0;
     }
 }

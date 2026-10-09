@@ -1,6 +1,6 @@
 # MarkdownUtil
 
-[![.NET 6.0](https://github.com/capjan/markdown-util/actions/workflows/dotnet.yml/badge.svg)](https://github.com/capjan/markdown-util/actions/workflows/dotnet.yml)
+[![.NET 10](https://github.com/capjan/markdown-util/actions/workflows/dotnet.yml/badge.svg)](https://github.com/capjan/markdown-util/actions/workflows/dotnet.yml)
 [![NuGet](https://github.com/capjan/markdown-util/actions/workflows/nuget_deploy.yml/badge.svg)](https://github.com/capjan/markdown-util/actions/workflows/nuget_deploy.yml)
 
 MarkdownUtil

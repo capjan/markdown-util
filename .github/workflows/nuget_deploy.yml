@@ -10,10 +10,20 @@ jobs:
     name: build, test, pack & publish
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v3
+      - uses: actions/checkout@v4
 
-      - name: Build, Test, Pack, Push
+      - name: Setup .NET
+        uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: 10.0.x
+
+      - name: Test
+        run: dotnet test MarkdownUtils.sln --configuration Release
+
+      - name: Pack
+        run: dotnet pack Source/MarkdownUtil/MarkdownUtil.csproj --configuration Release --output artifacts/packages
+
+      - name: Publish
         env:
-          NU_GET_API_KEY: ${{ secrets.NUGET_API_KEY }}
-        run: |
-          ./build.sh deploy
+          NUGET_API_KEY: ${{ secrets.NUGET_API_KEY }}
+        run: dotnet nuget push "artifacts/packages/*.nupkg" --api-key "$NUGET_API_KEY" --source https://api.nuget.org/v3/index.json --skip-duplicate
