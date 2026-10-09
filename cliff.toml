@@ -1,0 +1,42 @@
+[changelog]
+header = "# Changelog\n\n"
+body = """
+{% if version %}## {{ version }}{% else %}## Unreleased{% endif %}
+{% for group, commits in commits | group_by(attribute="group") %}
+### {{ group }}
+{% for commit in commits %}
+- {{ commit.message }}
+{% endfor %}
+{% endfor %}
+"""
+trim = true
+
+[git]
+conventional_commits = true
+filter_unconventional = true
+protect_breaking_commits = true
+tag_pattern = "^v[0-9].*"
+commit_preprocessors = [
+  { pattern = "^(build|chore|ci|docs|refactor|style|test)(\\([^)]*\\))?!:", replace = "breaking$2:" },
+  { pattern = "^(build|chore|ci|docs|refactor|style|test)(\\([^)]*\\))?:(?s)(.*\\n\\nBREAKING[- ]CHANGE:.*)$", replace = "breaking$2:$3" },
+]
+commit_parsers = [
+  { message = "^breaking", group = "Breaking Changes" },
+  { message = "^feat", group = "Features" },
+  { message = "^fix", group = "Fixes" },
+  { message = "^perf", group = "Performance" },
+  { message = "^refactor", group = "Refactoring" },
+  { message = "^docs", group = "Documentation" },
+  { message = "^chore", group = "Maintenance" },
+  { message = "^build", group = "Build" },
+  { message = "^ci", group = "CI" },
+  { message = "^test", group = "Tests" },
+  { message = "^revert", group = "Reverts" },
+  { message = ".*", skip = true },
+]
+
+[bump]
+features_always_bump_minor = true
+breaking_always_bump_major = true
+custom_major_increment_regex = "^breaking$"
+no_increment_regex = "^(build|chore|ci|docs|refactor|style|test)$"
