@@ -45,7 +45,7 @@
         <nav aria-label="Dokumentationsseiten">
             <ul class="site-nav-list">
                 <li class="site-nav-item" style="--depth: 0">
-    <a class="site-nav-link " href="../../index.html" aria-current="false">Dokumentation</a>
+    <a class="site-nav-link " href="../../index.html" aria-current="false">Documentation</a>
 </li>
 <li class="site-nav-item" style="--depth: 1">
     <a class="site-nav-link " href="../../Setup/index.html" aria-current="false">Setup</a>
@@ -82,16 +82,16 @@
     </aside>
     <button class="sidebar-backdrop" id="sidebar-backdrop" type="button" tabindex="-1" aria-label="Navigation schließen"></button>
     <main class="site-main">
-<p class="breadcrumbs"><a href="../../index.html">Dokumentation</a><span class="breadcrumb-separator" aria-hidden="true"><svg viewBox="0 0 12 20" focusable="false"><path d="M2 2L9 10L2 18" /></svg></span><a href="../index.html">Features</a><span class="breadcrumb-separator" aria-hidden="true"><svg viewBox="0 0 12 20" focusable="false"><path d="M2 2L9 10L2 18" /></svg></span>Linter</p>
+<p class="breadcrumbs"><a href="../../index.html">Documentation</a><span class="breadcrumb-separator" aria-hidden="true"><svg viewBox="0 0 12 20" focusable="false"><path d="M2 2L9 10L2 18" /></svg></span><a href="../index.html">Features</a><span class="breadcrumb-separator" aria-hidden="true"><svg viewBox="0 0 12 20" focusable="false"><path d="M2 2L9 10L2 18" /></svg></span>Linter</p>
 <h1 id="linter">Linter</h1>
 <h2 id="rules">Rules</h2>
 <ul>
-<li>Rule 1 - Every Markdown page must have a level-one heading that defines its title (after optional YAML frontmatter)</li>
-<li><a href="./Rule2/index.html">Rule 2</a> - Directory names must match the title of the index (README.md) file</li>
-<li><a href="./Rule3/index.html">Rule 3</a> - Casing of internal links used in a markdown file must match the casing of the current machine</li>
-<li>Rule 4 - Local links and image targets must point to an existing file or a directory with a <code>README.md</code> index</li>
+<li>Rule 1 - Every Markdown page must have a level-one heading that defines its title (after any YAML front matter).</li>
+<li><a href="./Rule2/index.html">Rule 2</a> - Directory names must match the title in the index file (<code>README.md</code>).</li>
+<li><a href="./Rule3/index.html">Rule 3</a> - The casing of internal links in a Markdown file must match the casing of their targets.</li>
+<li>Rule 4 - Local links and image targets must point to an existing file or to a directory with a <code>README.md</code> index.</li>
 </ul>
-<p>Each diagnostic includes a stable code, a descriptive rule name, the source path, and the line number. For example, <code>MDU004</code> is <code>LocalLinkExists</code>:</p>
+<p>Each diagnostic includes a stable code, a descriptive rule name, the source path, and the line number. For example, <code>MDU004</code> is named <code>LocalLinkExists</code>:</p>
 <pre><code>/project/Docs/Overview.md:<span class="number">7</span>: MDU004 LocalLinkExists: Local link target &#39;./intro.md&#39; does not exist.</code></pre>
 
     </main>

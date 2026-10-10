@@ -103,15 +103,18 @@ public class MarkdigVisitor : BaseVisitor
                     .Replace(Path.DirectorySeparatorChar, '/');
                 var url = string.Join('/', relativeUrl.Split('/').Select(Uri.EscapeDataString));
 
-                navigation.Add(new NavigationItem
+                if (page.SidebarVisible)
                 {
-                    Title = GetNavigationTitle(page),
-                    Url = url,
-                    Depth = depth,
-                    IsCurrent = string.Equals(pagePath, currentPath, pathComparison)
-                });
+                    navigation.Add(new NavigationItem
+                    {
+                        Title = GetNavigationTitle(page),
+                        Url = url,
+                        Depth = depth,
+                        IsCurrent = string.Equals(pagePath, currentPath, pathComparison)
+                    });
+                }
 
-                AddPages(page.Children, depth + 1);
+                AddPages(page.Children, page.SidebarVisible ? depth + 1 : depth);
             }
         }
     }
@@ -121,7 +124,7 @@ public class MarkdigVisitor : BaseVisitor
         if (!string.IsNullOrWhiteSpace(page.Title)) return page.Title.Trim();
 
         return page.FileInfo.Name.Equals("README.md", StringComparison.OrdinalIgnoreCase)
-            ? page.FileInfo.Directory?.Name ?? "Dokumentation"
+            ? page.FileInfo.Directory?.Name ?? "Documentation"
             : Path.GetFileNameWithoutExtension(page.FileInfo.Name);
     }
 }

@@ -27,14 +27,16 @@ public class DataPreparationVisitor: IVisitor<MarkdownFile>
         var header = _markdownReader.ReadHeader(input);
         entity.Title = header.Title;
         entity.FrontMatter = header.FrontMatter;
-        entity.SidebarOrder = ReadSidebarOrder(header.FrontMatter);
+        var sidebarSettings = ReadSidebarSettings(header.FrontMatter);
+        entity.SidebarOrder = sidebarSettings.Order;
+        entity.SidebarVisible = sidebarSettings.Visible;
         return true;
     }
 
-    private static int? ReadSidebarOrder(string frontMatter)
+    private static (int? Order, bool Visible) ReadSidebarSettings(string frontMatter)
     {
         if (string.IsNullOrWhiteSpace(frontMatter) || !frontMatter.Contains("sidebar", StringComparison.Ordinal))
-            return null;
+            return (null, true);
 
         var lines = frontMatter.Split('\n').Select(line => line.TrimEnd('\r')).ToList();
         if (lines.Count > 0 && lines[0].Trim() == "---") lines.RemoveAt(0);
@@ -46,30 +48,45 @@ public class DataPreparationVisitor: IVisitor<MarkdownFile>
             yaml.Load(new StringReader(string.Join(Environment.NewLine, lines)));
 
             if (yaml.Documents.Count == 0 || yaml.Documents[0].RootNode is not YamlMappingNode metadata)
-                return null;
+                return (null, true);
 
             YamlNode? orderNode = null;
+            YamlNode? visibleNode = null;
             if (metadata.Children.TryGetValue(new YamlScalarNode("sidebar"), out var sidebarNode) &&
-                sidebarNode is YamlMappingNode sidebar &&
-                sidebar.Children.TryGetValue(new YamlScalarNode("order"), out var nestedOrderNode))
+                sidebarNode is YamlMappingNode sidebar)
             {
-                orderNode = nestedOrderNode;
+                if (sidebar.Children.TryGetValue(new YamlScalarNode("order"), out var nestedOrderNode))
+                    orderNode = nestedOrderNode;
+                if (sidebar.Children.TryGetValue(new YamlScalarNode("visible"), out var nestedVisibleNode))
+                    visibleNode = nestedVisibleNode;
             }
-            else if (metadata.Children.TryGetValue(new YamlScalarNode("sidebar.order"), out var compactOrderNode))
+
+            if (orderNode is null && metadata.Children.TryGetValue(new YamlScalarNode("sidebar.order"), out var compactOrderNode))
             {
                 orderNode = compactOrderNode;
             }
+            if (visibleNode is null && metadata.Children.TryGetValue(new YamlScalarNode("sidebar.visible"), out var compactVisibleNode))
+            {
+                visibleNode = compactVisibleNode;
+            }
 
-            if (orderNode is not YamlScalarNode orderValue)
-                return null;
+            int? order = null;
+            if (orderNode is YamlScalarNode orderValue &&
+                int.TryParse(orderValue.Value, NumberStyles.Integer, CultureInfo.InvariantCulture, out var parsedOrder))
+            {
+                order = parsedOrder;
+            }
 
-            return int.TryParse(orderValue.Value, NumberStyles.Integer, CultureInfo.InvariantCulture, out var order)
-                ? order
-                : null;
+            var visible = visibleNode is YamlScalarNode visibleValue &&
+                          bool.TryParse(visibleValue.Value, out var parsedVisible)
+                ? parsedVisible
+                : true;
+
+            return (order, visible);
         }
         catch (YamlException)
         {
-            return null;
+            return (null, true);
         }
     }
 }

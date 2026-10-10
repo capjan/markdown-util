@@ -5,17 +5,17 @@ sidebar:
 
 # Features
 
-[Dokumentation](../README.md) • Features
+[Documentation](../README.md) • Features
 
 ## Main Features
 
-- [Linter](../Usage/Linter/README.md) - Overview of the included linter and its rules
-- [HTML Renderer](./HtmlRenderer/README.md) - Describes the presumed main function of the tool: Rendering static HTML pages from Markdown files
+- [Linter](../Usage/Linter/README.md) - An overview of the included linter and its rules
+- [HTML Renderer](./HtmlRenderer/README.md) - Renders static HTML pages from Markdown files
 - [Sidebar](./Sidebar/README.md) - Describes the generated sidebar and how to control its order
 
-## Content Modify Features
+## Content modification features
 
-Features that modify the source Markdown files to improve the documentation.
+Features that modify source Markdown files to improve the documentation.
 
-- Adding [Breadcrumbs](./Breadcrumbs/README.md) Navigation - how to add and update the Breadcrumb Navigation on every page
+- Add [breadcrumb navigation](./Breadcrumbs/README.md) to every page.
 

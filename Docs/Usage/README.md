@@ -5,11 +5,11 @@ sidebar:
 
 # Usage
 
-[Dokumentation](../README.md) • Usage
+[Documentation](../README.md) • Usage
 
 ## Quick start
 
-Run commands from the project folder and pass the documentation and output folders explicitly. For a project with a `Docs` directory:
+Run commands from the project folder and pass the documentation and output directories explicitly. For a project with a `Docs` directory:
 
 ```bash
 mdu lint ./Docs
@@ -25,7 +25,7 @@ For example, a missing local link is reported with its file and line:
 Linter detected 1 error.
 ```
 
-The source folder, output folder, and port can be specified when needed. The preview defaults to `./site` and port `4173`.
+You can specify the source directory, output directory, and port when needed. The preview defaults to `./site` and port `4173`.
 
 ```bash
 mdu serve ./Docs ./site --port 4173

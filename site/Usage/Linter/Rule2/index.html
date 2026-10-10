@@ -45,7 +45,7 @@
         <nav aria-label="Dokumentationsseiten">
             <ul class="site-nav-list">
                 <li class="site-nav-item" style="--depth: 0">
-    <a class="site-nav-link " href="../../../index.html" aria-current="false">Dokumentation</a>
+    <a class="site-nav-link " href="../../../index.html" aria-current="false">Documentation</a>
 </li>
 <li class="site-nav-item" style="--depth: 1">
     <a class="site-nav-link " href="../../../Setup/index.html" aria-current="false">Setup</a>
@@ -82,24 +82,23 @@
     </aside>
     <button class="sidebar-backdrop" id="sidebar-backdrop" type="button" tabindex="-1" aria-label="Navigation schließen"></button>
     <main class="site-main">
-<p class="breadcrumbs"><a href="../../../index.html">Dokumentation</a><span class="breadcrumb-separator" aria-hidden="true"><svg viewBox="0 0 12 20" focusable="false"><path d="M2 2L9 10L2 18" /></svg></span><a href="../../index.html">Features</a><span class="breadcrumb-separator" aria-hidden="true"><svg viewBox="0 0 12 20" focusable="false"><path d="M2 2L9 10L2 18" /></svg></span><a href="../index.html">Linter</a><span class="breadcrumb-separator" aria-hidden="true"><svg viewBox="0 0 12 20" focusable="false"><path d="M2 2L9 10L2 18" /></svg></span>Rule 2</p>
+<p class="breadcrumbs"><a href="../../../index.html">Documentation</a><span class="breadcrumb-separator" aria-hidden="true"><svg viewBox="0 0 12 20" focusable="false"><path d="M2 2L9 10L2 18" /></svg></span><a href="../../index.html">Features</a><span class="breadcrumb-separator" aria-hidden="true"><svg viewBox="0 0 12 20" focusable="false"><path d="M2 2L9 10L2 18" /></svg></span><a href="../index.html">Linter</a><span class="breadcrumb-separator" aria-hidden="true"><svg viewBox="0 0 12 20" focusable="false"><path d="M2 2L9 10L2 18" /></svg></span>Rule 2</p>
 <h1 id="rule-2">Rule 2</h1>
 <h2 id="summary">Summary</h2>
-<p>The name of a directory that contains a readme file must match the title of the readme file.</p>
+<p>The name of a directory containing a <code>README.md</code> file must match the title in that file.</p>
 <h2 id="goal">Goal</h2>
-<p>README.md files are index files that are opened first when a developer enters a folder, so they typically contains
-the important things to know. But unforgettably they do not contain any information what they contain!</p>
-<p>If the name of the folder corresponds to the title of the README file, it can be understood at navigation context
-what the index file addresses.</p>
-<p>If a README.md file is located in a docs folder that we can assume that it contains <code>docs</code></p>
+<p><code>README.md</code> files act as index files that readers open when they enter a directory, so they typically contain
+the most important information about it. However, their titles may not indicate what the directory contains.</p>
+<p>When the directory name matches the README title, readers can tell what the index covers while navigating the project.</p>
+<p>For example, if a <code>README.md</code> file is in a <code>docs</code> directory, its title should be <code>Docs</code>.</p>
 <h2 id="example">Example</h2>
-<p>Assume a README.md with the following contant:</p>
+<p>Assume a <code>README.md</code> file with the following content:</p>
 <pre><code># notes
 
-this are my Notes</code></pre>
-<p>It is good practice when the folder is also named <code>notes</code></p>
+These are my notes.</code></pre>
+<p>It is good practice to name the directory <code>notes</code> as well.</p>
 <h2 id="notes">Notes</h2>
-<p>Titles like &quot;Rule 2: This is a following description&quot; is cut at the colon to avoid long names</p>
+<p>Titles such as &quot;Rule 2: This is a following description&quot; are truncated at the colon to avoid long directory names.</p>
 
     </main>
 </div>

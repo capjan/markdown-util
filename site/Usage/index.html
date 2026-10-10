@@ -45,7 +45,7 @@
         <nav aria-label="Dokumentationsseiten">
             <ul class="site-nav-list">
                 <li class="site-nav-item" style="--depth: 0">
-    <a class="site-nav-link " href="../index.html" aria-current="false">Dokumentation</a>
+    <a class="site-nav-link " href="../index.html" aria-current="false">Documentation</a>
 </li>
 <li class="site-nav-item" style="--depth: 1">
     <a class="site-nav-link " href="../Setup/index.html" aria-current="false">Setup</a>
@@ -82,17 +82,17 @@
     </aside>
     <button class="sidebar-backdrop" id="sidebar-backdrop" type="button" tabindex="-1" aria-label="Navigation schließen"></button>
     <main class="site-main">
-<p class="breadcrumbs"><a href="../index.html">Dokumentation</a><span class="breadcrumb-separator" aria-hidden="true"><svg viewBox="0 0 12 20" focusable="false"><path d="M2 2L9 10L2 18" /></svg></span>Usage</p>
+<p class="breadcrumbs"><a href="../index.html">Documentation</a><span class="breadcrumb-separator" aria-hidden="true"><svg viewBox="0 0 12 20" focusable="false"><path d="M2 2L9 10L2 18" /></svg></span>Usage</p>
 <h1 id="usage">Usage</h1>
 <h2 id="quick-start">Quick start</h2>
-<p>Run commands from the project folder and pass the documentation and output folders explicitly. For a project with a <code>Docs</code> directory:</p>
+<p>Run commands from the project folder and pass the documentation and output directories explicitly. For a project with a <code>Docs</code> directory:</p>
 <pre><code>mdu lint ./Docs
 mdu serve ./Docs ./site</code></pre>
 <p><code>mdu lint</code> reads the Markdown files and reports any problems. <code>mdu serve</code> renders the site to <code>./site</code>, opens it in your browser, and watches Markdown files and linked local assets for changes. Press <code>Ctrl+C</code> to stop the preview server.</p>
 <p>For example, a missing local link is reported with its file and line:</p>
 <pre><code>/project/Docs/Overview.md:<span class="number">7</span>: MDU004 LocalLinkExists: Local link target &#39;./intro.md&#39; does not exist.
 Linter detected 1 error.</code></pre>
-<p>The source folder, output folder, and port can be specified when needed. The preview defaults to <code>./site</code> and port <code>4173</code>.</p>
+<p>You can specify the source directory, output directory, and port when needed. The preview defaults to <code>./site</code> and port <code>4173</code>.</p>
 <pre><code>mdu serve ./Docs ./site --port 4173</code></pre>
 <p>Use <code>--no-browser</code> to start the server without opening a browser.</p>
 <h2 id="adding-breadcrumb-navigation">Adding breadcrumb navigation</h2>

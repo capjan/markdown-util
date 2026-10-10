@@ -1,18 +1,18 @@
-# Dokumentation
+# Documentation
 
-Dokumentation
+MarkdownUtil helps you write documentation in Markdown files, ideally in a Git repository.
 
 ## Inspiration
 
-- This tool is for people writing documentation in Markdown files (hopefully in a git repository)
-- No vendor lock in. Your documentation is yours and consists of a collection of ordinary Markdown files
-- This Tool helps you to reorder your files by adding a breadcrumb navigation
-- This tool is a static code generator that can render your documentation to HTML
-- Open source [project on GitHub](https://github.com/capjan/markdown-util)
+- This tool is for people who write documentation in Markdown files, ideally in a Git repository.
+- No vendor lock-in: your documentation remains a collection of ordinary Markdown files.
+- Reorganize your navigation by adding breadcrumbs.
+- Generate a static HTML site from your documentation.
+- Open-source [project on GitHub](https://github.com/capjan/markdown-util).
 
 ## Contents
 
-- [Setup](./Setup/README.md) - How to install / setup this tool
-- [Usage](./Usage/README.md) - Explains how to use that tool
-- [Features](./Features/README.md) - List of the Features
-- [Other Tools](./OtherTools/README.md) - Probably more established tools with similar goals
+- [Setup](./Setup/README.md) - How to install and set up the tool
+- [Usage](./Usage/README.md) - How to use the tool
+- [Features](./Features/README.md) - An overview of the features
+- [Other Tools](./OtherTools/README.md) - More established tools with similar goals

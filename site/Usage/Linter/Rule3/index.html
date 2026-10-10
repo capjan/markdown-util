@@ -45,7 +45,7 @@
         <nav aria-label="Dokumentationsseiten">
             <ul class="site-nav-list">
                 <li class="site-nav-item" style="--depth: 0">
-    <a class="site-nav-link " href="../../../index.html" aria-current="false">Dokumentation</a>
+    <a class="site-nav-link " href="../../../index.html" aria-current="false">Documentation</a>
 </li>
 <li class="site-nav-item" style="--depth: 1">
     <a class="site-nav-link " href="../../../Setup/index.html" aria-current="false">Setup</a>
@@ -82,20 +82,16 @@
     </aside>
     <button class="sidebar-backdrop" id="sidebar-backdrop" type="button" tabindex="-1" aria-label="Navigation schließen"></button>
     <main class="site-main">
-<p class="breadcrumbs"><a href="../../../index.html">Dokumentation</a><span class="breadcrumb-separator" aria-hidden="true"><svg viewBox="0 0 12 20" focusable="false"><path d="M2 2L9 10L2 18" /></svg></span><a href="../../index.html">Features</a><span class="breadcrumb-separator" aria-hidden="true"><svg viewBox="0 0 12 20" focusable="false"><path d="M2 2L9 10L2 18" /></svg></span><a href="../index.html">Linter</a><span class="breadcrumb-separator" aria-hidden="true"><svg viewBox="0 0 12 20" focusable="false"><path d="M2 2L9 10L2 18" /></svg></span>Rule 3</p>
+<p class="breadcrumbs"><a href="../../../index.html">Documentation</a><span class="breadcrumb-separator" aria-hidden="true"><svg viewBox="0 0 12 20" focusable="false"><path d="M2 2L9 10L2 18" /></svg></span><a href="../../index.html">Features</a><span class="breadcrumb-separator" aria-hidden="true"><svg viewBox="0 0 12 20" focusable="false"><path d="M2 2L9 10L2 18" /></svg></span><a href="../index.html">Linter</a><span class="breadcrumb-separator" aria-hidden="true"><svg viewBox="0 0 12 20" focusable="false"><path d="M2 2L9 10L2 18" /></svg></span>Rule 3</p>
 <h1 id="rule-3">Rule 3</h1>
 <h2 id="summary">Summary</h2>
-<p>The casing of internal links must match the casing on the local machine.</p>
+<p>The casing of internal links must match the casing of their targets on the local file system.</p>
 <h2 id="goal">Goal</h2>
-<p>If the documentation is written on machines where the casing of files and folders doesn't matter
-(e.g. Windows) the user does not recognize if a used internal link is wrongly cased and will raise
-a file not found on a strict deployment where the casing does matter!</p>
+<p>When documentation is edited on a case-insensitive file system (such as the default file system on Windows), an incorrectly cased internal link may go unnoticed and later fail on a case-sensitive deployment.</p>
 <h2 id="example">Example</h2>
-<p>You write your documentation on a windows machine and link to a parent documentation page that contains
-an overview:</p>
-<pre><code>Click [here](../index.html) to return to the overview page</code></pre>
-<p>If the parent <code>README.md</code> is for some reason cased in lowercase (e.g. readme.md), than the link still works
-on your windows machine, but may be BROKE if you deploy to a Linux machine.</p>
+<p>For example, you might link to the parent page that contains an overview:</p>
+<pre><code>Click [here](../index.html) to return to the overview page.</code></pre>
+<p>If the parent file is actually named <code>readme.md</code>, the link may still work on a Windows machine but be broken on Linux, where file name casing matters.</p>
 
     </main>
 </div>

@@ -1,15 +1,16 @@
 # HTML Renderer
 
-[Dokumentation](../../README.md) • [Features](../README.md) • HTML Renderer
+[Documentation](../../README.md) • [Features](../README.md) • HTML Renderer
 
-## HTML Renderer Features / Goals
+## Features and goals
 
-- Light and dark themes with an OS-following Auto setting and a collapsible, responsive sitemap navigation
-- Responsive layouts (mobile first)
-- Syntax highlighting of code blocks
-- Automatic Asset copying to the output
+- Light and dark themes, with an automatic mode that follows the operating system.
+- A collapsible, responsive sitemap navigation.
+- Responsive, mobile-first layouts.
+- Syntax highlighting for code blocks.
+- Automatic copying of assets to the output directory.
  
-## Technical Facts
+## Technical details
 
-- The embedded HTML template is rendered by `HtmlRenderer` using .NET string and HTML-encoding APIs; it has no separate template-engine dependency
-- [Markdig](https://github.com/xoofx/markdig) renders the Markdown (CommonMark) files to HTML
+- The embedded HTML template is rendered by `HtmlRenderer` using .NET string and HTML-encoding APIs; it has no separate template engine dependency.
+- [Markdig](https://github.com/xoofx/markdig) renders Markdown (CommonMark) files as HTML.

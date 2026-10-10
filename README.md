@@ -3,10 +3,10 @@
 [![.NET 10](https://github.com/capjan/markdown-util/actions/workflows/dotnet.yml/badge.svg)](https://github.com/capjan/markdown-util/actions/workflows/dotnet.yml)
 [![NuGet](https://img.shields.io/nuget/v/MarkdownUtil)](https://www.nuget.org/packages/MarkdownUtil)
 
-MarkdownUtil is a .NET command-line tool for documentation kept in ordinary Markdown files. It checks Markdown structure and links, renders a static HTML site, and provides a local preview that updates as files change.
-It uses the .NET toolchain without requiring a separate Node.js or Python toolchain.
+MarkdownUtil is a .NET command-line tool for documentation written in ordinary Markdown files. It checks Markdown structure and links, renders a static HTML site, and provides a local preview that updates as files change.
+It uses the .NET toolchain, so you do not need a separate Node.js or Python toolchain.
 
-**Project status:** Draft. The tool is under active development and is not recommended for production environments yet.
+**Project status:** Draft. The tool is under active development and is not recommended for production use yet.
 
 ## Install
 
@@ -47,7 +47,7 @@ dotnet tool run mdu lint ./Docs
 dotnet tool run mdu serve ./Docs ./site
 ```
 
-`mdu serve` opens the generated site in your browser, serves it on port `4173`, and refreshes pages when Markdown files or linked local assets change. Press `Ctrl+C` to stop it. The source and output folders can be changed with the positional arguments shown above.
+`mdu serve` opens the generated site in your browser, serves it on port `4173`, and refreshes pages when Markdown files or linked local assets change. Press `Ctrl+C` to stop it. You can change the source and output directories with the positional arguments shown above.
 
 When the linter finds a problem, it prints the source path, line number, and rule code:
 

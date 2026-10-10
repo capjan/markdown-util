@@ -1,19 +1,21 @@
 # Breadcrumbs
 
-[Dokumentation](../../README.md) • [Features](../README.md) • Breadcrumbs
+[Documentation](../../README.md) • [Features](../README.md) • Breadcrumbs
 
 ## Goals
 
-- Adding an easy navigation on top of every page
-- Helps reordering the documentation
-- This command must be executed in the root folder of the project!
+- Add easy navigation to the top of every page.
+- Make the documentation easier to navigate.
 
-### Command
+## Command
+
+Run this command from the project root directory:
+
 ```bash
 mdu abn
 ```
 
-Or longer and better readable:
+Or use the longer, more readable command:
 
 ```bash
 mdu add-breadcrumb-navigation

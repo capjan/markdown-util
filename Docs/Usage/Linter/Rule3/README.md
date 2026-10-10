@@ -1,25 +1,25 @@
+---
+sidebar.visible: false
+---
+
 # Rule 3
 
-[Dokumentation](../../../README.md) • [Features](../../README.md) • [Linter](../README.md) • Rule 3
+[Documentation](../../../README.md) • [Features](../../README.md) • [Linter](../README.md) • Rule 3
 
 ## Summary
 
-The casing of internal links must match the casing on the local machine.
+The casing of internal links must match the casing of their targets on the local file system.
 
 ## Goal
 
-If the documentation is written on machines where the casing of files and folders doesn't matter
-(e.g. Windows) the user does not recognize if a used internal link is wrongly cased and will raise
-a file not found on a strict deployment where the casing does matter!
+When documentation is edited on a case-insensitive file system (such as the default file system on Windows), an incorrectly cased internal link may go unnoticed and later fail on a case-sensitive deployment.
 
 ## Example
 
-You write your documentation on a windows machine and link to a parent documentation page that contains
-an overview:
+For example, you might link to the parent page that contains an overview:
 
 ```markdown
-Click [here](../README.md) to return to the overview page
+Click [here](../README.md) to return to the overview page.
 ```
 
-If the parent `README.md` is for some reason cased in lowercase (e.g. readme.md), than the link still works
-on your windows machine, but may be BROKE if you deploy to a Linux machine.
+If the parent file is actually named `readme.md`, the link may still work on a Windows machine but be broken on Linux, where file name casing matters.
