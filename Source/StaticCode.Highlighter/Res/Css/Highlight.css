@@ -1,52 +1,15 @@
 .comment {
-    color: #377E23;
+    color: #6ba456;
 }
 
 .keyword {
-    color: #0000F5;
+    color: #79c0ff;
 }
 
 .string {
-    color: #97261F;
+    color: #ce9f89;
 }
 
 .operator {
-    color: steelblue;
-}
-
-pre {
-    background-color: #F0F1F1;
-    padding: 20px;
-    border-radius: 10pt;
-    border-style: solid;
-    border-color: #eeeeee;
-    overflow: auto;
-}
-
-@media (prefers-color-scheme: dark) {
-
-    .comment {
-        color: #6BA456;
-    }
-
-    .keyword {
-        color: #679BD1;
-    }
-
-    .string {
-        color: #CE9F89;
-    }
-
-    .operator {
-        color: steelblue;
-    }
-
-    pre {
-        background-color: #161616;
-        padding: 20px;
-        border-radius: 10pt;
-        border-style: solid;
-        border-color: rgb(37, 37, 37);
-
-    }
+    color: #79c0ff;
 }
