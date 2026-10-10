@@ -35,24 +35,43 @@ h2 {
 
 @media (prefers-color-scheme: dark) {
     body {
-        background: #1E1E1E;
-        color: #D4D4D4;
+        color-scheme: dark;
+        background: #181818;
+        color: #F2F2F2;
     }
     a {
-        color: #3794FF;
+        color: #8AB4F8;
     }
     h1 {
         padding-bottom: 0.3em;
         font-size: 2em;
-        border-bottom: 1px solid #474747;
+        border-bottom: 1px solid #3A3A3A;
     }
 
     h2 {
         padding-bottom: .3em;
         font-size: 1.5em;
-        border-bottom: 1px solid #474747;
+        border-bottom: 1px solid #3A3A3A;
     }
-    
+
+    code {
+        padding: 0.15em 0.4em;
+        border-radius: 0.35em;
+        background: #303030;
+        color: #F2F2F2;
+        font-size: 0.9em;
+    }
+
+    pre code {
+        padding: 0;
+        background: transparent;
+        font-size: inherit;
+    }
+
+    hr {
+        border: 0;
+        border-top: 1px solid #3A3A3A;
+    }
 }
 
 

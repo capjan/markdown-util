@@ -5,7 +5,11 @@ on:
   # Runs on pushes targeting the default branch
   push:
     branches: ["main"]
-    paths: ['Docs/**']
+    paths:
+      - 'Docs/**'
+      - 'Source/Markdown.Renderer/Res/Css/main.css'
+      - 'Source/StaticCode.Highlighter/Res/Css/Highlight.css'
+      - '.github/workflows/pages.yml'
 
   # Allows you to run this workflow manually from the Actions tab
   workflow_dispatch:
