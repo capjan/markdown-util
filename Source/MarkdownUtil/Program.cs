@@ -61,18 +61,18 @@ printTreeCommand.SetAction(parseResult =>
         GetVisitorSettings(parseResult, treePath, treePattern, treeHidden)));
 rootCommand.Subcommands.Add(printTreeCommand);
 
-var renderCommand = new Command("render", "Renders all Markdown files to the given output path.");
+var renderCommand = new Command("render", "Renders Markdown files to a static HTML site.");
 renderCommand.Aliases.Add("r");
 var (renderPattern, renderHidden) = AddVisitorOptions(renderCommand);
 var renderRootPath = new Argument<string?>("path")
 {
     Arity = ArgumentArity.ZeroOrOne,
-    Description = "Root/home path for the index."
+    Description = "Root folder containing Markdown files. Defaults to ./docs or ./Docs."
 };
 var outputPath = new Argument<string?>("outpath")
 {
     Arity = ArgumentArity.ZeroOrOne,
-    Description = "Path to the output folder for rendered files."
+    Description = "Output folder for rendered files. Defaults to ./site."
 };
 var editPageRoot = new Option<string>("--editPageRoot")
 {

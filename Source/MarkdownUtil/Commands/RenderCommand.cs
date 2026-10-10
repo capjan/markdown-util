@@ -22,11 +22,29 @@ public class RenderCommand
 
     public int Execute(RenderCommandSettings settings)
     {
-        var rootPath = settings.RootPath ?? throw new ArgumentNullException(nameof(settings.RootPath));
-        var outPath = settings.OutputPath ?? throw new ArgumentNullException(nameof(settings.OutputPath));
+        string rootPath;
+        try
+        {
+            rootPath = CommandPathDefaults.ResolveRootPath(settings.RootPath);
+        }
+        catch (InvalidOperationException exception)
+        {
+            Console.Error.WriteLine(exception.Message);
+            return 1;
+        }
+
+        var outPath = CommandPathDefaults.ResolveOutputPath(settings.OutputPath);
+        var resolvedSettings = new RenderCommandSettings
+        {
+            RootPath = rootPath,
+            OutputPath = outPath,
+            SearchPattern = settings.SearchPattern,
+            IncludeHidden = settings.IncludeHidden,
+            EditPageRoot = settings.EditPageRoot
+        };
         
         _renderer.PrepareBasePath(outPath);
-        var graph = _graphBuilder.CreateGraph(settings);
+        var graph = _graphBuilder.CreateGraph(resolvedSettings);
         var nodeCount = CountMarkdownNodes(graph);
         
         Console.WriteLine("Preparing Assets");

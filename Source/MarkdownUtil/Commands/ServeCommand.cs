@@ -55,7 +55,7 @@ public sealed class ServeCommand
 
         try
         {
-            _rootPath = ResolveRootPath(settings.RootPath);
+            _rootPath = CommandPathDefaults.ResolveRootPath(settings.RootPath);
         }
         catch (InvalidOperationException exception)
         {
@@ -63,7 +63,7 @@ public sealed class ServeCommand
             return 1;
         }
 
-        _outputPath = Path.GetFullPath(settings.OutputPath ?? Path.Combine(Environment.CurrentDirectory, "site"));
+        _outputPath = CommandPathDefaults.ResolveOutputPath(settings.OutputPath);
         if (PathComparer.Equals(_rootPath, _outputPath))
         {
             Console.Error.WriteLine("The output folder must be different from the Markdown root folder.");
@@ -432,30 +432,6 @@ public sealed class ServeCommand
 
     private bool IsGeneratedOutputPath(string path) =>
         IsInsideDirectory(_rootPath, _outputPath) && IsInsideDirectory(_outputPath, path);
-
-    private static string ResolveRootPath(string? configuredPath)
-    {
-        if (configuredPath is not null)
-        {
-            var path = Path.GetFullPath(configuredPath);
-            if (!Directory.Exists(path))
-                throw new InvalidOperationException($"Markdown folder not found: {path}");
-            return Path.TrimEndingDirectorySeparator(path);
-        }
-
-        var candidates = Directory.EnumerateDirectories(Environment.CurrentDirectory)
-            .Where(path => Path.GetFileName(path).Equals("docs", StringComparison.OrdinalIgnoreCase))
-            .ToArray();
-
-        return candidates.Length switch
-        {
-            1 => Path.TrimEndingDirectorySeparator(Path.GetFullPath(candidates[0])),
-            0 => throw new InvalidOperationException(
-                "No ./docs or ./Docs folder found. Pass the Markdown root folder as the first argument."),
-            _ => throw new InvalidOperationException(
-                "Both ./docs and ./Docs folders exist. Pass the desired Markdown root folder explicitly.")
-        };
-    }
 
     private static void OpenBrowser(string url)
     {
