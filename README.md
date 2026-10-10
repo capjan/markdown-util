@@ -2,58 +2,104 @@
 
 [![.NET 10](https://github.com/capjan/markdown-util/actions/workflows/dotnet.yml/badge.svg)](https://github.com/capjan/markdown-util/actions/workflows/dotnet.yml)
 [![NuGet](https://img.shields.io/nuget/v/MarkdownUtil)](https://www.nuget.org/packages/MarkdownUtil)
+[![License: MIT](https://img.shields.io/badge/license-MIT-blue)](https://opensource.org/licenses/MIT)
 
-MarkdownUtil is a .NET command-line tool for documentation written in ordinary Markdown files. It checks Markdown structure and links, renders a static HTML site, and provides a local preview that updates as files change.
-It uses the .NET toolchain, so you do not need a separate Node.js or Python toolchain.
+**Turn a folder of Markdown files into a documentation website. One command, zero configuration.**
 
-**Project status:** Draft. The tool is under active development and is not recommended for production use yet.
+[![A page rendered by MarkdownUtil in light and dark theme](https://raw.githubusercontent.com/capjan/markdown-util/main/.github/assets/screenshot.png)](https://capjan.github.io/markdown-util/)
 
-## Install
+Point `mdu` at your `docs` folder and get a clean static HTML site with sidebar navigation, breadcrumbs, client-side search, dark mode, and syntax highlighting. Search results jump to matching sections and highlight the found text. There is no config file to write, no theme to set up, and no Node.js or Python toolchain to install. Your files stay plain Markdown that still reads well on GitHub.
 
-MarkdownUtil requires .NET 10. Install it globally with:
+👉 **[See a live example](https://capjan.github.io/markdown-util/)**: the project documentation, rendered by `mdu` itself.
+
+## From Markdown to website in a minute
+
+**1. Install** (requires the [.NET 10 SDK](https://dotnet.microsoft.com/download)):
 
 ```bash
 dotnet tool install --global MarkdownUtil
 ```
 
-To install it only for the current repository, create a tool manifest once if the repository does not already have one, then install the local tool:
-
-```bash
-dotnet new tool-manifest # skip this if .config/dotnet-tools.json already exists
-dotnet tool install --local MarkdownUtil
-```
-
-Run a locally installed tool with `dotnet tool run mdu`; a global installation uses `mdu` directly.
-
-## Get started
-
-Create `Docs/README.md` with a level-one heading and some content, for example:
-
-```markdown
-# My documentation
-
-This is my first page.
-```
-
-From the project folder, run the linter and start the preview. Use `mdu` for a global installation or `dotnet tool run mdu` for a local installation:
-
-```bash
-mdu lint ./Docs
-mdu serve ./Docs ./site
-```
-
-```bash
-dotnet tool run mdu lint ./Docs
-dotnet tool run mdu serve ./Docs ./site
-```
-
-`mdu serve` opens the generated site in your browser, serves it on port `4173`, and refreshes pages when Markdown files or linked local assets change. Press `Ctrl+C` to stop it. You can change the source and output directories with the positional arguments shown above.
-
-When the linter finds a problem, it prints the source path, line number, and rule code:
+**2. Write your docs** in a `docs` folder. Each folder gets a `README.md` as its page:
 
 ```text
-/project/Docs/Overview.md:7: MDU004 LocalLinkExists: Local link target './intro.md' does not exist.
+docs/
+├── README.md            → start page
+├── Setup/
+│   └── README.md        → "Setup" section
+└── Usage/
+    ├── README.md        → "Usage" section
+    └── Configuration.md → page inside "Usage"
+```
+
+**3. Preview it** with live reload:
+
+```bash
+mdu serve
+```
+
+Your site opens at <http://localhost:4173> and refreshes whenever you save a file.
+
+**4. Publish it:**
+
+```bash
+mdu render
+```
+
+Upload the generated `site` folder to GitHub Pages, GitLab Pages, Netlify, or any plain web server. It's just static HTML.
+
+## What you get
+
+- 🧭 **Navigation for free.** The sidebar and breadcrumbs follow your folder structure. Order pages with an optional `sidebar.order` in the front matter.
+- 🌗 **Light and dark theme** that follows the visitor's system setting.
+- 🔎 **Fast client-side search** with section links and highlighted matches.
+- 📱 **Responsive layout** that works on phones, tablets, and desktops.
+- 🎨 **Syntax highlighting** for code blocks.
+- 🖼️ **Assets included.** Linked images and files are copied to the site automatically.
+- ✅ **Built-in linter.** `mdu lint` catches broken links, wrong link casing, and missing titles before you publish.
+
+## Why MarkdownUtil?
+
+- **Your folder is the configuration.** Nothing to learn beyond Markdown.
+- **No extra toolchain.** If you have the .NET SDK, you have everything.
+- **No lock-in.** Your content stays portable Markdown, and the output is static HTML you can host anywhere.
+
+## Commands
+
+| Command           | What it does                                       |
+| ----------------- | -------------------------------------------------- |
+| `mdu serve`       | Renders, serves, and live-reloads the site.        |
+| `mdu render`      | Writes the static site to `./site`.                |
+| `mdu lint`        | Checks the docs and reports problems.              |
+| `mdu tree ./docs` | Prints the detected Markdown files as a tree.      |
+
+The defaults (`./docs` in, `./site` out, port `4173`) cover the common case. Pass paths or options only when your layout differs:
+
+```bash
+mdu serve ./manual ./public --port 8080 --no-browser
+```
+
+Lint problems point straight to the file and line:
+
+```text
+/project/docs/Usage/README.md:7: MDU004 LocalLinkExists: Local link target './intro.md' does not exist.
 Linter detected 1 error.
 ```
 
-See the [project documentation](./Docs/README.md) for installation details, command usage, and feature descriptions, or browse the [rendered documentation](https://capjan.github.io/markdown-util/).
+## Install per repository
+
+To pin the tool to a repository instead of installing it globally:
+
+```bash
+dotnet new tool-manifest
+dotnet tool install --local MarkdownUtil
+```
+
+Skip the first command if `.config/dotnet-tools.json` already exists. Run the local tool with `dotnet mdu`, for example `dotnet mdu serve`.
+
+## Learn more
+
+- [Documentation](https://capjan.github.io/markdown-util/)
+- [Usage](https://github.com/capjan/markdown-util/blob/main/Docs/Usage/README.md), [linter rules](https://github.com/capjan/markdown-util/blob/main/Docs/Usage/Linter/README.md), and [sidebar ordering](https://github.com/capjan/markdown-util/blob/main/Docs/Features/Sidebar/README.md)
+
+> **Project status:** MarkdownUtil is under active development. Expect changes before the first stable release.
