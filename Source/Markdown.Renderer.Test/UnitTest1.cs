@@ -31,3 +31,14 @@ public class MarkdownLinkMatcherTest
         Assert.Equal(expectedSuccess, result.IsSuccess);
     }
 }
+
+public class LinkReplacerTest
+{
+    [Theory]
+    [InlineData("[Guide](guide.md?view=raw#setup)", "[Guide](guide.html?view=raw#setup)")]
+    [InlineData("[Home](README.md#start)", "[Home](index.html#start)")]
+    public void ReplacesMarkdownExtensionAndPreservesSuffix(string input, string expected)
+    {
+        Assert.Equal(expected, new LinkReplacer().ReplaceAll(input));
+    }
+}

@@ -242,6 +242,34 @@ a:hover {
     text-decoration: underline;
 }
 
+.breadcrumbs a {
+    color: var(--text-secondary);
+}
+
+.breadcrumbs a:hover {
+    color: var(--link);
+    text-decoration: underline;
+}
+
+.breadcrumb-separator {
+    display: inline-flex;
+    width: 0.55em;
+    height: 0.9em;
+    margin: 0 0.4em;
+    color: var(--text-secondary);
+    vertical-align: middle;
+}
+
+.breadcrumb-separator svg {
+    width: 100%;
+    height: 100%;
+    fill: none;
+    stroke: currentColor;
+    stroke-width: 4;
+    stroke-linecap: round;
+    stroke-linejoin: round;
+}
+
 h1, h2, h3, h4, h5, h6 {
     margin: 2rem 0 1rem;
     font-weight: 600;
@@ -279,6 +307,10 @@ h6 {
 .site-main > h4:first-child,
 .site-main > h5:first-child,
 .site-main > h6:first-child {
+    margin-top: 0;
+}
+
+.breadcrumbs + h1 {
     margin-top: 0;
 }
 

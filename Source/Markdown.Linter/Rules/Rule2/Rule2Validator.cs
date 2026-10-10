@@ -1,5 +1,6 @@
 using System.Text.RegularExpressions;
 using FluentValidation;
+using Markdown.Linter;
 using Markdown.Linter.Constants;
 
 namespace Markdown.Linter.Rules.Rule2;
@@ -28,7 +29,7 @@ public class Rule2Validator : AbstractValidator<Rule2Input>
     private string CustomInvalidDirectoryNameMessage(Rule2Input input)
     {
         var shortTitle = SuggestDirectoryName(input.Title);
-        return $"The folder name of a index page must match its shortTitle. expected: {shortTitle}, found: {input.DirectoryName}";
+        return $"{RuleCodes.DirectoryTitleMatch}: The README title should match its folder name. Expected '{shortTitle}', found '{input.DirectoryName}'.";
     }
     
     private static string ShortenTitle(string input)

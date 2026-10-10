@@ -1,4 +1,3 @@
-
 <!DOCTYPE html>
 
 <html data-theme="auto">
@@ -45,50 +44,54 @@
     <aside class="site-sidebar" id="site-navigation" aria-label="Sitemap">
         <nav aria-label="Dokumentationsseiten">
             <ul class="site-nav-list">
-                    <li class="site-nav-item" style="--depth: 0">
-                        <a class="site-nav-link " href="../index.html" aria-current="false">Dokumentation</a>
-                    </li>
-                    <li class="site-nav-item" style="--depth: 1">
-                        <a class="site-nav-link is-current" href="index.html" aria-current="page">Features</a>
-                    </li>
-                    <li class="site-nav-item" style="--depth: 2">
-                        <a class="site-nav-link " href="Breadcrumbs/index.html" aria-current="false">Breadcrumbs</a>
-                    </li>
-                    <li class="site-nav-item" style="--depth: 2">
-                        <a class="site-nav-link " href="HtmlRenderer/index.html" aria-current="false">HTML Renderer</a>
-                    </li>
-                    <li class="site-nav-item" style="--depth: 2">
-                        <a class="site-nav-link " href="Linter/index.html" aria-current="false">Linter</a>
-                    </li>
-                    <li class="site-nav-item" style="--depth: 3">
-                        <a class="site-nav-link " href="Linter/Rule2/index.html" aria-current="false">Rule 2</a>
-                    </li>
-                    <li class="site-nav-item" style="--depth: 3">
-                        <a class="site-nav-link " href="Linter/Rule3/index.html" aria-current="false">Rule 3</a>
-                    </li>
-                    <li class="site-nav-item" style="--depth: 1">
-                        <a class="site-nav-link " href="../OtherTools/index.html" aria-current="false">Other Tools</a>
-                    </li>
-                    <li class="site-nav-item" style="--depth: 1">
-                        <a class="site-nav-link " href="../Setup/index.html" aria-current="false">Setup</a>
-                    </li>
-                    <li class="site-nav-item" style="--depth: 1">
-                        <a class="site-nav-link " href="../Usage/index.html" aria-current="false">Usage</a>
-                    </li>
+                <li class="site-nav-item" style="--depth: 0">
+    <a class="site-nav-link " href="../index.html" aria-current="false">Dokumentation</a>
+</li>
+<li class="site-nav-item" style="--depth: 1">
+    <a class="site-nav-link " href="../Setup/index.html" aria-current="false">Setup</a>
+</li>
+<li class="site-nav-item" style="--depth: 1">
+    <a class="site-nav-link " href="../Usage/index.html" aria-current="false">Usage</a>
+</li>
+<li class="site-nav-item" style="--depth: 2">
+    <a class="site-nav-link " href="../Usage/Linter/index.html" aria-current="false">Linter</a>
+</li>
+<li class="site-nav-item" style="--depth: 3">
+    <a class="site-nav-link " href="../Usage/Linter/Rule2/index.html" aria-current="false">Rule 2</a>
+</li>
+<li class="site-nav-item" style="--depth: 3">
+    <a class="site-nav-link " href="../Usage/Linter/Rule3/index.html" aria-current="false">Rule 3</a>
+</li>
+<li class="site-nav-item" style="--depth: 1">
+    <a class="site-nav-link is-current" href="index.html" aria-current="page">Features</a>
+</li>
+<li class="site-nav-item" style="--depth: 2">
+    <a class="site-nav-link " href="Breadcrumbs/index.html" aria-current="false">Breadcrumbs</a>
+</li>
+<li class="site-nav-item" style="--depth: 2">
+    <a class="site-nav-link " href="HtmlRenderer/index.html" aria-current="false">HTML Renderer</a>
+</li>
+<li class="site-nav-item" style="--depth: 2">
+    <a class="site-nav-link " href="Sidebar/index.html" aria-current="false">Sidebar</a>
+</li>
+<li class="site-nav-item" style="--depth: 1">
+    <a class="site-nav-link " href="../OtherTools/index.html" aria-current="false">Other Tools</a>
+</li>
             </ul>
         </nav>
     </aside>
     <button class="sidebar-backdrop" id="sidebar-backdrop" type="button" tabindex="-1" aria-label="Navigation schließen"></button>
     <main class="site-main">
-        <h1 id="features">Features</h1>
-<p><a href="../index.html">Dokumentation</a> • Features</p>
-<h2 id="main-featues">Main Featues</h2>
+<p class="breadcrumbs"><a href="../index.html">Dokumentation</a><span class="breadcrumb-separator" aria-hidden="true"><svg viewBox="0 0 12 20" focusable="false"><path d="M2 2L9 10L2 18" /></svg></span>Features</p>
+<h1 id="features">Features</h1>
+<h2 id="main-features">Main Features</h2>
 <ul>
-<li><a href="./Linter/index.html">Linter</a> - Overview of the included Linter and it's rules to satisfy our demand for correctness</li>
+<li><a href="../Usage/Linter/index.html">Linter</a> - Overview of the included linter and its rules</li>
 <li><a href="./HtmlRenderer/index.html">HTML Renderer</a> - Describes the presumed main function of the tool: Rendering static HTML pages from Markdown files</li>
+<li><a href="./Sidebar/index.html">Sidebar</a> - Describes the generated sidebar and how to control its order</li>
 </ul>
 <h2 id="content-modify-features">Content Modify Features</h2>
-<p>List of Features that modify the source markdown files to improve the documentation on it's source.</p>
+<p>Features that modify the source Markdown files to improve the documentation.</p>
 <ul>
 <li>Adding <a href="./Breadcrumbs/index.html">Breadcrumbs</a> Navigation - how to add and update the Breadcrumb Navigation on every page</li>
 </ul>
@@ -127,7 +130,20 @@
     const backdrop = document.getElementById("sidebar-backdrop");
     const navigation = document.getElementById("site-navigation");
     const breakpoint = window.matchMedia("(max-width: 760px)");
-    let isOpen = !breakpoint.matches;
+    const sidebarPreferenceKey = "mdu-sidebar-collapsed";
+    const isDesktopSidebarCollapsed = () => {
+        try {
+            return sessionStorage.getItem(sidebarPreferenceKey) === "true";
+        } catch {
+            return false;
+        }
+    };
+    const setDesktopSidebarCollapsed = (collapsed) => {
+        try {
+            sessionStorage.setItem(sidebarPreferenceKey, String(collapsed));
+        } catch { }
+    };
+    let isOpen = !breakpoint.matches && !isDesktopSidebarCollapsed();
 
     const setOpen = (open) => {
         isOpen = open;
@@ -143,7 +159,11 @@
     };
 
     setOpen(isOpen);
-    toggle.addEventListener("click", () => setOpen(!isOpen));
+    toggle.addEventListener("click", () => {
+        const open = !isOpen;
+        setOpen(open);
+        if (!breakpoint.matches) setDesktopSidebarCollapsed(!open);
+    });
     backdrop.addEventListener("click", () => setOpen(false));
     navigation.addEventListener("click", (event) => {
         if (breakpoint.matches && event.target.closest("a")) setOpen(false);
@@ -151,7 +171,8 @@
     document.addEventListener("keydown", (event) => {
         if (breakpoint.matches && isOpen && event.key === "Escape") setOpen(false);
     });
-    breakpoint.addEventListener("change", (event) => setOpen(!event.matches));
+    breakpoint.addEventListener("change", (event) =>
+        setOpen(!event.matches && !isDesktopSidebarCollapsed()));
 })();
 </script>
 </body>

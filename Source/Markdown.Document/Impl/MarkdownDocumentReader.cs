@@ -2,6 +2,7 @@
 using System.Text.RegularExpressions;
 using Core.Extensions.ParserRelated;
 using Core.Parser;
+using Markdig;
 using Markdig.Syntax;
 using Markdig.Syntax.Inlines;
 using Markdown.Document.Model;
@@ -11,6 +12,9 @@ namespace Markdown.Document.Impl;
 
 public class MarkdownDocumentReader : IMarkdownDocumentReader
 {
+    private static readonly MarkdownPipeline LinkParsingPipeline =
+        new MarkdownPipelineBuilder().UsePreciseSourceLocation().Build();
+
     public IMarkdownHeader ReadHeader(IParserInput input)
     {
         var content = input.ReadAll();
@@ -31,7 +35,7 @@ public class MarkdownDocumentReader : IMarkdownDocumentReader
     public IEnumerable<IMarkdownLink> ReadLinks(IParserInput input)
     {
         var content = input.ReadAll();
-        var document = Markdig.Parsers.MarkdownParser.Parse(content);
+        var document = Markdig.Parsers.MarkdownParser.Parse(content, LinkParsingPipeline);
 
         return document.Descendants<LinkInline>().Select(link =>
         {

@@ -50,8 +50,7 @@
     </aside>
     <button class="sidebar-backdrop" id="sidebar-backdrop" type="button" tabindex="-1" aria-label="Navigation schließen"></button>
     <main class="site-main">
-        %%MARKDOWN%%
-        %%EDIT_PAGE_LINK%%
+%%MARKDOWN%%%%EDIT_PAGE_LINK%%
     </main>
 </div>
 <script>
@@ -86,7 +85,20 @@
     const backdrop = document.getElementById("sidebar-backdrop");
     const navigation = document.getElementById("site-navigation");
     const breakpoint = window.matchMedia("(max-width: 760px)");
-    let isOpen = !breakpoint.matches;
+    const sidebarPreferenceKey = "mdu-sidebar-collapsed";
+    const isDesktopSidebarCollapsed = () => {
+        try {
+            return sessionStorage.getItem(sidebarPreferenceKey) === "true";
+        } catch {
+            return false;
+        }
+    };
+    const setDesktopSidebarCollapsed = (collapsed) => {
+        try {
+            sessionStorage.setItem(sidebarPreferenceKey, String(collapsed));
+        } catch { }
+    };
+    let isOpen = !breakpoint.matches && !isDesktopSidebarCollapsed();
 
     const setOpen = (open) => {
         isOpen = open;
@@ -102,7 +114,11 @@
     };
 
     setOpen(isOpen);
-    toggle.addEventListener("click", () => setOpen(!isOpen));
+    toggle.addEventListener("click", () => {
+        const open = !isOpen;
+        setOpen(open);
+        if (!breakpoint.matches) setDesktopSidebarCollapsed(!open);
+    });
     backdrop.addEventListener("click", () => setOpen(false));
     navigation.addEventListener("click", (event) => {
         if (breakpoint.matches && event.target.closest("a")) setOpen(false);
@@ -110,7 +126,8 @@
     document.addEventListener("keydown", (event) => {
         if (breakpoint.matches && isOpen && event.key === "Escape") setOpen(false);
     });
-    breakpoint.addEventListener("change", (event) => setOpen(!event.matches));
+    breakpoint.addEventListener("change", (event) =>
+        setOpen(!event.matches && !isDesktopSidebarCollapsed()));
 })();
 </script>
 </body>

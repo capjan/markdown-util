@@ -15,7 +15,7 @@ public class LinkReplacer
             {
                 fileNameWithoutExtension = "index";
             }
-            return $"[{match.LinkName}]({match.Path}{fileNameWithoutExtension}.html)";
+            return $"[{match.LinkName}]({match.Path}{fileNameWithoutExtension}.html{match.Suffix})";
         });
     }
 }

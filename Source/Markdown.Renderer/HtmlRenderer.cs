@@ -36,7 +36,8 @@ public class HtmlRenderer
         int nestingDeep,
         string markdown,
         string editPageLink,
-        IReadOnlyList<NavigationItem>? navigationItems = null)
+        IReadOnlyList<NavigationItem>? navigationItems = null,
+        string breadcrumbNavigationLine = "")
     {
         var prefix = string.Concat(Enumerable.Repeat("../", nestingDeep));
         var cssFileLink = prefix + "css/main.css";
@@ -44,6 +45,7 @@ public class HtmlRenderer
         var replacedMarkdown = _linkReplacer.ReplaceAll(markdown);
         
         var renderedMarkdown = Markdig.Markdown.ToHtml(replacedMarkdown, _pipeline);
+        renderedMarkdown = MoveBreadcrumbAboveHeading(renderedMarkdown, breadcrumbNavigationLine);
         var model = new MainModel
         {
             Title = title,
@@ -83,6 +85,33 @@ public class HtmlRenderer
               <hr />
               <a href="{{HtmlEncoder.Default.Encode(editPageLink)}}">✎ Edit Page</a>
               """;
+
+    private string MoveBreadcrumbAboveHeading(string renderedMarkdown, string breadcrumbNavigationLine)
+    {
+        if (string.IsNullOrWhiteSpace(breadcrumbNavigationLine)) return renderedMarkdown;
+
+        var breadcrumbHtml = Markdig.Markdown.ToHtml(
+            _linkReplacer.ReplaceAll(breadcrumbNavigationLine), _pipeline).Trim();
+        var headingStart = renderedMarkdown.IndexOf("<h1", StringComparison.Ordinal);
+        if (headingStart < 0) return renderedMarkdown;
+
+        var breadcrumbStart = renderedMarkdown.IndexOf(breadcrumbHtml, headingStart, StringComparison.Ordinal);
+        if (breadcrumbStart < 0) return renderedMarkdown;
+
+        var headingEnd = renderedMarkdown.IndexOf("</h1>", headingStart, StringComparison.Ordinal);
+        if (headingEnd < 0 || headingEnd + 5 > breadcrumbStart ||
+            !string.IsNullOrWhiteSpace(renderedMarkdown[(headingEnd + 5)..breadcrumbStart]))
+            return renderedMarkdown;
+
+        var heading = renderedMarkdown[headingStart..(headingEnd + 5)];
+        const string separatorIcon =
+            """<span class="breadcrumb-separator" aria-hidden="true"><svg viewBox="0 0 12 20" focusable="false"><path d="M2 2L9 10L2 18" /></svg></span>""";
+        var breadcrumb = breadcrumbHtml
+            .Replace("<p>", "<p class=\"breadcrumbs\">", StringComparison.Ordinal)
+            .Replace(" • ", separatorIcon, StringComparison.Ordinal);
+        return renderedMarkdown[..headingStart] + breadcrumb + Environment.NewLine + heading +
+               renderedMarkdown[(breadcrumbStart + breadcrumbHtml.Length)..];
+    }
     
     private string GetEnsuredCssFolderPath(string basePath)
     {

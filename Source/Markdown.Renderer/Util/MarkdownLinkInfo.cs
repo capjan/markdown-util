@@ -31,4 +31,9 @@ public struct MarkdownLinkInfo
     /// Extension of the Target
     /// </summary>
     public string Extension { get; init; }
+
+    /// <summary>
+    /// Query string or fragment that follows the target path
+    /// </summary>
+    public string Suffix { get; init; }
 }

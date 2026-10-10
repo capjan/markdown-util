@@ -1,3 +1,4 @@
+using Markdown.Document;
 using Markdown.Renderer;
 using Markdown.Renderer.Res.Model;
 using MarkdownUtil.Model;
@@ -31,6 +32,11 @@ public class MarkdigVisitor : BaseVisitor
         Console.WriteLine($"{io.InputRelativeFilePathToRootDirectory} => {io.OutputRelativeFilePathToRootDirectory}");
 
         var markdown = io.ReadAllText();
+        if (!string.IsNullOrEmpty(entity.FrontMatter) &&
+            markdown.StartsWith(entity.FrontMatter, StringComparison.Ordinal))
+            markdown = markdown[entity.FrontMatter.Length..].TrimStart('\r', '\n');
+        var breadcrumbNavigationLine = MarkdownDocument.ReadHeader(markdown).BreadcrumbNavigationLine;
+
         io.CreateOutputDirectory();    // ensures that the output directory exits
 
         var editPageLink = string.IsNullOrEmpty(_editPageRoot) ? string.Empty : Path.Combine(_editPageRoot, io.InputRelativeFilePathToRootDirectory);
@@ -55,7 +61,8 @@ public class MarkdigVisitor : BaseVisitor
                     graphDepth,
                     markdown,
                     editPageLink,
-                    BuildNavigation(outputFileName)).GetAwaiter().GetResult();
+                    BuildNavigation(outputFileName),
+                    breadcrumbNavigationLine).GetAwaiter().GetResult();
 
             File.Move(temporaryPath, outputFileName, true);
         }
@@ -81,7 +88,10 @@ public class MarkdigVisitor : BaseVisitor
 
         void AddPages(IEnumerable<MarkdownFile> pages, int depth)
         {
-            foreach (var page in pages.OrderBy(GetNavigationTitle, StringComparer.OrdinalIgnoreCase))
+            foreach (var page in pages
+                         .OrderBy(page => page.SidebarOrder.HasValue ? 0 : 1)
+                         .ThenBy(page => page.SidebarOrder)
+                         .ThenBy(GetNavigationTitle, StringComparer.OrdinalIgnoreCase))
             {
                 var pagePath = FilePathInfo.CreateRenderFileInfo(_rootPath, _outPath, page.FileInfo, ".html")
                     .OutputFullFilePath;

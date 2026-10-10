@@ -1,36 +1,31 @@
+---
+sidebar:
+  order: 20
+---
+
 # Usage
 
 [Dokumentation](../README.md) • Usage
 
-## Story
+## Quick start
 
-- The markdown utility is a command line tool that is easy to set up and is executed in a terminal window
-- Open a terminal in the root folder of your documentation to quickly run commands
-- For now it's important to be in the root folder because the tool assumes that it is executed in that folder so just stay in that folder
-
-## Running the linter
-
-Start the linter to check your documentation at any time. It's save because it just reads
-```bash
-mdu lint
-```
-
-**Example Output:**
-
-```
-Running Linter
-Party! 🥳 The Markdown linter does not detect any errors!
-```
-
-## Previewing the rendered site
-
-Run `mdu serve` from the project folder containing a `Docs` or `docs` folder. MarkdownUtil renders the site to `./site`, opens it in your browser, and watches for changes. Editing a Markdown file updates its page; changing a linked local asset refreshes the pages that use it. Press `Ctrl+C` to stop the preview server.
+Run commands from the project folder and pass the documentation and output folders explicitly. For a project with a `Docs` directory:
 
 ```bash
-mdu serve
+mdu lint ./Docs
+mdu serve ./Docs ./site
 ```
 
-The source folder, output folder, and port can be specified when needed. The defaults are `Docs` or `docs`, `site`, and port `4173`.
+`mdu lint` reads the Markdown files and reports any problems. `mdu serve` renders the site to `./site`, opens it in your browser, and watches Markdown files and linked local assets for changes. Press `Ctrl+C` to stop the preview server.
+
+For example, a missing local link is reported with its file and line:
+
+```
+/project/Docs/Overview.md:7: MDU004 LocalLinkExists: Local link target './intro.md' does not exist.
+Linter detected 1 error.
+```
+
+The source folder, output folder, and port can be specified when needed. The preview defaults to `./site` and port `4173`.
 
 ```bash
 mdu serve ./Docs ./site --port 4173
@@ -40,15 +35,15 @@ Use `--no-browser` to start the server without opening a browser.
 
 ## Adding breadcrumb navigation
 
-- Generates Breadcrumb Navigation in every markdown files in the current folder and all subfolders
-- Must be executed in the root folder of the documentation
+- Generates breadcrumb navigation in every Markdown file in the selected folder and its subfolders.
+- Pass the documentation folder from the project root:
 
 ```bash
-mdu add-breadcrumb-navigation
+mdu add-breadcrumb-navigation ./Docs
 ```
 
-or in short:
+Or use the short alias:
 
 ```bash
-mdu abn
+mdu abn ./Docs
 ```

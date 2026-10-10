@@ -14,6 +14,10 @@ public class RendererTest
         await renderer.WriteHtml(sw, "test", "", 0, markdown, "");
         var renderedHtml = sb.ToString();
         
-        Assert.NotEmpty(renderedHtml);
+        Assert.Contains("<title>test</title>", renderedHtml);
+        Assert.Contains("<h1", renderedHtml);
+        Assert.Contains("Markdown with Syntax Highlighting", renderedHtml);
+        Assert.Contains("<span class=\"string\">", renderedHtml);
+        Assert.Contains("Hello World", renderedHtml);
     }
 }

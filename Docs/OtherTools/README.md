@@ -1,3 +1,8 @@
+---
+sidebar:
+  order: 40
+---
+
 # Other Tools
 
 [Dokumentation](../README.md) • Other Tools
@@ -7,7 +12,7 @@ is not new, and the world already has good solutions for this task.
 
 Please Note:
 
-- This project was born from the motivational phrase "Eating our own Dogfood" and should be valuated as such.
+- This project was born from the motivational phrase "Eating our own Dogfood" and should be valued as such.
 - This tool is highly tailored to the author's current needs and can receive BREAKING CHANGES at any time. Please note that this procedure will not change until it has developed an appropriate production readiness.
 - Feel free to check out the other tools if you are looking for an established project with a much larger community.
 

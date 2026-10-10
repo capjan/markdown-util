@@ -1,0 +1,210 @@
+<!DOCTYPE html>
+
+<html data-theme="auto">
+<head>
+    <title>Sidebar</title>
+    <meta charset="utf-8">
+    <meta name="description" content="">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <script>
+        try {
+            const savedTheme = localStorage.getItem("mdu-theme");
+            if (["auto", "light", "dark"].includes(savedTheme)) {
+                document.documentElement.dataset.theme = savedTheme;
+            }
+        } catch { }
+    </script>
+    <link rel="stylesheet" href="../../css/main.css">
+</head>
+<body>
+<header class="site-header">
+    <button class="navigation-toggle" id="navigation-toggle" type="button" aria-expanded="true" aria-controls="site-navigation">
+        <svg viewBox="0 0 20 20" aria-hidden="true" focusable="false">
+            <rect x="2.5" y="3.5" width="15" height="13" rx="2"></rect>
+            <path d="M8 4v12M5 7h1M5 10h1M5 13h1"></path>
+        </svg>
+        <span>Dokumentation</span>
+    </button>
+    <button class="theme-toggle" id="theme-toggle" type="button">
+        <svg class="theme-icon-auto" viewBox="0 0 20 20" aria-hidden="true" focusable="false">
+            <path d="M10 1.5a8.5 8.5 0 0 1 0 17z"></path>
+            <circle cx="10" cy="10" r="8.5" fill="none" stroke="currentColor" stroke-width="1.5"></circle>
+        </svg>
+        <svg class="theme-icon-light" viewBox="0 0 20 20" aria-hidden="true" focusable="false">
+            <circle cx="10" cy="10" r="3.5"></circle>
+            <path d="M10 1.5v2M10 16.5v2M18.5 10h-2M3.5 10h-2M16 4l-1.4 1.4M5.4 14.6 4 16M16 16l-1.4-1.4M5.4 5.4 4 4" fill="none" stroke="currentColor" stroke-linecap="round" stroke-width="2"></path>
+        </svg>
+        <svg class="theme-icon-dark" viewBox="0 0 20 20" aria-hidden="true" focusable="false">
+            <path d="M17.5 12.5A8 8 0 0 1 7.5 2.2 8.5 8.5 0 1 0 17.5 12.5Z"></path>
+        </svg>
+        <span id="theme-label">Auto</span>
+    </button>
+</header>
+<div class="site-layout" id="site-layout">
+    <aside class="site-sidebar" id="site-navigation" aria-label="Sitemap">
+        <nav aria-label="Dokumentationsseiten">
+            <ul class="site-nav-list">
+                <li class="site-nav-item" style="--depth: 0">
+    <a class="site-nav-link " href="../../index.html" aria-current="false">Dokumentation</a>
+</li>
+<li class="site-nav-item" style="--depth: 1">
+    <a class="site-nav-link " href="../../Setup/index.html" aria-current="false">Setup</a>
+</li>
+<li class="site-nav-item" style="--depth: 1">
+    <a class="site-nav-link " href="../../Usage/index.html" aria-current="false">Usage</a>
+</li>
+<li class="site-nav-item" style="--depth: 2">
+    <a class="site-nav-link " href="../../Usage/Linter/index.html" aria-current="false">Linter</a>
+</li>
+<li class="site-nav-item" style="--depth: 3">
+    <a class="site-nav-link " href="../../Usage/Linter/Rule2/index.html" aria-current="false">Rule 2</a>
+</li>
+<li class="site-nav-item" style="--depth: 3">
+    <a class="site-nav-link " href="../../Usage/Linter/Rule3/index.html" aria-current="false">Rule 3</a>
+</li>
+<li class="site-nav-item" style="--depth: 1">
+    <a class="site-nav-link " href="../index.html" aria-current="false">Features</a>
+</li>
+<li class="site-nav-item" style="--depth: 2">
+    <a class="site-nav-link " href="../Breadcrumbs/index.html" aria-current="false">Breadcrumbs</a>
+</li>
+<li class="site-nav-item" style="--depth: 2">
+    <a class="site-nav-link " href="../HtmlRenderer/index.html" aria-current="false">HTML Renderer</a>
+</li>
+<li class="site-nav-item" style="--depth: 2">
+    <a class="site-nav-link is-current" href="index.html" aria-current="page">Sidebar</a>
+</li>
+<li class="site-nav-item" style="--depth: 1">
+    <a class="site-nav-link " href="../../OtherTools/index.html" aria-current="false">Other Tools</a>
+</li>
+            </ul>
+        </nav>
+    </aside>
+    <button class="sidebar-backdrop" id="sidebar-backdrop" type="button" tabindex="-1" aria-label="Navigation schließen"></button>
+    <main class="site-main">
+<p class="breadcrumbs"><a href="../../index.html">Dokumentation</a><span class="breadcrumb-separator" aria-hidden="true"><svg viewBox="0 0 12 20" focusable="false"><path d="M2 2L9 10L2 18" /></svg></span><a href="../index.html">Features</a><span class="breadcrumb-separator" aria-hidden="true"><svg viewBox="0 0 12 20" focusable="false"><path d="M2 2L9 10L2 18" /></svg></span>Sidebar</p>
+<h1 id="sidebar">Sidebar</h1>
+<h2 id="overview">Overview</h2>
+<p>When you run <code>mdu serve</code>, MarkdownUtil creates a collapsible sidebar from the Markdown files in the documentation folder. A <code>README.md</code> represents its folder in the navigation, and child folders appear nested below it.</p>
+<p>By default, entries at the same level are sorted alphabetically by their page title. Add a <code>sidebar.order</code> number to a page's YAML frontmatter to choose its position. Smaller numbers appear first. Pages with an order are listed before pages without one; unordered pages remain alphabetical. If two pages have the same order, they are sorted alphabetically by title.</p>
+<h2 id="setting-the-order">Setting the order</h2>
+<p>Put the <code>sidebar</code> field at the top of the Markdown file, before its title. For example, this frontmatter in <code>Docs/Setup/README.md</code> places Setup before the other top-level sections:</p>
+<pre><code><span class="operator">-</span><span class="operator">-</span><span class="operator">-</span>
+<span class="key">sidebar</span>:
+  <span class="key">order</span>: <span class="number">10</span>
+<span class="operator">-</span><span class="operator">-</span><span class="operator">-</span></code></pre>
+<p>The MarkdownUtil documentation uses this ordering for its top-level sections:</p>
+<table>
+<thead>
+<tr>
+<th>Page</th>
+<th style="text-align: right;"><code>sidebar.order</code></th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>Docs/Setup/README.md</code></td>
+<td style="text-align: right;">10</td>
+</tr>
+<tr>
+<td><code>Docs/Usage/README.md</code></td>
+<td style="text-align: right;">20</td>
+</tr>
+<tr>
+<td><code>Docs/Features/README.md</code></td>
+<td style="text-align: right;">30</td>
+</tr>
+<tr>
+<td><code>Docs/OtherTools/README.md</code></td>
+<td style="text-align: right;">40</td>
+</tr>
+</tbody>
+</table>
+<p>For a single setting, you can also use the compact form:</p>
+<pre><code><span class="operator">-</span><span class="operator">-</span><span class="operator">-</span>
+<span class="key">sidebar.order</span>: <span class="number">10</span>
+<span class="operator">-</span><span class="operator">-</span><span class="operator">-</span></code></pre>
+<p>MarkdownUtil recognizes <code>sidebar.order</code> as a compact alternative to the nested form. If both <code>sidebar: { order: ... }</code> and <code>sidebar.order: ...</code> are present, the nested form takes precedence.</p>
+<p>The numbers only order siblings at the same level. For example, the value in <code>Docs/Features/README.md</code> positions the Features section among the other top-level sections. Values in files beneath <code>Docs/Features/</code> control their positions inside that section.</p>
+
+    </main>
+</div>
+<script>
+(() => {
+    const root = document.documentElement;
+    const themeToggle = document.getElementById("theme-toggle");
+    const themeLabel = document.getElementById("theme-label");
+    const themes = ["auto", "light", "dark"];
+    const themeNames = { auto: "Auto", light: "Light", dark: "Dark" };
+
+    const updateThemeLabel = () => {
+        const currentTheme = root.dataset.theme;
+        const nextTheme = themes[(themes.indexOf(currentTheme) + 1) % themes.length];
+        themeLabel.textContent = themeNames[currentTheme];
+        themeToggle.title = `Darstellung: ${themeNames[currentTheme]} (klicken für ${themeNames[nextTheme]})`;
+        themeToggle.setAttribute("aria-label", `Darstellung: ${themeNames[currentTheme]}. Klicken, um auf ${themeNames[nextTheme]} zu wechseln.`);
+    };
+
+    updateThemeLabel();
+    themeToggle.addEventListener("click", () => {
+        const currentTheme = root.dataset.theme;
+        const nextTheme = themes[(themes.indexOf(currentTheme) + 1) % themes.length];
+        root.dataset.theme = nextTheme;
+        try {
+            localStorage.setItem("mdu-theme", nextTheme);
+        } catch { }
+        updateThemeLabel();
+    });
+
+    const layout = document.getElementById("site-layout");
+    const toggle = document.getElementById("navigation-toggle");
+    const backdrop = document.getElementById("sidebar-backdrop");
+    const navigation = document.getElementById("site-navigation");
+    const breakpoint = window.matchMedia("(max-width: 760px)");
+    const sidebarPreferenceKey = "mdu-sidebar-collapsed";
+    const isDesktopSidebarCollapsed = () => {
+        try {
+            return sessionStorage.getItem(sidebarPreferenceKey) === "true";
+        } catch {
+            return false;
+        }
+    };
+    const setDesktopSidebarCollapsed = (collapsed) => {
+        try {
+            sessionStorage.setItem(sidebarPreferenceKey, String(collapsed));
+        } catch { }
+    };
+    let isOpen = !breakpoint.matches && !isDesktopSidebarCollapsed();
+
+    const setOpen = (open) => {
+        isOpen = open;
+        layout.classList.toggle("sidebar-open", open && breakpoint.matches);
+        layout.classList.toggle("sidebar-collapsed", !open && !breakpoint.matches);
+        toggle.setAttribute("aria-expanded", String(open));
+
+        if (open && breakpoint.matches) {
+            navigation.querySelector("a")?.focus();
+        } else if (!open && navigation.contains(document.activeElement)) {
+            toggle.focus();
+        }
+    };
+
+    setOpen(isOpen);
+    toggle.addEventListener("click", () => {
+        const open = !isOpen;
+        setOpen(open);
+        if (!breakpoint.matches) setDesktopSidebarCollapsed(!open);
+    });
+    backdrop.addEventListener("click", () => setOpen(false));
+    navigation.addEventListener("click", (event) => {
+        if (breakpoint.matches && event.target.closest("a")) setOpen(false);
+    });
+    document.addEventListener("keydown", (event) => {
+        if (breakpoint.matches && isOpen && event.key === "Escape") setOpen(false);
+    });
+    breakpoint.addEventListener("change", (event) =>
+        setOpen(!event.matches && !isDesktopSidebarCollapsed()));
+})();
+</script>
+</body>
+</html>

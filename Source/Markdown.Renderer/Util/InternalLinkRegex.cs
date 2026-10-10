@@ -5,7 +5,7 @@ namespace Markdown.Renderer.Util;
 public class InternalLinkRegex
 {
     private const string Pattern =
-        @"(?<prefix>\[\s*(?<LinkName>[^\[]+?)\s*\]\(\s*)(?<Path>((\.{1,2}/)|([\w-]+/))+)?(?<FileName>(?<FilenameWithoutExtension>[\w-]+)(?<FileExtension>\.md))(?<postfix>\s*\))";
+        @"(?<prefix>\[\s*(?<LinkName>[^\[]+?)\s*\]\(\s*)(?<Path>((\.{1,2}/)|([\w-]+/))+)?(?<FileName>(?<FilenameWithoutExtension>[\w-]+)(?<FileExtension>\.md))(?<Suffix>[?#][^\s)]*)?(?<postfix>\s*\))";
 
     public InternalLinkRegexMatch Match(string input)
     {
@@ -31,7 +31,8 @@ public class InternalLinkRegex
             Path = m.Groups["Path"].Value,
             FileNameWithoutExtension = m.Groups["FilenameWithoutExtension"].Value,
             Extension = m.Groups["FileExtension"].Value,
-            FileName = m.Groups["FileName"].Value
+            FileName = m.Groups["FileName"].Value,
+            Suffix = m.Groups["Suffix"].Value
         };
     }
     
@@ -46,7 +47,8 @@ public class InternalLinkRegex
             Path = m.Groups["Path"].Value,
             FileNameWithoutExtension = m.Groups["FilenameWithoutExtension"].Value,
             Extension = m.Groups["FileExtension"].Value,
-            FileName = m.Groups["FileName"].Value
+            FileName = m.Groups["FileName"].Value,
+            Suffix = m.Groups["Suffix"].Value
         };
         return InternalLinkRegexMatch.Success(info);
     }

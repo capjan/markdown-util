@@ -1,4 +1,3 @@
-
 <!DOCTYPE html>
 
 <html data-theme="auto">
@@ -45,69 +44,65 @@
     <aside class="site-sidebar" id="site-navigation" aria-label="Sitemap">
         <nav aria-label="Dokumentationsseiten">
             <ul class="site-nav-list">
-                    <li class="site-nav-item" style="--depth: 0">
-                        <a class="site-nav-link " href="../index.html" aria-current="false">Dokumentation</a>
-                    </li>
-                    <li class="site-nav-item" style="--depth: 1">
-                        <a class="site-nav-link " href="../Features/index.html" aria-current="false">Features</a>
-                    </li>
-                    <li class="site-nav-item" style="--depth: 2">
-                        <a class="site-nav-link " href="../Features/Breadcrumbs/index.html" aria-current="false">Breadcrumbs</a>
-                    </li>
-                    <li class="site-nav-item" style="--depth: 2">
-                        <a class="site-nav-link " href="../Features/HtmlRenderer/index.html" aria-current="false">HTML Renderer</a>
-                    </li>
-                    <li class="site-nav-item" style="--depth: 2">
-                        <a class="site-nav-link " href="../Features/Linter/index.html" aria-current="false">Linter</a>
-                    </li>
-                    <li class="site-nav-item" style="--depth: 3">
-                        <a class="site-nav-link " href="../Features/Linter/Rule2/index.html" aria-current="false">Rule 2</a>
-                    </li>
-                    <li class="site-nav-item" style="--depth: 3">
-                        <a class="site-nav-link " href="../Features/Linter/Rule3/index.html" aria-current="false">Rule 3</a>
-                    </li>
-                    <li class="site-nav-item" style="--depth: 1">
-                        <a class="site-nav-link " href="../OtherTools/index.html" aria-current="false">Other Tools</a>
-                    </li>
-                    <li class="site-nav-item" style="--depth: 1">
-                        <a class="site-nav-link " href="../Setup/index.html" aria-current="false">Setup</a>
-                    </li>
-                    <li class="site-nav-item" style="--depth: 1">
-                        <a class="site-nav-link is-current" href="index.html" aria-current="page">Usage</a>
-                    </li>
+                <li class="site-nav-item" style="--depth: 0">
+    <a class="site-nav-link " href="../index.html" aria-current="false">Dokumentation</a>
+</li>
+<li class="site-nav-item" style="--depth: 1">
+    <a class="site-nav-link " href="../Setup/index.html" aria-current="false">Setup</a>
+</li>
+<li class="site-nav-item" style="--depth: 1">
+    <a class="site-nav-link is-current" href="index.html" aria-current="page">Usage</a>
+</li>
+<li class="site-nav-item" style="--depth: 2">
+    <a class="site-nav-link " href="Linter/index.html" aria-current="false">Linter</a>
+</li>
+<li class="site-nav-item" style="--depth: 3">
+    <a class="site-nav-link " href="Linter/Rule2/index.html" aria-current="false">Rule 2</a>
+</li>
+<li class="site-nav-item" style="--depth: 3">
+    <a class="site-nav-link " href="Linter/Rule3/index.html" aria-current="false">Rule 3</a>
+</li>
+<li class="site-nav-item" style="--depth: 1">
+    <a class="site-nav-link " href="../Features/index.html" aria-current="false">Features</a>
+</li>
+<li class="site-nav-item" style="--depth: 2">
+    <a class="site-nav-link " href="../Features/Breadcrumbs/index.html" aria-current="false">Breadcrumbs</a>
+</li>
+<li class="site-nav-item" style="--depth: 2">
+    <a class="site-nav-link " href="../Features/HtmlRenderer/index.html" aria-current="false">HTML Renderer</a>
+</li>
+<li class="site-nav-item" style="--depth: 2">
+    <a class="site-nav-link " href="../Features/Sidebar/index.html" aria-current="false">Sidebar</a>
+</li>
+<li class="site-nav-item" style="--depth: 1">
+    <a class="site-nav-link " href="../OtherTools/index.html" aria-current="false">Other Tools</a>
+</li>
             </ul>
         </nav>
     </aside>
     <button class="sidebar-backdrop" id="sidebar-backdrop" type="button" tabindex="-1" aria-label="Navigation schließen"></button>
     <main class="site-main">
-        <h1 id="usage">Usage</h1>
-<p><a href="../index.html">Dokumentation</a> • Usage</p>
-<h2 id="story">Story</h2>
-<ul>
-<li>The markdown utility is a command line tool that is easy to set up and is executed in a terminal window</li>
-<li>Open a terminal in the root folder of your documentation to quickly run commands</li>
-<li>For now it's important to be in the root folder because the tool assumes that it is executed in that folder so just stay in that folder</li>
-</ul>
-<h2 id="running-the-linter">Running the linter</h2>
-<p>Start the linter to check your documentation at any time. It's save because it just reads</p>
-<pre><code>mdu lint</code></pre>
-<p><strong>Example Output:</strong></p>
-<pre><code>Running Linter
-Party! &#129395; The Markdown linter does not detect any errors!</code></pre>
-<h2 id="previewing-the-rendered-site">Previewing the rendered site</h2>
-<p>Run <code>mdu serve</code> from the project folder containing a <code>Docs</code> or <code>docs</code> folder. MarkdownUtil renders the site to <code>./site</code>, opens it in your browser, and watches for changes. Editing a Markdown file updates its page; changing a linked local asset refreshes the pages that use it. Press <code>Ctrl+C</code> to stop the preview server.</p>
-<pre><code>mdu serve</code></pre>
-<p>The source folder, output folder, and port can be specified when needed. The defaults are <code>Docs</code> or <code>docs</code>, <code>site</code>, and port <code>4173</code>.</p>
+<p class="breadcrumbs"><a href="../index.html">Dokumentation</a><span class="breadcrumb-separator" aria-hidden="true"><svg viewBox="0 0 12 20" focusable="false"><path d="M2 2L9 10L2 18" /></svg></span>Usage</p>
+<h1 id="usage">Usage</h1>
+<h2 id="quick-start">Quick start</h2>
+<p>Run commands from the project folder and pass the documentation and output folders explicitly. For a project with a <code>Docs</code> directory:</p>
+<pre><code>mdu lint ./Docs
+mdu serve ./Docs ./site</code></pre>
+<p><code>mdu lint</code> reads the Markdown files and reports any problems. <code>mdu serve</code> renders the site to <code>./site</code>, opens it in your browser, and watches Markdown files and linked local assets for changes. Press <code>Ctrl+C</code> to stop the preview server.</p>
+<p>For example, a missing local link is reported with its file and line:</p>
+<pre><code>/project/Docs/Overview.md:<span class="number">7</span>: MDU004 LocalLinkExists: Local link target &#39;./intro.md&#39; does not exist.
+Linter detected 1 error.</code></pre>
+<p>The source folder, output folder, and port can be specified when needed. The preview defaults to <code>./site</code> and port <code>4173</code>.</p>
 <pre><code>mdu serve ./Docs ./site --port 4173</code></pre>
 <p>Use <code>--no-browser</code> to start the server without opening a browser.</p>
 <h2 id="adding-breadcrumb-navigation">Adding breadcrumb navigation</h2>
 <ul>
-<li>Generates Breadcrumb Navigation in every markdown files in the current folder and all subfolders</li>
-<li>Must be executed in the root folder of the documentation</li>
+<li>Generates breadcrumb navigation in every Markdown file in the selected folder and its subfolders.</li>
+<li>Pass the documentation folder from the project root:</li>
 </ul>
-<pre><code>mdu add-breadcrumb-navigation</code></pre>
-<p>or in short:</p>
-<pre><code>mdu abn</code></pre>
+<pre><code>mdu add-breadcrumb-navigation ./Docs</code></pre>
+<p>Or use the short alias:</p>
+<pre><code>mdu abn ./Docs</code></pre>
 
     </main>
 </div>
@@ -143,7 +138,20 @@ Party! &#129395; The Markdown linter does not detect any errors!</code></pre>
     const backdrop = document.getElementById("sidebar-backdrop");
     const navigation = document.getElementById("site-navigation");
     const breakpoint = window.matchMedia("(max-width: 760px)");
-    let isOpen = !breakpoint.matches;
+    const sidebarPreferenceKey = "mdu-sidebar-collapsed";
+    const isDesktopSidebarCollapsed = () => {
+        try {
+            return sessionStorage.getItem(sidebarPreferenceKey) === "true";
+        } catch {
+            return false;
+        }
+    };
+    const setDesktopSidebarCollapsed = (collapsed) => {
+        try {
+            sessionStorage.setItem(sidebarPreferenceKey, String(collapsed));
+        } catch { }
+    };
+    let isOpen = !breakpoint.matches && !isDesktopSidebarCollapsed();
 
     const setOpen = (open) => {
         isOpen = open;
@@ -159,7 +167,11 @@ Party! &#129395; The Markdown linter does not detect any errors!</code></pre>
     };
 
     setOpen(isOpen);
-    toggle.addEventListener("click", () => setOpen(!isOpen));
+    toggle.addEventListener("click", () => {
+        const open = !isOpen;
+        setOpen(open);
+        if (!breakpoint.matches) setDesktopSidebarCollapsed(!open);
+    });
     backdrop.addEventListener("click", () => setOpen(false));
     navigation.addEventListener("click", (event) => {
         if (breakpoint.matches && event.target.closest("a")) setOpen(false);
@@ -167,7 +179,8 @@ Party! &#129395; The Markdown linter does not detect any errors!</code></pre>
     document.addEventListener("keydown", (event) => {
         if (breakpoint.matches && isOpen && event.key === "Escape") setOpen(false);
     });
-    breakpoint.addEventListener("change", (event) => setOpen(!event.matches));
+    breakpoint.addEventListener("change", (event) =>
+        setOpen(!event.matches && !isDesktopSidebarCollapsed()));
 })();
 </script>
 </body>

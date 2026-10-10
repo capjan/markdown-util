@@ -1,5 +1,6 @@
 using System.Text.RegularExpressions;
 using FluentValidation;
+using Markdown.Linter;
 using SuperiorIO;
 
 namespace Markdown.Linter.Rules.Rule3;
@@ -12,7 +13,7 @@ public class Rule3Validator : AbstractValidator<Rule3Input>
     public Rule3Validator()
     {
         RuleFor(x => x.LinkDestination).Must(BeCasedCorrectly)
-            .WithMessage(item => $"Casing of link {item.LinkDestination} is not matching the casing in the file system.");
+            .WithMessage(item => $"{RuleCodes.LinkCasing}: Link target '{item.LinkDestination}' does not match the file-system casing.");
     }
 
     private bool BeCasedCorrectly(Rule3Input context, string linkDestination)
@@ -28,8 +29,12 @@ public class Rule3Validator : AbstractValidator<Rule3Input>
         if (!fileInfo.Exists) return true;
         
         
+        var suffixStart = linkDestination.IndexOfAny(['?', '#']);
+        var relativePath = suffixStart < 0 ? linkDestination : linkDestination[..suffixStart];
+        if (string.IsNullOrEmpty(relativePath)) return true;
+
         var markdownPath = SuperiorPath.Create(context.DocumentFilePath);
-        var linkPath = SuperiorPath.Create(linkDestination);
+        var linkPath = SuperiorPath.Create(relativePath);
         if (linkPath.IsRooted) return true;
         
         // Loop through the Elements and check if they are cased correctly

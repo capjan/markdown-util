@@ -1,4 +1,5 @@
 using Markdown.Linter.Rules.Rule2;
+using Markdown.Linter;
 
 namespace MarkdownUtilTest;
 
@@ -14,6 +15,15 @@ public class Rule2Test
         var input = new Rule2Input(title, directoryName);
         var result = sut.Validate(input);
         Assert.True(result.IsValid);
+    }
+
+    [Fact]
+    public void MismatchedDirectoryNameHasStableDiagnosticCode()
+    {
+        var result = new Rule2Validator().Validate(new Rule2Input("# Installation", "setup"));
+
+        Assert.False(result.IsValid);
+        Assert.Contains(RuleCodes.DirectoryTitleMatch, result.ToString());
     }
 
 }
