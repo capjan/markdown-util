@@ -9,5 +9,6 @@ public enum TokenType
     NewLine,
     Whitespace,
     Comment,
-    Number
+    Number,
+    Key
 }

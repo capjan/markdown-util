@@ -6,6 +6,11 @@
     color: var(--syntax-keyword);
 }
 
+.key {
+    color: var(--syntax-key, var(--syntax-keyword));
+    font-weight: 600;
+}
+
 .string {
     color: var(--syntax-string);
 }

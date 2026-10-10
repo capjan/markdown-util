@@ -13,6 +13,7 @@ public static class GrammarStore
         {
             case "cs": case "csharp": return CSharp();
             case "swift": return Swift();
+            case "yaml": case "yml": return Yaml();
             default: return Plain();
         }
     }
@@ -53,6 +54,26 @@ public static class GrammarStore
                     escapeSequences: "\\\"")
             },
             lineCommentStart: "//");
+    }
+
+    private static Grammar Yaml()
+    {
+        return new Grammar(
+            keywords: new[]
+            {
+                "true", "false", "null"
+            },
+            operators: new[]
+            {
+                "-", ":", "[", "]", "{", "}", ",", "?", "|", ">", "&", "*", "!"
+            },
+            strings: new[]
+            {
+                new LanguageString('"', "\\\"", "\\\\", "\\n", "\\t", "\\r"),
+                new LanguageString('\'', "''")
+            },
+            lineCommentStart: "#",
+            highlightKeys: true);
     }
 
     private static Grammar Plain()

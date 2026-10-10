@@ -26,6 +26,11 @@ public class HtmlFormatter : ITextFormatter<IEnumerable<LanguageToken>>
                     writer.Write(WebUtility.HtmlEncode(token.Text));
                     writer.Write("</span>");
                     break;
+                case TokenType.Key:
+                    writer.Write("<span class=\"key\">");
+                    writer.Write(WebUtility.HtmlEncode(token.Text));
+                    writer.Write("</span>");
+                    break;
                 case TokenType.Operator:
                     writer.Write("<span class=\"operator\">");
                     writer.Write(WebUtility.HtmlEncode(token.Text));

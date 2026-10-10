@@ -16,12 +16,15 @@ public class Grammar
     public Grammar(
         IReadOnlyCollection<string> keywords,
         IReadOnlyCollection<string> operators,
-        IReadOnlyCollection<LanguageString> strings, string lineCommentStart)
+        IReadOnlyCollection<LanguageString> strings,
+        string lineCommentStart,
+        bool highlightKeys = false)
     {
         Keywords = keywords;
         Operators = operators;
         Strings = strings;
         LineCommentStart = lineCommentStart;
+        HighlightKeys = highlightKeys;
     }
 
     public IReadOnlyCollection<string> Keywords { get; }
@@ -30,4 +33,6 @@ public class Grammar
     public IReadOnlyCollection<LanguageString> Strings { get; }
     
     public string LineCommentStart { get; }
+
+    public bool HighlightKeys { get; }
 }

@@ -1,4 +1,5 @@
 ﻿using System.Text;
+using System.Text.RegularExpressions;
 using Core.Extensions.ParserRelated;
 using Core.Parser;
 using Core.Parser.Special;
@@ -20,6 +21,10 @@ class DisabledPredicate : IParserInputPredicate
 }
 public class Lexer
 {
+    private static readonly Regex YamlMappingKeyRegex = new(
+        "^(?<indent>[ \\t]*)(?:-[ \\t]+)?(?<key>\"(?:\\\\.|[^\"])*\"|'(?:''|[^'])*'|[^:#\\r\\n][^:#\\r\\n]*?):(?=[ \\t]|$)",
+        RegexOptions.Compiled);
+
     public static Lexer ForLanguage(string name)
     {
         var setting = GrammarStore.GetByName(name);
@@ -32,10 +37,11 @@ public class Lexer
     private readonly IParserInputPredicate[] _stringPredicates;
     private readonly IParserInputPredicate _operatorPredicate;
     private readonly IParserInputPredicate _lineComment;
+    private readonly bool _highlightKeys;
 
     private Lexer(Grammar settings)
     {
-        
+        _highlightKeys = settings.HighlightKeys;
         _keywordPredicate = ParserInput.Predicate()
             .EqualsWordBoundary()
             .EqualsAny(settings.Keywords)
@@ -85,6 +91,16 @@ public class Lexer
     }
 
     public IEnumerable<LanguageToken> Analyse(TextReader reader)
+    {
+        if (!_highlightKeys)
+            return AnalyseCore(reader);
+
+        var source = reader.ReadToEnd();
+        var keyRanges = FindYamlKeyRanges(source);
+        return ApplyKeyRanges(AnalyseCore(new StringReader(source)), source.Length, keyRanges);
+    }
+
+    private IEnumerable<LanguageToken> AnalyseCore(TextReader reader)
     {
         var input = new ParserInput(reader);
         var otherTextBuilder = new StringBuilder();
@@ -210,5 +226,99 @@ public class Lexer
             
             done = true;
         }
+    }
+
+    private static IEnumerable<LanguageToken> ApplyKeyRanges(
+        IEnumerable<LanguageToken> tokens,
+        int sourceLength,
+        IReadOnlyCollection<(int Start, int End)> keyRanges)
+    {
+        var keyCharacters = new bool[sourceLength];
+        foreach (var (start, end) in keyRanges)
+        {
+            for (var index = start; index < end; index++)
+                keyCharacters[index] = true;
+        }
+
+        var sourcePosition = 0;
+        foreach (var token in tokens)
+        {
+            var tokenOffset = 0;
+            while (tokenOffset < token.Text.Length)
+            {
+                var isKey = keyCharacters[sourcePosition + tokenOffset];
+                var runStart = tokenOffset;
+                while (tokenOffset < token.Text.Length &&
+                       keyCharacters[sourcePosition + tokenOffset] == isKey)
+                    tokenOffset++;
+
+                yield return new LanguageToken(
+                    token.Text[runStart..tokenOffset],
+                    isKey ? TokenType.Key : token.Type);
+            }
+
+            sourcePosition += token.Text.Length;
+        }
+    }
+
+    private static List<(int Start, int End)> FindYamlKeyRanges(string source)
+    {
+        var ranges = new List<(int Start, int End)>();
+        int? blockScalarIndent = null;
+        var lineStart = 0;
+
+        while (lineStart < source.Length)
+        {
+            var lineEnd = lineStart;
+            while (lineEnd < source.Length && source[lineEnd] is not ('\r' or '\n'))
+                lineEnd++;
+
+            var line = source[lineStart..lineEnd];
+            var match = YamlMappingKeyRegex.Match(line);
+            var indentation = 0;
+            while (indentation < line.Length && line[indentation] is ' ' or '\t')
+                indentation++;
+            var isBlank = string.IsNullOrWhiteSpace(line);
+
+            if (blockScalarIndent.HasValue)
+            {
+                if (isBlank || indentation > blockScalarIndent.Value)
+                {
+                    lineStart = NextLineStart(source, lineEnd);
+                    continue;
+                }
+
+                blockScalarIndent = null;
+            }
+
+            if (match.Success)
+            {
+                var key = match.Groups["key"];
+                var keyEnd = key.Index + key.Length;
+                while (keyEnd > key.Index && line[keyEnd - 1] is ' ' or '\t')
+                    keyEnd--;
+
+                ranges.Add((lineStart + key.Index, lineStart + keyEnd));
+
+                var valueStart = key.Index + key.Length + 1;
+                while (valueStart < line.Length && line[valueStart] is ' ' or '\t')
+                    valueStart++;
+                if (valueStart < line.Length && line[valueStart] is '|' or '>')
+                    blockScalarIndent = indentation;
+            }
+
+            lineStart = NextLineStart(source, lineEnd);
+        }
+
+        return ranges;
+    }
+
+    private static int NextLineStart(string source, int lineEnd)
+    {
+        if (lineEnd < source.Length && source[lineEnd] == '\r')
+            lineEnd++;
+        if (lineEnd < source.Length && source[lineEnd] == '\n')
+            lineEnd++;
+        return lineEnd;
     }
 }
