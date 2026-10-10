@@ -7,7 +7,7 @@
 }
 
 .key {
-    color: var(--syntax-key, var(--syntax-keyword));
+    color: var(--syntax-key, var(--syntax-comment));
     font-weight: 600;
 }
 
