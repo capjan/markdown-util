@@ -1,4 +1,5 @@
 using Markdown.Renderer;
+using Markdown.Renderer.Res.Model;
 using MarkdownUtil.Model;
 
 namespace MarkdownUtil.Service.Visitors;
@@ -9,14 +10,21 @@ public class MarkdigVisitor : BaseVisitor
         string rootPath, 
         string outPath, 
         HtmlRenderer htmlFoundation, 
-        string editPageRoot) : base(rootPath, outPath, ".html")
+        string editPageRoot,
+        MarkdownFile[]? navigationRoots = null) : base(rootPath, outPath, ".html")
     {
+        _rootPath = rootPath;
+        _outPath = outPath;
         _htmlFoundation = htmlFoundation;
         _editPageRoot = editPageRoot;
+        _navigationRoots = navigationRoots ?? Array.Empty<MarkdownFile>();
     }
     
     private readonly HtmlRenderer _htmlFoundation;
     private readonly string _editPageRoot;
+    private readonly string _rootPath;
+    private readonly string _outPath;
+    private readonly MarkdownFile[] _navigationRoots;
 
     protected override bool ProcessFile(MarkdownFile entity, int graphDepth, FilePathInfo io)
     {
@@ -40,7 +48,14 @@ public class MarkdigVisitor : BaseVisitor
         {
             using (var fs = new FileStream(temporaryPath, FileMode.CreateNew, FileAccess.Write))
             using (var sw = new StreamWriter(fs))
-                _htmlFoundation.WriteHtml(sw, entity.Title, "", graphDepth, markdown, editPageLink).GetAwaiter().GetResult();
+                _htmlFoundation.WriteHtml(
+                    sw,
+                    entity.Title,
+                    "",
+                    graphDepth,
+                    markdown,
+                    editPageLink,
+                    BuildNavigation(outputFileName)).GetAwaiter().GetResult();
 
             File.Move(temporaryPath, outputFileName, true);
         }
@@ -50,5 +65,53 @@ public class MarkdigVisitor : BaseVisitor
         }
 
         return true;
+    }
+
+    private IReadOnlyList<NavigationItem> BuildNavigation(string currentOutputPath)
+    {
+        var navigation = new List<NavigationItem>();
+        var currentPath = Path.GetFullPath(currentOutputPath);
+        var currentDirectory = Path.GetDirectoryName(currentPath)!;
+        var pathComparison = OperatingSystem.IsWindows() || OperatingSystem.IsMacOS()
+            ? StringComparison.OrdinalIgnoreCase
+            : StringComparison.Ordinal;
+
+        AddPages(_navigationRoots, 0);
+        return navigation;
+
+        void AddPages(IEnumerable<MarkdownFile> pages, int depth)
+        {
+            foreach (var page in pages.OrderBy(GetNavigationTitle, StringComparer.OrdinalIgnoreCase))
+            {
+                var pagePath = FilePathInfo.CreateRenderFileInfo(_rootPath, _outPath, page.FileInfo, ".html")
+                    .OutputFullFilePath;
+                if (pagePath.EndsWith("readme.html", StringComparison.OrdinalIgnoreCase))
+                    pagePath = pagePath[..^"readme.html".Length] + "index.html";
+
+                pagePath = Path.GetFullPath(pagePath);
+                var relativeUrl = Path.GetRelativePath(currentDirectory, pagePath)
+                    .Replace(Path.DirectorySeparatorChar, '/');
+                var url = string.Join('/', relativeUrl.Split('/').Select(Uri.EscapeDataString));
+
+                navigation.Add(new NavigationItem
+                {
+                    Title = GetNavigationTitle(page),
+                    Url = url,
+                    Depth = depth,
+                    IsCurrent = string.Equals(pagePath, currentPath, pathComparison)
+                });
+
+                AddPages(page.Children, depth + 1);
+            }
+        }
+    }
+
+    private static string GetNavigationTitle(MarkdownFile page)
+    {
+        if (!string.IsNullOrWhiteSpace(page.Title)) return page.Title.Trim();
+
+        return page.FileInfo.Name.Equals("README.md", StringComparison.OrdinalIgnoreCase)
+            ? page.FileInfo.Directory?.Name ?? "Dokumentation"
+            : Path.GetFileNameWithoutExtension(page.FileInfo.Name);
     }
 }

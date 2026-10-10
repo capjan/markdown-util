@@ -4,8 +4,8 @@
 
 ## HTML Renderer Features / Goals
 
-- Automatic light/dark mode from OS via media queries
-- Responsive websites (mobile first)
+- Dark theme with a collapsible, responsive sitemap navigation
+- Responsive layouts (mobile first)
 - Syntax highlighting of code blocks
 - Automatic Asset copying to the output
  

@@ -26,6 +26,7 @@ public sealed class ServeCommand
     private readonly Dictionary<string, HashSet<string>> _pagesByAsset = new(PathComparer);
     private readonly HashSet<string> _generatedFiles = new(PathComparer);
 
+    private MarkdownFile[] _navigationRoots = Array.Empty<MarkdownFile>();
     private RenderCommandSettings _settings = new();
     private string _rootPath = string.Empty;
     private string _outputPath = string.Empty;
@@ -138,10 +139,11 @@ public sealed class ServeCommand
     {
         var previousFiles = new HashSet<string>(_generatedFiles, PathComparer);
         var graph = _graphBuilder.CreateGraph(_settings);
+        _navigationRoots = graph;
 
         _renderer.PrepareBasePath(_outputPath);
         graph.Visit(new LocalAssetsCopy(_rootPath, _outputPath));
-        graph.Visit(new MarkdigVisitor(_rootPath, _outputPath, _renderer, _settings.EditPageRoot));
+        graph.Visit(new MarkdigVisitor(_rootPath, _outputPath, _renderer, _settings.EditPageRoot, _navigationRoots));
 
         RebuildDependencyIndex(graph);
         ReconcileGeneratedFiles(previousFiles);
@@ -262,10 +264,18 @@ public sealed class ServeCommand
         {
             var page = _pages[pagePath];
             var depth = page.CountDepth();
+            var previousTitle = page.Title;
             _dataPreparationVisitor.Process(page, depth);
+            if (!previousTitle.Equals(page.Title, StringComparison.Ordinal))
+            {
+                RebuildSite();
+                server.Publish(reloadAll: true);
+                return;
+            }
+
             UpdatePageAssets(pagePath, page);
             new LocalAssetsCopy(_rootPath, _outputPath).Process(page, depth);
-            new MarkdigVisitor(_rootPath, _outputPath, _renderer, _settings.EditPageRoot).Process(page, depth);
+            new MarkdigVisitor(_rootPath, _outputPath, _renderer, _settings.EditPageRoot, _navigationRoots).Process(page, depth);
             affectedPageUrls.Add(PreviewServer.ToUrlPath(_outputPath, GetPageOutputPath(page)));
         }
 

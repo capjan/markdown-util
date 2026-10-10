@@ -45,7 +45,8 @@ public class HtmlRenderer
         string description,
         int nestingDeep,
         string markdown,
-        string editPageLink)
+        string editPageLink,
+        IReadOnlyList<NavigationItem>? navigationItems = null)
     {
         var prefix = string.Concat(Enumerable.Repeat("../", nestingDeep));
         var cssFileLink = prefix + "css/main.css";
@@ -58,6 +59,7 @@ public class HtmlRenderer
             Title = title,
             Description = description,
             RenderedMarkdown = renderedMarkdown,
+            NavigationItems = navigationItems ?? Array.Empty<NavigationItem>(),
             CssLink = cssFileLink,
             EditPageLink = editPageLink
         };

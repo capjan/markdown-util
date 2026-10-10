@@ -40,7 +40,7 @@ public class RenderCommand
 
     private void RenderNodesToHtml(string rootPath, string outPath, MarkdownFile[] graph, string editPageRoot)
     {
-        var rendererVisitor = new MarkdigVisitor(rootPath, outPath, _renderer, editPageRoot);
+        var rendererVisitor = new MarkdigVisitor(rootPath, outPath, _renderer, editPageRoot, graph);
         
         graph.Visit(rendererVisitor);
     }
