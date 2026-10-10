@@ -21,9 +21,25 @@ public class LintCommand
 
     public int Execute(VisitorSettings settings)
     {
+        string rootPath;
+        try
+        {
+            rootPath = CommandPathDefaults.ResolveRootPath(settings.RootPath);
+        }
+        catch (InvalidOperationException exception)
+        {
+            Console.Error.WriteLine(exception.Message);
+            return 1;
+        }
+
         Console.WriteLine("Running Linter");
-        var graph = _graphBuilder.CreateGraph(settings);
+        var graph = _graphBuilder.CreateGraph(new VisitorSettings
+        {
+            RootPath = rootPath,
+            SearchPattern = settings.SearchPattern,
+            IncludeHidden = settings.IncludeHidden
+        });
         graph.Visit(_linterVisitor);
-        return _lintResultRenderer.Render();
+        return _lintResultRenderer.Render(_linterVisitor.OrphanedPages);
     }
 }

@@ -1,7 +1,5 @@
 # Linter
 
-[Documentation](../../README.md) • [Features](../README.md) • Linter
-
 ## Rules
 
 - Rule 1 - Every Markdown page must have a level-one heading that defines its title (after any YAML front matter).
@@ -14,3 +12,5 @@ Each diagnostic includes a stable code, a descriptive rule name, the source path
 ```text
 /project/Docs/Overview.md:7: MDU004 LocalLinkExists: Local link target './intro.md' does not exist.
 ```
+
+The linter also lists completely orphaned pages: pages hidden from the sidebar with `sidebar.visible: false` that no visible page links to. This list is informational and does not affect the lint exit code.

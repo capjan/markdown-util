@@ -6,7 +6,7 @@ MarkdownUtil helps you write documentation in Markdown files, ideally in a Git r
 
 - This tool is for people who write documentation in Markdown files, ideally in a Git repository.
 - No vendor lock-in: your documentation remains a collection of ordinary Markdown files.
-- Reorganize your navigation by adding breadcrumbs.
+- Generate breadcrumb navigation in rendered HTML from your Markdown file structure.
 - Generate a static HTML site from your documentation.
 - Open-source [project on GitHub](https://github.com/capjan/markdown-util).
 

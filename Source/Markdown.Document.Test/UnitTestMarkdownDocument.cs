@@ -7,18 +7,17 @@ namespace Markdown.Document.Test;
 public class UnitTestMarkdownDocument
 {
     [Theory]
-    [InlineData("# Home\n\n## Themen\n\nOtherText", "Home", "")]
-    [InlineData("  # Home\n\n## Themen\n\nOtherText", "Home", "")]
-    [InlineData("", "", "")]
-    [InlineData("# h1 ( bla )\n", "h1 ( bla )", "")]
-    [InlineData("# h1 /|\\.,.<>1234567890$#()\r\n", "h1 /|\\.,.<>1234567890$#()", "")]
-    [InlineData("# Home\n\nHome\n\nOther Text", "Home", "Home")]
-    [InlineData("---\ntitle: pageTitle\n---\n# Headline 1\n\n[Home](../README.md)", "Headline 1", "[Home](../README.md)")]
-    public void TestGetHeader(string input, string expectedTitle, string expectedBreadcrumbNavigationLine)
+    [InlineData("# Home\n\n## Themen\n\nOtherText", "Home")]
+    [InlineData("  # Home\n\n## Themen\n\nOtherText", "Home")]
+    [InlineData("", "")]
+    [InlineData("# h1 ( bla )\n", "h1 ( bla )")]
+    [InlineData("# h1 /|\\.,.<>1234567890$#()\r\n", "h1 /|\\.,.<>1234567890$#()")]
+    [InlineData("# Home\n\nHome\n\nOther Text", "Home")]
+    [InlineData("---\ntitle: pageTitle\n---\n# Headline 1\n\n[Home](../README.md)", "Headline 1")]
+    public void TestGetHeader(string input, string expectedTitle)
     {
         var header = MarkdownDocument.ReadHeader(input);
         Assert.Equal(expectedTitle, header.Title);
-        Assert.Equal(expectedBreadcrumbNavigationLine, header.BreadcrumbNavigationLine);
     }
 
     [Fact]

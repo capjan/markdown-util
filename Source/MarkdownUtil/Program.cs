@@ -1,6 +1,7 @@
 using Markdown.Document;
 using Markdown.Document.Impl;
 using Markdown.Renderer;
+using Markdown.Search;
 using MarkdownUtil.Commands;
 using MarkdownUtil.Commands.Settings;
 using MarkdownUtil.Model;
@@ -15,13 +16,12 @@ registrations.AddScoped<ILinterErrorReceiver, ConsoleLintErrorReceiver>();
 registrations.AddScoped<LinterVisitor>();
 registrations.AddScoped<IMarkdownDocumentReader, MarkdownDocumentReader>();
 registrations.AddScoped<DataPreparationVisitor>();
-registrations.AddScoped<BreadcrumbsVisitor>();
 registrations.AddScoped<PrintTreeVisitor>();
 registrations.AddScoped<LintResultRenderer>();
 registrations.AddScoped<GraphBuilder>();
 registrations.AddScoped<CountNodesVisitor<MarkdownFile>>();
 registrations.AddScoped<HtmlRenderer>();
-registrations.AddScoped<AddBreadcrumbNavigationCommand>();
+registrations.AddScoped<SearchIndexBuilder>();
 registrations.AddScoped<LintCommand>();
 registrations.AddScoped<PrintTreeCommand>();
 registrations.AddScoped<RenderCommand>();
@@ -31,21 +31,10 @@ using var services = registrations.BuildServiceProvider();
 
 var rootCommand = new RootCommand("Lint, render, and manage Markdown documentation.");
 
-var addBreadcrumbNavigationCommand = new Command(
-    "add-breadcrumb-navigation",
-    "Adds breadcrumb navigation to all matching Markdown files.");
-addBreadcrumbNavigationCommand.Aliases.Add("abn");
-var (breadcrumbPattern, breadcrumbHidden) = AddVisitorOptions(addBreadcrumbNavigationCommand);
-var breadcrumbPath = AddRootPathArgument(addBreadcrumbNavigationCommand);
-addBreadcrumbNavigationCommand.SetAction(parseResult =>
-    services.GetRequiredService<AddBreadcrumbNavigationCommand>().Execute(
-        GetVisitorSettings(parseResult, breadcrumbPath, breadcrumbPattern, breadcrumbHidden)));
-rootCommand.Subcommands.Add(addBreadcrumbNavigationCommand);
-
 var lintCommand = new Command("lint", "Runs the linter and prints the results.");
 lintCommand.Aliases.Add("l");
 var (lintPattern, lintHidden) = AddVisitorOptions(lintCommand);
-var lintPath = AddRootPathArgument(lintCommand);
+var lintPath = AddRootPathArgument(lintCommand, "Root folder containing Markdown files. Defaults to ./docs or ./Docs.");
 lintCommand.SetAction(parseResult =>
     services.GetRequiredService<LintCommand>().Execute(
         GetVisitorSettings(parseResult, lintPath, lintPattern, lintHidden)));
@@ -169,12 +158,12 @@ static VisitorSettings GetVisitorSettings(
     IncludeHidden = parseResult.GetValue(includeHidden)
 };
 
-static Argument<string?> AddRootPathArgument(Command command)
+static Argument<string?> AddRootPathArgument(Command command, string description = "Root/home path for the index.")
 {
     var path = new Argument<string?>("path")
     {
         Arity = ArgumentArity.ZeroOrOne,
-        Description = "Root/home path for the index."
+        Description = description
     };
     command.Arguments.Add(path);
     return path;

@@ -5,6 +5,7 @@ using System.Net.Sockets;
 using System.Threading.Channels;
 using Core.Collections.NodeGraph.Extensions;
 using Markdown.Renderer;
+using Markdown.Search;
 using MarkdownUtil.Commands.Settings;
 using MarkdownUtil.Model;
 using MarkdownUtil.Service;
@@ -22,6 +23,7 @@ public sealed class ServeCommand
     private readonly GraphBuilder _graphBuilder;
     private readonly DataPreparationVisitor _dataPreparationVisitor;
     private readonly HtmlRenderer _renderer;
+    private readonly SearchIndexBuilder _searchIndexBuilder;
     private readonly Dictionary<string, MarkdownFile> _pages = new(PathComparer);
     private readonly Dictionary<string, HashSet<string>> _assetsByPage = new(PathComparer);
     private readonly Dictionary<string, HashSet<string>> _pagesByAsset = new(PathComparer);
@@ -35,11 +37,13 @@ public sealed class ServeCommand
     public ServeCommand(
         GraphBuilder graphBuilder,
         DataPreparationVisitor dataPreparationVisitor,
-        HtmlRenderer renderer)
+        HtmlRenderer renderer,
+        SearchIndexBuilder searchIndexBuilder)
     {
         _graphBuilder = graphBuilder;
         _dataPreparationVisitor = dataPreparationVisitor;
         _renderer = renderer;
+        _searchIndexBuilder = searchIndexBuilder;
     }
 
     public int Execute(RenderCommandSettings settings, int port, bool noBrowser) =>
@@ -157,8 +161,11 @@ public sealed class ServeCommand
         _navigationRoots = graph;
 
         _renderer.PrepareBasePath(_outputPath);
+        SearchClientAsset.WriteTo(_outputPath);
+        _searchIndexBuilder.Clear();
         graph.Visit(new LocalAssetsCopy(_rootPath, _outputPath));
-        graph.Visit(new MarkdigVisitor(_rootPath, _outputPath, _renderer, _settings.EditPageRoot, _navigationRoots));
+        graph.Visit(new MarkdigVisitor(_rootPath, _outputPath, _renderer, _settings.EditPageRoot, _searchIndexBuilder, _navigationRoots));
+        _searchIndexBuilder.WriteIndex(_outputPath);
 
         RebuildDependencyIndex(graph);
         ReconcileGeneratedFiles(previousFiles);
@@ -290,9 +297,12 @@ public sealed class ServeCommand
 
             UpdatePageAssets(pagePath, page);
             new LocalAssetsCopy(_rootPath, _outputPath).Process(page, depth);
-            new MarkdigVisitor(_rootPath, _outputPath, _renderer, _settings.EditPageRoot, _navigationRoots).Process(page, depth);
+            new MarkdigVisitor(_rootPath, _outputPath, _renderer, _settings.EditPageRoot, _searchIndexBuilder, _navigationRoots).Process(page, depth);
             affectedPageUrls.Add(PreviewServer.ToUrlPath(_outputPath, GetPageOutputPath(page)));
         }
+
+        if (changedPages.Length > 0)
+            _searchIndexBuilder.WriteIndex(_outputPath);
 
         var assetChanges = relevantChanges
             .Where(change => change.Kind is FileChangeKind.Changed or FileChangeKind.Created or FileChangeKind.Deleted or FileChangeKind.Renamed)
@@ -366,7 +376,9 @@ public sealed class ServeCommand
     {
         var currentFiles = new HashSet<string>(PathComparer)
         {
-            Path.Combine(_outputPath, "css", "main.css")
+            Path.Combine(_outputPath, "css", "main.css"),
+            Path.Combine(_outputPath, "js", "search.js"),
+            Path.Combine(_outputPath, "search-index.json")
         };
 
         foreach (var page in _pages.Values)

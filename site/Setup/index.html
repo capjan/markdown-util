@@ -23,7 +23,7 @@
             <rect x="2.5" y="3.5" width="15" height="13" rx="2"></rect>
             <path d="M8 4v12M5 7h1M5 10h1M5 13h1"></path>
         </svg>
-        <span>Dokumentation</span>
+        <span>Documentation</span>
     </button>
     <button class="theme-toggle" id="theme-toggle" type="button">
         <svg class="theme-icon-auto" viewBox="0 0 20 20" aria-hidden="true" focusable="false">
@@ -42,7 +42,7 @@
 </header>
 <div class="site-layout" id="site-layout">
     <aside class="site-sidebar" id="site-navigation" aria-label="Sitemap">
-        <nav aria-label="Dokumentationsseiten">
+        <nav aria-label="Documentation pages">
             <ul class="site-nav-list">
                 <li class="site-nav-item" style="--depth: 0">
     <a class="site-nav-link " href="../index.html" aria-current="false">Documentation</a>
@@ -56,17 +56,8 @@
 <li class="site-nav-item" style="--depth: 2">
     <a class="site-nav-link " href="../Usage/Linter/index.html" aria-current="false">Linter</a>
 </li>
-<li class="site-nav-item" style="--depth: 3">
-    <a class="site-nav-link " href="../Usage/Linter/Rule2/index.html" aria-current="false">Rule 2</a>
-</li>
-<li class="site-nav-item" style="--depth: 3">
-    <a class="site-nav-link " href="../Usage/Linter/Rule3/index.html" aria-current="false">Rule 3</a>
-</li>
 <li class="site-nav-item" style="--depth: 1">
     <a class="site-nav-link " href="../Features/index.html" aria-current="false">Features</a>
-</li>
-<li class="site-nav-item" style="--depth: 2">
-    <a class="site-nav-link " href="../Features/Breadcrumbs/index.html" aria-current="false">Breadcrumbs</a>
 </li>
 <li class="site-nav-item" style="--depth: 2">
     <a class="site-nav-link " href="../Features/HtmlRenderer/index.html" aria-current="false">HTML Renderer</a>
@@ -80,9 +71,9 @@
             </ul>
         </nav>
     </aside>
-    <button class="sidebar-backdrop" id="sidebar-backdrop" type="button" tabindex="-1" aria-label="Navigation schließen"></button>
+    <button class="sidebar-backdrop" id="sidebar-backdrop" type="button" tabindex="-1" aria-label="Close navigation"></button>
     <main class="site-main">
-<p class="breadcrumbs"><a href="../index.html">Documentation</a><span class="breadcrumb-separator" aria-hidden="true"><svg viewBox="0 0 12 20" focusable="false"><path d="M2 2L9 10L2 18" /></svg></span>Setup</p>
+<nav class="breadcrumbs" aria-label="Breadcrumb"><a href="../index.html">Documentation</a><span class="breadcrumb-separator" aria-hidden="true"><svg viewBox="0 0 12 20" focusable="false"><path d="M2 2L9 10L2 18" /></svg></span><span aria-current="page">Setup</span></nav>
 <h1 id="setup">Setup</h1>
 <p>MarkdownUtil is distributed as a <a href="https://learn.microsoft.com/en-us/dotnet/core/tools/global-tools">.NET tool</a> through <a href="https://www.nuget.org/packages/MarkdownUtil">NuGet</a>. It requires .NET 10.</p>
 <h2 id="step-1-dependencies">Step 1: Dependencies</h2>
@@ -90,14 +81,14 @@
 <h2 id="step-2-installation">Step 2: Installation</h2>
 <p>Install the tool globally for your system or locally for a repository.</p>
 <h3 id="global">Global</h3>
-<pre><code>dotnet tool install --global MarkdownUtil</code></pre>
+<pre><code><span class="command">dotnet</span> <span class="subcommand">tool</span> <span class="argument">install</span> <span class="option">--global</span> <span class="argument">MarkdownUtil</span></code></pre>
 <h3 id="local">Local</h3>
 <ul>
 <li>A local tool is available in the repository and its subfolders.</li>
 <li>A local tool requires a tool manifest.</li>
 </ul>
-<pre><code>dotnet new tool-manifest # if you are setting up this repo for the first time
-dotnet tool install --local MarkdownUtil</code></pre>
+<pre><code><span class="command">dotnet</span> <span class="subcommand">new</span> <span class="argument">tool-manifest</span> <span class="comment"># if you are setting up this repo for the first time</span>
+<span class="command">dotnet</span> <span class="subcommand">tool</span> <span class="argument">install</span> <span class="option">--local</span> <span class="argument">MarkdownUtil</span></code></pre>
 
     </main>
 </div>

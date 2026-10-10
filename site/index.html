@@ -23,7 +23,7 @@
             <rect x="2.5" y="3.5" width="15" height="13" rx="2"></rect>
             <path d="M8 4v12M5 7h1M5 10h1M5 13h1"></path>
         </svg>
-        <span>Dokumentation</span>
+        <span>Documentation</span>
     </button>
     <button class="theme-toggle" id="theme-toggle" type="button">
         <svg class="theme-icon-auto" viewBox="0 0 20 20" aria-hidden="true" focusable="false">
@@ -42,7 +42,7 @@
 </header>
 <div class="site-layout" id="site-layout">
     <aside class="site-sidebar" id="site-navigation" aria-label="Sitemap">
-        <nav aria-label="Dokumentationsseiten">
+        <nav aria-label="Documentation pages">
             <ul class="site-nav-list">
                 <li class="site-nav-item" style="--depth: 0">
     <a class="site-nav-link is-current" href="index.html" aria-current="page">Documentation</a>
@@ -56,17 +56,8 @@
 <li class="site-nav-item" style="--depth: 2">
     <a class="site-nav-link " href="Usage/Linter/index.html" aria-current="false">Linter</a>
 </li>
-<li class="site-nav-item" style="--depth: 3">
-    <a class="site-nav-link " href="Usage/Linter/Rule2/index.html" aria-current="false">Rule 2</a>
-</li>
-<li class="site-nav-item" style="--depth: 3">
-    <a class="site-nav-link " href="Usage/Linter/Rule3/index.html" aria-current="false">Rule 3</a>
-</li>
 <li class="site-nav-item" style="--depth: 1">
     <a class="site-nav-link " href="Features/index.html" aria-current="false">Features</a>
-</li>
-<li class="site-nav-item" style="--depth: 2">
-    <a class="site-nav-link " href="Features/Breadcrumbs/index.html" aria-current="false">Breadcrumbs</a>
 </li>
 <li class="site-nav-item" style="--depth: 2">
     <a class="site-nav-link " href="Features/HtmlRenderer/index.html" aria-current="false">HTML Renderer</a>
@@ -80,15 +71,16 @@
             </ul>
         </nav>
     </aside>
-    <button class="sidebar-backdrop" id="sidebar-backdrop" type="button" tabindex="-1" aria-label="Navigation schließen"></button>
+    <button class="sidebar-backdrop" id="sidebar-backdrop" type="button" tabindex="-1" aria-label="Close navigation"></button>
     <main class="site-main">
+<nav class="breadcrumbs" aria-label="Breadcrumb"><span aria-current="page">Documentation</span></nav>
 <h1 id="documentation">Documentation</h1>
 <p>MarkdownUtil helps you write documentation in Markdown files, ideally in a Git repository.</p>
 <h2 id="inspiration">Inspiration</h2>
 <ul>
 <li>This tool is for people who write documentation in Markdown files, ideally in a Git repository.</li>
 <li>No vendor lock-in: your documentation remains a collection of ordinary Markdown files.</li>
-<li>Reorganize your navigation by adding breadcrumbs.</li>
+<li>Generate breadcrumb navigation in rendered HTML from your Markdown file structure.</li>
 <li>Generate a static HTML site from your documentation.</li>
 <li>Open-source <a href="https://github.com/capjan/markdown-util">project on GitHub</a>.</li>
 </ul>

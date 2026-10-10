@@ -1,3 +1,5 @@
+using MarkdownUtil.Model;
+
 namespace MarkdownUtil.Service.Renderer;
 
 public class LintResultRenderer
@@ -9,21 +11,29 @@ public class LintResultRenderer
         this._receiver = receiver;
     }
 
-    public int Render()
+    public int Render(IReadOnlyCollection<MarkdownFile> orphanedPages)
     {
         var errorCount = _receiver.ErrorCount;
         if (errorCount == 1)
         {
             Console.WriteLine($"Linter detected {errorCount} error.");
-            return 1;
         }
-        if (errorCount > 1)
+        else if (errorCount > 1)
         {
             Console.WriteLine($"Linter detected {errorCount} errors.");
-            return 1;
+        }
+        else
+        {
+            Console.WriteLine("Party! 🥳 The Markdown linter does not detect any errors!");
         }
 
-        Console.WriteLine("Party! 🥳 The Markdown linter does not detect any errors!");
-        return 0;
+        if (orphanedPages.Count > 0)
+        {
+            Console.WriteLine($"Found {orphanedPages.Count} completely orphaned pages:");
+            foreach (var page in orphanedPages)
+                Console.WriteLine($"  {page.FileInfo.FullName}");
+        }
+
+        return errorCount > 0 ? 1 : 0;
     }
 }

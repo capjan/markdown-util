@@ -33,6 +33,7 @@
         <ProjectReference Include="..\Markdown.Document\Markdown.Document.csproj" />
         <ProjectReference Include="..\Markdown.Linter\Markdown.Linter.csproj" />
         <ProjectReference Include="..\Markdown.Renderer\Markdown.Renderer.csproj" />
+        <ProjectReference Include="..\Markdown.Search\Markdown.Search.csproj" />
     </ItemGroup>
 
 </Project>

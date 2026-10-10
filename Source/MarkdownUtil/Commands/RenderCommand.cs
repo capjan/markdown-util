@@ -1,5 +1,6 @@
 using Core.Collections.NodeGraph.Extensions;
 using Markdown.Renderer;
+using Markdown.Search;
 using MarkdownUtil.Commands.Settings;
 using MarkdownUtil.Model;
 using MarkdownUtil.Service;
@@ -12,12 +13,18 @@ public class RenderCommand
     private readonly GraphBuilder _graphBuilder;
     private readonly CountNodesVisitor<MarkdownFile> _countNodesVisitor;
     private readonly HtmlRenderer _renderer;
+    private readonly SearchIndexBuilder _searchIndexBuilder;
 
-    public RenderCommand(GraphBuilder graphBuilder, CountNodesVisitor<MarkdownFile> countNodesVisitor, HtmlRenderer renderer)
+    public RenderCommand(
+        GraphBuilder graphBuilder,
+        CountNodesVisitor<MarkdownFile> countNodesVisitor,
+        HtmlRenderer renderer,
+        SearchIndexBuilder searchIndexBuilder)
     {
         _graphBuilder = graphBuilder;
         _countNodesVisitor = countNodesVisitor;
         _renderer = renderer;
+        _searchIndexBuilder = searchIndexBuilder;
     }
 
     public int Execute(RenderCommandSettings settings)
@@ -44,6 +51,8 @@ public class RenderCommand
         };
         
         _renderer.PrepareBasePath(outPath);
+        SearchClientAsset.WriteTo(outPath);
+        _searchIndexBuilder.Clear();
         var graph = _graphBuilder.CreateGraph(resolvedSettings);
         var nodeCount = CountMarkdownNodes(graph);
         
@@ -52,13 +61,14 @@ public class RenderCommand
         
         Console.WriteLine($"Rendering {nodeCount} Files");
         RenderNodesToHtml(rootPath, outPath, graph, settings.EditPageRoot);
+        _searchIndexBuilder.WriteIndex(outPath);
         
         return 0;
     }
 
     private void RenderNodesToHtml(string rootPath, string outPath, MarkdownFile[] graph, string editPageRoot)
     {
-        var rendererVisitor = new MarkdigVisitor(rootPath, outPath, _renderer, editPageRoot, graph);
+        var rendererVisitor = new MarkdigVisitor(rootPath, outPath, _renderer, editPageRoot, _searchIndexBuilder, graph);
         
         graph.Visit(rendererVisitor);
     }

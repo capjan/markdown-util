@@ -4,8 +4,6 @@ sidebar.visible: false
 
 # Rule 2
 
-[Documentation](../../../README.md) • [Features](../../README.md) • [Linter](../README.md) • Rule 2
-
 ## Summary
 
 The name of a directory containing a `README.md` file must match the title in that file.

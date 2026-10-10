@@ -1,0 +1,85 @@
+using System.Net;
+using System.Text;
+using System.Text.Json;
+using System.Text.Json.Serialization;
+using System.Text.RegularExpressions;
+using Markdig;
+
+namespace Markdown.Search;
+
+public sealed class SearchIndexBuilder
+{
+    private static readonly Regex HeadingRegex = new(
+        "<h(?<level>[1-6])(?<attributes>[^>]*)>(?<title>.*?)</h\\k<level>>",
+        RegexOptions.Compiled | RegexOptions.Singleline | RegexOptions.CultureInvariant);
+    private static readonly Regex IdRegex = new("\\bid=\"(?<id>[^\"]+)\"", RegexOptions.Compiled | RegexOptions.CultureInvariant);
+    private static readonly Regex ScriptAndStyleRegex = new("<(script|style)\\b[^>]*>.*?</\\1>", RegexOptions.Compiled | RegexOptions.IgnoreCase | RegexOptions.Singleline);
+    private static readonly Regex HtmlTagRegex = new("<[^>]+>", RegexOptions.Compiled | RegexOptions.Singleline);
+    private static readonly Regex WhitespaceRegex = new("\\s+", RegexOptions.Compiled);
+    private static readonly JsonSerializerOptions JsonOptions = new() { PropertyNamingPolicy = JsonNamingPolicy.CamelCase };
+
+    private readonly List<SearchIndexEntry> _entries = new();
+    private readonly MarkdownPipeline _pipeline = new MarkdownPipelineBuilder()
+        .UseGridTables()
+        .UsePipeTables()
+        .UseAdvancedExtensions()
+        .Build();
+
+    public void Clear() => _entries.Clear();
+
+    public void AddPage(string title, string url, string markdown)
+    {
+        _entries.RemoveAll(entry => entry.PageUrl.Equals(url, StringComparison.Ordinal));
+
+        var html = Markdig.Markdown.ToHtml(markdown, _pipeline);
+        var headings = HeadingRegex.Matches(html).Cast<Match>().ToArray();
+
+        if (headings.Length == 0)
+        {
+            AddEntry(title, string.Empty, url, ExtractText(html));
+            return;
+        }
+
+        var introduction = ExtractText(html[..headings[0].Index]);
+        if (!string.IsNullOrWhiteSpace(introduction))
+            AddEntry(title, string.Empty, url, introduction);
+
+        for (var index = 0; index < headings.Length; index++)
+        {
+            var heading = headings[index];
+            var idMatch = IdRegex.Match(heading.Groups["attributes"].Value);
+            if (!idMatch.Success) continue;
+
+            var section = ExtractText(heading.Groups["title"].Value);
+            var contentStart = heading.Index + heading.Length;
+            var contentEnd = index + 1 < headings.Length ? headings[index + 1].Index : html.Length;
+            var text = ExtractText(html[contentStart..contentEnd]);
+            var sectionUrl = $"{url}#{Uri.EscapeDataString(idMatch.Groups["id"].Value)}";
+            AddEntry(title, section, sectionUrl, text);
+        }
+    }
+
+    public void WriteIndex(string outputPath)
+    {
+        Directory.CreateDirectory(outputPath);
+        var indexPath = Path.Combine(outputPath, "search-index.json");
+        File.WriteAllText(indexPath, JsonSerializer.Serialize(_entries, JsonOptions), Encoding.UTF8);
+    }
+
+    private void AddEntry(string title, string section, string url, string text) =>
+        _entries.Add(new SearchIndexEntry(title, section, url, url.Split('#')[0], text));
+
+    private static string ExtractText(string html)
+    {
+        var withoutScripts = ScriptAndStyleRegex.Replace(html, " ");
+        var withoutTags = HtmlTagRegex.Replace(withoutScripts, " ");
+        return WhitespaceRegex.Replace(WebUtility.HtmlDecode(withoutTags), " ").Trim();
+    }
+
+    private sealed record SearchIndexEntry(
+        string Title,
+        string Section,
+        string Url,
+        [property: JsonIgnore] string PageUrl,
+        string Text);
+}

@@ -16,7 +16,7 @@
     </script>
     <link rel="stylesheet" href="%%CSS_LINK%%">
 </head>
-<body>
+<body data-search-index="%%SEARCH_INDEX_LINK%%">
 <header class="site-header">
     <button class="navigation-toggle" id="navigation-toggle" type="button" aria-expanded="true" aria-controls="site-navigation">
         <svg viewBox="0 0 20 20" aria-hidden="true" focusable="false">
@@ -24,6 +24,14 @@
             <path d="M8 4v12M5 7h1M5 10h1M5 13h1"></path>
         </svg>
         <span>Documentation</span>
+    </button>
+    <button class="search-button" id="search-button" type="button" aria-label="Search documentation" aria-haspopup="dialog" aria-controls="search-dialog">
+        <svg viewBox="0 0 20 20" aria-hidden="true" focusable="false">
+            <circle cx="8.5" cy="8.5" r="5.5"></circle>
+            <path d="m12.5 12.5 5 5"></path>
+        </svg>
+        <span>Search documentation</span>
+        <kbd id="search-shortcut">⌘ K</kbd>
     </button>
     <button class="theme-toggle" id="theme-toggle" type="button">
         <svg class="theme-icon-auto" viewBox="0 0 20 20" aria-hidden="true" focusable="false">
@@ -53,6 +61,19 @@
 %%MARKDOWN%%%%EDIT_PAGE_LINK%%
     </main>
 </div>
+<dialog class="search-dialog" id="search-dialog" aria-labelledby="search-dialog-title">
+    <div class="search-dialog-content">
+        <div class="search-dialog-heading">
+            <h2 id="search-dialog-title">Search documentation</h2>
+            <span>Press <kbd>Esc</kbd> to close</span>
+            <button class="search-close" id="search-close" type="button" aria-label="Close search">×</button>
+        </div>
+        <label class="visually-hidden" for="search-input">Search terms</label>
+        <input id="search-input" type="search" autocomplete="off" placeholder="Search documentation…">
+        <p class="search-status" id="search-status" role="status" aria-live="polite">Start typing to search the documentation.</p>
+        <ul class="search-results" id="search-results" aria-label="Search results"></ul>
+    </div>
+</dialog>
 <script>
 (() => {
     const root = document.documentElement;
@@ -130,5 +151,6 @@
         setOpen(!event.matches && !isDesktopSidebarCollapsed()));
 })();
 </script>
+<script defer src="%%SEARCH_SCRIPT_LINK%%"></script>
 </body>
 </html>

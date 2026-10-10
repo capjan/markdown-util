@@ -4,8 +4,6 @@ sidebar.visible: false
 
 # Rule 3
 
-[Documentation](../../../README.md) • [Features](../../README.md) • [Linter](../README.md) • Rule 3
-
 ## Summary
 
 The casing of internal links must match the casing of their targets on the local file system.

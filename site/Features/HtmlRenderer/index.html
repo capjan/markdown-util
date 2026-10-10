@@ -23,7 +23,7 @@
             <rect x="2.5" y="3.5" width="15" height="13" rx="2"></rect>
             <path d="M8 4v12M5 7h1M5 10h1M5 13h1"></path>
         </svg>
-        <span>Dokumentation</span>
+        <span>Documentation</span>
     </button>
     <button class="theme-toggle" id="theme-toggle" type="button">
         <svg class="theme-icon-auto" viewBox="0 0 20 20" aria-hidden="true" focusable="false">
@@ -42,7 +42,7 @@
 </header>
 <div class="site-layout" id="site-layout">
     <aside class="site-sidebar" id="site-navigation" aria-label="Sitemap">
-        <nav aria-label="Dokumentationsseiten">
+        <nav aria-label="Documentation pages">
             <ul class="site-nav-list">
                 <li class="site-nav-item" style="--depth: 0">
     <a class="site-nav-link " href="../../index.html" aria-current="false">Documentation</a>
@@ -56,17 +56,8 @@
 <li class="site-nav-item" style="--depth: 2">
     <a class="site-nav-link " href="../../Usage/Linter/index.html" aria-current="false">Linter</a>
 </li>
-<li class="site-nav-item" style="--depth: 3">
-    <a class="site-nav-link " href="../../Usage/Linter/Rule2/index.html" aria-current="false">Rule 2</a>
-</li>
-<li class="site-nav-item" style="--depth: 3">
-    <a class="site-nav-link " href="../../Usage/Linter/Rule3/index.html" aria-current="false">Rule 3</a>
-</li>
 <li class="site-nav-item" style="--depth: 1">
     <a class="site-nav-link " href="../index.html" aria-current="false">Features</a>
-</li>
-<li class="site-nav-item" style="--depth: 2">
-    <a class="site-nav-link " href="../Breadcrumbs/index.html" aria-current="false">Breadcrumbs</a>
 </li>
 <li class="site-nav-item" style="--depth: 2">
     <a class="site-nav-link is-current" href="index.html" aria-current="page">HTML Renderer</a>
@@ -80,9 +71,9 @@
             </ul>
         </nav>
     </aside>
-    <button class="sidebar-backdrop" id="sidebar-backdrop" type="button" tabindex="-1" aria-label="Navigation schließen"></button>
+    <button class="sidebar-backdrop" id="sidebar-backdrop" type="button" tabindex="-1" aria-label="Close navigation"></button>
     <main class="site-main">
-<p class="breadcrumbs"><a href="../../index.html">Documentation</a><span class="breadcrumb-separator" aria-hidden="true"><svg viewBox="0 0 12 20" focusable="false"><path d="M2 2L9 10L2 18" /></svg></span><a href="../index.html">Features</a><span class="breadcrumb-separator" aria-hidden="true"><svg viewBox="0 0 12 20" focusable="false"><path d="M2 2L9 10L2 18" /></svg></span>HTML Renderer</p>
+<nav class="breadcrumbs" aria-label="Breadcrumb"><a href="../../index.html">Documentation</a><span class="breadcrumb-separator" aria-hidden="true"><svg viewBox="0 0 12 20" focusable="false"><path d="M2 2L9 10L2 18" /></svg></span><a href="../index.html">Features</a><span class="breadcrumb-separator" aria-hidden="true"><svg viewBox="0 0 12 20" focusable="false"><path d="M2 2L9 10L2 18" /></svg></span><span aria-current="page">HTML Renderer</span></nav>
 <h1 id="html-renderer">HTML Renderer</h1>
 <h2 id="features-and-goals">Features and goals</h2>
 <ul>
@@ -90,12 +81,15 @@
 <li>A collapsible, responsive sitemap navigation.</li>
 <li>Responsive, mobile-first layouts.</li>
 <li>Syntax highlighting for code blocks.</li>
+<li>Client-side search with direct links to matching sections and highlighted occurrences.</li>
 <li>Automatic copying of assets to the output directory.</li>
+<li>Breadcrumb navigation generated from the Markdown file structure.</li>
 </ul>
 <h2 id="technical-details">Technical details</h2>
 <ul>
 <li>The embedded HTML template is rendered by <code>HtmlRenderer</code> using .NET string and HTML-encoding APIs; it has no separate template engine dependency.</li>
 <li><a href="https://github.com/xoofx/markdig">Markdig</a> renders Markdown (CommonMark) files as HTML.</li>
+<li>Search creates a static JSON index at render time; the browser searches it locally without a search service.</li>
 </ul>
 
     </main>

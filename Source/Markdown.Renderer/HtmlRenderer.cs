@@ -37,15 +37,17 @@ public class HtmlRenderer
         string markdown,
         string editPageLink,
         IReadOnlyList<NavigationItem>? navigationItems = null,
-        string breadcrumbNavigationLine = "")
+        IReadOnlyList<BreadcrumbItem>? breadcrumbs = null)
     {
         var prefix = string.Concat(Enumerable.Repeat("../", nestingDeep));
         var cssFileLink = prefix + "css/main.css";
+        var searchScriptLink = prefix + "js/search.js";
+        var searchIndexLink = prefix + "search-index.json";
         
         var replacedMarkdown = _linkReplacer.ReplaceAll(markdown);
         
         var renderedMarkdown = Markdig.Markdown.ToHtml(replacedMarkdown, _pipeline);
-        renderedMarkdown = MoveBreadcrumbAboveHeading(renderedMarkdown, breadcrumbNavigationLine);
+        renderedMarkdown = InsertBreadcrumbsAboveHeading(renderedMarkdown, breadcrumbs ?? Array.Empty<BreadcrumbItem>());
         var model = new MainModel
         {
             Title = title,
@@ -61,6 +63,8 @@ public class HtmlRenderer
             ["TITLE"] = HtmlEncoder.Default.Encode(model.Title),
             ["DESCRIPTION"] = HtmlEncoder.Default.Encode(model.Description),
             ["CSS_LINK"] = HtmlEncoder.Default.Encode(model.CssLink),
+            ["SEARCH_SCRIPT_LINK"] = HtmlEncoder.Default.Encode(searchScriptLink),
+            ["SEARCH_INDEX_LINK"] = HtmlEncoder.Default.Encode(searchIndexLink),
             ["NAVIGATION_ITEMS"] = RenderNavigationItems(model.NavigationItems),
             ["MARKDOWN"] = model.RenderedMarkdown,
             ["EDIT_PAGE_LINK"] = RenderEditPageLink(model.EditPageLink)
@@ -86,31 +90,21 @@ public class HtmlRenderer
               <a href="{{HtmlEncoder.Default.Encode(editPageLink)}}">✎ Edit Page</a>
               """;
 
-    private string MoveBreadcrumbAboveHeading(string renderedMarkdown, string breadcrumbNavigationLine)
+    private static string InsertBreadcrumbsAboveHeading(
+        string renderedMarkdown,
+        IReadOnlyList<BreadcrumbItem> breadcrumbs)
     {
-        if (string.IsNullOrWhiteSpace(breadcrumbNavigationLine)) return renderedMarkdown;
-
-        var breadcrumbHtml = Markdig.Markdown.ToHtml(
-            _linkReplacer.ReplaceAll(breadcrumbNavigationLine), _pipeline).Trim();
+        if (breadcrumbs.Count == 0) return renderedMarkdown;
         var headingStart = renderedMarkdown.IndexOf("<h1", StringComparison.Ordinal);
         if (headingStart < 0) return renderedMarkdown;
 
-        var breadcrumbStart = renderedMarkdown.IndexOf(breadcrumbHtml, headingStart, StringComparison.Ordinal);
-        if (breadcrumbStart < 0) return renderedMarkdown;
-
-        var headingEnd = renderedMarkdown.IndexOf("</h1>", headingStart, StringComparison.Ordinal);
-        if (headingEnd < 0 || headingEnd + 5 > breadcrumbStart ||
-            !string.IsNullOrWhiteSpace(renderedMarkdown[(headingEnd + 5)..breadcrumbStart]))
-            return renderedMarkdown;
-
-        var heading = renderedMarkdown[headingStart..(headingEnd + 5)];
         const string separatorIcon =
             """<span class="breadcrumb-separator" aria-hidden="true"><svg viewBox="0 0 12 20" focusable="false"><path d="M2 2L9 10L2 18" /></svg></span>""";
-        var breadcrumb = breadcrumbHtml
-            .Replace("<p>", "<p class=\"breadcrumbs\">", StringComparison.Ordinal)
-            .Replace(" • ", separatorIcon, StringComparison.Ordinal);
-        return renderedMarkdown[..headingStart] + breadcrumb + Environment.NewLine + heading +
-               renderedMarkdown[(breadcrumbStart + breadcrumbHtml.Length)..];
+        var breadcrumbItems = breadcrumbs.Select(item => item.Url is null
+            ? $"<span aria-current=\"page\">{HtmlEncoder.Default.Encode(item.Title)}</span>"
+            : $"<a href=\"{HtmlEncoder.Default.Encode(item.Url)}\">{HtmlEncoder.Default.Encode(item.Title)}</a>");
+        var breadcrumb = $"<nav class=\"breadcrumbs\" aria-label=\"Breadcrumb\">{string.Join(separatorIcon, breadcrumbItems)}</nav>";
+        return renderedMarkdown[..headingStart] + breadcrumb + Environment.NewLine + renderedMarkdown[headingStart..];
     }
     
     private string GetEnsuredCssFolderPath(string basePath)

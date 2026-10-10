@@ -7,7 +7,7 @@ namespace Markdown.Document;
 public interface IMarkdownDocumentReader
 {
     /// <summary>
-    /// Reads the markdown file header consisting of title and the optional fields front-matter and breadcrumb navigation
+    /// Reads the markdown file header consisting of title and optional front matter.
     /// </summary>
     /// <param name="input">input of the Parser</param>
     /// <returns></returns>

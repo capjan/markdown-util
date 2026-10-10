@@ -5,8 +5,6 @@ sidebar:
 
 # Other Tools
 
-[Documentation](../README.md) • Other Tools
-
 Static site generators for Markdown documentation are not new, and many good solutions already exist.
 
 Please note:

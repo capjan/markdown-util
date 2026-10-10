@@ -1,7 +1,5 @@
 # Sidebar
 
-[Documentation](../../README.md) • [Features](../README.md) • Sidebar
-
 ## Overview
 
 When you run `mdu serve`, MarkdownUtil creates a collapsible sidebar from the Markdown files in the documentation folder. A `README.md` represents its folder in the navigation, and child folders appear nested below it.

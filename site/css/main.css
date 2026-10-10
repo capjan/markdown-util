@@ -173,7 +173,7 @@ body {
     overflow-y: auto;
     height: calc(100vh - 56px);
     min-width: 0;
-    padding: 1rem 0.75rem;
+    padding: 0.6rem 0.75rem 1rem;
     border-right: 1px solid var(--border);
 }
 
@@ -240,6 +240,10 @@ a {
 
 a:hover {
     text-decoration: underline;
+}
+
+.breadcrumbs {
+    margin: 0 0 1rem;
 }
 
 .breadcrumbs a {
@@ -442,6 +446,24 @@ th, td {
 .key {
     color: var(--syntax-key, var(--syntax-comment));
     font-weight: 600;
+}
+
+.command {
+    color: var(--syntax-command, var(--syntax-comment));
+    font-weight: 700;
+}
+
+.subcommand {
+    color: var(--syntax-subcommand, var(--syntax-keyword));
+    font-weight: 600;
+}
+
+.option {
+    color: var(--syntax-option, var(--syntax-string));
+}
+
+.argument {
+    color: var(--syntax-argument, var(--text-secondary, inherit));
 }
 
 .string {
