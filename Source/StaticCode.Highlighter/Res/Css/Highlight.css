@@ -11,6 +11,24 @@
     font-weight: 600;
 }
 
+.command {
+    color: var(--syntax-command, var(--syntax-comment));
+    font-weight: 700;
+}
+
+.subcommand {
+    color: var(--syntax-subcommand, var(--syntax-keyword));
+    font-weight: 600;
+}
+
+.option {
+    color: var(--syntax-option, var(--syntax-string));
+}
+
+.argument {
+    color: var(--syntax-argument, var(--text-secondary, inherit));
+}
+
 .string {
     color: var(--syntax-string);
 }

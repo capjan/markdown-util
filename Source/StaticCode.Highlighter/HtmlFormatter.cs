@@ -31,6 +31,26 @@ public class HtmlFormatter : ITextFormatter<IEnumerable<LanguageToken>>
                     writer.Write(WebUtility.HtmlEncode(token.Text));
                     writer.Write("</span>");
                     break;
+                case TokenType.Command:
+                    writer.Write("<span class=\"command\">");
+                    writer.Write(WebUtility.HtmlEncode(token.Text));
+                    writer.Write("</span>");
+                    break;
+                case TokenType.Subcommand:
+                    writer.Write("<span class=\"subcommand\">");
+                    writer.Write(WebUtility.HtmlEncode(token.Text));
+                    writer.Write("</span>");
+                    break;
+                case TokenType.Option:
+                    writer.Write("<span class=\"option\">");
+                    writer.Write(WebUtility.HtmlEncode(token.Text));
+                    writer.Write("</span>");
+                    break;
+                case TokenType.Argument:
+                    writer.Write("<span class=\"argument\">");
+                    writer.Write(WebUtility.HtmlEncode(token.Text));
+                    writer.Write("</span>");
+                    break;
                 case TokenType.Operator:
                     writer.Write("<span class=\"operator\">");
                     writer.Write(WebUtility.HtmlEncode(token.Text));

@@ -38,10 +38,12 @@ public class Lexer
     private readonly IParserInputPredicate _operatorPredicate;
     private readonly IParserInputPredicate _lineComment;
     private readonly bool _highlightKeys;
+    private readonly bool _highlightShellTokens;
 
     private Lexer(Grammar settings)
     {
         _highlightKeys = settings.HighlightKeys;
+        _highlightShellTokens = settings.HighlightShellTokens;
         _keywordPredicate = ParserInput.Predicate()
             .EqualsWordBoundary()
             .EqualsAny(settings.Keywords)
@@ -92,12 +94,17 @@ public class Lexer
 
     public IEnumerable<LanguageToken> Analyse(TextReader reader)
     {
-        if (!_highlightKeys)
+        if (!_highlightKeys && !_highlightShellTokens)
             return AnalyseCore(reader);
 
         var source = reader.ReadToEnd();
-        var keyRanges = FindYamlKeyRanges(source);
-        return ApplyKeyRanges(AnalyseCore(new StringReader(source)), source.Length, keyRanges);
+        var ranges = new List<(int Start, int End, TokenType Type)>();
+        if (_highlightKeys)
+            ranges.AddRange(FindYamlKeyRanges(source).Select(range => (range.Start, range.End, TokenType.Key)));
+        if (_highlightShellTokens)
+            ranges.AddRange(FindShellTokenRanges(source));
+
+        return ApplyTokenRanges(AnalyseCore(new StringReader(source)), source.Length, ranges);
     }
 
     private IEnumerable<LanguageToken> AnalyseCore(TextReader reader)
@@ -228,16 +235,16 @@ public class Lexer
         }
     }
 
-    private static IEnumerable<LanguageToken> ApplyKeyRanges(
+    private static IEnumerable<LanguageToken> ApplyTokenRanges(
         IEnumerable<LanguageToken> tokens,
         int sourceLength,
-        IReadOnlyCollection<(int Start, int End)> keyRanges)
+        IReadOnlyCollection<(int Start, int End, TokenType Type)> ranges)
     {
-        var keyCharacters = new bool[sourceLength];
-        foreach (var (start, end) in keyRanges)
+        var tokenTypes = new TokenType?[sourceLength];
+        foreach (var (start, end, type) in ranges)
         {
             for (var index = start; index < end; index++)
-                keyCharacters[index] = true;
+                tokenTypes[index] = type;
         }
 
         var sourcePosition = 0;
@@ -246,15 +253,15 @@ public class Lexer
             var tokenOffset = 0;
             while (tokenOffset < token.Text.Length)
             {
-                var isKey = keyCharacters[sourcePosition + tokenOffset];
+                var type = tokenTypes[sourcePosition + tokenOffset] ?? token.Type;
                 var runStart = tokenOffset;
                 while (tokenOffset < token.Text.Length &&
-                       keyCharacters[sourcePosition + tokenOffset] == isKey)
+                       (tokenTypes[sourcePosition + tokenOffset] ?? token.Type) == type)
                     tokenOffset++;
 
                 yield return new LanguageToken(
                     token.Text[runStart..tokenOffset],
-                    isKey ? TokenType.Key : token.Type);
+                    type);
             }
 
             sourcePosition += token.Text.Length;
@@ -311,6 +318,210 @@ public class Lexer
         }
 
         return ranges;
+    }
+
+    private static List<(int Start, int End, TokenType Type)> FindShellTokenRanges(string source)
+    {
+        var ranges = new List<(int Start, int End, TokenType Type)>();
+        var commandExpected = true;
+        var commandSeen = false;
+        var subcommandSeen = false;
+        var redirectionTarget = false;
+        var index = 0;
+
+        while (index < source.Length)
+        {
+            var character = source[index];
+            if (character is '\r' or '\n')
+            {
+                commandExpected = true;
+                commandSeen = false;
+                subcommandSeen = false;
+                index++;
+                continue;
+            }
+
+            if (char.IsWhiteSpace(character))
+            {
+                index++;
+                continue;
+            }
+
+            if (character == '#')
+            {
+                while (index < source.Length && source[index] is not ('\r' or '\n'))
+                    index++;
+                continue;
+            }
+
+            if (character is ';' or '|')
+            {
+                while (index < source.Length && source[index] == character)
+                    index++;
+                if (character == ';' && index < source.Length && source[index] == '&')
+                    index++;
+                commandExpected = true;
+                commandSeen = false;
+                subcommandSeen = false;
+                continue;
+            }
+
+            if (character == '&')
+            {
+                if (index + 1 < source.Length && source[index + 1] is '<' or '>')
+                {
+                    index++;
+                    redirectionTarget = true;
+                    continue;
+                }
+
+                while (index < source.Length && source[index] == '&')
+                    index++;
+                commandExpected = true;
+                commandSeen = false;
+                subcommandSeen = false;
+                continue;
+            }
+
+            if (character is '(' or '{')
+            {
+                index++;
+                commandExpected = true;
+                commandSeen = false;
+                subcommandSeen = false;
+                continue;
+            }
+
+            if (character is ')' or '}')
+            {
+                index++;
+                commandExpected = true;
+                commandSeen = false;
+                subcommandSeen = false;
+                continue;
+            }
+
+            if (character is '<' or '>')
+            {
+                while (index < source.Length && source[index] is '<' or '>' or '&')
+                    index++;
+                redirectionTarget = true;
+                continue;
+            }
+
+            var wordStart = index;
+            var containsQuote = false;
+            var quote = '\0';
+            while (index < source.Length)
+            {
+                character = source[index];
+                if (quote == '\0' && (char.IsWhiteSpace(character) || character is '|' or '&' or ';' or '(' or ')' or '{' or '}' or '<' or '>'))
+                    break;
+
+                if (character == '\\' && index + 1 < source.Length && quote != '\'')
+                {
+                    index += 2;
+                    continue;
+                }
+
+                if (quote == '\0' && character is '\'' or '"')
+                {
+                    quote = character;
+                    containsQuote = true;
+                }
+                else if (quote == character)
+                {
+                    quote = '\0';
+                }
+
+                index++;
+            }
+
+            var word = source[wordStart..index];
+            if (word.Length == 0)
+            {
+                index++;
+                continue;
+            }
+
+            if (redirectionTarget)
+            {
+                redirectionTarget = false;
+                continue;
+            }
+
+            if (word.All(char.IsDigit) && index < source.Length && source[index] is '<' or '>')
+                continue;
+
+            if (commandExpected)
+            {
+                if (IsShellPrefixKeyword(word))
+                    continue;
+
+                if (IsShellKeyword(word))
+                {
+                    commandExpected = false;
+                    continue;
+                }
+
+                if (!containsQuote && IsShellAssignment(word))
+                    continue;
+
+                if (!containsQuote)
+                    ranges.Add((wordStart, index, TokenType.Command));
+                commandExpected = false;
+                commandSeen = true;
+                subcommandSeen = false;
+                continue;
+            }
+
+            if (!containsQuote && IsShellOption(word))
+            {
+                ranges.Add((wordStart, index, TokenType.Option));
+                continue;
+            }
+
+            if (!commandSeen)
+                continue;
+
+            if (!subcommandSeen)
+            {
+                if (!containsQuote)
+                    ranges.Add((wordStart, index, TokenType.Subcommand));
+                subcommandSeen = true;
+            }
+            else if (!containsQuote)
+            {
+                ranges.Add((wordStart, index, TokenType.Argument));
+            }
+        }
+
+        return ranges;
+    }
+
+    private static bool IsShellPrefixKeyword(string word) => word is
+        "if" or "then" or "else" or "elif" or "while" or "until" or "do" or "time" or "!";
+
+    private static bool IsShellKeyword(string word) => word is
+        "fi" or "for" or "done" or "case" or "esac" or "in" or "function" or "select" or "coproc";
+
+    private static bool IsShellOption(string word) =>
+        word.StartsWith("--", StringComparison.Ordinal) ||
+        (word.Length > 1 && word[0] == '-' && !char.IsDigit(word[1]));
+
+    private static bool IsShellAssignment(string word)
+    {
+        var equalsIndex = word.IndexOf('=');
+        if (equalsIndex < 1 || !(char.IsLetter(word[0]) || word[0] == '_'))
+            return false;
+
+        for (var index = 1; index < equalsIndex; index++)
+        {
+            if (!(char.IsLetterOrDigit(word[index]) || word[index] == '_'))
+                return false;
+        }
+
+        return true;
     }
 
     private static int NextLineStart(string source, int lineEnd)

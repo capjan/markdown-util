@@ -14,6 +14,7 @@ public static class GrammarStore
             case "cs": case "csharp": return CSharp();
             case "swift": return Swift();
             case "yaml": case "yml": return Yaml();
+            case "bash": case "zsh": case "sh": case "shell": return Shell();
             default: return Plain();
         }
     }
@@ -74,6 +75,28 @@ public static class GrammarStore
             },
             lineCommentStart: "#",
             highlightKeys: true);
+    }
+
+    private static Grammar Shell()
+    {
+        return new Grammar(
+            keywords: new[]
+            {
+                "if", "then", "else", "elif", "fi", "for", "while", "until", "do", "done",
+                "case", "esac", "in", "function", "select", "time", "coproc"
+            },
+            operators: new[]
+            {
+                ";;&", ";;", ";&", "<<<", "&&", "||", ">>", "<<", "&>", ">&", "<&", ">|",
+                "|", "&", ";", ">", "<", "(", ")", "{", "}", "!", "="
+            },
+            strings: new[]
+            {
+                new LanguageString('"', "\\\"", "\\\\"),
+                new LanguageString('\'')
+            },
+            lineCommentStart: "#",
+            highlightShellTokens: true);
     }
 
     private static Grammar Plain()

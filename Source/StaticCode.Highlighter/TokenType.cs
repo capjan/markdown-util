@@ -10,5 +10,9 @@ public enum TokenType
     Whitespace,
     Comment,
     Number,
-    Key
+    Key,
+    Command,
+    Subcommand,
+    Option,
+    Argument
 }
