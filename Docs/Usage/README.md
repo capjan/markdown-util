@@ -22,6 +22,22 @@ Running Linter
 Party! 🥳 The Markdown linter does not detect any errors!
 ```
 
+## Previewing the rendered site
+
+Run `mdu serve` from the project folder containing a `Docs` or `docs` folder. MarkdownUtil renders the site to `./site`, opens it in your browser, and watches for changes. Editing a Markdown file updates its page; changing a linked local asset refreshes the pages that use it. Press `Ctrl+C` to stop the preview server.
+
+```bash
+mdu serve
+```
+
+The source folder, output folder, and port can be specified when needed. The defaults are `Docs` or `docs`, `site`, and port `4173`.
+
+```bash
+mdu serve ./Docs ./site --port 4173
+```
+
+Use `--no-browser` to start the server without opening a browser.
+
 ## Adding breadcrumb navigation
 
 - Generates Breadcrumb Navigation in every markdown files in the current folder and all subfolders

@@ -5,16 +5,24 @@ namespace MarkdownUtil.Service.Visitors;
 
 public class LocalAssetsCopy : BaseVisitor
 {
- 
+    private static readonly Regex AssetLinkPattern = new(
+        @"(?<=\(\s*)(\.{0,2}/)?(\.{2}/){0,}([\w\.-]+/){0,}[\w\.-]+\.(bmp|png|gif|jpg|jpeg|svg|pdf|txt)(?=\s*\))",
+        RegexOptions.Compiled);
+
     public LocalAssetsCopy(string rootPath, string outPath) : base(rootPath, outPath)
     {
     }
+
+    public static IEnumerable<string> GetLinkedAssetPaths(string markdown, string inputDirectoryPath) =>
+        AssetLinkPattern.Matches(markdown)
+            .Select(match => Path.GetFullPath(match.Value, inputDirectoryPath))
+            .Distinct(StringComparer.Ordinal);
 
     protected override bool ProcessFile(MarkdownFile entity, int graphDepth, FilePathInfo io)
     {
         var fileContent = io.ReadAllText();
 
-        var assetLinks = Regex.Matches(fileContent, @"(?<=\(\s*)(\.{0,2}/)?(\.{2}/){0,}([\w\.-]+/){0,}[\w\.-]+\.(bmp|png|gif|jpg|jpeg|svg|pdf|txt)(?=\s*\))");
+        var assetLinks = AssetLinkPattern.Matches(fileContent);
         if (assetLinks.Count > 0)
         {
             Console.WriteLine($"Found {assetLinks.Count} Assets in {io.InputFullFilePath}");

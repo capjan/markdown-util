@@ -25,6 +25,7 @@ registrations.AddScoped<AddBreadcrumbNavigationCommand>();
 registrations.AddScoped<LintCommand>();
 registrations.AddScoped<PrintTreeCommand>();
 registrations.AddScoped<RenderCommand>();
+registrations.AddScoped<ServeCommand>();
 
 using var services = registrations.BuildServiceProvider();
 
@@ -91,6 +92,51 @@ renderCommand.SetAction(parseResult =>
         EditPageRoot = parseResult.GetValue(editPageRoot) ?? string.Empty
     }));
 rootCommand.Subcommands.Add(renderCommand);
+
+var serveCommand = new Command("serve", "Renders, serves, and watches a Markdown site.");
+var (servePattern, serveHidden) = AddVisitorOptions(serveCommand);
+var serveRootPath = new Argument<string?>("path")
+{
+    Arity = ArgumentArity.ZeroOrOne,
+    Description = "Root folder containing the Markdown files. Defaults to ./docs or ./Docs."
+};
+var serveOutputPath = new Argument<string?>("outpath")
+{
+    Arity = ArgumentArity.ZeroOrOne,
+    Description = "Output folder for the rendered site. Defaults to ./site."
+};
+var servePort = new Option<int>("--port")
+{
+    Description = "Local preview server port.",
+    DefaultValueFactory = _ => 4173
+};
+var noBrowser = new Option<bool>("--no-browser")
+{
+    Description = "Do not open the preview in a browser."
+};
+var serveEditPageRoot = new Option<string>("--editPageRoot")
+{
+    Description = "URL to the root URL for editing the source files.",
+    DefaultValueFactory = _ => string.Empty
+};
+serveCommand.Arguments.Add(serveRootPath);
+serveCommand.Arguments.Add(serveOutputPath);
+serveCommand.Options.Add(servePort);
+serveCommand.Options.Add(noBrowser);
+serveCommand.Options.Add(serveEditPageRoot);
+serveCommand.SetAction(parseResult =>
+    services.GetRequiredService<ServeCommand>().Execute(
+        new RenderCommandSettings
+        {
+            RootPath = parseResult.GetValue(serveRootPath),
+            OutputPath = parseResult.GetValue(serveOutputPath),
+            SearchPattern = parseResult.GetValue(servePattern),
+            IncludeHidden = parseResult.GetValue(serveHidden),
+            EditPageRoot = parseResult.GetValue(serveEditPageRoot) ?? string.Empty
+        },
+        parseResult.GetValue(servePort),
+        parseResult.GetValue(noBrowser)));
+rootCommand.Subcommands.Add(serveCommand);
 
 return rootCommand.Parse(args).Invoke();
 

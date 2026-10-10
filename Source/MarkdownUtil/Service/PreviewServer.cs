@@ -1,0 +1,280 @@
+using System.Collections.Concurrent;
+using System.Net;
+using System.Text;
+using System.Text.Json;
+using System.Threading.Channels;
+
+namespace MarkdownUtil.Service;
+
+public sealed class PreviewServer : IDisposable
+{
+    private const string LiveReloadEndpoint = "/__mdu/events";
+
+    private static readonly IReadOnlyDictionary<string, string> ContentTypes =
+        new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase)
+        {
+            [".bmp"] = "image/bmp",
+            [".css"] = "text/css; charset=utf-8",
+            [".gif"] = "image/gif",
+            [".html"] = "text/html; charset=utf-8",
+            [".jpeg"] = "image/jpeg",
+            [".jpg"] = "image/jpeg",
+            [".js"] = "text/javascript; charset=utf-8",
+            [".pdf"] = "application/pdf",
+            [".png"] = "image/png",
+            [".svg"] = "image/svg+xml",
+            [".txt"] = "text/plain; charset=utf-8"
+        };
+
+    private readonly string _outputPath;
+    private readonly HttpListener _listener = new();
+    private readonly ConcurrentDictionary<Guid, EventClient> _eventClients = new();
+
+    public PreviewServer(string outputPath, int port)
+    {
+        _outputPath = Path.GetFullPath(outputPath);
+        BaseUrl = $"http://127.0.0.1:{port}/";
+        _listener.Prefixes.Add(BaseUrl);
+    }
+
+    public string BaseUrl { get; }
+
+    public void Start() => _listener.Start();
+
+    public async Task RunAsync(CancellationToken cancellationToken)
+    {
+        try
+        {
+            while (!cancellationToken.IsCancellationRequested)
+            {
+                var context = await _listener.GetContextAsync().WaitAsync(cancellationToken);
+                _ = HandleRequestAsync(context, cancellationToken);
+            }
+        }
+        catch (OperationCanceledException) when (cancellationToken.IsCancellationRequested)
+        {
+        }
+        catch (HttpListenerException) when (cancellationToken.IsCancellationRequested)
+        {
+        }
+        finally
+        {
+            foreach (var client in _eventClients.Values)
+                client.Messages.Writer.TryComplete();
+        }
+    }
+
+    public void Publish(IEnumerable<string>? paths = null, bool reloadAll = false)
+    {
+        var message = JsonSerializer.Serialize(new
+        {
+            reloadAll,
+            paths = paths?.Distinct(StringComparer.Ordinal).ToArray() ?? Array.Empty<string>()
+        });
+
+        foreach (var client in _eventClients.Values)
+            client.Messages.Writer.TryWrite(message);
+    }
+
+    public static string ToUrlPath(string outputRoot, string outputFile)
+    {
+        var relativePath = Path.GetRelativePath(outputRoot, outputFile)
+            .Replace(Path.DirectorySeparatorChar, '/');
+        var escapedPath = string.Join('/', relativePath.Split('/').Select(Uri.EscapeDataString));
+        return "/" + escapedPath;
+    }
+
+    private async Task HandleRequestAsync(HttpListenerContext context, CancellationToken cancellationToken)
+    {
+        if (context.Request.Url?.AbsolutePath == LiveReloadEndpoint)
+        {
+            StartEventStream(context.Response, cancellationToken);
+            return;
+        }
+
+        try
+        {
+            var requestedPath = context.Request.Url?.AbsolutePath ?? "/";
+            var filePath = ResolveFilePath(requestedPath);
+            if (filePath is null)
+            {
+                await WriteTextAsync(context.Response, HttpStatusCode.Forbidden, "Forbidden");
+                return;
+            }
+
+            if (!File.Exists(filePath))
+            {
+                await WriteTextAsync(context.Response, HttpStatusCode.NotFound, "Not found");
+                return;
+            }
+
+            context.Response.StatusCode = (int)HttpStatusCode.OK;
+            context.Response.Headers[HttpResponseHeader.CacheControl] = "no-cache";
+            context.Response.Headers["X-Content-Type-Options"] = "nosniff";
+            context.Response.ContentType = ContentTypes.TryGetValue(Path.GetExtension(filePath), out var contentType)
+                ? contentType
+                : "application/octet-stream";
+
+            if (Path.GetExtension(filePath).Equals(".html", StringComparison.OrdinalIgnoreCase))
+            {
+                var html = await File.ReadAllTextAsync(filePath, cancellationToken);
+                html = InjectLiveReload(html, ToUrlPath(_outputPath, filePath));
+                var bytes = Encoding.UTF8.GetBytes(html);
+                context.Response.ContentLength64 = bytes.Length;
+                await context.Response.OutputStream.WriteAsync(bytes, cancellationToken);
+            }
+            else
+            {
+                var file = new FileInfo(filePath);
+                context.Response.ContentLength64 = file.Length;
+                await using var input = file.OpenRead();
+                await input.CopyToAsync(context.Response.OutputStream, cancellationToken);
+            }
+        }
+        catch (Exception exception) when (exception is IOException or UnauthorizedAccessException or UriFormatException or HttpListenerException or ObjectDisposedException or OperationCanceledException)
+        {
+            try
+            {
+                if (!cancellationToken.IsCancellationRequested && context.Response.OutputStream.CanWrite)
+                    await WriteTextAsync(context.Response, HttpStatusCode.InternalServerError, "Could not read the requested file");
+            }
+            catch (Exception writeException) when (writeException is IOException or HttpListenerException or ObjectDisposedException)
+            {
+            }
+        }
+        finally
+        {
+            try
+            {
+                context.Response.Close();
+            }
+            catch (HttpListenerException)
+            {
+            }
+        }
+    }
+
+    private string? ResolveFilePath(string requestedPath)
+    {
+        var decodedPath = Uri.UnescapeDataString(requestedPath);
+        var relativePath = decodedPath.TrimStart('/').Replace('/', Path.DirectorySeparatorChar);
+        var filePath = Path.GetFullPath(Path.Combine(_outputPath, relativePath));
+        if (!IsInsideOutput(filePath)) return null;
+
+        if (decodedPath == "/")
+        {
+            var indexPath = Path.Combine(_outputPath, "index.html");
+            if (File.Exists(indexPath)) return indexPath;
+            return Directory.EnumerateFiles(_outputPath, "*.html", SearchOption.AllDirectories)
+                .OrderBy(path => path, StringComparer.OrdinalIgnoreCase)
+                .FirstOrDefault() ?? indexPath;
+        }
+
+        if (decodedPath.EndsWith('/') || Directory.Exists(filePath))
+            filePath = Path.Combine(filePath, "index.html");
+        return IsInsideOutput(filePath) ? filePath : null;
+    }
+
+    private bool IsInsideOutput(string path)
+    {
+        var relativePath = Path.GetRelativePath(_outputPath, path);
+        return !Path.IsPathRooted(relativePath) &&
+               relativePath != ".." &&
+               !relativePath.StartsWith(".." + Path.DirectorySeparatorChar, StringComparison.Ordinal);
+    }
+
+    private void StartEventStream(HttpListenerResponse response, CancellationToken cancellationToken)
+    {
+        response.StatusCode = (int)HttpStatusCode.OK;
+        response.ContentType = "text/event-stream; charset=utf-8";
+        response.SendChunked = true;
+        response.KeepAlive = true;
+        response.Headers[HttpResponseHeader.CacheControl] = "no-cache";
+        response.Headers["X-Accel-Buffering"] = "no";
+
+        var id = Guid.NewGuid();
+        var client = new EventClient(response);
+        _eventClients[id] = client;
+        _ = SendEventsAsync(id, client, cancellationToken);
+    }
+
+    private async Task SendEventsAsync(Guid id, EventClient client, CancellationToken cancellationToken)
+    {
+        try
+        {
+            var connected = Encoding.UTF8.GetBytes(": connected\n\n");
+            await client.Response.OutputStream.WriteAsync(connected, cancellationToken);
+            await client.Response.OutputStream.FlushAsync(cancellationToken);
+
+            while (!cancellationToken.IsCancellationRequested)
+            {
+                using var readTimeout = CancellationTokenSource.CreateLinkedTokenSource(cancellationToken);
+                readTimeout.CancelAfter(TimeSpan.FromSeconds(15));
+
+                string? message = null;
+                try
+                {
+                    message = await client.Messages.Reader.ReadAsync(readTimeout.Token);
+                }
+                catch (OperationCanceledException) when (!cancellationToken.IsCancellationRequested)
+                {
+                    // Keep idle event streams open and detect disconnected browsers.
+                }
+
+                var payload = message is null ? ": keep-alive\n\n" : $"data: {message}\n\n";
+                var bytes = Encoding.UTF8.GetBytes(payload);
+                await client.Response.OutputStream.WriteAsync(bytes, cancellationToken);
+                await client.Response.OutputStream.FlushAsync(cancellationToken);
+            }
+        }
+        catch (Exception exception) when (exception is IOException or HttpListenerException or ObjectDisposedException or OperationCanceledException)
+        {
+        }
+        finally
+        {
+            _eventClients.TryRemove(id, out _);
+            client.Messages.Writer.TryComplete();
+            client.Response.Close();
+        }
+    }
+
+    private static string InjectLiveReload(string html, string servedPath)
+    {
+        var script = $$"""
+            <script>
+            (() => {
+              const currentPath = {{JsonSerializer.Serialize(servedPath)}};
+              const events = new EventSource("{{LiveReloadEndpoint}}");
+              events.onmessage = message => {
+                const change = JSON.parse(message.data);
+                if (change.reloadAll || change.paths.includes(currentPath)) location.reload();
+              };
+            })();
+            </script>
+            """;
+
+        var bodyEnd = html.LastIndexOf("</body>", StringComparison.OrdinalIgnoreCase);
+        return bodyEnd < 0 ? html + script : html.Insert(bodyEnd, script);
+    }
+
+    private static async Task WriteTextAsync(HttpListenerResponse response, HttpStatusCode statusCode, string message)
+    {
+        var bytes = Encoding.UTF8.GetBytes(message);
+        response.StatusCode = (int)statusCode;
+        response.ContentType = "text/plain; charset=utf-8";
+        response.ContentLength64 = bytes.Length;
+        await response.OutputStream.WriteAsync(bytes);
+    }
+
+    public void Dispose()
+    {
+        foreach (var client in _eventClients.Values)
+            client.Messages.Writer.TryComplete();
+        _listener.Close();
+    }
+
+    private sealed record EventClient(HttpListenerResponse Response)
+    {
+        public Channel<string> Messages { get; } = Channel.CreateUnbounded<string>();
+    }
+}
