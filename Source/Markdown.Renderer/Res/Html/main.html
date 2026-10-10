@@ -1,0 +1,117 @@
+<!DOCTYPE html>
+
+<html data-theme="auto">
+<head>
+    <title>%%TITLE%%</title>
+    <meta charset="utf-8">
+    <meta name="description" content="%%DESCRIPTION%%">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <script>
+        try {
+            const savedTheme = localStorage.getItem("mdu-theme");
+            if (["auto", "light", "dark"].includes(savedTheme)) {
+                document.documentElement.dataset.theme = savedTheme;
+            }
+        } catch { }
+    </script>
+    <link rel="stylesheet" href="%%CSS_LINK%%">
+</head>
+<body>
+<header class="site-header">
+    <button class="navigation-toggle" id="navigation-toggle" type="button" aria-expanded="true" aria-controls="site-navigation">
+        <svg viewBox="0 0 20 20" aria-hidden="true" focusable="false">
+            <rect x="2.5" y="3.5" width="15" height="13" rx="2"></rect>
+            <path d="M8 4v12M5 7h1M5 10h1M5 13h1"></path>
+        </svg>
+        <span>Dokumentation</span>
+    </button>
+    <button class="theme-toggle" id="theme-toggle" type="button">
+        <svg class="theme-icon-auto" viewBox="0 0 20 20" aria-hidden="true" focusable="false">
+            <path d="M10 1.5a8.5 8.5 0 0 1 0 17z"></path>
+            <circle cx="10" cy="10" r="8.5" fill="none" stroke="currentColor" stroke-width="1.5"></circle>
+        </svg>
+        <svg class="theme-icon-light" viewBox="0 0 20 20" aria-hidden="true" focusable="false">
+            <circle cx="10" cy="10" r="3.5"></circle>
+            <path d="M10 1.5v2M10 16.5v2M18.5 10h-2M3.5 10h-2M16 4l-1.4 1.4M5.4 14.6 4 16M16 16l-1.4-1.4M5.4 5.4 4 4" fill="none" stroke="currentColor" stroke-linecap="round" stroke-width="2"></path>
+        </svg>
+        <svg class="theme-icon-dark" viewBox="0 0 20 20" aria-hidden="true" focusable="false">
+            <path d="M17.5 12.5A8 8 0 0 1 7.5 2.2 8.5 8.5 0 1 0 17.5 12.5Z"></path>
+        </svg>
+        <span id="theme-label">Auto</span>
+    </button>
+</header>
+<div class="site-layout" id="site-layout">
+    <aside class="site-sidebar" id="site-navigation" aria-label="Sitemap">
+        <nav aria-label="Dokumentationsseiten">
+            <ul class="site-nav-list">
+                %%NAVIGATION_ITEMS%%
+            </ul>
+        </nav>
+    </aside>
+    <button class="sidebar-backdrop" id="sidebar-backdrop" type="button" tabindex="-1" aria-label="Navigation schließen"></button>
+    <main class="site-main">
+        %%MARKDOWN%%
+        %%EDIT_PAGE_LINK%%
+    </main>
+</div>
+<script>
+(() => {
+    const root = document.documentElement;
+    const themeToggle = document.getElementById("theme-toggle");
+    const themeLabel = document.getElementById("theme-label");
+    const themes = ["auto", "light", "dark"];
+    const themeNames = { auto: "Auto", light: "Light", dark: "Dark" };
+
+    const updateThemeLabel = () => {
+        const currentTheme = root.dataset.theme;
+        const nextTheme = themes[(themes.indexOf(currentTheme) + 1) % themes.length];
+        themeLabel.textContent = themeNames[currentTheme];
+        themeToggle.title = `Darstellung: ${themeNames[currentTheme]} (klicken für ${themeNames[nextTheme]})`;
+        themeToggle.setAttribute("aria-label", `Darstellung: ${themeNames[currentTheme]}. Klicken, um auf ${themeNames[nextTheme]} zu wechseln.`);
+    };
+
+    updateThemeLabel();
+    themeToggle.addEventListener("click", () => {
+        const currentTheme = root.dataset.theme;
+        const nextTheme = themes[(themes.indexOf(currentTheme) + 1) % themes.length];
+        root.dataset.theme = nextTheme;
+        try {
+            localStorage.setItem("mdu-theme", nextTheme);
+        } catch { }
+        updateThemeLabel();
+    });
+
+    const layout = document.getElementById("site-layout");
+    const toggle = document.getElementById("navigation-toggle");
+    const backdrop = document.getElementById("sidebar-backdrop");
+    const navigation = document.getElementById("site-navigation");
+    const breakpoint = window.matchMedia("(max-width: 760px)");
+    let isOpen = !breakpoint.matches;
+
+    const setOpen = (open) => {
+        isOpen = open;
+        layout.classList.toggle("sidebar-open", open && breakpoint.matches);
+        layout.classList.toggle("sidebar-collapsed", !open && !breakpoint.matches);
+        toggle.setAttribute("aria-expanded", String(open));
+
+        if (open && breakpoint.matches) {
+            navigation.querySelector("a")?.focus();
+        } else if (!open && navigation.contains(document.activeElement)) {
+            toggle.focus();
+        }
+    };
+
+    setOpen(isOpen);
+    toggle.addEventListener("click", () => setOpen(!isOpen));
+    backdrop.addEventListener("click", () => setOpen(false));
+    navigation.addEventListener("click", (event) => {
+        if (breakpoint.matches && event.target.closest("a")) setOpen(false);
+    });
+    document.addEventListener("keydown", (event) => {
+        if (breakpoint.matches && isOpen && event.key === "Escape") setOpen(false);
+    });
+    breakpoint.addEventListener("change", (event) => setOpen(!event.matches));
+})();
+</script>
+</body>
+</html>

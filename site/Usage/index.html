@@ -1,0 +1,174 @@
+
+<!DOCTYPE html>
+
+<html data-theme="auto">
+<head>
+    <title>Usage</title>
+    <meta charset="utf-8">
+    <meta name="description" content="">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <script>
+        try {
+            const savedTheme = localStorage.getItem("mdu-theme");
+            if (["auto", "light", "dark"].includes(savedTheme)) {
+                document.documentElement.dataset.theme = savedTheme;
+            }
+        } catch { }
+    </script>
+    <link rel="stylesheet" href="../css/main.css">
+</head>
+<body>
+<header class="site-header">
+    <button class="navigation-toggle" id="navigation-toggle" type="button" aria-expanded="true" aria-controls="site-navigation">
+        <svg viewBox="0 0 20 20" aria-hidden="true" focusable="false">
+            <rect x="2.5" y="3.5" width="15" height="13" rx="2"></rect>
+            <path d="M8 4v12M5 7h1M5 10h1M5 13h1"></path>
+        </svg>
+        <span>Dokumentation</span>
+    </button>
+    <button class="theme-toggle" id="theme-toggle" type="button">
+        <svg class="theme-icon-auto" viewBox="0 0 20 20" aria-hidden="true" focusable="false">
+            <path d="M10 1.5a8.5 8.5 0 0 1 0 17z"></path>
+            <circle cx="10" cy="10" r="8.5" fill="none" stroke="currentColor" stroke-width="1.5"></circle>
+        </svg>
+        <svg class="theme-icon-light" viewBox="0 0 20 20" aria-hidden="true" focusable="false">
+            <circle cx="10" cy="10" r="3.5"></circle>
+            <path d="M10 1.5v2M10 16.5v2M18.5 10h-2M3.5 10h-2M16 4l-1.4 1.4M5.4 14.6 4 16M16 16l-1.4-1.4M5.4 5.4 4 4" fill="none" stroke="currentColor" stroke-linecap="round" stroke-width="2"></path>
+        </svg>
+        <svg class="theme-icon-dark" viewBox="0 0 20 20" aria-hidden="true" focusable="false">
+            <path d="M17.5 12.5A8 8 0 0 1 7.5 2.2 8.5 8.5 0 1 0 17.5 12.5Z"></path>
+        </svg>
+        <span id="theme-label">Auto</span>
+    </button>
+</header>
+<div class="site-layout" id="site-layout">
+    <aside class="site-sidebar" id="site-navigation" aria-label="Sitemap">
+        <nav aria-label="Dokumentationsseiten">
+            <ul class="site-nav-list">
+                    <li class="site-nav-item" style="--depth: 0">
+                        <a class="site-nav-link " href="../index.html" aria-current="false">Dokumentation</a>
+                    </li>
+                    <li class="site-nav-item" style="--depth: 1">
+                        <a class="site-nav-link " href="../Features/index.html" aria-current="false">Features</a>
+                    </li>
+                    <li class="site-nav-item" style="--depth: 2">
+                        <a class="site-nav-link " href="../Features/Breadcrumbs/index.html" aria-current="false">Breadcrumbs</a>
+                    </li>
+                    <li class="site-nav-item" style="--depth: 2">
+                        <a class="site-nav-link " href="../Features/HtmlRenderer/index.html" aria-current="false">HTML Renderer</a>
+                    </li>
+                    <li class="site-nav-item" style="--depth: 2">
+                        <a class="site-nav-link " href="../Features/Linter/index.html" aria-current="false">Linter</a>
+                    </li>
+                    <li class="site-nav-item" style="--depth: 3">
+                        <a class="site-nav-link " href="../Features/Linter/Rule2/index.html" aria-current="false">Rule 2</a>
+                    </li>
+                    <li class="site-nav-item" style="--depth: 3">
+                        <a class="site-nav-link " href="../Features/Linter/Rule3/index.html" aria-current="false">Rule 3</a>
+                    </li>
+                    <li class="site-nav-item" style="--depth: 1">
+                        <a class="site-nav-link " href="../OtherTools/index.html" aria-current="false">Other Tools</a>
+                    </li>
+                    <li class="site-nav-item" style="--depth: 1">
+                        <a class="site-nav-link " href="../Setup/index.html" aria-current="false">Setup</a>
+                    </li>
+                    <li class="site-nav-item" style="--depth: 1">
+                        <a class="site-nav-link is-current" href="index.html" aria-current="page">Usage</a>
+                    </li>
+            </ul>
+        </nav>
+    </aside>
+    <button class="sidebar-backdrop" id="sidebar-backdrop" type="button" tabindex="-1" aria-label="Navigation schließen"></button>
+    <main class="site-main">
+        <h1 id="usage">Usage</h1>
+<p><a href="../index.html">Dokumentation</a> • Usage</p>
+<h2 id="story">Story</h2>
+<ul>
+<li>The markdown utility is a command line tool that is easy to set up and is executed in a terminal window</li>
+<li>Open a terminal in the root folder of your documentation to quickly run commands</li>
+<li>For now it's important to be in the root folder because the tool assumes that it is executed in that folder so just stay in that folder</li>
+</ul>
+<h2 id="running-the-linter">Running the linter</h2>
+<p>Start the linter to check your documentation at any time. It's save because it just reads</p>
+<pre><code>mdu lint</code></pre>
+<p><strong>Example Output:</strong></p>
+<pre><code>Running Linter
+Party! &#129395; The Markdown linter does not detect any errors!</code></pre>
+<h2 id="previewing-the-rendered-site">Previewing the rendered site</h2>
+<p>Run <code>mdu serve</code> from the project folder containing a <code>Docs</code> or <code>docs</code> folder. MarkdownUtil renders the site to <code>./site</code>, opens it in your browser, and watches for changes. Editing a Markdown file updates its page; changing a linked local asset refreshes the pages that use it. Press <code>Ctrl+C</code> to stop the preview server.</p>
+<pre><code>mdu serve</code></pre>
+<p>The source folder, output folder, and port can be specified when needed. The defaults are <code>Docs</code> or <code>docs</code>, <code>site</code>, and port <code>4173</code>.</p>
+<pre><code>mdu serve ./Docs ./site --port 4173</code></pre>
+<p>Use <code>--no-browser</code> to start the server without opening a browser.</p>
+<h2 id="adding-breadcrumb-navigation">Adding breadcrumb navigation</h2>
+<ul>
+<li>Generates Breadcrumb Navigation in every markdown files in the current folder and all subfolders</li>
+<li>Must be executed in the root folder of the documentation</li>
+</ul>
+<pre><code>mdu add-breadcrumb-navigation</code></pre>
+<p>or in short:</p>
+<pre><code>mdu abn</code></pre>
+
+    </main>
+</div>
+<script>
+(() => {
+    const root = document.documentElement;
+    const themeToggle = document.getElementById("theme-toggle");
+    const themeLabel = document.getElementById("theme-label");
+    const themes = ["auto", "light", "dark"];
+    const themeNames = { auto: "Auto", light: "Light", dark: "Dark" };
+
+    const updateThemeLabel = () => {
+        const currentTheme = root.dataset.theme;
+        const nextTheme = themes[(themes.indexOf(currentTheme) + 1) % themes.length];
+        themeLabel.textContent = themeNames[currentTheme];
+        themeToggle.title = `Darstellung: ${themeNames[currentTheme]} (klicken für ${themeNames[nextTheme]})`;
+        themeToggle.setAttribute("aria-label", `Darstellung: ${themeNames[currentTheme]}. Klicken, um auf ${themeNames[nextTheme]} zu wechseln.`);
+    };
+
+    updateThemeLabel();
+    themeToggle.addEventListener("click", () => {
+        const currentTheme = root.dataset.theme;
+        const nextTheme = themes[(themes.indexOf(currentTheme) + 1) % themes.length];
+        root.dataset.theme = nextTheme;
+        try {
+            localStorage.setItem("mdu-theme", nextTheme);
+        } catch { }
+        updateThemeLabel();
+    });
+
+    const layout = document.getElementById("site-layout");
+    const toggle = document.getElementById("navigation-toggle");
+    const backdrop = document.getElementById("sidebar-backdrop");
+    const navigation = document.getElementById("site-navigation");
+    const breakpoint = window.matchMedia("(max-width: 760px)");
+    let isOpen = !breakpoint.matches;
+
+    const setOpen = (open) => {
+        isOpen = open;
+        layout.classList.toggle("sidebar-open", open && breakpoint.matches);
+        layout.classList.toggle("sidebar-collapsed", !open && !breakpoint.matches);
+        toggle.setAttribute("aria-expanded", String(open));
+
+        if (open && breakpoint.matches) {
+            navigation.querySelector("a")?.focus();
+        } else if (!open && navigation.contains(document.activeElement)) {
+            toggle.focus();
+        }
+    };
+
+    setOpen(isOpen);
+    toggle.addEventListener("click", () => setOpen(!isOpen));
+    backdrop.addEventListener("click", () => setOpen(false));
+    navigation.addEventListener("click", (event) => {
+        if (breakpoint.matches && event.target.closest("a")) setOpen(false);
+    });
+    document.addEventListener("keydown", (event) => {
+        if (breakpoint.matches && isOpen && event.key === "Escape") setOpen(false);
+    });
+    breakpoint.addEventListener("change", (event) => setOpen(!event.matches));
+})();
+</script>
+</body>
+</html>

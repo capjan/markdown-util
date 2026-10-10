@@ -1,30 +1,20 @@
-using System.Reflection;
 using System.Text;
+using System.Text.Encodings.Web;
 using System.Text.RegularExpressions;
 using Markdig;
 using Markdown.Renderer.MarkdigExtension;
 using Markdown.Renderer.Res.Model;
-using Microsoft.CodeAnalysis;
-using RazorLight;
 
 namespace Markdown.Renderer;
 
 public class HtmlRenderer
 {
-    private readonly RazorLightEngine _engine;
+    private static readonly Regex TemplateTokenRegex = new(@"%%(?<name>[A-Z_]+)%%", RegexOptions.Compiled);
     private readonly MarkdownPipeline _pipeline;
     private readonly LinkReplacer _linkReplacer = new LinkReplacer();
 
     public HtmlRenderer()
     {
-        var assemblyPath = Assembly.GetExecutingAssembly().Location;
-        var metadataReference = MetadataReference.CreateFromFile(assemblyPath);
-        _engine = new RazorLightEngineBuilder()
-            .UseEmbeddedResourcesProject(typeof(HtmlRenderer).Assembly)
-            .AddMetadataReferences(metadataReference)
-            .UseMemoryCachingProvider()
-       
-            .Build();
         _pipeline = new MarkdownPipelineBuilder()
             .UseGridTables()
             .UsePipeTables()
@@ -63,11 +53,36 @@ public class HtmlRenderer
             CssLink = cssFileLink,
             EditPageLink = editPageLink
         };
-        
-        var renderedHtml = await _engine.CompileRenderAsync("Markdown.Renderer.Res.Html.main.cshtml", model);
+
+        var values = new Dictionary<string, string>
+        {
+            ["TITLE"] = HtmlEncoder.Default.Encode(model.Title),
+            ["DESCRIPTION"] = HtmlEncoder.Default.Encode(model.Description),
+            ["CSS_LINK"] = HtmlEncoder.Default.Encode(model.CssLink),
+            ["NAVIGATION_ITEMS"] = RenderNavigationItems(model.NavigationItems),
+            ["MARKDOWN"] = model.RenderedMarkdown,
+            ["EDIT_PAGE_LINK"] = RenderEditPageLink(model.EditPageLink)
+        };
+        var renderedHtml = TemplateTokenRegex.Replace(Resources.HtmlTemplateContent(), match =>
+            values.TryGetValue(match.Groups["name"].Value, out var value) ? value : match.Value);
         
         await writer.WriteAsync(renderedHtml);
     }
+
+    private static string RenderNavigationItems(IReadOnlyList<NavigationItem> navigationItems) =>
+        string.Join(Environment.NewLine, navigationItems.Select(item => $$"""
+            <li class="site-nav-item" style="--depth: {{item.Depth}}">
+                <a class="site-nav-link {{(item.IsCurrent ? "is-current" : string.Empty)}}" href="{{HtmlEncoder.Default.Encode(item.Url)}}" aria-current="{{(item.IsCurrent ? "page" : "false")}}">{{HtmlEncoder.Default.Encode(item.Title)}}</a>
+            </li>
+            """));
+
+    private static string RenderEditPageLink(string editPageLink) =>
+        string.IsNullOrEmpty(editPageLink)
+            ? string.Empty
+            : $$"""
+              <hr />
+              <a href="{{HtmlEncoder.Default.Encode(editPageLink)}}">✎ Edit Page</a>
+              """;
     
     private string GetEnsuredCssFolderPath(string basePath)
     {

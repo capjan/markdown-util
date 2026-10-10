@@ -18,7 +18,6 @@
         <RepositoryUrl>https://github.com/capjan/markdown-util</RepositoryUrl>
         <RepositoryType>git</RepositoryType>
         <PackageTags>Markdown Static-Website-Generator</PackageTags>
-        <PreserveCompilationContext>true</PreserveCompilationContext>
     </PropertyGroup>
 
     <ItemGroup>

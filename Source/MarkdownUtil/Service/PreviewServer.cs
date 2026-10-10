@@ -1,5 +1,6 @@
 using System.Collections.Concurrent;
 using System.Net;
+using System.Net.Sockets;
 using System.Text;
 using System.Text.Json;
 using System.Threading.Channels;
@@ -47,7 +48,22 @@ public sealed class PreviewServer : IDisposable
         {
             while (!cancellationToken.IsCancellationRequested)
             {
-                var context = await _listener.GetContextAsync().WaitAsync(cancellationToken);
+                HttpListenerContext context;
+                try
+                {
+                    context = await _listener.GetContextAsync().WaitAsync(cancellationToken);
+                }
+                catch (HttpListenerException) when (!cancellationToken.IsCancellationRequested && _listener.IsListening)
+                {
+                    await Task.Delay(TimeSpan.FromMilliseconds(50), cancellationToken);
+                    continue;
+                }
+                catch (SocketException) when (!cancellationToken.IsCancellationRequested && _listener.IsListening)
+                {
+                    await Task.Delay(TimeSpan.FromMilliseconds(50), cancellationToken);
+                    continue;
+                }
+
                 _ = HandleRequestAsync(context, cancellationToken);
             }
         }
@@ -131,14 +147,14 @@ public sealed class PreviewServer : IDisposable
                 await input.CopyToAsync(context.Response.OutputStream, cancellationToken);
             }
         }
-        catch (Exception exception) when (exception is IOException or UnauthorizedAccessException or UriFormatException or HttpListenerException or ObjectDisposedException or OperationCanceledException)
+        catch (Exception exception) when (exception is IOException or UnauthorizedAccessException or UriFormatException or HttpListenerException or SocketException or ObjectDisposedException or OperationCanceledException)
         {
             try
             {
                 if (!cancellationToken.IsCancellationRequested && context.Response.OutputStream.CanWrite)
                     await WriteTextAsync(context.Response, HttpStatusCode.InternalServerError, "Could not read the requested file");
             }
-            catch (Exception writeException) when (writeException is IOException or HttpListenerException or ObjectDisposedException)
+            catch (Exception writeException) when (writeException is IOException or HttpListenerException or SocketException or ObjectDisposedException)
             {
             }
         }
@@ -209,7 +225,7 @@ public sealed class PreviewServer : IDisposable
             while (!cancellationToken.IsCancellationRequested)
             {
                 using var readTimeout = CancellationTokenSource.CreateLinkedTokenSource(cancellationToken);
-                readTimeout.CancelAfter(TimeSpan.FromSeconds(15));
+                readTimeout.CancelAfter(TimeSpan.FromSeconds(3));
 
                 string? message = null;
                 try
@@ -227,7 +243,7 @@ public sealed class PreviewServer : IDisposable
                 await client.Response.OutputStream.FlushAsync(cancellationToken);
             }
         }
-        catch (Exception exception) when (exception is IOException or HttpListenerException or ObjectDisposedException or OperationCanceledException)
+        catch (Exception exception) when (exception is IOException or HttpListenerException or SocketException or ObjectDisposedException or OperationCanceledException)
         {
         }
         finally
@@ -244,11 +260,32 @@ public sealed class PreviewServer : IDisposable
             <script>
             (() => {
               const currentPath = {{JsonSerializer.Serialize(servedPath)}};
-              const events = new EventSource("{{LiveReloadEndpoint}}");
-              events.onmessage = message => {
-                const change = JSON.parse(message.data);
-                if (change.reloadAll || change.paths.includes(currentPath)) location.reload();
+              let events;
+              const connect = () => {
+                events = new EventSource("{{LiveReloadEndpoint}}");
+                events.onmessage = message => {
+                  const change = JSON.parse(message.data);
+                  if (change.reloadAll || change.paths.includes(currentPath)) location.reload();
+                };
               };
+              connect();
+              document.addEventListener("click", event => {
+                if (!(event.target instanceof Element) || event.button !== 0 ||
+                    event.metaKey || event.ctrlKey || event.shiftKey || event.altKey) return;
+
+                const link = event.target.closest("a[href]");
+                if (!link || link.hasAttribute("download") ||
+                    link.target && link.target !== "_self") return;
+
+                const destination = new URL(link.href, location.href);
+                if (destination.origin === location.origin &&
+                    (destination.pathname !== location.pathname || destination.search !== location.search))
+                    events.close();
+              });
+              window.addEventListener("pagehide", () => events.close());
+              window.addEventListener("pageshow", event => {
+                if (event.persisted) connect();
+              });
             })();
             </script>
             """;

@@ -4,12 +4,12 @@
 
 ## HTML Renderer Features / Goals
 
-- Dark theme with a collapsible, responsive sitemap navigation
+- Light and dark themes with an OS-following Auto setting and a collapsible, responsive sitemap navigation
 - Responsive layouts (mobile first)
 - Syntax highlighting of code blocks
 - Automatic Asset copying to the output
  
 ## Technical Facts
 
-- [Razor Light](https://github.com/toddams/RazorLight) (Wrapper for the Razor Engine by Microsoft) renders HTML
+- The embedded HTML template is rendered by `HtmlRenderer` using .NET string and HTML-encoding APIs; it has no separate template-engine dependency
 - [Markdig](https://github.com/xoofx/markdig) renders the Markdown (CommonMark) files to HTML

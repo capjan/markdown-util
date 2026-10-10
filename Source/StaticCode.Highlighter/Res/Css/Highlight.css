@@ -1,15 +1,15 @@
 .comment {
-    color: #6ba456;
+    color: var(--syntax-comment);
 }
 
 .keyword {
-    color: #79c0ff;
+    color: var(--syntax-keyword);
 }
 
 .string {
-    color: #ce9f89;
+    color: var(--syntax-string);
 }
 
 .operator {
-    color: #79c0ff;
+    color: var(--syntax-operator);
 }

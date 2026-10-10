@@ -1,6 +1,7 @@
 using System.ComponentModel;
 using System.Diagnostics;
 using System.Net;
+using System.Net.Sockets;
 using System.Threading.Channels;
 using Core.Collections.NodeGraph.Extensions;
 using Markdown.Renderer;
@@ -120,12 +121,26 @@ public sealed class ServeCommand
 
         try
         {
-            await Task.WhenAll(
-                server.RunAsync(cancellation.Token),
-                ProcessChangesAsync(changes.Reader, server, cancellation.Token));
+            var serverTask = server.RunAsync(cancellation.Token);
+            var changesTask = ProcessChangesAsync(changes.Reader, server, cancellation.Token);
+            await Task.WhenAny(serverTask, changesTask);
+            var stoppedByUser = cancellation.IsCancellationRequested;
+            if (!stoppedByUser) cancellation.Cancel();
+
+            await Task.WhenAll(serverTask, changesTask);
+            if (!stoppedByUser)
+            {
+                Console.Error.WriteLine("The preview server stopped unexpectedly.");
+                return 1;
+            }
         }
         catch (OperationCanceledException) when (cancellation.IsCancellationRequested)
         {
+        }
+        catch (Exception exception) when (exception is HttpListenerException or SocketException or IOException or ObjectDisposedException or InvalidOperationException)
+        {
+            Console.Error.WriteLine($"The preview server stopped: {exception.Message}");
+            return 1;
         }
         finally
         {

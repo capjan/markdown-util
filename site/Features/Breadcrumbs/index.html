@@ -1,0 +1,158 @@
+
+<!DOCTYPE html>
+
+<html data-theme="auto">
+<head>
+    <title>Breadcrumbs</title>
+    <meta charset="utf-8">
+    <meta name="description" content="">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <script>
+        try {
+            const savedTheme = localStorage.getItem("mdu-theme");
+            if (["auto", "light", "dark"].includes(savedTheme)) {
+                document.documentElement.dataset.theme = savedTheme;
+            }
+        } catch { }
+    </script>
+    <link rel="stylesheet" href="../../css/main.css">
+</head>
+<body>
+<header class="site-header">
+    <button class="navigation-toggle" id="navigation-toggle" type="button" aria-expanded="true" aria-controls="site-navigation">
+        <svg viewBox="0 0 20 20" aria-hidden="true" focusable="false">
+            <rect x="2.5" y="3.5" width="15" height="13" rx="2"></rect>
+            <path d="M8 4v12M5 7h1M5 10h1M5 13h1"></path>
+        </svg>
+        <span>Dokumentation</span>
+    </button>
+    <button class="theme-toggle" id="theme-toggle" type="button">
+        <svg class="theme-icon-auto" viewBox="0 0 20 20" aria-hidden="true" focusable="false">
+            <path d="M10 1.5a8.5 8.5 0 0 1 0 17z"></path>
+            <circle cx="10" cy="10" r="8.5" fill="none" stroke="currentColor" stroke-width="1.5"></circle>
+        </svg>
+        <svg class="theme-icon-light" viewBox="0 0 20 20" aria-hidden="true" focusable="false">
+            <circle cx="10" cy="10" r="3.5"></circle>
+            <path d="M10 1.5v2M10 16.5v2M18.5 10h-2M3.5 10h-2M16 4l-1.4 1.4M5.4 14.6 4 16M16 16l-1.4-1.4M5.4 5.4 4 4" fill="none" stroke="currentColor" stroke-linecap="round" stroke-width="2"></path>
+        </svg>
+        <svg class="theme-icon-dark" viewBox="0 0 20 20" aria-hidden="true" focusable="false">
+            <path d="M17.5 12.5A8 8 0 0 1 7.5 2.2 8.5 8.5 0 1 0 17.5 12.5Z"></path>
+        </svg>
+        <span id="theme-label">Auto</span>
+    </button>
+</header>
+<div class="site-layout" id="site-layout">
+    <aside class="site-sidebar" id="site-navigation" aria-label="Sitemap">
+        <nav aria-label="Dokumentationsseiten">
+            <ul class="site-nav-list">
+                    <li class="site-nav-item" style="--depth: 0">
+                        <a class="site-nav-link " href="../../index.html" aria-current="false">Dokumentation</a>
+                    </li>
+                    <li class="site-nav-item" style="--depth: 1">
+                        <a class="site-nav-link " href="../index.html" aria-current="false">Features</a>
+                    </li>
+                    <li class="site-nav-item" style="--depth: 2">
+                        <a class="site-nav-link is-current" href="index.html" aria-current="page">Breadcrumbs</a>
+                    </li>
+                    <li class="site-nav-item" style="--depth: 2">
+                        <a class="site-nav-link " href="../HtmlRenderer/index.html" aria-current="false">HTML Renderer</a>
+                    </li>
+                    <li class="site-nav-item" style="--depth: 2">
+                        <a class="site-nav-link " href="../Linter/index.html" aria-current="false">Linter</a>
+                    </li>
+                    <li class="site-nav-item" style="--depth: 3">
+                        <a class="site-nav-link " href="../Linter/Rule2/index.html" aria-current="false">Rule 2</a>
+                    </li>
+                    <li class="site-nav-item" style="--depth: 3">
+                        <a class="site-nav-link " href="../Linter/Rule3/index.html" aria-current="false">Rule 3</a>
+                    </li>
+                    <li class="site-nav-item" style="--depth: 1">
+                        <a class="site-nav-link " href="../../OtherTools/index.html" aria-current="false">Other Tools</a>
+                    </li>
+                    <li class="site-nav-item" style="--depth: 1">
+                        <a class="site-nav-link " href="../../Setup/index.html" aria-current="false">Setup</a>
+                    </li>
+                    <li class="site-nav-item" style="--depth: 1">
+                        <a class="site-nav-link " href="../../Usage/index.html" aria-current="false">Usage</a>
+                    </li>
+            </ul>
+        </nav>
+    </aside>
+    <button class="sidebar-backdrop" id="sidebar-backdrop" type="button" tabindex="-1" aria-label="Navigation schließen"></button>
+    <main class="site-main">
+        <h1 id="breadcrumbs">Breadcrumbs</h1>
+<p><a href="../../index.html">Dokumentation</a> • <a href="../index.html">Features</a> • Breadcrumbs</p>
+<h2 id="goals">Goals</h2>
+<ul>
+<li>Adding an easy navigation on top of every page</li>
+<li>Helps reordering the documentation</li>
+<li>This command must be executed in the root folder of the project!</li>
+</ul>
+<h3 id="command">Command</h3>
+<pre><code>mdu abn</code></pre>
+<p>Or longer and better readable:</p>
+<pre><code>mdu add-breadcrumb-navigation</code></pre>
+
+    </main>
+</div>
+<script>
+(() => {
+    const root = document.documentElement;
+    const themeToggle = document.getElementById("theme-toggle");
+    const themeLabel = document.getElementById("theme-label");
+    const themes = ["auto", "light", "dark"];
+    const themeNames = { auto: "Auto", light: "Light", dark: "Dark" };
+
+    const updateThemeLabel = () => {
+        const currentTheme = root.dataset.theme;
+        const nextTheme = themes[(themes.indexOf(currentTheme) + 1) % themes.length];
+        themeLabel.textContent = themeNames[currentTheme];
+        themeToggle.title = `Darstellung: ${themeNames[currentTheme]} (klicken für ${themeNames[nextTheme]})`;
+        themeToggle.setAttribute("aria-label", `Darstellung: ${themeNames[currentTheme]}. Klicken, um auf ${themeNames[nextTheme]} zu wechseln.`);
+    };
+
+    updateThemeLabel();
+    themeToggle.addEventListener("click", () => {
+        const currentTheme = root.dataset.theme;
+        const nextTheme = themes[(themes.indexOf(currentTheme) + 1) % themes.length];
+        root.dataset.theme = nextTheme;
+        try {
+            localStorage.setItem("mdu-theme", nextTheme);
+        } catch { }
+        updateThemeLabel();
+    });
+
+    const layout = document.getElementById("site-layout");
+    const toggle = document.getElementById("navigation-toggle");
+    const backdrop = document.getElementById("sidebar-backdrop");
+    const navigation = document.getElementById("site-navigation");
+    const breakpoint = window.matchMedia("(max-width: 760px)");
+    let isOpen = !breakpoint.matches;
+
+    const setOpen = (open) => {
+        isOpen = open;
+        layout.classList.toggle("sidebar-open", open && breakpoint.matches);
+        layout.classList.toggle("sidebar-collapsed", !open && !breakpoint.matches);
+        toggle.setAttribute("aria-expanded", String(open));
+
+        if (open && breakpoint.matches) {
+            navigation.querySelector("a")?.focus();
+        } else if (!open && navigation.contains(document.activeElement)) {
+            toggle.focus();
+        }
+    };
+
+    setOpen(isOpen);
+    toggle.addEventListener("click", () => setOpen(!isOpen));
+    backdrop.addEventListener("click", () => setOpen(false));
+    navigation.addEventListener("click", (event) => {
+        if (breakpoint.matches && event.target.closest("a")) setOpen(false);
+    });
+    document.addEventListener("keydown", (event) => {
+        if (breakpoint.matches && isOpen && event.key === "Escape") setOpen(false);
+    });
+    breakpoint.addEventListener("change", (event) => setOpen(!event.matches));
+})();
+</script>
+</body>
+</html>

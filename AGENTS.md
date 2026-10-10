@@ -9,7 +9,7 @@ MarkdownUtil is a .NET command-line tool distributed as a .NET tool with the `md
 - `Source/MarkdownUtil` contains the command-line entry point, command handlers, dependency injection setup, and orchestration services. `Program.cs` defines the CLI with `System.CommandLine`.
 - `Source/Markdown.Document` reads Markdown files and exposes document, header, and link models. It uses Markdig for Markdown parsing.
 - `Source/Markdown.Linter` contains validation rules and depends on `Source/SuperiorIO` for path and file helpers.
-- `Source/Markdown.Renderer` renders documents to HTML with RazorLight and Markdig. `Source/StaticCode.Highlighter` provides syntax highlighting for rendered code blocks.
+- `Source/Markdown.Renderer` renders documents to HTML with an embedded template, .NET HTML encoding, and Markdig. `Source/StaticCode.Highlighter` provides syntax highlighting for rendered code blocks.
 - `Source/Core.Collections.NodeGraph` supplies the graph and visitor abstractions used to traverse Markdown documents.
 - Projects ending in `.Test` contain the corresponding xUnit tests.
 - `Docs` contains the user documentation. `.github/workflows` contains CI, Pages deployment, and release workflows.
@@ -29,5 +29,15 @@ MarkdownUtil is a .NET command-line tool distributed as a .NET tool with the `md
 - Restore and build with `dotnet restore MarkdownUtils.sln` and `dotnet build MarkdownUtils.sln`.
 - Run the test suite with `dotnet test MarkdownUtils.sln` when tests are requested or needed to verify a change.
 - Pack the CLI tool for a release with `dotnet pack Source/MarkdownUtil/MarkdownUtil.csproj --configuration Release -p:Version="$PACKAGE_VERSION"`, where `PACKAGE_VERSION` is the git-cliff version without the leading `v`.
+- To update the globally installed `mdu` with a local build for manual testing, pack it with a unique local version and install from a temporary NuGet source:
+  ```sh
+  PACKAGE_VERSION=3.0.0-local.YYYYMMDD.N
+  PACKAGE_DIR=/tmp/mdu-local-package
+  mkdir -p "$PACKAGE_DIR"
+  dotnet pack Source/MarkdownUtil/MarkdownUtil.csproj --configuration Release --no-restore -p:Version="$PACKAGE_VERSION" --output "$PACKAGE_DIR"
+  dotnet tool update --global markdownutil --version "$PACKAGE_VERSION" --add-source "$PACKAGE_DIR"
+  dotnet tool list --global
+  ```
+  Increment `N` for repeated local builds on the same date. For a first-time installation, replace `dotnet tool update` with `dotnet tool install`. Restart any running `mdu serve` process to use the updated build.
 - Run `dotnet doctor fix` to install this repository's local Git hooks. Use `dotnet doctor diagnose all` to check the hook setup; commit messages must follow Conventional Commits.
 - Keep CLI output plain-text and dependency-light. `System.CommandLine` is the command parser; do not reintroduce Spectre.Console.
