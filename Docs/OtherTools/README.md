@@ -1,6 +1,5 @@
 ---
-sidebar:
-  order: 40
+sidebar.order: 40
 ---
 
 # Other Tools

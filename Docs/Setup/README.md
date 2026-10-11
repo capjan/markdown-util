@@ -1,6 +1,5 @@
 ---
-sidebar:
-  order: 10
+sidebar.order: 10
 ---
 
 # Setup

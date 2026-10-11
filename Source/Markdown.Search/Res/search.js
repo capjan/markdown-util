@@ -140,7 +140,6 @@
             link.append(heading, snippet);
 
             const resultUrl = new URL(entry.url, indexUrl);
-            resultUrl.searchParams.set("search", query);
             link.href = resultUrl.href;
             link.addEventListener("click", () => searchDialog.close());
             item.append(link);
@@ -184,37 +183,4 @@
         }
     });
 
-    const query = new URLSearchParams(window.location.search).get("search");
-    if (!query) return;
-
-    const main = document.querySelector(".site-main");
-    const terms = tokenize(query);
-    const walker = document.createTreeWalker(main, NodeFilter.SHOW_TEXT, {
-        acceptNode(node) {
-            const parent = node.parentElement;
-            return parent && !parent.closest("script, style, mark") && node.textContent.trim()
-                ? NodeFilter.FILTER_ACCEPT
-                : NodeFilter.FILTER_REJECT;
-        }
-    });
-    const textNodes = [];
-    while (walker.nextNode()) textNodes.push(walker.currentNode);
-
-    for (const node of textNodes) {
-        const ranges = getRanges(node.textContent, terms);
-        if (ranges.length === 0) continue;
-
-        const replacement = document.createDocumentFragment();
-        appendHighlightedText(replacement, node.textContent, terms);
-        node.replaceWith(replacement);
-    }
-
-    requestAnimationFrame(() => {
-        let target = null;
-        if (window.location.hash) {
-            const id = decodeURIComponent(window.location.hash.slice(1));
-            target = document.getElementById(id);
-        }
-        (target || main.querySelector("mark.search-highlight"))?.scrollIntoView({ block: "center" });
-    });
 })();

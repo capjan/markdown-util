@@ -1,6 +1,5 @@
 ---
-sidebar:
-  order: 20
+sidebar.order: 20
 ---
 
 # Usage

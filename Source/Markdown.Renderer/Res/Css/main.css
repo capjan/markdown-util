@@ -430,8 +430,7 @@ body {
     -webkit-line-clamp: 2;
 }
 
-.search-result mark,
-.site-main mark.search-highlight {
+.search-result mark {
     border-radius: 0.2em;
     background: var(--search-highlight-background);
     color: var(--search-highlight-text);

@@ -31,6 +31,7 @@ public sealed class PreviewServer : IDisposable
     private readonly string _outputPath;
     private readonly HttpListener _listener = new();
     private readonly ConcurrentDictionary<Guid, EventClient> _eventClients = new();
+    private long _revision;
 
     public PreviewServer(string outputPath, int port)
     {
@@ -83,8 +84,10 @@ public sealed class PreviewServer : IDisposable
 
     public void Publish(IEnumerable<string>? paths = null, bool reloadAll = false)
     {
+        var revision = Interlocked.Increment(ref _revision);
         var message = JsonSerializer.Serialize(new
         {
+            revision,
             reloadAll,
             paths = paths?.Distinct(StringComparer.Ordinal).ToArray() ?? Array.Empty<string>()
         });
@@ -105,7 +108,10 @@ public sealed class PreviewServer : IDisposable
     {
         if (context.Request.Url?.AbsolutePath == LiveReloadEndpoint)
         {
-            StartEventStream(context.Response, cancellationToken);
+            var revision = long.TryParse(context.Request.QueryString["revision"], out var parsedRevision)
+                ? parsedRevision
+                : (long?)null;
+            StartEventStream(context.Response, cancellationToken, revision);
             return;
         }
 
@@ -200,7 +206,10 @@ public sealed class PreviewServer : IDisposable
                !relativePath.StartsWith(".." + Path.DirectorySeparatorChar, StringComparison.Ordinal);
     }
 
-    private void StartEventStream(HttpListenerResponse response, CancellationToken cancellationToken)
+    private void StartEventStream(
+        HttpListenerResponse response,
+        CancellationToken cancellationToken,
+        long? clientRevision)
     {
         response.StatusCode = (int)HttpStatusCode.OK;
         response.ContentType = "text/event-stream; charset=utf-8";
@@ -212,15 +221,30 @@ public sealed class PreviewServer : IDisposable
         var id = Guid.NewGuid();
         var client = new EventClient(response);
         _eventClients[id] = client;
-        _ = SendEventsAsync(id, client, cancellationToken);
+        _ = SendEventsAsync(id, client, clientRevision, cancellationToken);
     }
 
-    private async Task SendEventsAsync(Guid id, EventClient client, CancellationToken cancellationToken)
+    private async Task SendEventsAsync(
+        Guid id,
+        EventClient client,
+        long? clientRevision,
+        CancellationToken cancellationToken)
     {
         try
         {
             var connected = Encoding.UTF8.GetBytes(": connected\n\n");
             await client.Response.OutputStream.WriteAsync(connected, cancellationToken);
+            await client.Response.OutputStream.FlushAsync(cancellationToken);
+
+            var revision = Interlocked.Read(ref _revision);
+            var initialMessage = JsonSerializer.Serialize(new
+            {
+                revision,
+                reloadAll = clientRevision.HasValue && clientRevision.Value != revision,
+                paths = Array.Empty<string>()
+            });
+            var initialEvent = Encoding.UTF8.GetBytes($"data: {initialMessage}\n\n");
+            await client.Response.OutputStream.WriteAsync(initialEvent, cancellationToken);
             await client.Response.OutputStream.FlushAsync(cancellationToken);
 
             while (!cancellationToken.IsCancellationRequested)
@@ -262,14 +286,27 @@ public sealed class PreviewServer : IDisposable
             (() => {
               const currentPath = {{JsonSerializer.Serialize(servedPath)}};
               let events;
+              let revision;
+              const disconnect = () => {
+                events?.close();
+                events = undefined;
+              };
               const connect = () => {
-                events = new EventSource("{{LiveReloadEndpoint}}");
+                if (events || document.visibilityState === "hidden") return;
+                const url = new URL("{{LiveReloadEndpoint}}", location.href);
+                if (revision !== undefined) url.searchParams.set("revision", revision);
+                events = new EventSource(url);
                 events.onmessage = message => {
                   const change = JSON.parse(message.data);
+                  revision = change.revision;
                   if (change.reloadAll || change.paths.includes(currentPath)) location.reload();
                 };
               };
               connect();
+              document.addEventListener("visibilitychange", () => {
+                if (document.visibilityState === "hidden") disconnect();
+                else if (!events) connect();
+              });
               document.addEventListener("click", event => {
                 if (!(event.target instanceof Element) || event.button !== 0 ||
                     event.metaKey || event.ctrlKey || event.shiftKey || event.altKey) return;
@@ -281,12 +318,10 @@ public sealed class PreviewServer : IDisposable
                 const destination = new URL(link.href, location.href);
                 if (destination.origin === location.origin &&
                     (destination.pathname !== location.pathname || destination.search !== location.search))
-                    events.close();
+                    disconnect();
               });
-              window.addEventListener("pagehide", () => events.close());
-              window.addEventListener("pageshow", event => {
-                if (event.persisted) connect();
-              });
+              window.addEventListener("pagehide", disconnect);
+              window.addEventListener("pageshow", event => { if (event.persisted) connect(); });
             })();
             </script>
             """;

@@ -1,6 +1,5 @@
 ---
-sidebar:
-  order: 30
+sidebar.order: 30
 ---
 
 # Features
