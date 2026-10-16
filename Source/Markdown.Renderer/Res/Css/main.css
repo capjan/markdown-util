@@ -736,10 +736,10 @@ blockquote {
     align-items: center;
     justify-content: center;
     gap: 0.12em;
-    min-width: 1.65em;
-    min-height: 1.65em;
+    width: 2em;
+    height: 2em;
     margin: 0 0.05em 0.2em;
-    padding: 0.08em 0.4em 0.12em;
+    padding: 0.08em;
     border: 1px solid var(--key-border);
     border-radius: 0.25em;
     background: linear-gradient(var(--key-top), var(--key-bottom));
@@ -755,22 +755,56 @@ blockquote {
 .keys kbd:has(.key-symbol) {
     flex-direction: column;
     gap: 0;
-    padding-top: 0.12em;
-    padding-bottom: 0.08em;
+    padding: 0.08em 0.12em;
 }
 
 .keys .key-symbol {
-    font-size: 1.05em;
+    font-size: 0.78em;
+    line-height: 1;
+}
+
+.keys .key-label {
+    font-size: 0.65em;
+    line-height: 1;
 }
 
 .keys kbd:has(.key-symbol) .key-label {
-    font-size: 0.6em;
+    font-size: 0.48em;
     font-weight: 400;
-    line-height: 1.05;
+}
+
+.keys .key-command,
+.keys .key-left-command,
+.keys .key-right-command {
+    width: 2.7em;
+}
+
+.keys .key-escape,
+.keys .key-tab,
+.keys .key-backtab,
+.keys .key-backspace {
+    width: 3.2em;
+}
+
+.keys .key-caps-lock,
+.keys .key-shift,
+.keys .key-left-shift,
+.keys .key-right-shift {
+    width: 3.8em;
+}
+
+.keys .key-enter {
+    width: 1.5em;
+    height: 4.2em;
+}
+
+.keys .key-arrow-up,
+.keys .key-arrow-down {
+    height: 1em;
 }
 
 .keys .key-space {
-    min-width: 5em;
+    width: 11.6em;
 }
 
 .keys > span {
