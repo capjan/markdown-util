@@ -1,14 +1,13 @@
 # Documentation
 
-MarkdownUtil helps you write documentation in Markdown files, ideally in a Git repository.
+MarkdownUtil is a .NET 10 tool for writing documentation in ordinary Markdown and publishing it as a static HTML site. It brings linting, local preview, and rendering into one CLI, while the folder structure supplies the site navigation.
 
-## Inspiration
+## Why MarkdownUtil?
 
-- This tool is for people who write documentation in Markdown files, ideally in a Git repository.
-- No vendor lock-in: your documentation remains a collection of ordinary Markdown files.
-- Generate breadcrumb navigation in rendered HTML from your Markdown file structure.
-- Generate a static HTML site from your documentation.
-- Open-source [project on GitHub](https://github.com/capjan/markdown-util).
+- **Use one .NET tool for the docs workflow.** Lint pages, preview changes, and render the site without a separate Node.js or Python build toolchain.
+- **Turn folders into a navigable site.** MarkdownUtil builds the sidebar and breadcrumbs from `README.md` pages and their folder structure.
+- **Find link issues before publishing.** The linter checks local links, images, and path casing, and reports the source file and line.
+- **Keep your Markdown and choose your host.** The sources remain readable Markdown, and the rendered output is static HTML. Optional `sidebar.order` metadata is specific to MarkdownUtil.
 
 ## Contents
 

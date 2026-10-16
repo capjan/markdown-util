@@ -60,9 +60,10 @@ Upload the generated `site` folder to GitHub Pages, GitLab Pages, Netlify, or an
 
 ## Why MarkdownUtil?
 
-- **Your folder is the configuration.** Nothing to learn beyond Markdown.
-- **No extra toolchain.** If you have the .NET SDK, you have everything.
-- **No lock-in.** Your content stays portable Markdown, and the output is static HTML you can host anywhere.
+- **One .NET workflow for your docs.** `mdu lint`, `mdu serve`, and `mdu render` run from the .NET 10 tool; there is no separate Node.js or Python build toolchain.
+- **Your folder structure becomes navigation.** `README.md` files represent sections, and MarkdownUtil builds the sidebar and breadcrumbs from the folder tree. Set `sidebar.order` only when you want a custom order.
+- **Catch problems before publishing.** The linter checks page titles, directory names, link casing, and missing local links or images, then points to the source file and line.
+- **Keep your content and hosting portable.** Your source stays Markdown and the generated site is static HTML you can host anywhere. The optional `sidebar.order` field is MarkdownUtil-specific.
 
 ## Commands
 
@@ -100,6 +101,6 @@ Skip the first command if `.config/dotnet-tools.json` already exists. Run the lo
 ## Learn more
 
 - [Documentation](https://capjan.github.io/markdown-util/)
-- [Usage](https://github.com/capjan/markdown-util/blob/main/Docs/Usage/README.md), [linter rules](https://github.com/capjan/markdown-util/blob/main/Docs/Usage/Linter/README.md), and [sidebar ordering](https://github.com/capjan/markdown-util/blob/main/Docs/Features/Sidebar/README.md)
+- [Usage](https://github.com/capjan/markdown-util/blob/main/Docs/Usage/README.md), [linter rules](https://github.com/capjan/markdown-util/blob/main/Docs/Usage/lint/README.md), and [sidebar ordering](https://github.com/capjan/markdown-util/blob/main/Docs/Features/Sidebar/README.md)
 
 > **Project status:** MarkdownUtil is under active development. Expect changes before the first stable release.
