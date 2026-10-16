@@ -5,6 +5,7 @@ using Markdig.Parsers;
 using Markdig.Renderers;
 using Markdig.Renderers.Html;
 using Markdig.Syntax;
+using Markdown.Renderer.MarkdigExtension;
 using StaticCode.Diagrams;
 using StaticCode.Highlighter;
 
@@ -28,6 +29,12 @@ public class HighlightedCodeBlockRenderer : HtmlObjectRenderer<CodeBlock>
         if (languageName == IconSearch.CodeBlockLanguage)
         {
             renderer.WriteLine(IconSearch.Html);
+            return;
+        }
+
+        if (languageName.Equals("math", StringComparison.OrdinalIgnoreCase))
+        {
+            renderer.WriteLine(MathFormulaRenderer.Render(code, display: true));
             return;
         }
 

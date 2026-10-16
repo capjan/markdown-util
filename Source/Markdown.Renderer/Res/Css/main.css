@@ -682,6 +682,26 @@ blockquote {
     color: var(--text-secondary);
 }
 
+.math-inline {
+    white-space: nowrap;
+}
+
+.math-svg {
+    max-width: 100%;
+    height: auto;
+    vertical-align: middle;
+}
+
+.math-display {
+    margin: 1.5rem 0;
+    overflow-x: auto;
+    text-align: center;
+}
+
+.math-source {
+    overflow-x: auto;
+}
+
 .markdown-alert {
     --alert-accent: var(--alert-note-accent);
     --alert-background: var(--alert-note-background);

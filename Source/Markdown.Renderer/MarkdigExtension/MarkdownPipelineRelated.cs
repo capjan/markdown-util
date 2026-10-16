@@ -5,6 +5,16 @@ namespace Markdown.Renderer.MarkdigExtension;
 
 public static class MarkdownPipelineRelated
 {
+    /// <summary>
+    /// Renders GitHub-compatible math syntax to static SVG.
+    /// </summary>
+    public static MarkdownPipelineBuilder UseRenderedMath(
+        this MarkdownPipelineBuilder pipeline)
+    {
+        pipeline.Extensions.AddIfNotAlready<RenderedMathExtension>();
+        return pipeline;
+    }
+
     public static MarkdownPipelineBuilder UseStaticCodeHighlighter(
         this MarkdownPipelineBuilder pipeline)
     {

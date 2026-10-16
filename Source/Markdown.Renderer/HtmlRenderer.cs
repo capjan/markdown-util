@@ -22,6 +22,7 @@ public class HtmlRenderer
             .UseGridTables()
             .UsePipeTables()
             .UseAdvancedExtensions()
+            .UseRenderedMath()
             .UseGitHubAlerts()
             .UseIconsAndEmojis()
             .UseKeyboardKeys()

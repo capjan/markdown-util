@@ -1,4 +1,4 @@
-# Third-party notices for the bundled icons
+# Third-party notices for bundled assets and math rendering
 
 MarkdownUtil bundles the icon sets below in `StaticCode.Icons/Res`. The files are converted from their original
 formats: the Iconify JSON packages are reduced to the SVG content, and the Dashboard Icons SVG files are optimized with
@@ -60,3 +60,15 @@ SOFTWARE.
 - Source: https://github.com/homarr-labs/dashboard-icons
 - Copyright (c) 2024 Bjorn Lammers, Meier Lukas, Thomas Camlong and Homarr Labs
 - License: Apache License 2.0; the full license text is in `Res/dashboard-icons.LICENSE`
+
+## Math rendering
+
+- CSharpMath, including its VectSharp frontend, is licensed under the MIT License:
+  https://github.com/verybadcat/CSharpMath/blob/master/License
+- CSharpMath.Rendering includes the Latin Modern Math font under the GUST Font License and the Cyrillic Modern and
+  AMS Capital Blackboard Bold fonts under the SIL Open Font License. License information and source links are in the
+  CSharpMath project: https://github.com/verybadcat/CSharpMath
+- VectSharp and VectSharp.SVG are licensed under LGPL-3.0-only:
+  https://github.com/arklumpus/VectSharp/blob/master/LICENSE
+- The source code for these dependencies is available from their linked repositories; the package uses
+  CSharpMath.VectSharp 1.0.0-pre.2, VectSharp 2.6.1, and VectSharp.SVG 1.10.2.
