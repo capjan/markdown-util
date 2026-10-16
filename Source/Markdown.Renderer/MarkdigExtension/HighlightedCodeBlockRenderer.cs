@@ -25,6 +25,12 @@ public class HighlightedCodeBlockRenderer : HtmlObjectRenderer<CodeBlock>
    
         var code = GetCode(obj, out _);
 
+        if (languageName == IconSearch.CodeBlockLanguage)
+        {
+            renderer.WriteLine(IconSearch.Html);
+            return;
+        }
+
         // Supported diagrams become static SVG; everything else stays a readable code block.
         if (DiagramRenderer.TryRenderSvg(languageName, code, out var svg))
         {
@@ -66,6 +72,8 @@ public class HighlightedCodeBlockRenderer : HtmlObjectRenderer<CodeBlock>
     {
       var stringBuilder = new StringBuilder();
       firstLine = null;
+      // An empty code block has no line array.
+      if (obj.Lines.Lines == null) return string.Empty;
       foreach (var line in obj.Lines.Lines)
       {
         var slice = line.Slice;

@@ -25,6 +25,7 @@ public sealed class SearchIndexBuilder
         .UsePipeTables()
         .UseAdvancedExtensions()
         .UseGitHubAlerts()
+        .UseIconsAndEmojis()
         .Build();
 
     public void Clear() => _entries.Clear();

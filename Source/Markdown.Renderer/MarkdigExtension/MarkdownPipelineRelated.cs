@@ -23,5 +23,14 @@ public static class MarkdownPipelineRelated
         pipeline.Extensions.AddIfNotAlready<GitHubAlertExtension>();
         return pipeline;
     }
-    
+
+    /// <summary>
+    /// Renders icon shortcodes, such as <c>:material-account-circle:</c>, and GitHub emoji shortcodes, such as <c>:rocket:</c>.
+    /// </summary>
+    public static MarkdownPipelineBuilder UseIconsAndEmojis(
+        this MarkdownPipelineBuilder pipeline)
+    {
+        pipeline.Extensions.AddIfNotAlready<ShortcodeExtension>();
+        return pipeline;
+    }
 }

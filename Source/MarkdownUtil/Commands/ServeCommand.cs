@@ -380,6 +380,7 @@ public sealed class ServeCommand
             Path.Combine(_outputPath, "js", "search.js"),
             Path.Combine(_outputPath, "search-index.json")
         };
+        currentFiles.UnionWith(_renderer.IconSearchAssets);
 
         foreach (var page in _pages.Values)
             currentFiles.Add(GetPageOutputPath(page));

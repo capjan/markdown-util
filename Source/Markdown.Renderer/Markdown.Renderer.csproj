@@ -11,6 +11,8 @@
       <EmbeddedResource Include="Res\Css\main.css" />
       <None Remove="Res\Html\main.html" />
       <EmbeddedResource Include="Res\Html\main.html" />
+      <None Remove="Res\Js\icon-search.js" />
+      <EmbeddedResource Include="Res\Js\icon-search.js" />
     </ItemGroup>
 
     <ItemGroup>
@@ -20,6 +22,7 @@
     <ItemGroup>
       <ProjectReference Include="..\StaticCode.Diagrams\StaticCode.Diagrams.csproj" />
       <ProjectReference Include="..\StaticCode.Highlighter\StaticCode.Highlighter.csproj" />
+      <ProjectReference Include="..\StaticCode.Icons\StaticCode.Icons.csproj" />
     </ItemGroup>
 
 </Project>

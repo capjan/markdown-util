@@ -2,6 +2,7 @@ using System.Text;
 using System.Text.Encodings.Web;
 using System.Text.RegularExpressions;
 using Markdig;
+using Markdig.Syntax;
 using Markdown.Renderer.MarkdigExtension;
 using Markdown.Renderer.Res.Model;
 
@@ -12,6 +13,8 @@ public class HtmlRenderer
     private static readonly Regex TemplateTokenRegex = new(@"%%(?<name>[A-Z_]+)%%", RegexOptions.Compiled);
     private readonly MarkdownPipeline _pipeline;
     private readonly LinkReplacer _linkReplacer = new LinkReplacer();
+    private string? _basePath;
+    private IReadOnlyList<string> _iconSearchAssets = Array.Empty<string>();
 
     public HtmlRenderer()
     {
@@ -20,11 +23,19 @@ public class HtmlRenderer
             .UsePipeTables()
             .UseAdvancedExtensions()
             .UseGitHubAlerts()
+            .UseIconsAndEmojis()
             .UseStaticCodeHighlighter()
             .Build();
     }
+    /// <summary>
+    /// The icon search files written to the base path because a rendered page contains an icon search.
+    /// </summary>
+    public IReadOnlyList<string> IconSearchAssets => _iconSearchAssets;
+
     public void PrepareBasePath(string basePath)
     {
+        _basePath = basePath;
+        _iconSearchAssets = Array.Empty<string>();
         var cssFolder = GetEnsuredCssFolderPath(basePath);
         var cssFilePath = Path.Combine(cssFolder, "main.css");
 
@@ -47,7 +58,11 @@ public class HtmlRenderer
         
         var replacedMarkdown = _linkReplacer.ReplaceAll(markdown);
         
-        var renderedMarkdown = Markdig.Markdown.ToHtml(replacedMarkdown, _pipeline);
+        var document = Markdig.Markdown.Parse(replacedMarkdown, _pipeline);
+        var hasIconSearch = document.Descendants<FencedCodeBlock>()
+            .Any(block => block.Info == IconSearch.CodeBlockLanguage);
+        if (hasIconSearch) EnsureIconSearchAssets();
+        var renderedMarkdown = document.ToHtml(_pipeline);
         renderedMarkdown = InsertBreadcrumbsAboveHeading(renderedMarkdown, breadcrumbs ?? Array.Empty<BreadcrumbItem>());
         var model = new MainModel
         {
@@ -68,12 +83,21 @@ public class HtmlRenderer
             ["SEARCH_INDEX_LINK"] = HtmlEncoder.Default.Encode(searchIndexLink),
             ["NAVIGATION_ITEMS"] = RenderNavigationItems(model.NavigationItems),
             ["MARKDOWN"] = model.RenderedMarkdown,
-            ["EDIT_PAGE_LINK"] = RenderEditPageLink(model.EditPageLink)
+            ["EDIT_PAGE_LINK"] = RenderEditPageLink(model.EditPageLink),
+            ["PAGE_SCRIPTS"] = hasIconSearch
+                ? $"<script defer src=\"{HtmlEncoder.Default.Encode(prefix + "js/" + IconSearch.ScriptFileName)}\"></script>{Environment.NewLine}"
+                : string.Empty
         };
         var renderedHtml = TemplateTokenRegex.Replace(Resources.HtmlTemplateContent(), match =>
             values.TryGetValue(match.Groups["name"].Value, out var value) ? value : match.Value);
         
         await writer.WriteAsync(renderedHtml);
+    }
+
+    private void EnsureIconSearchAssets()
+    {
+        if (_basePath is null || _iconSearchAssets.Count > 0) return;
+        _iconSearchAssets = IconSearch.WriteAssetsTo(_basePath);
     }
 
     private static string RenderNavigationItems(IReadOnlyList<NavigationItem> navigationItems)

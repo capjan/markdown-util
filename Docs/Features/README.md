@@ -11,5 +11,6 @@ sidebar.order: 30
 - [Tables](./Tables/README.md) - Examples of rendered Markdown tables
 - [Diagrams](./Diagrams/README.md) - Renders Mermaid flowcharts and sequence diagrams, PlantUML component diagrams, and context diagrams to static SVG that follows the light and dark theme
 - [Admonitions](./Admonitions/README.md) - Highlights notes, tips, and warnings with GitHub-compatible alert syntax
+- [Icons and Emojis](./Icons/README.md) - Adds more than 14,000 icons and GitHub emojis with shortcodes, with a search that copies them to the clipboard
 - Breadcrumb navigation is generated from the Markdown file structure during rendering; source files remain unchanged.
 

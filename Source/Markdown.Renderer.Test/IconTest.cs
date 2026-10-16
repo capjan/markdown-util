@@ -1,0 +1,155 @@
+using System.Text;
+using System.Text.Json;
+using Markdig;
+using Markdown.Renderer.MarkdigExtension;
+using StaticCode.Icons;
+
+namespace Markdown.Renderer.Test;
+
+public class IconTest
+{
+    private static readonly MarkdownPipeline Pipeline = new MarkdownPipelineBuilder()
+        .UseAdvancedExtensions()
+        .UseIconsAndEmojis()
+        .Build();
+
+    private static string Render(string markdown) => Markdig.Markdown.ToHtml(markdown, Pipeline).ReplaceLineEndings("\n");
+
+    [Fact]
+    public void RendersGitHubEmojiShortcodesAsUnicode()
+    {
+        Assert.Equal("<p>Ship it <span class=\"emoji\" title=\":rocket:\">🚀</span></p>\n", Render("Ship it :rocket:"));
+    }
+
+    [Theory]
+    [InlineData("material-account-circle", "0 0 24 24")]
+    [InlineData("fontawesome-brands-github", "0 0 640 640")]
+    [InlineData("fontawesome-regular-face-laugh-wink", "0 0 640 640")]
+    [InlineData("fontawesome-solid-rocket", "0 0 640 640")]
+    [InlineData("octicons-heart-fill-24", "0 0 24 24")]
+    [InlineData("simple-dotnet", "0 0 24 24")]
+    public void RendersIconShortcodesOfEverySetAsInlineSvg(string shortcode, string viewBox)
+    {
+        var html = Render($":{shortcode}:");
+
+        Assert.StartsWith($"<p><span class=\"icon\"><svg xmlns=\"http://www.w3.org/2000/svg\" viewBox=\"{viewBox}\" aria-hidden=\"true\" focusable=\"false\"><path", html);
+        Assert.EndsWith("</svg></span></p>\n", html);
+    }
+
+    [Fact]
+    public void ResolvesIconAliases()
+    {
+        Assert.True(IconCatalog.TryGetIcon("material-123", out var alias));
+        Assert.True(IconCatalog.TryGetIcon("material-numeric", out var icon));
+        Assert.Equal(icon.Body, alias.Body);
+        Assert.Equal("material-123", alias.Shortcode);
+    }
+
+    [Theory]
+    [InlineData("Unknown :material-does-not-exist: icon", "<p>Unknown :material-does-not-exist: icon</p>\n")]
+    [InlineData("Unknown :not-an-emoji: emoji", "<p>Unknown :not-an-emoji: emoji</p>\n")]
+    [InlineData("Starts at 10:30:00", "<p>Starts at 10:30:00</p>\n")]
+    [InlineData("Ratio 1::2", "<p>Ratio 1::2</p>\n")]
+    [InlineData("`:rocket:`", "<p><code>:rocket:</code></p>\n")]
+    public void KeepsOtherTextUnchanged(string markdown, string expected)
+    {
+        Assert.Equal(expected, Render(markdown));
+    }
+
+    [Fact]
+    public void KeepsShortcodesInCodeBlocks()
+    {
+        Assert.Contains(":material-account-circle:", Render("```\n:material-account-circle:\n```\n"));
+    }
+
+    [Fact]
+    public void FindsShortcodesNextToText()
+    {
+        Assert.Equal(
+            "<p>(<span class=\"emoji\" title=\":tada:\">🎉</span>)<span class=\"emoji\" title=\":+1:\">👍</span></p>\n",
+            Render("(:tada:):+1:"));
+    }
+
+    [Fact]
+    public void AppliesAttributeListsToIcons()
+    {
+        var html = Render(":octicons-heart-fill-24:{ .heart #love style=\"color: red\" }");
+
+        Assert.StartsWith("<p><span id=\"love\" class=\"icon heart\" style=\"color: red\"><svg", html);
+    }
+
+    [Fact]
+    public void AppliesAttributeListsToEmojis()
+    {
+        Assert.Equal("<p><span class=\"emoji big\" title=\":rocket:\">🚀</span></p>\n", Render(":rocket:{.big}"));
+    }
+
+    [Fact]
+    public void LeavesIconsOutOfHeadingIdentifiers()
+    {
+        var html = Render("## :material-rocket: Getting started :rocket:");
+
+        Assert.StartsWith("<h2 id=\"getting-started\"><span class=\"icon\">", html);
+    }
+
+    [Fact]
+    public void RendersEmptyCodeBlocks()
+    {
+        var html = Markdig.Markdown.ToHtml("```\n```\n", new MarkdownPipelineBuilder().UseStaticCodeHighlighter().Build());
+
+        Assert.NotNull(html);
+    }
+
+    [Fact]
+    public void ListsVisibleIconsOfEverySet()
+    {
+        foreach (var set in IconCatalog.Sets)
+        {
+            var icons = set.VisibleIcons.ToArray();
+            Assert.NotEmpty(icons);
+            Assert.All(icons, icon => Assert.StartsWith(set.ShortcodePrefix, icon.Shortcode));
+            Assert.NotEmpty(set.Name);
+            Assert.NotEmpty(set.License);
+        }
+    }
+
+    [Fact]
+    public async Task AddsIconSearchAndItsAssetsOnlyToPagesThatUseIt()
+    {
+        var outputPath = Path.Combine(Path.GetTempPath(), $"mdu-icon-test-{Guid.NewGuid():N}");
+        try
+        {
+            var renderer = new HtmlRenderer();
+            renderer.PrepareBasePath(outputPath);
+
+            var plainPage = await RenderPage(renderer, "# Plain\n\n:rocket:\n", 0);
+            Assert.DoesNotContain("icon-search", plainPage);
+            Assert.Empty(renderer.IconSearchAssets);
+            Assert.False(File.Exists(Path.Combine(outputPath, "js", IconSearch.IndexFileName)));
+
+            var searchPage = await RenderPage(renderer, "# Icons\n\n```icon-search\n```\n", 2);
+            Assert.Contains("<div class=\"icon-search\">", searchPage);
+            Assert.Contains("<script defer src=\"../../js/icon-search.js\"></script>", searchPage);
+            Assert.Equal(2, renderer.IconSearchAssets.Count);
+
+            using var index = JsonDocument.Parse(await File.ReadAllBytesAsync(Path.Combine(outputPath, "js", IconSearch.IndexFileName)));
+            var sets = index.RootElement.GetProperty("sets").EnumerateArray().ToArray();
+            Assert.Equal(IconCatalog.Sets.Select(set => set.ShortcodePrefix), sets.Select(set => set.GetProperty("prefix").GetString()));
+            Assert.True(index.RootElement.GetProperty("emojis").EnumerateArray()
+                .Any(emoji => emoji[0].GetString() == "rocket" && emoji[1].GetString() == "🚀"));
+            Assert.True(File.Exists(Path.Combine(outputPath, "js", IconSearch.ScriptFileName)));
+        }
+        finally
+        {
+            if (Directory.Exists(outputPath)) Directory.Delete(outputPath, recursive: true);
+        }
+    }
+
+    private static async Task<string> RenderPage(HtmlRenderer renderer, string markdown, int nestingDeep)
+    {
+        var html = new StringBuilder();
+        await using var writer = new StringWriter(html);
+        await renderer.WriteHtml(writer, "Test", "", nestingDeep, markdown, "");
+        return html.ToString();
+    }
+}
