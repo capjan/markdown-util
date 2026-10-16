@@ -13,6 +13,8 @@ Mermaid and PlantUML are fantastic projects, and I have enormous respect for the
 
 MarkdownUtil follows one firm architectural rule: .NET and NuGet packages are its only dependencies. Mermaid renders in the browser with JavaScript, and PlantUML needs a Java runtime. Bundling either of them would break that rule, so I decided to implement the diagrams myself instead of depending on these projects.
 
+Drawing the diagrams myself also has big advantages for me. Because every shape, line, and label comes from MarkdownUtil's own code, it is extremely easy to give the diagrams exactly the look and feel of the rest of the page: the same fonts, colors, and light and dark themes, without fighting another tool's styling.
+
 ### Static rendering
 
 Every diagram is finished when `mdu render` or `mdu serve` writes the page:
