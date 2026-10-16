@@ -42,6 +42,15 @@ public class DiagramTest
     }
 
     [Fact]
+    public void RendersPlantUmlComponentDiagramsAsInlineSvg()
+    {
+        var html = Render("```plantuml\n@startuml\n[App] --> [Database]\n@enduml\n```\n");
+
+        Assert.StartsWith("<figure class=\"diagram\"><svg xmlns=\"http://www.w3.org/2000/svg\" class=\"diagram-component\"", html);
+        Assert.DoesNotContain("<pre", html);
+    }
+
+    [Fact]
     public void KeepsUnsupportedMermaidDiagramsAsCodeBlocks()
     {
         var html = Render("```mermaid\nclassDiagram\n    Animal <|-- Duck\n```\n");

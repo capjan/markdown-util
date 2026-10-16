@@ -2,9 +2,9 @@
 
 ## Overview
 
-MarkdownUtil renders Mermaid flowcharts and sequence diagrams, as well as its own context diagrams, to static SVG while it renders your Markdown. The diagrams need no JavaScript, appear immediately, and follow the page's light or dark theme because their colors come from the stylesheet instead of the diagram.
+MarkdownUtil renders Mermaid flowcharts and sequence diagrams, PlantUML component diagrams, and its own context diagrams to static SVG while it renders your Markdown. The diagrams need no JavaScript, appear immediately, and follow the page's light or dark theme because their colors come from the stylesheet instead of the diagram.
 
-Mermaid diagrams stay ordinary ` ```mermaid ` code blocks, so the same file still shows them on GitHub and in other Mermaid-aware tools. Context diagrams use a ` ```context ` code block, which other tools show as plain text.
+Mermaid diagrams stay ordinary ` ```mermaid ` code blocks, so the same file still shows them on GitHub and in other Mermaid-aware tools. PlantUML diagrams use ` ```plantuml ` code blocks, which PlantUML-aware tools render as well. Context diagrams use a ` ```context ` code block, which other tools show as plain text.
 
 If a diagram uses syntax outside the supported subset, such as `subgraph` or other diagram types, MarkdownUtil shows its source as a code block instead.
 
@@ -118,9 +118,77 @@ sequenceDiagram
 
 Participants appear in the order they are declared or first used. `box`, `create`, `destroy`, and participant links are not supported yet.
 
+## PlantUML component diagrams
+
+~~~markdown
+```plantuml
+@startuml
+actor Customer
+package "Shop" {
+  [Web Shop] <<frontend>> as Web
+  component [Order Service] as Orders
+}
+database "Orders DB" as DB
+queue "Events" as Bus
+Customer --> Web : browses
+Web --> Orders : REST
+Orders --> DB
+Orders -right-> Bus : publishes
+note right of DB : PostgreSQL
+@enduml
+```
+~~~
+
+```plantuml
+@startuml
+actor Customer
+package "Shop" {
+  [Web Shop] <<frontend>> as Web
+  component [Order Service] as Orders
+}
+database "Orders DB" as DB
+queue "Events" as Bus
+Customer --> Web : browses
+Web --> Orders : REST
+Orders --> DB
+Orders -right-> Bus : publishes
+note right of DB : PostgreSQL
+@enduml
+```
+
+### Supported PlantUML syntax
+
+MarkdownUtil follows PlantUML's component diagram syntax, so the same source works with PlantUML itself:
+
+| Element | Syntax |
+| --- | --- |
+| Frame | `@startuml` and `@enduml` are optional |
+| Components | `[Name]`, `[Name] as Alias`, `component Name`, `component "Name" as Alias`, `component Alias as "Name"` |
+| Interfaces | `() "Name"`, `() "Name" as Alias`, `interface Name`; an unknown name in a link also becomes an interface |
+| Other elements | `actor`, `database`, `node`, `cloud`, `folder`, `frame`, `package`, `rectangle`, `card`, `artifact`, `file`, `queue`, `storage` |
+| Containers | Any of `package`, `node`, `folder`, `frame`, `cloud`, `database`, `rectangle`, or `component` followed by `{` … `}`, also nested and without a name |
+| Stereotypes | `<<name>>` after the element |
+| Links | `--` solid, `..` dotted, `==` bold, with `>` or `<` for arrow ends, for example `-->` or `<..`; triangle ends are described below |
+| Link direction | `->` keeps both elements in one row, `-->` puts the target below, more dashes make the link longer; `-up->`, `-down->`, `-left->`, `-right->` (also `-u->` and so on) |
+| Link styles | `-[hidden]->` only affects the layout, `-[dashed]->`, `-[bold]->` |
+| Link labels | `A --> B : Text` |
+| Notes | `note left of A : Text`, `note right of`, `note top of`, `note bottom of`, multi-line notes ending with `end note`, `note "Text" as N` |
+| Layout | `left to right direction`, `top to bottom direction` |
+| Text | `title Text`, `\n` for a line break |
+| Comments | Lines starting with `'` and `/'` … `'/` blocks |
+
+A triangle end, as for realization or generalization, is written `..|>` or `<|--`.
+
+`skinparam`, `hide`, `show`, and colors are ignored, because the page theme defines the look. Other PlantUML diagram types, such as sequence or class diagrams, stay code blocks.
+
 ## Context diagrams
 
-A context diagram shows one system in the center and the people and systems it works with around it. It uses the flowchart syntax for systems and links, and `actor` for people:
+A context diagram shows one system in the center and the people and systems it works with around it.
+
+> [!NOTE]
+> Context diagrams are a MarkdownUtil extension. Neither Mermaid nor PlantUML has this diagram type, so only `mdu` renders them. GitHub and other tools show the ` ```context ` block as plain code.
+
+A context diagram uses the flowchart syntax for systems and links, and `actor` for people:
 
 ~~~markdown
 ```context

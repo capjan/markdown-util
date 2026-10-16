@@ -9,6 +9,9 @@ internal enum MarkerKind
     None,
     Arrow,
     OpenArrow,
+
+    /// <summary>A hollow triangle, as for UML generalization and realization.</summary>
+    Triangle,
     Circle,
     Cross
 }
@@ -18,11 +21,14 @@ internal static class SvgMarkers
 {
     private const double ArrowLength = 9;
     private const double ArrowWidth = 8;
+    private const double TriangleLength = 12;
+    private const double TriangleWidth = 11;
 
     /// <summary>How far a line stops before the marker tip so that it does not poke through the marker.</summary>
     public static double Inset(MarkerKind kind, double scale = 1) => kind switch
     {
         MarkerKind.Arrow => ArrowLength * scale * 0.7,
+        MarkerKind.Triangle => TriangleLength * scale,
         MarkerKind.OpenArrow or MarkerKind.Cross => 1,
         MarkerKind.Circle => 8,
         _ => 0
@@ -41,6 +47,14 @@ internal static class SvgMarkers
             {
                 var notch = tip - direction * (ArrowLength * scale * 0.7);
                 svg.Append($"<path class=\"diagram-marker\" d=\"M{F(tip.X)} {F(tip.Y)} L{F(left.X)} {F(left.Y)} L{F(notch.X)} {F(notch.Y)} L{F(right.X)} {F(right.Y)} Z\"/>");
+                break;
+            }
+            case MarkerKind.Triangle:
+            {
+                var triangleBack = tip - direction * (TriangleLength * scale);
+                var triangleLeft = triangleBack + normal * (TriangleWidth * scale / 2);
+                var triangleRight = triangleBack - normal * (TriangleWidth * scale / 2);
+                svg.Append($"<path class=\"diagram-marker-hollow\" d=\"M{F(tip.X)} {F(tip.Y)} L{F(triangleLeft.X)} {F(triangleLeft.Y)} L{F(triangleRight.X)} {F(triangleRight.Y)} Z\"/>");
                 break;
             }
             case MarkerKind.OpenArrow:

@@ -109,6 +109,43 @@ public class LayeredLayoutTest
         Assert.True(result.NodeCenters[2].Y > result.NodeCenters[1].Y);
     }
 
+    [Fact]
+    public void KeepsFlatEdgesInOneRankInOrder()
+    {
+        var nodes = new[] { Box, Box, Box };
+        var edges = new[] { new LayoutEdge(1, 0, MinLength: 0), new LayoutEdge(0, 2) };
+
+        var result = new LayeredLayout().Compute(nodes, edges, LayoutDirection.TopToBottom);
+
+        Assert.Equal(result.NodeCenters[0].Y, result.NodeCenters[1].Y, 3);
+        Assert.True(result.NodeCenters[1].X < result.NodeCenters[0].X);
+        var route = result.Edges[0].Points;
+        Assert.Equal(2, route.Count);
+        Assert.Equal(result.NodeCenters[1].X + Box.Width / 2, route[0].X, 3);
+        Assert.Equal(result.NodeCenters[0].X - Box.Width / 2, route[1].X, 3);
+    }
+
+    [Fact]
+    public void PinsNodesToTheFirstAndLastRank()
+    {
+        var nodes = new[] { Box, Box, Box, new LayoutNode(0, 0, Pin: LayoutPin.First), new LayoutNode(0, 0, Pin: LayoutPin.Last) };
+        var edges = new[] { new LayoutEdge(0, 1), new LayoutEdge(1, 2), new LayoutEdge(3, 2), new LayoutEdge(0, 4) };
+
+        var result = new LayeredLayout().Compute(nodes, edges, LayoutDirection.TopToBottom);
+
+        Assert.True(result.NodeCenters[3].Y < result.NodeCenters[0].Y);
+        Assert.True(result.NodeCenters[4].Y > result.NodeCenters[2].Y);
+    }
+
+    [Fact]
+    public void UsesGivenPortOffsets()
+    {
+        var result = new LayeredLayout().Compute(new[] { Box, Box }, new[] { new LayoutEdge(0, 1, SourcePort: -20, TargetPort: 15) }, LayoutDirection.TopToBottom);
+
+        Assert.Equal(result.NodeCenters[0].X - 20, result.Edges[0].Points[0].X, 3);
+        Assert.Equal(result.NodeCenters[1].X + 15, result.Edges[0].Points[^1].X, 3);
+    }
+
     private static LayoutResult Compute(int nodeCount, (int Source, int Target)[] edges, LayoutDirection direction) =>
         new LayeredLayout().Compute(
             Enumerable.Repeat(Box, nodeCount).ToArray(),

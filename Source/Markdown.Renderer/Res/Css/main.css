@@ -38,6 +38,7 @@
     --diagram-note-background: #fdf6e7;
     --diagram-note-border: #e3c27a;
     --diagram-highlight-background: rgb(0 0 0 / 3.5%);
+    --diagram-container-background: rgb(0 0 0 / 2.5%);
 }
 
 :root[data-theme="light"] {
@@ -84,6 +85,7 @@
     --diagram-note-background: #2a1e00;
     --diagram-note-border: #7a5a14;
     --diagram-highlight-background: rgb(255 255 255 / 6%);
+    --diagram-container-background: rgb(255 255 255 / 4%);
 }
 
 @media (prefers-color-scheme: dark) {
@@ -127,6 +129,7 @@
         --diagram-note-background: #2a1e00;
         --diagram-note-border: #7a5a14;
         --diagram-highlight-background: rgb(255 255 255 / 6%);
+        --diagram-container-background: rgb(255 255 255 / 4%);
     }
 }
 
@@ -825,6 +828,54 @@ pre code {
 }
 
 .diagram-context-center .diagram-node-text {
+    font-weight: 600;
+}
+
+.diagram-node-detail {
+    fill: none;
+    stroke: var(--diagram-node-border);
+    stroke-width: 1.25;
+}
+
+.diagram-node-icon {
+    fill: var(--diagram-node-background);
+    stroke: var(--diagram-edge);
+    stroke-width: 1;
+}
+
+.diagram-note-shape {
+    fill: var(--diagram-note-background);
+    stroke: var(--diagram-note-border);
+    stroke-width: 1.25;
+}
+
+.diagram-note-text {
+    fill: var(--text-primary);
+}
+
+.diagram-marker-hollow {
+    fill: var(--page-background);
+    stroke: var(--diagram-edge);
+    stroke-width: 1.5;
+    stroke-linejoin: round;
+}
+
+.diagram-container-shape,
+.diagram-container-tab {
+    fill: var(--diagram-container-background);
+    stroke: var(--diagram-node-border);
+    stroke-width: 1.25;
+}
+
+.diagram-container-detail {
+    fill: none;
+    stroke: var(--diagram-node-border);
+    stroke-width: 1.25;
+}
+
+.diagram-container-label,
+.diagram-component-title {
+    fill: var(--text-primary);
     font-weight: 600;
 }
 
