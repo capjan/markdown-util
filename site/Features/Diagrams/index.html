@@ -1,0 +1,725 @@
+<!DOCTYPE html>
+
+<html data-theme="auto">
+<head>
+    <title>Diagrams</title>
+    <meta charset="utf-8">
+    <meta name="description" content="">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <script>
+        try {
+            const savedTheme = localStorage.getItem("mdu-theme");
+            if (["auto", "light", "dark"].includes(savedTheme)) {
+                document.documentElement.dataset.theme = savedTheme;
+            }
+        } catch { }
+    </script>
+    <link rel="stylesheet" href="../../css/main.css">
+</head>
+<body data-search-index="../../search-index.json">
+<header class="site-header">
+    <button class="navigation-toggle" id="navigation-toggle" type="button" aria-expanded="true" aria-controls="site-navigation">
+        <svg viewBox="0 0 20 20" aria-hidden="true" focusable="false">
+            <rect x="2.5" y="3.5" width="15" height="13" rx="2"></rect>
+            <path d="M8 4v12M5 7h1M5 10h1M5 13h1"></path>
+        </svg>
+        <span>Documentation</span>
+    </button>
+    <button class="search-button" id="search-button" type="button" aria-label="Search documentation" aria-haspopup="dialog" aria-controls="search-dialog">
+        <svg viewBox="0 0 20 20" aria-hidden="true" focusable="false">
+            <circle cx="8.5" cy="8.5" r="5.5"></circle>
+            <path d="m12.5 12.5 5 5"></path>
+        </svg>
+        <span>Search documentation</span>
+        <kbd id="search-shortcut">⌘ K</kbd>
+    </button>
+    <button class="theme-toggle" id="theme-toggle" type="button">
+        <svg class="theme-icon-auto" viewBox="0 0 20 20" aria-hidden="true" focusable="false">
+            <path d="M10 1.5a8.5 8.5 0 0 1 0 17z"></path>
+            <circle cx="10" cy="10" r="8.5" fill="none" stroke="currentColor" stroke-width="1.5"></circle>
+        </svg>
+        <svg class="theme-icon-light" viewBox="0 0 20 20" aria-hidden="true" focusable="false">
+            <circle cx="10" cy="10" r="3.5"></circle>
+            <path d="M10 1.5v2M10 16.5v2M18.5 10h-2M3.5 10h-2M16 4l-1.4 1.4M5.4 14.6 4 16M16 16l-1.4-1.4M5.4 5.4 4 4" fill="none" stroke="currentColor" stroke-linecap="round" stroke-width="2"></path>
+        </svg>
+        <svg class="theme-icon-dark" viewBox="0 0 20 20" aria-hidden="true" focusable="false">
+            <path d="M17.5 12.5A8 8 0 0 1 7.5 2.2 8.5 8.5 0 1 0 17.5 12.5Z"></path>
+        </svg>
+        <span id="theme-label">Auto</span>
+    </button>
+</header>
+<div class="site-layout" id="site-layout">
+    <aside class="site-sidebar" id="site-navigation" aria-label="Sitemap">
+        <nav aria-label="Documentation pages">
+            <ul class="site-nav-list">
+                <li class="site-nav-item" style="--indent-depth: 0">
+                    <div class="site-nav-row">
+                        <a class="site-nav-link" href="../../index.html" aria-current="false">Documentation</a>
+                    </div>
+                    <ul class="site-nav-list site-nav-children" id="site-nav-children-0">
+                        <li class="site-nav-item" style="--indent-depth: 0">
+                            <div class="site-nav-row">
+                                <span class="site-nav-toggle-spacer" aria-hidden="true"></span>
+                                <a class="site-nav-link" href="../../Setup/index.html" aria-current="false">Setup</a>
+                            </div>
+                        </li>
+                        <li class="site-nav-item" style="--indent-depth: 0">
+                            <div class="site-nav-row">
+                                <button class="site-nav-toggle" type="button" aria-expanded="true" aria-controls="site-nav-children-2" aria-label="Collapse Usage"><svg viewBox="0 0 12 12" aria-hidden="true" focusable="false"><path d="M3 2l4 4-4 4"></path></svg></button>
+                                <a class="site-nav-link" href="../../Usage/index.html" aria-current="false">Usage</a>
+                            </div>
+                            <ul class="site-nav-list site-nav-children" id="site-nav-children-2">
+                                <li class="site-nav-item" style="--indent-depth: 1">
+                                    <div class="site-nav-row">
+                                        <span class="site-nav-toggle-spacer" aria-hidden="true"></span>
+                                        <a class="site-nav-link" href="../../Usage/lint/index.html" aria-current="false">lint</a>
+                                    </div>
+                                </li>
+                                <li class="site-nav-item" style="--indent-depth: 1">
+                                    <div class="site-nav-row">
+                                        <span class="site-nav-toggle-spacer" aria-hidden="true"></span>
+                                        <a class="site-nav-link" href="../../Usage/render/index.html" aria-current="false">render</a>
+                                    </div>
+                                </li>
+                                <li class="site-nav-item" style="--indent-depth: 1">
+                                    <div class="site-nav-row">
+                                        <span class="site-nav-toggle-spacer" aria-hidden="true"></span>
+                                        <a class="site-nav-link" href="../../Usage/serve/index.html" aria-current="false">serve</a>
+                                    </div>
+                                </li>
+                                <li class="site-nav-item" style="--indent-depth: 1">
+                                    <div class="site-nav-row">
+                                        <span class="site-nav-toggle-spacer" aria-hidden="true"></span>
+                                        <a class="site-nav-link" href="../../Usage/tree/index.html" aria-current="false">tree</a>
+                                    </div>
+                                </li>
+                            </ul>
+                        </li>
+                        <li class="site-nav-item" style="--indent-depth: 0">
+                            <div class="site-nav-row">
+                                <button class="site-nav-toggle" type="button" aria-expanded="true" aria-controls="site-nav-children-7" aria-label="Collapse Features"><svg viewBox="0 0 12 12" aria-hidden="true" focusable="false"><path d="M3 2l4 4-4 4"></path></svg></button>
+                                <a class="site-nav-link" href="../index.html" aria-current="false">Features</a>
+                            </div>
+                            <ul class="site-nav-list site-nav-children" id="site-nav-children-7">
+                                <li class="site-nav-item" style="--indent-depth: 1">
+                                    <div class="site-nav-row">
+                                        <span class="site-nav-toggle-spacer" aria-hidden="true"></span>
+                                        <a class="site-nav-link" href="../Admonitions/index.html" aria-current="false">Admonitions</a>
+                                    </div>
+                                </li>
+                                <li class="site-nav-item" style="--indent-depth: 1">
+                                    <div class="site-nav-row">
+                                        <span class="site-nav-toggle-spacer" aria-hidden="true"></span>
+                                        <a class="site-nav-link" href="../CodeBlocks/index.html" aria-current="false">Code Blocks</a>
+                                    </div>
+                                </li>
+                                <li class="site-nav-item" style="--indent-depth: 1">
+                                    <div class="site-nav-row is-current">
+                                        <span class="site-nav-toggle-spacer" aria-hidden="true"></span>
+                                        <a class="site-nav-link is-current" href="index.html" aria-current="page">Diagrams</a>
+                                    </div>
+                                </li>
+                                <li class="site-nav-item" style="--indent-depth: 1">
+                                    <div class="site-nav-row">
+                                        <span class="site-nav-toggle-spacer" aria-hidden="true"></span>
+                                        <a class="site-nav-link" href="../Sidebar/index.html" aria-current="false">Sidebar</a>
+                                    </div>
+                                </li>
+                                <li class="site-nav-item" style="--indent-depth: 1">
+                                    <div class="site-nav-row">
+                                        <span class="site-nav-toggle-spacer" aria-hidden="true"></span>
+                                        <a class="site-nav-link" href="../Tables/index.html" aria-current="false">Tables</a>
+                                    </div>
+                                </li>
+                            </ul>
+                        </li>
+                        <li class="site-nav-item" style="--indent-depth: 0">
+                            <div class="site-nav-row">
+                                <button class="site-nav-toggle" type="button" aria-expanded="true" aria-controls="site-nav-children-13" aria-label="Collapse Architecture"><svg viewBox="0 0 12 12" aria-hidden="true" focusable="false"><path d="M3 2l4 4-4 4"></path></svg></button>
+                                <a class="site-nav-link" href="../../Architecture/index.html" aria-current="false">Architecture</a>
+                            </div>
+                            <ul class="site-nav-list site-nav-children" id="site-nav-children-13">
+                                <li class="site-nav-item" style="--indent-depth: 1">
+                                    <div class="site-nav-row">
+                                        <span class="site-nav-toggle-spacer" aria-hidden="true"></span>
+                                        <a class="site-nav-link" href="../../Architecture/HtmlRenderer/index.html" aria-current="false">HTML Renderer</a>
+                                    </div>
+                                </li>
+                            </ul>
+                        </li>
+                        <li class="site-nav-item" style="--indent-depth: 0">
+                            <div class="site-nav-row">
+                                <span class="site-nav-toggle-spacer" aria-hidden="true"></span>
+                                <a class="site-nav-link" href="../../OtherTools/index.html" aria-current="false">Other Tools</a>
+                            </div>
+                        </li>
+                    </ul>
+                </li>
+
+            </ul>
+        </nav>
+    </aside>
+    <button class="sidebar-backdrop" id="sidebar-backdrop" type="button" tabindex="-1" aria-label="Close navigation"></button>
+    <main class="site-main">
+<nav class="breadcrumbs" aria-label="Breadcrumb"><a href="../../index.html">Documentation</a><span class="breadcrumb-separator" aria-hidden="true"><svg viewBox="0 0 12 20" focusable="false"><path d="M2 2L9 10L2 18" /></svg></span><a href="../index.html">Features</a><span class="breadcrumb-separator" aria-hidden="true"><svg viewBox="0 0 12 20" focusable="false"><path d="M2 2L9 10L2 18" /></svg></span><span aria-current="page">Diagrams</span></nav>
+<h1 id="diagrams">Diagrams</h1>
+<h2 id="overview">Overview</h2>
+<p>MarkdownUtil draws diagrams from fenced code blocks while it renders your Markdown. It understands a subset of the Mermaid and PlantUML syntax and turns each diagram into static SVG that is embedded directly in the generated HTML page.</p>
+<div class="markdown-alert markdown-alert-important">
+<p class="markdown-alert-title">Important</p>
+<p>MarkdownUtil does not contain Mermaid or PlantUML, and it does not call them. It only imitates part of their syntax and draws the diagrams with its own implementation. The result therefore looks different from the originals, and not every feature is available.</p>
+</div>
+<h3 id="why-markdownutil-draws-diagrams-itself">Why MarkdownUtil draws diagrams itself</h3>
+<p>Mermaid and PlantUML are fantastic projects, and I have enormous respect for the people who build and maintain them. Many documentation sites would not be what they are without them.</p>
+<p>MarkdownUtil follows one firm architectural rule: .NET and NuGet packages are its only dependencies. Mermaid renders in the browser with JavaScript, and PlantUML needs a Java runtime. Bundling either of them would break that rule, so I decided to implement the diagrams myself instead of depending on these projects.</p>
+<p>Drawing the diagrams myself also has big advantages for me. Because every shape, line, and label comes from MarkdownUtil's own code, it is extremely easy to give the diagrams exactly the look and feel of the rest of the page: the same fonts, colors, and light and dark themes, without fighting another tool's styling.</p>
+<h3 id="static-rendering">Static rendering</h3>
+<p>Every diagram is finished when <code>mdu render</code> or <code>mdu serve</code> writes the page:</p>
+<ul>
+<li>The page contains plain SVG. No JavaScript runs in the browser, and no diagram service is contacted.</li>
+<li>Diagrams appear immediately and also work offline.</li>
+<li>The colors come from the page's stylesheet, so diagrams follow the light and dark theme automatically.</li>
+</ul>
+<h3 id="your-exit-strategy">Your exit strategy</h3>
+<p>Your diagrams stay in the standard notation, so you can leave MarkdownUtil at any time without rewriting them:</p>
+<ul>
+<li>Mermaid diagrams stay ordinary <code>```mermaid</code> code blocks. GitHub and other Mermaid-aware tools render the same files with the real Mermaid.</li>
+<li>PlantUML diagrams stay ordinary <code>```plantuml</code> code blocks that PlantUML itself and PlantUML-aware tools render.</li>
+<li>Context diagrams are the exception: they are a MarkdownUtil extension in <code>```context</code> code blocks, which other tools show as plain code.</li>
+</ul>
+<p>If a diagram uses syntax outside the supported subset, such as <code>subgraph</code> or other diagram types, MarkdownUtil shows its source as a code block instead of guessing.</p>
+<h2 id="flowcharts">Flowcharts</h2>
+<pre><code>```mermaid
+flowchart TD
+    Start([Open a Markdown file]) --&gt; Lint{Lint passes?}
+    Lint --&gt;|Yes| Render[Render HTML]
+    Lint --&gt;|No| Fix[Fix the reported issues]
+    Fix --&gt; Lint
+    Render --&gt; Publish((Publish))
+```</code></pre>
+<figure class="diagram"><svg xmlns="http://www.w3.org/2000/svg" class="diagram-flowchart" viewBox="-4 -4 353.58 433.75" width="353.58" height="433.75" font-size="14" role="img" aria-label="Flowchart">
+<g class="diagram-edges">
+<path class="diagram-edge" d="M190.22 39 C190.22 52 190.22 57.38 190.22 65 C190.22 72.62 190.22 74.85 190.22 84.7"/><path class="diagram-marker" d="M190.22 91 L186.22 82 L190.22 84.7 L194.22 82 Z"/>
+<path class="diagram-edge" d="M176.22 175.97 C176.22 198.74 145.49 208.71 126.63 221.5 C107.76 234.29 63.03 237.1 63.03 252.7"/><path class="diagram-marker" d="M63.03 259 L59.03 250 L63.03 252.7 L67.03 250 Z"/>
+<path class="diagram-edge" d="M190.22 184 C190.22 202.75 197.8 210.05 207.24 221.5 C216.67 232.95 246.82 237.1 246.82 252.7"/><path class="diagram-marker" d="M246.82 259 L242.82 250 L246.82 252.7 L250.82 250 Z"/>
+<path class="diagram-edge" d="M260.82 259 C260.82 240.25 246.24 234.29 236.81 221.5 C227.38 208.71 204.22 201.89 204.22 182.27"/><path class="diagram-marker" d="M204.22 175.97 L208.22 184.97 L204.22 182.27 L200.22 184.97 Z"/>
+<path class="diagram-edge" d="M63.03 298 C63.03 311 63.03 316.38 63.03 324 C63.03 331.62 63.03 333.85 63.03 343.7"/><path class="diagram-marker" d="M63.03 350 L59.03 341 L63.03 343.7 L67.03 341 Z"/>
+</g>
+<g class="diagram-edge-labels">
+<g class="diagram-edge-label"><rect class="diagram-edge-label-background" x="107.72" y="210" width="37.81" height="23" rx="4"/><text class="diagram-edge-label-text" x="126.63" y="226.4" text-anchor="middle">Yes</text></g>
+<g class="diagram-edge-label"><rect class="diagram-edge-label-background" x="191.66" y="210" width="31.14" height="23" rx="4"/><text class="diagram-edge-label-text" x="207.24" y="226.4" text-anchor="middle">No</text></g>
+</g>
+<g class="diagram-nodes">
+<g class="diagram-node diagram-node-stadium"><rect class="diagram-node-shape" x="93.87" y="0" width="192.7" height="39" rx="19.5"/><text class="diagram-node-text" x="190.22" y="24.4" text-anchor="middle">Open a Markdown file</text></g>
+<g class="diagram-node diagram-node-diamond"><polygon class="diagram-node-shape" points="190.22,91 271.3,137.5 190.22,184 109.15,137.5"/><text class="diagram-node-text" x="190.22" y="142.4" text-anchor="middle">Lint passes?</text></g>
+<g class="diagram-node diagram-node-rectangle"><rect class="diagram-node-shape" x="0" y="259" width="126.06" height="39" rx="4"/><text class="diagram-node-text" x="63.03" y="283.4" text-anchor="middle">Render HTML</text></g>
+<g class="diagram-node diagram-node-rectangle"><rect class="diagram-node-shape" x="162.06" y="259" width="183.52" height="39" rx="4"/><text class="diagram-node-text" x="253.82" y="283.4" text-anchor="middle">Fix the reported issues</text></g>
+<g class="diagram-node diagram-node-circle"><circle class="diagram-node-shape" cx="63.03" cy="387.88" r="37.88"/><text class="diagram-node-text" x="63.03" y="392.78" text-anchor="middle">Publish</text></g>
+</g>
+</svg></figure>
+<p>Use <code>LR</code> for a diagram that flows from left to right:</p>
+<figure class="diagram"><svg xmlns="http://www.w3.org/2000/svg" class="diagram-flowchart" viewBox="-4 -4 447.77 122" width="447.77" height="122" font-size="14" role="img" aria-label="Flowchart">
+<g class="diagram-edges">
+<path class="diagram-edge" d="M107.75 57 C120.75 57 126.14 57 133.75 57 C141.37 57 143.6 57 153.45 57"/><path class="diagram-marker" d="M159.75 57 L150.75 61 L153.45 57 L150.75 53 Z"/>
+<path class="diagram-edge" d="M268.35 50 C281.35 50 284.86 43.33 294.35 38.25 C303.84 33.17 309.82 19.5 325.29 19.5"/><path class="diagram-marker" d="M331.59 19.5 L322.59 23.5 L325.29 19.5 L322.59 15.5 Z"/>
+<path class="diagram-edge diagram-edge-dotted" d="M268.35 64 C281.35 64 286.73 70.67 294.35 75.75 C301.96 80.83 304.2 94.5 314.05 94.5"/><path class="diagram-marker" d="M320.35 94.5 L311.35 98.5 L314.05 94.5 L311.35 90.5 Z"/>
+</g>
+<g class="diagram-edge-labels">
+</g>
+<g class="diagram-nodes">
+<g class="diagram-node diagram-node-rectangle"><rect class="diagram-node-shape" x="0" y="37.5" width="107.75" height="39" rx="4"/><text class="diagram-node-text" x="53.88" y="61.9" text-anchor="middle">Docs folder</text></g>
+<g class="diagram-node diagram-node-rectangle"><rect class="diagram-node-shape" x="159.75" y="37.5" width="108.59" height="39" rx="4"/><text class="diagram-node-text" x="214.05" y="61.9" text-anchor="middle">mdu render</text></g>
+<g class="diagram-node diagram-node-rectangle"><rect class="diagram-node-shape" x="331.59" y="0" width="96.94" height="39" rx="4"/><text class="diagram-node-text" x="380.06" y="24.4" text-anchor="middle">Static site</text></g>
+<g class="diagram-node diagram-node-rectangle"><rect class="diagram-node-shape" x="320.35" y="75" width="119.42" height="39" rx="4"/><text class="diagram-node-text" x="380.06" y="99.4" text-anchor="middle">Search index</text></g>
+</g>
+</svg></figure>
+<h3 id="supported-flowchart-syntax">Supported flowchart syntax</h3>
+<table>
+<thead>
+<tr>
+<th>Element</th>
+<th>Syntax</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Header</td>
+<td><code>flowchart</code> or <code>graph</code>, optionally followed by <code>TD</code>, <code>TB</code>, <code>BT</code>, <code>LR</code>, or <code>RL</code></td>
+</tr>
+<tr>
+<td>Rectangle</td>
+<td><code>A[Text]</code></td>
+</tr>
+<tr>
+<td>Rounded rectangle</td>
+<td><code>A(Text)</code></td>
+</tr>
+<tr>
+<td>Stadium</td>
+<td><code>A([Text])</code></td>
+</tr>
+<tr>
+<td>Circle</td>
+<td><code>A((Text))</code></td>
+</tr>
+<tr>
+<td>Decision</td>
+<td><code>A{Text}</code></td>
+</tr>
+<tr>
+<td>Links</td>
+<td><code>--&gt;</code>, <code>---</code>, <code>-.-&gt;</code>, <code>-.-</code>, <code>==&gt;</code>, <code>===</code></td>
+</tr>
+<tr>
+<td>Link ends</td>
+<td><code>&lt;--&gt;</code>, <code>--o</code>, <code>--x</code></td>
+</tr>
+<tr>
+<td>Link labels</td>
+<td><code>A -- Text --&gt; B</code>, or the text between two pipes after the link (see below)</td>
+</tr>
+<tr>
+<td>Longer links</td>
+<td>Add dashes, dots, or equal signs, for example <code>---&gt;</code></td>
+</tr>
+<tr>
+<td>Chains and groups</td>
+<td><code>A --&gt; B --&gt; C</code>, <code>A &amp; B --&gt; C</code></td>
+</tr>
+<tr>
+<td>Line breaks</td>
+<td><code>&lt;br&gt;</code> inside a label</td>
+</tr>
+<tr>
+<td>Comments</td>
+<td>Lines starting with <code>%%</code></td>
+</tr>
+</tbody>
+</table>
+<p>Write a link label between pipes directly after the link, for example <code>A --&gt;|Text| B</code>. Quote labels that contain brackets: <code>A[&quot;Text (with brackets)&quot;]</code>.</p>
+<p>Styling statements such as <code>style</code>, <code>classDef</code>, <code>class</code>, and <code>linkStyle</code> are ignored, because the page theme defines the colors. <code>accTitle: Text</code> sets the accessible name of the diagram.</p>
+<h2 id="sequence-diagrams">Sequence diagrams</h2>
+<pre><code>```mermaid
+sequenceDiagram
+    actor User
+    participant Web as Web app
+    participant API
+    User-&gt;&gt;Web: Open dashboard
+    Web-&gt;&gt;+API: GET /dashboard
+    alt Cached
+        API--&gt;&gt;Web: Cached widgets
+    else Not cached
+        API-&gt;&gt;API: Load widgets
+        API--&gt;&gt;Web: Fresh widgets
+    end
+    deactivate API
+    Note over Web,API: All calls use TLS
+    Web--&gt;&gt;User: Render page
+```</code></pre>
+<figure class="diagram"><svg xmlns="http://www.w3.org/2000/svg" class="diagram-sequence" viewBox="-28 -4 440.76 527" width="440.76" height="527" font-size="14" role="img" aria-label="Sequence diagram">
+<g class="diagram-sequence-blocks">
+<g class="diagram-sequence-block diagram-sequence-block-alt"><rect class="diagram-sequence-frame" x="137.59" y="155" width="271.17" height="199" rx="4"/><path class="diagram-sequence-frame-tab" d="M137.59 159 Q137.59 155 141.59 155 H175.4 V172 L169.4 180 H137.59 Z"/><text class="diagram-sequence-frame-keyword" x="145.59" y="172.4" text-anchor="start">alt</text><text class="diagram-sequence-frame-label" x="183.4" y="172.4" text-anchor="start">[Cached]</text><path class="diagram-sequence-frame-divider" d="M137.59 227 H408.76"/><text class="diagram-sequence-frame-label" x="147.59" y="245.4" text-anchor="start">[Not cached]</text></g>
+</g>
+<g class="diagram-sequence-lifelines">
+<path class="diagram-sequence-lifeline" d="M0 61 V458"/>
+<path class="diagram-sequence-lifeline" d="M149.59 61 V458"/>
+<path class="diagram-sequence-lifeline" d="M297.49 61 V458"/>
+</g>
+<g class="diagram-sequence-activations">
+<rect class="diagram-sequence-activation" x="292.49" y="141" width="10" height="203"/>
+</g>
+<g class="diagram-sequence-messages">
+<path class="diagram-edge" d="M0 102 H143.29"/><path class="diagram-marker" d="M149.59 102 L140.59 106 L143.29 102 L140.59 98 Z"/><text class="diagram-sequence-message-text" x="74.79" y="91.4" text-anchor="middle">Open dashboard</text>
+<path class="diagram-edge" d="M149.59 141 H286.19"/><path class="diagram-marker" d="M292.49 141 L283.49 145 L286.19 141 L283.49 137 Z"/><text class="diagram-sequence-message-text" x="221.04" y="130.4" text-anchor="middle">GET /dashboard</text>
+<path class="diagram-edge diagram-edge-dotted" d="M292.49 213 H155.89"/><path class="diagram-marker" d="M149.59 213 L158.59 209 L155.89 213 L158.59 217 Z"/><text class="diagram-sequence-message-text" x="221.04" y="202.4" text-anchor="middle">Cached widgets</text>
+<path class="diagram-edge" d="M302.49 283 H328.49 Q334.49 283 334.49 289 V299 Q334.49 305 328.49 305 H308.79"/><path class="diagram-marker" d="M302.49 305 L311.49 301 L308.79 305 L311.49 309 Z"/><text class="diagram-sequence-message-text" x="308.49" y="272.4" text-anchor="start">Load widgets</text>
+<path class="diagram-edge diagram-edge-dotted" d="M292.49 344 H155.89"/><path class="diagram-marker" d="M149.59 344 L158.59 340 L155.89 344 L158.59 348 Z"/><text class="diagram-sequence-message-text" x="221.04" y="333.4" text-anchor="middle">Fresh widgets</text>
+<path class="diagram-edge diagram-edge-dotted" d="M149.59 438 H6.3"/><path class="diagram-marker" d="M0 438 L9 434 L6.3 438 L9 442 Z"/><text class="diagram-sequence-message-text" x="74.79" y="427.4" text-anchor="middle">Render page</text>
+</g>
+<g class="diagram-sequence-notes">
+<g class="diagram-sequence-note"><rect class="diagram-sequence-note-shape" x="133.59" y="368" width="179.91" height="31" rx="3"/><text class="diagram-sequence-note-text" x="223.54" y="388.4" text-anchor="middle">All calls use TLS</text></g>
+</g>
+<g class="diagram-sequence-participants">
+<g class="diagram-sequence-actor"><circle class="diagram-actor-head" cx="0" cy="7" r="7"/><path class="diagram-actor-body" d="M0 14 V27 M-11 19 H11 M0 27 L-9 37 M0 27 L9 37"/><text class="diagram-node-text" x="0" y="56.4" text-anchor="middle">User</text></g>
+<g class="diagram-sequence-actor"><circle class="diagram-actor-head" cx="0" cy="465" r="7"/><path class="diagram-actor-body" d="M0 472 V485 M-11 477 H11 M0 485 L-9 495 M0 485 L9 495"/><text class="diagram-node-text" x="0" y="514.4" text-anchor="middle">User</text></g>
+<g class="diagram-node diagram-sequence-participant"><rect class="diagram-node-shape" x="103.61" y="22" width="91.95" height="39" rx="6"/><text class="diagram-node-text" x="149.59" y="46.4" text-anchor="middle">Web app</text></g>
+<g class="diagram-node diagram-sequence-participant"><rect class="diagram-node-shape" x="103.61" y="458" width="91.95" height="39" rx="6"/><text class="diagram-node-text" x="149.59" y="482.4" text-anchor="middle">Web app</text></g>
+<g class="diagram-node diagram-sequence-participant"><rect class="diagram-node-shape" x="257.49" y="22" width="80" height="39" rx="6"/><text class="diagram-node-text" x="297.49" y="46.4" text-anchor="middle">API</text></g>
+<g class="diagram-node diagram-sequence-participant"><rect class="diagram-node-shape" x="257.49" y="458" width="80" height="39" rx="6"/><text class="diagram-node-text" x="297.49" y="482.4" text-anchor="middle">API</text></g>
+</g>
+</svg></figure>
+<h3 id="supported-sequence-diagram-syntax">Supported sequence diagram syntax</h3>
+<table>
+<thead>
+<tr>
+<th>Element</th>
+<th>Syntax</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Header</td>
+<td><code>sequenceDiagram</code></td>
+</tr>
+<tr>
+<td>Participants</td>
+<td><code>participant A</code>, <code>participant A as Label</code>, <code>actor A as Label</code></td>
+</tr>
+<tr>
+<td>Messages</td>
+<td><code>-&gt;</code>, <code>--&gt;</code>, <code>-&gt;&gt;</code>, <code>--&gt;&gt;</code>, <code>-x</code>, <code>--x</code>, <code>-)</code>, <code>--)</code>, <code>&lt;&lt;-&gt;&gt;</code>, <code>&lt;&lt;--&gt;&gt;</code>, each followed by <code>: Text</code></td>
+</tr>
+<tr>
+<td>Activations</td>
+<td><code>activate A</code>, <code>deactivate A</code>, or <code>+</code> and <code>-</code> after the arrow, for example <code>A-&gt;&gt;+B: Text</code></td>
+</tr>
+<tr>
+<td>Notes</td>
+<td><code>Note left of A: Text</code>, <code>Note right of A: Text</code>, <code>Note over A: Text</code>, <code>Note over A,B: Text</code></td>
+</tr>
+<tr>
+<td>Blocks</td>
+<td><code>loop</code>, <code>alt</code> with <code>else</code>, <code>opt</code>, <code>par</code> with <code>and</code>, <code>critical</code> with <code>option</code>, <code>break</code>, each closed with <code>end</code></td>
+</tr>
+<tr>
+<td>Highlighted areas</td>
+<td><code>rect</code> … <code>end</code>; the color argument is ignored</td>
+</tr>
+<tr>
+<td>Numbering</td>
+<td><code>autonumber</code>, <code>autonumber 10 5</code> (start and step), <code>autonumber off</code></td>
+</tr>
+<tr>
+<td>Titles</td>
+<td><code>title Text</code>, <code>accTitle: Text</code></td>
+</tr>
+<tr>
+<td>Line breaks</td>
+<td><code>&lt;br&gt;</code> inside a label, message, or note</td>
+</tr>
+<tr>
+<td>Comments</td>
+<td>Lines starting with <code>%%</code></td>
+</tr>
+</tbody>
+</table>
+<p>Participants appear in the order they are declared or first used. <code>box</code>, <code>create</code>, <code>destroy</code>, and participant links are not supported yet.</p>
+<h2 id="plantuml-component-diagrams">PlantUML component diagrams</h2>
+<pre><code>```plantuml
+@startuml
+actor Customer
+package &quot;Shop&quot; {
+  [Web Shop] &lt;&lt;frontend&gt;&gt; as Web
+  component [Order Service] as Orders
+}
+database &quot;Orders DB&quot; as DB
+queue &quot;Events&quot; as Bus
+Customer --&gt; Web : browses
+Web --&gt; Orders : REST
+Orders --&gt; DB
+Orders -right-&gt; Bus : publishes
+note right of DB : PostgreSQL
+@enduml
+```</code></pre>
+<figure class="diagram"><svg xmlns="http://www.w3.org/2000/svg" class="diagram-component" viewBox="-4 -4 381.14 491" width="381.14" height="491" font-size="14" role="img" aria-label="Component diagram">
+<g class="diagram-containers">
+<g class="diagram-container diagram-container-package"><path class="diagram-container-shape" d="M105.11 355 V136 H160.09 V161 H273.51 V355 Z"/><path class="diagram-container-detail" d="M105.11 161 H160.09"/><text class="diagram-container-label" x="115.11" y="153.4" text-anchor="start">Shop</text></g>
+</g>
+<g class="diagram-edges">
+<path class="diagram-edge" d="M189.31 61 C189.31 79.75 189.31 86 189.31 98.5 C189.31 111 189.3 128.58 189.3 136 C189.3 143.42 189.3 138.55 189.3 143 C189.3 147.45 189.31 152.85 189.31 162.7"/><path class="diagram-marker" d="M189.31 169 L185.31 160 L189.31 162.7 L193.31 160 Z"/>
+<path class="diagram-edge" d="M189.31 227 C189.31 245.75 189.31 253.05 189.31 264.5 C189.31 275.95 189.31 280.1 189.31 295.7"/><path class="diagram-marker" d="M189.31 302 L185.31 293 L189.31 295.7 L193.31 293 Z"/>
+<path class="diagram-edge" d="M182.31 341 C182.31 348 181.64 346.42 171.31 355 C160.98 363.58 140.33 381.05 120.34 392.5 C100.35 403.95 51.38 408.1 51.38 423.7"/><path class="diagram-marker" d="M51.38 430 L47.38 421 L51.38 423.7 L55.38 421 Z"/>
+<path class="diagram-edge" d="M196.31 341 C196.31 348 196.98 346.42 207.31 355 C217.64 363.58 238.29 379.88 258.28 392.5 C278.27 405.12 327.24 411.6 327.24 430.7"/><path class="diagram-marker" d="M327.24 437 L323.24 428 L327.24 430.7 L331.24 428 Z"/>
+<path class="diagram-edge diagram-edge-dotted" d="M102.75 456.5 L138.75 456.5"/>
+</g>
+<g class="diagram-edge-labels">
+<g class="diagram-edge-label"><rect class="diagram-edge-label-background" x="155.42" y="87" width="67.77" height="23" rx="4"/><text class="diagram-edge-label-text" x="189.31" y="103.4" text-anchor="middle">browses</text></g>
+<g class="diagram-edge-label"><rect class="diagram-edge-label-background" x="163.33" y="253" width="51.95" height="23" rx="4"/><text class="diagram-edge-label-text" x="189.31" y="269.4" text-anchor="middle">REST</text></g>
+<g class="diagram-edge-label"><rect class="diagram-edge-label-background" x="220.64" y="381" width="75.28" height="23" rx="4"/><text class="diagram-edge-label-text" x="258.28" y="397.4" text-anchor="middle">publishes</text></g>
+</g>
+<g class="diagram-nodes">
+<g class="diagram-node diagram-component-actor"><circle class="diagram-actor-head" cx="189.31" cy="7" r="7"/><path class="diagram-actor-body" d="M189.31 14 V27 M178.31 19 H200.31 M189.31 27 L180.31 37 M189.31 27 L198.31 37"/><text class="diagram-node-text" x="189.31" y="56.4" text-anchor="middle">Customer</text></g>
+<g class="diagram-node diagram-component-component"><rect class="diagram-node-shape" x="129.14" y="169" width="120.34" height="58" rx="4"/><rect class="diagram-node-icon" x="227.47" y="176" width="12" height="14" rx="1"/><rect class="diagram-node-icon" x="224.47" y="179" width="6" height="3"/><rect class="diagram-node-icon" x="224.47" y="184" width="6" height="3"/><text class="diagram-node-text" text-anchor="middle"><tspan x="181.31" y="193.4">«frontend»</tspan><tspan x="181.31" y="212.4">Web Shop</tspan></text></g>
+<g class="diagram-node diagram-component-component"><rect class="diagram-node-shape" x="119.11" y="302" width="140.4" height="39" rx="4"/><rect class="diagram-node-icon" x="237.51" y="309" width="12" height="14" rx="1"/><rect class="diagram-node-icon" x="234.51" y="312" width="6" height="3"/><rect class="diagram-node-icon" x="234.51" y="317" width="6" height="3"/><text class="diagram-node-text" x="181.31" y="326.4" text-anchor="middle">Order Service</text></g>
+<g class="diagram-node diagram-component-database"><path class="diagram-node-shape" d="M0 437 A51.38 7 0 0 1 102.75 437 V476 A51.38 7 0 0 1 0 476 Z"/><path class="diagram-node-detail" d="M0 437 A51.38 7 0 0 0 102.75 437"/><text class="diagram-node-text" x="51.38" y="464.9" text-anchor="middle">Orders DB</text></g>
+<g class="diagram-node diagram-component-queue"><path class="diagram-node-shape" d="M288.35 437 H366.14 A7 19.5 0 0 1 366.14 476 H288.35 A7 19.5 0 0 1 288.35 437 Z"/><path class="diagram-node-detail" d="M366.14 437 A7 19.5 0 0 0 366.14 476"/><text class="diagram-node-text" x="323.74" y="461.4" text-anchor="middle">Events</text></g>
+<g class="diagram-node diagram-component-note diagram-note"><path class="diagram-note-shape" d="M138.75 439 H235.35 L245.35 449 V474 H138.75 Z"/><path class="diagram-node-detail" d="M235.35 439 V449 H245.35"/><text class="diagram-note-text" x="189.55" y="461.4" text-anchor="middle">PostgreSQL</text></g>
+</g>
+</svg></figure>
+<h3 id="supported-plantuml-syntax">Supported PlantUML syntax</h3>
+<p>MarkdownUtil follows PlantUML's component diagram syntax, so the same source works with PlantUML itself:</p>
+<table>
+<thead>
+<tr>
+<th>Element</th>
+<th>Syntax</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Frame</td>
+<td><code>@startuml</code> and <code>@enduml</code> are optional</td>
+</tr>
+<tr>
+<td>Components</td>
+<td><code>[Name]</code>, <code>[Name] as Alias</code>, <code>component Name</code>, <code>component &quot;Name&quot; as Alias</code>, <code>component Alias as &quot;Name&quot;</code></td>
+</tr>
+<tr>
+<td>Interfaces</td>
+<td><code>() &quot;Name&quot;</code>, <code>() &quot;Name&quot; as Alias</code>, <code>interface Name</code>; an unknown name in a link also becomes an interface</td>
+</tr>
+<tr>
+<td>Other elements</td>
+<td><code>actor</code>, <code>database</code>, <code>node</code>, <code>cloud</code>, <code>folder</code>, <code>frame</code>, <code>package</code>, <code>rectangle</code>, <code>card</code>, <code>artifact</code>, <code>file</code>, <code>queue</code>, <code>storage</code></td>
+</tr>
+<tr>
+<td>Containers</td>
+<td>Any of <code>package</code>, <code>node</code>, <code>folder</code>, <code>frame</code>, <code>cloud</code>, <code>database</code>, <code>rectangle</code>, or <code>component</code> followed by <code>{</code> … <code>}</code>, also nested and without a name</td>
+</tr>
+<tr>
+<td>Stereotypes</td>
+<td><code>&lt;&lt;name&gt;&gt;</code> after the element</td>
+</tr>
+<tr>
+<td>Links</td>
+<td><code>--</code> solid, <code>..</code> dotted, <code>==</code> bold, with <code>&gt;</code> or <code>&lt;</code> for arrow ends, for example <code>--&gt;</code> or <code>&lt;..</code>; triangle ends are described below</td>
+</tr>
+<tr>
+<td>Link direction</td>
+<td><code>-&gt;</code> keeps both elements in one row, <code>--&gt;</code> puts the target below, more dashes make the link longer; <code>-up-&gt;</code>, <code>-down-&gt;</code>, <code>-left-&gt;</code>, <code>-right-&gt;</code> (also <code>-u-&gt;</code> and so on)</td>
+</tr>
+<tr>
+<td>Link styles</td>
+<td><code>-[hidden]-&gt;</code> only affects the layout, <code>-[dashed]-&gt;</code>, <code>-[bold]-&gt;</code></td>
+</tr>
+<tr>
+<td>Link labels</td>
+<td><code>A --&gt; B : Text</code></td>
+</tr>
+<tr>
+<td>Notes</td>
+<td><code>note left of A : Text</code>, <code>note right of</code>, <code>note top of</code>, <code>note bottom of</code>, multi-line notes ending with <code>end note</code>, <code>note &quot;Text&quot; as N</code></td>
+</tr>
+<tr>
+<td>Layout</td>
+<td><code>left to right direction</code>, <code>top to bottom direction</code></td>
+</tr>
+<tr>
+<td>Text</td>
+<td><code>title Text</code>, <code>\n</code> for a line break</td>
+</tr>
+<tr>
+<td>Comments</td>
+<td>Lines starting with <code>'</code> and <code>/'</code> … <code>'/</code> blocks</td>
+</tr>
+</tbody>
+</table>
+<p>A triangle end, as for realization or generalization, is written <code>..|&gt;</code> or <code>&lt;|--</code>.</p>
+<p><code>skinparam</code>, <code>hide</code>, <code>show</code>, and colors are ignored, because the page theme defines the look. Other PlantUML diagram types, such as sequence or class diagrams, stay code blocks.</p>
+<h2 id="context-diagrams">Context diagrams</h2>
+<p>A context diagram shows one system in the center and the people and systems it works with around it.</p>
+<div class="markdown-alert markdown-alert-note">
+<p class="markdown-alert-title">Note</p>
+<p>Context diagrams are a MarkdownUtil extension. Neither Mermaid nor PlantUML has this diagram type, so only <code>mdu</code> renders them. GitHub and other tools show the <code>```context</code> block as plain code.</p>
+</div>
+<p>A context diagram uses the flowchart syntax for systems and links, and <code>actor</code> for people:</p>
+<pre><code>```context
+MC[Mobile Capture]
+MC &lt;--&gt; IdP[Zuvex&lt;br&gt;IdP]
+MC &lt;--&gt; DRiVe[DRiVe&lt;br&gt;Verfahren]
+MC --&gt; DB[Datenbank]
+MC --&gt; Mail[Dataport&lt;br&gt;E-Mail Server]
+MC --&gt; AD[Active&lt;br&gt;Directory]
+actor LK as Lehrkr&#228;fte
+actor SL as Schulleitung
+LK -. Verwendet .-&gt; MC
+SL -.-&gt; MC
+```</code></pre>
+<figure class="diagram"><svg xmlns="http://www.w3.org/2000/svg" class="diagram-context" viewBox="-264.54 -197.17 543.41 378.09" width="543.41" height="378.09" font-size="14" role="img" aria-label="Context diagram">
+<g class="diagram-edges">
+<path class="diagram-edge" d="M0 -25.8 L0 -128.87"/><path class="diagram-marker" d="M0 -135.17 L4 -126.17 L0 -128.87 L-4 -126.17 Z"/><path class="diagram-marker" d="M0 -19.5 L-4 -28.5 L0 -25.8 L4 -28.5 Z"/>
+<path class="diagram-edge" d="M39.48 -22.63 L125.08 -71.71"/><path class="diagram-marker" d="M130.55 -74.84 L124.73 -66.9 L125.08 -71.71 L120.75 -73.84 Z"/><path class="diagram-marker" d="M34.01 -19.5 L39.83 -27.45 L39.48 -22.63 L43.81 -20.51 Z"/>
+<path class="diagram-edge" d="M66.78 10.96 L164.21 26.94"/><path class="diagram-marker" d="M170.42 27.96 L160.89 30.45 L164.21 26.94 L162.19 22.56 Z"/>
+<path class="diagram-edge" d="M13.06 19.5 L76.15 113.68"/><path class="diagram-marker" d="M79.66 118.92 L71.33 113.67 L76.15 113.68 L77.97 109.21 Z"/>
+<path class="diagram-edge" d="M-13.06 19.5 L-76.15 113.68"/><path class="diagram-marker" d="M-79.66 118.92 L-77.97 109.21 L-76.15 113.68 L-71.33 113.67 Z"/>
+<path class="diagram-edge diagram-edge-dotted" d="M-184.74 30.31 L-73 11.98"/><path class="diagram-marker" d="M-66.78 10.96 L-75.02 16.36 L-73 11.98 L-76.31 8.47 Z"/>
+<path class="diagram-edge diagram-edge-dotted" d="M-133.75 -76.68 L-39.48 -22.63"/><path class="diagram-marker" d="M-34.01 -19.5 L-43.81 -20.51 L-39.48 -22.63 L-39.83 -27.45 Z"/>
+</g>
+<g class="diagram-edge-labels">
+<g class="diagram-edge-label"><rect class="diagram-edge-label-background" x="-167.57" y="9.14" width="83.6" height="23" rx="4"/><text class="diagram-edge-label-text" x="-125.76" y="25.54" text-anchor="middle">Verwendet</text></g>
+</g>
+<g class="diagram-nodes">
+<g class="diagram-node diagram-node-rectangle"><rect class="diagram-node-shape" x="-36.4" y="-193.17" width="72.79" height="58" rx="4"/><text class="diagram-node-text" text-anchor="middle"><tspan x="0" y="-168.77">Zuvex</tspan><tspan x="0" y="-149.77">IdP</tspan></text></g>
+<g class="diagram-node diagram-node-rectangle"><rect class="diagram-node-shape" x="129.66" y="-131.36" width="97.78" height="58" rx="4"/><text class="diagram-node-text" text-anchor="middle"><tspan x="178.55" y="-106.96">DRiVe</tspan><tspan x="178.55" y="-87.96">Verfahren</tspan></text></g>
+<g class="diagram-node diagram-node-rectangle"><rect class="diagram-node-shape" x="170.42" y="17.03" width="104.44" height="39" rx="4"/><text class="diagram-node-text" x="222.64" y="41.43" text-anchor="middle">Datenbank</text></g>
+<g class="diagram-node diagram-node-rectangle"><rect class="diagram-node-shape" x="37.73" y="118.92" width="122.72" height="58" rx="4"/><text class="diagram-node-text" text-anchor="middle"><tspan x="99.09" y="143.32">Dataport</tspan><tspan x="99.09" y="162.32">E-Mail Server</tspan></text></g>
+<g class="diagram-node diagram-node-rectangle"><rect class="diagram-node-shape" x="-145.05" y="118.92" width="91.92" height="58" rx="4"/><text class="diagram-node-text" text-anchor="middle"><tspan x="-99.09" y="143.32">Active</tspan><tspan x="-99.09" y="162.32">Directory</tspan></text></g>
+<g class="diagram-node diagram-node-actor"><circle class="diagram-actor-head" cx="-222.64" cy="13.03" r="7"/><path class="diagram-actor-body" d="M-222.64 20.03 V33.03 M-233.64 25.03 H-211.64 M-222.64 33.03 L-231.64 43.03 M-222.64 33.03 L-213.64 43.03"/><text class="diagram-node-text" x="-222.64" y="62.43" text-anchor="middle">Lehrkräfte</text></g>
+<g class="diagram-node diagram-node-actor"><circle class="diagram-actor-head" cx="-178.55" cy="-125.86" r="7"/><path class="diagram-actor-body" d="M-178.55 -118.86 V-105.86 M-189.55 -113.86 H-167.55 M-178.55 -105.86 L-187.55 -95.86 M-178.55 -105.86 L-169.55 -95.86"/><text class="diagram-node-text" x="-178.55" y="-76.46" text-anchor="middle">Schulleitung</text></g>
+<g class="diagram-node diagram-node-rectangle diagram-context-center"><rect class="diagram-node-shape" x="-66.78" y="-19.5" width="133.56" height="39" rx="4"/><text class="diagram-node-text" x="0" y="4.9" text-anchor="middle">Mobile Capture</text></g>
+</g>
+</svg></figure>
+<h3 id="supported-context-diagram-syntax">Supported context diagram syntax</h3>
+<table>
+<thead>
+<tr>
+<th>Element</th>
+<th>Syntax</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Systems</td>
+<td>The flowchart shapes, for example <code>A[Text]</code>, <code>A(Text)</code>, <code>A([Text])</code>, <code>A((Text))</code>, <code>A{Text}</code></td>
+</tr>
+<tr>
+<td>People</td>
+<td><code>actor A</code> or <code>actor A as Label</code></td>
+</tr>
+<tr>
+<td>Links</td>
+<td>The flowchart links, link ends, and labels, for example <code>--&gt;</code>, <code>&lt;--&gt;</code>, <code>-.-&gt;</code>, <code>==&gt;</code>, and <code>A -- Text --&gt; B</code></td>
+</tr>
+<tr>
+<td>Titles</td>
+<td><code>accTitle: Text</code></td>
+</tr>
+<tr>
+<td>Comments</td>
+<td>Lines starting with <code>%%</code></td>
+</tr>
+</tbody>
+</table>
+<p>The system in the center is the one that every link connects to. If several systems qualify, for example with a single link, the first one in the source is used. All other systems and people are spread evenly around the center, clockwise from the top in the order they first appear, so you control the arrangement by reordering the lines. A context diagram needs no header line.</p>
+
+    </main>
+</div>
+<dialog class="search-dialog" id="search-dialog" aria-labelledby="search-dialog-title">
+    <div class="search-dialog-content">
+        <div class="search-dialog-heading">
+            <h2 id="search-dialog-title">Search documentation</h2>
+            <span>Press <kbd>Esc</kbd> to close</span>
+            <button class="search-close" id="search-close" type="button" aria-label="Close search">×</button>
+        </div>
+        <label class="visually-hidden" for="search-input">Search terms</label>
+        <input id="search-input" type="search" autocomplete="off" placeholder="Search documentation…">
+        <p class="search-status" id="search-status" role="status" aria-live="polite">Start typing to search the documentation.</p>
+        <ul class="search-results" id="search-results" aria-label="Search results"></ul>
+    </div>
+</dialog>
+<script>
+(() => {
+    const root = document.documentElement;
+    const themeToggle = document.getElementById("theme-toggle");
+    const themeLabel = document.getElementById("theme-label");
+    const themes = ["auto", "light", "dark"];
+    const themeNames = { auto: "Auto", light: "Light", dark: "Dark" };
+
+    const updateThemeLabel = () => {
+        const currentTheme = root.dataset.theme;
+        const nextTheme = themes[(themes.indexOf(currentTheme) + 1) % themes.length];
+        themeLabel.textContent = themeNames[currentTheme];
+        themeToggle.title = `Darstellung: ${themeNames[currentTheme]} (klicken für ${themeNames[nextTheme]})`;
+        themeToggle.setAttribute("aria-label", `Darstellung: ${themeNames[currentTheme]}. Klicken, um auf ${themeNames[nextTheme]} zu wechseln.`);
+    };
+
+    updateThemeLabel();
+    themeToggle.addEventListener("click", () => {
+        const currentTheme = root.dataset.theme;
+        const nextTheme = themes[(themes.indexOf(currentTheme) + 1) % themes.length];
+        root.dataset.theme = nextTheme;
+        try {
+            localStorage.setItem("mdu-theme", nextTheme);
+        } catch { }
+        updateThemeLabel();
+    });
+
+    const layout = document.getElementById("site-layout");
+    const toggle = document.getElementById("navigation-toggle");
+    const backdrop = document.getElementById("sidebar-backdrop");
+    const navigation = document.getElementById("site-navigation");
+    const breakpoint = window.matchMedia("(max-width: 760px)");
+    const sidebarPreferenceKey = "mdu-sidebar-collapsed";
+    const isDesktopSidebarCollapsed = () => {
+        try {
+            return sessionStorage.getItem(sidebarPreferenceKey) === "true";
+        } catch {
+            return false;
+        }
+    };
+    const setDesktopSidebarCollapsed = (collapsed) => {
+        try {
+            sessionStorage.setItem(sidebarPreferenceKey, String(collapsed));
+        } catch { }
+    };
+    let isOpen = !breakpoint.matches && !isDesktopSidebarCollapsed();
+
+    const setOpen = (open) => {
+        isOpen = open;
+        layout.classList.toggle("sidebar-open", open && breakpoint.matches);
+        layout.classList.toggle("sidebar-collapsed", !open && !breakpoint.matches);
+        toggle.setAttribute("aria-expanded", String(open));
+
+        if (open && breakpoint.matches) {
+            navigation.querySelector("a")?.focus();
+        } else if (!open && navigation.contains(document.activeElement)) {
+            toggle.focus();
+        }
+    };
+
+    setOpen(isOpen);
+    toggle.addEventListener("click", () => {
+        const open = !isOpen;
+        setOpen(open);
+        if (!breakpoint.matches) setDesktopSidebarCollapsed(!open);
+    });
+
+    const currentPage = navigation.querySelector('.site-nav-link[aria-current="page"]');
+    navigation.querySelectorAll(".site-nav-toggle").forEach((navToggle) => {
+        const children = document.getElementById(navToggle.getAttribute("aria-controls"));
+        const pageLink = navToggle.parentElement.querySelector(".site-nav-link");
+        const storageKey = `mdu-nav-expanded:${new URL(pageLink.href).pathname}`;
+        const isCurrentPage = pageLink === currentPage;
+        const containsCurrentPage = currentPage && children.contains(currentPage);
+        let savedState;
+        try {
+            savedState = sessionStorage.getItem(storageKey);
+        } catch { }
+
+        const setExpanded = (expanded) => {
+            navToggle.setAttribute("aria-expanded", String(expanded));
+            navToggle.setAttribute("aria-label", `${expanded ? "Collapse" : "Expand"} ${pageLink.textContent.trim()}`);
+            children.hidden = !expanded;
+        };
+
+        const shouldExpand = isCurrentPage || containsCurrentPage || savedState !== "false";
+        setExpanded(shouldExpand);
+        if ((isCurrentPage || containsCurrentPage) && savedState !== "true") {
+            try {
+                sessionStorage.setItem(storageKey, "true");
+            } catch { }
+        }
+
+        navToggle.addEventListener("click", () => {
+            const expanded = navToggle.getAttribute("aria-expanded") !== "true";
+            setExpanded(expanded);
+            try {
+                sessionStorage.setItem(storageKey, String(expanded));
+            } catch { }
+        });
+    });
+
+    backdrop.addEventListener("click", () => setOpen(false));
+    navigation.addEventListener("click", (event) => {
+        if (breakpoint.matches && event.target.closest("a")) setOpen(false);
+    });
+    document.addEventListener("keydown", (event) => {
+        if (breakpoint.matches && isOpen && event.key === "Escape") setOpen(false);
+    });
+    breakpoint.addEventListener("change", (event) =>
+        setOpen(!event.matches && !isDesktopSidebarCollapsed()));
+})();
+</script>
+<script defer src="../../js/search.js"></script>
+</body>
+</html>

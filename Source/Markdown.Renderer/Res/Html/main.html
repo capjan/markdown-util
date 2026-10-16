@@ -52,7 +52,7 @@
     <aside class="site-sidebar" id="site-navigation" aria-label="Sitemap">
         <nav aria-label="Documentation pages">
             <ul class="site-nav-list">
-                %%NAVIGATION_ITEMS%%
+%%NAVIGATION_ITEMS%%
             </ul>
         </nav>
     </aside>
@@ -140,6 +140,42 @@
         setOpen(open);
         if (!breakpoint.matches) setDesktopSidebarCollapsed(!open);
     });
+
+    const currentPage = navigation.querySelector('.site-nav-link[aria-current="page"]');
+    navigation.querySelectorAll(".site-nav-toggle").forEach((navToggle) => {
+        const children = document.getElementById(navToggle.getAttribute("aria-controls"));
+        const pageLink = navToggle.parentElement.querySelector(".site-nav-link");
+        const storageKey = `mdu-nav-expanded:${new URL(pageLink.href).pathname}`;
+        const isCurrentPage = pageLink === currentPage;
+        const containsCurrentPage = currentPage && children.contains(currentPage);
+        let savedState;
+        try {
+            savedState = sessionStorage.getItem(storageKey);
+        } catch { }
+
+        const setExpanded = (expanded) => {
+            navToggle.setAttribute("aria-expanded", String(expanded));
+            navToggle.setAttribute("aria-label", `${expanded ? "Collapse" : "Expand"} ${pageLink.textContent.trim()}`);
+            children.hidden = !expanded;
+        };
+
+        const shouldExpand = isCurrentPage || containsCurrentPage || savedState !== "false";
+        setExpanded(shouldExpand);
+        if ((isCurrentPage || containsCurrentPage) && savedState !== "true") {
+            try {
+                sessionStorage.setItem(storageKey, "true");
+            } catch { }
+        }
+
+        navToggle.addEventListener("click", () => {
+            const expanded = navToggle.getAttribute("aria-expanded") !== "true";
+            setExpanded(expanded);
+            try {
+                sessionStorage.setItem(storageKey, String(expanded));
+            } catch { }
+        });
+    });
+
     backdrop.addEventListener("click", () => setOpen(false));
     navigation.addEventListener("click", (event) => {
         if (breakpoint.matches && event.target.closest("a")) setOpen(false);

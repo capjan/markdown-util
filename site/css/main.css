@@ -30,6 +30,15 @@
     --alert-warning-background: #fdf6e7;
     --alert-caution-accent: #c9252d;
     --alert-caution-background: #fdf1f1;
+    --diagram-node-background: #f5f5f7;
+    --diagram-node-border: #c7c7cc;
+    --diagram-decision-background: #eef5fd;
+    --diagram-decision-border: #8ab6e6;
+    --diagram-edge: #8e8e93;
+    --diagram-note-background: #fdf6e7;
+    --diagram-note-border: #e3c27a;
+    --diagram-highlight-background: rgb(0 0 0 / 3.5%);
+    --diagram-container-background: rgb(0 0 0 / 2.5%);
 }
 
 :root[data-theme="light"] {
@@ -68,6 +77,15 @@
     --alert-warning-background: #2a1e00;
     --alert-caution-accent: #ff8a80;
     --alert-caution-background: #2e0d0c;
+    --diagram-node-background: #1d1d1f;
+    --diagram-node-border: #48484a;
+    --diagram-decision-background: #0b2440;
+    --diagram-decision-border: #2f6db0;
+    --diagram-edge: #8e8e93;
+    --diagram-note-background: #2a1e00;
+    --diagram-note-border: #7a5a14;
+    --diagram-highlight-background: rgb(255 255 255 / 6%);
+    --diagram-container-background: rgb(255 255 255 / 4%);
 }
 
 @media (prefers-color-scheme: dark) {
@@ -103,6 +121,15 @@
         --alert-warning-background: #2a1e00;
         --alert-caution-accent: #ff8a80;
         --alert-caution-background: #2e0d0c;
+        --diagram-node-background: #1d1d1f;
+        --diagram-node-border: #48484a;
+        --diagram-decision-background: #0b2440;
+        --diagram-decision-border: #2f6db0;
+        --diagram-edge: #8e8e93;
+        --diagram-note-background: #2a1e00;
+        --diagram-note-border: #7a5a14;
+        --diagram-highlight-background: rgb(255 255 255 / 6%);
+        --diagram-container-background: rgb(255 255 255 / 4%);
     }
 }
 
@@ -267,32 +294,105 @@ body {
 
 .site-nav-item {
     margin: 0;
-    padding-left: calc(var(--depth) * 0.75rem);
+}
+
+.site-nav-row {
+    display: flex;
+    align-items: center;
+    gap: 0;
+    margin-left: 0;
+    padding-left: calc(1.125rem + var(--indent-depth) * 0.75rem);
+    border-radius: 8px;
+}
+
+.site-nav-row.is-current {
+    background: var(--surface-current);
+    color: var(--text-primary);
+}
+
+.site-nav-row:hover {
+    background: var(--nav-hover);
+    color: var(--nav-hover-text);
+}
+
+.site-nav-row.is-current .site-nav-toggle,
+.site-nav-row.is-current .site-nav-link {
+    color: var(--text-primary);
+}
+
+.site-nav-row:hover .site-nav-toggle,
+.site-nav-row:hover .site-nav-link {
+    color: var(--nav-hover-text);
+}
+
+.site-nav-toggle,
+.site-nav-toggle-spacer {
+    display: grid;
+    place-items: center;
+    height: 1.5rem;
+    flex: none;
+}
+
+.site-nav-toggle {
+    display: flex;
+    align-items: center;
+    justify-content: flex-start;
+    align-self: stretch;
+    width: calc(2.375rem + var(--indent-depth) * 0.75rem);
+    height: auto;
+    margin-left: calc(-1.125rem - var(--indent-depth) * 0.75rem);
+    padding: 0 0 0 calc(1.125rem + var(--indent-depth) * 0.75rem);
+    border: 0;
+    border-radius: 5px;
+    background: transparent;
+    color: var(--text-secondary);
+    cursor: pointer;
+}
+
+.site-nav-toggle-spacer {
+    width: calc(2.375rem + var(--indent-depth) * 0.75rem);
+    margin-left: calc(-1.125rem - var(--indent-depth) * 0.75rem);
+}
+
+.site-nav-toggle:focus-visible {
+    position: relative;
+    z-index: 1;
+    outline: 2px solid var(--link);
+    outline-offset: -2px;
+}
+
+.site-nav-toggle svg {
+    width: 12px;
+    height: 12px;
+    fill: none;
+    stroke: currentColor;
+    stroke-linecap: round;
+    stroke-linejoin: round;
+    stroke-width: 1.5;
+    transition: transform 120ms ease;
+}
+
+.site-nav-toggle[aria-expanded="true"] svg {
+    transform: rotate(90deg);
 }
 
 .site-nav-link {
     display: block;
-    padding: 0.45rem 0.65rem;
+    min-width: 0;
+    flex: 1;
+    padding: 0.45rem 0.4rem 0.45rem 0;
     border-radius: 6px;
     color: var(--text-secondary);
     line-height: 1.35;
     overflow-wrap: anywhere;
 }
 
-.site-nav-link:hover:not(.is-current) {
-    border-radius: 8px;
-    background: var(--nav-hover);
-    color: var(--nav-hover-text);
+.site-nav-link:hover {
     text-decoration: none;
 }
 
 .site-nav-link.is-current {
-    background: var(--surface-current);
-    color: var(--text-primary);
     text-decoration: none;
-}
-
-.site-nav-link.is-current {
     font-weight: 600;
 }
 
@@ -643,6 +743,213 @@ pre code {
     padding: 0;
     background: transparent;
     font-size: inherit;
+}
+
+.diagram {
+    margin: 1.5rem 0;
+    text-align: center;
+}
+
+.diagram svg {
+    max-width: 100%;
+    height: auto;
+    font-family: inherit;
+}
+
+.diagram-node-shape {
+    fill: var(--diagram-node-background);
+    stroke: var(--diagram-node-border);
+    stroke-width: 1.25;
+}
+
+.diagram-node-diamond .diagram-node-shape {
+    fill: var(--diagram-decision-background);
+    stroke: var(--diagram-decision-border);
+}
+
+.diagram-node-text {
+    fill: var(--text-primary);
+}
+
+.diagram-edge {
+    fill: none;
+    stroke: var(--diagram-edge);
+    stroke-width: 1.5;
+    stroke-linecap: round;
+}
+
+.diagram-edge-dotted {
+    stroke-dasharray: 1 5;
+}
+
+.diagram-edge-thick {
+    stroke-width: 3;
+}
+
+.diagram-marker {
+    fill: var(--diagram-edge);
+}
+
+.diagram-marker-cross {
+    fill: none;
+    stroke: var(--diagram-edge);
+    stroke-width: 1.5;
+    stroke-linecap: round;
+}
+
+.diagram-edge-label-background {
+    fill: var(--page-background);
+}
+
+.diagram-edge-label-text {
+    fill: var(--text-secondary);
+}
+
+.diagram-marker-open {
+    fill: none;
+    stroke: var(--diagram-edge);
+    stroke-width: 1.5;
+    stroke-linecap: round;
+    stroke-linejoin: round;
+}
+
+.diagram-sequence-lifeline {
+    stroke: var(--diagram-node-border);
+    stroke-width: 1;
+}
+
+.diagram-sequence-activation {
+    fill: var(--diagram-node-background);
+    stroke: var(--diagram-node-border);
+    stroke-width: 1.25;
+}
+
+.diagram-sequence-note-shape {
+    fill: var(--diagram-note-background);
+    stroke: var(--diagram-note-border);
+    stroke-width: 1.25;
+}
+
+.diagram-sequence-message-text,
+.diagram-sequence-note-text {
+    fill: var(--text-primary);
+}
+
+.diagram-sequence-title {
+    fill: var(--text-primary);
+    font-weight: 600;
+}
+
+.diagram-sequence-frame {
+    fill: none;
+    stroke: var(--diagram-node-border);
+    stroke-width: 1.25;
+}
+
+.diagram-sequence-frame-tab {
+    fill: var(--diagram-node-background);
+    stroke: var(--diagram-node-border);
+    stroke-width: 1.25;
+}
+
+.diagram-sequence-frame-keyword {
+    fill: var(--text-primary);
+    font-weight: 600;
+}
+
+.diagram-sequence-frame-label {
+    fill: var(--text-secondary);
+}
+
+.diagram-sequence-frame-divider {
+    fill: none;
+    stroke: var(--diagram-node-border);
+    stroke-width: 1.25;
+    stroke-dasharray: 4 4;
+}
+
+.diagram-sequence-highlight {
+    fill: var(--diagram-highlight-background);
+}
+
+.diagram-actor-head {
+    fill: var(--diagram-node-background);
+    stroke: var(--diagram-edge);
+    stroke-width: 1.5;
+}
+
+.diagram-actor-body {
+    fill: none;
+    stroke: var(--diagram-edge);
+    stroke-width: 1.5;
+    stroke-linecap: round;
+}
+
+.diagram-sequence-number circle {
+    fill: var(--diagram-edge);
+}
+
+.diagram-sequence-number text {
+    fill: var(--page-background);
+    font-weight: 600;
+}
+
+.diagram-context-center .diagram-node-shape {
+    fill: var(--diagram-decision-background);
+    stroke: var(--diagram-decision-border);
+    stroke-width: 2;
+}
+
+.diagram-context-center .diagram-node-text {
+    font-weight: 600;
+}
+
+.diagram-node-detail {
+    fill: none;
+    stroke: var(--diagram-node-border);
+    stroke-width: 1.25;
+}
+
+.diagram-node-icon {
+    fill: var(--diagram-node-background);
+    stroke: var(--diagram-edge);
+    stroke-width: 1;
+}
+
+.diagram-note-shape {
+    fill: var(--diagram-note-background);
+    stroke: var(--diagram-note-border);
+    stroke-width: 1.25;
+}
+
+.diagram-note-text {
+    fill: var(--text-primary);
+}
+
+.diagram-marker-hollow {
+    fill: var(--page-background);
+    stroke: var(--diagram-edge);
+    stroke-width: 1.5;
+    stroke-linejoin: round;
+}
+
+.diagram-container-shape,
+.diagram-container-tab {
+    fill: var(--diagram-container-background);
+    stroke: var(--diagram-node-border);
+    stroke-width: 1.25;
+}
+
+.diagram-container-detail {
+    fill: none;
+    stroke: var(--diagram-node-border);
+    stroke-width: 1.25;
+}
+
+.diagram-container-label,
+.diagram-component-title {
+    fill: var(--text-primary);
+    font-weight: 600;
 }
 
 img {

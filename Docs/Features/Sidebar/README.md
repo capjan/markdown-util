@@ -2,7 +2,7 @@
 
 ## Overview
 
-When you run `mdu serve`, MarkdownUtil creates a collapsible sidebar from the Markdown files in the documentation folder. A `README.md` represents its folder in the navigation, and child folders appear nested below it.
+When you run `mdu serve`, MarkdownUtil creates a collapsible sidebar from the Markdown files in the documentation folder. A `README.md` represents its folder in the navigation, and child folders appear nested below it. The root documentation page stays expanded; nested pages with child pages have a disclosure button to expand or collapse them. Selecting a nested page with child pages expands its section automatically. The current page stays highlighted in gray until hovered, when it uses the hover color. Expanded sections stay open while you navigate during the current session.
 
 By default, entries at the same level are sorted alphabetically by page title. Add a `sidebar.order` number to a page's YAML front matter to choose its position. Smaller numbers appear first. Pages with an order are listed before pages without one; unordered pages remain alphabetical. If two pages have the same order, they are sorted alphabetically by title.
 
@@ -24,6 +24,7 @@ The MarkdownUtil documentation uses this ordering for its top-level sections:
 | `Docs/Setup/README.md` | 10 |
 | `Docs/Usage/README.md` | 20 |
 | `Docs/Features/README.md` | 30 |
+| `Docs/Architecture/README.md` | 35 |
 | `Docs/OtherTools/README.md` | 40 |
 
 For a single setting, you can also use the compact form:

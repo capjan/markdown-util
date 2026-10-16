@@ -294,32 +294,105 @@ body {
 
 .site-nav-item {
     margin: 0;
-    padding-left: calc(var(--depth) * 0.75rem);
+}
+
+.site-nav-row {
+    display: flex;
+    align-items: center;
+    gap: 0;
+    margin-left: 0;
+    padding-left: calc(1.125rem + var(--indent-depth) * 0.75rem);
+    border-radius: 8px;
+}
+
+.site-nav-row.is-current {
+    background: var(--surface-current);
+    color: var(--text-primary);
+}
+
+.site-nav-row:hover {
+    background: var(--nav-hover);
+    color: var(--nav-hover-text);
+}
+
+.site-nav-row.is-current .site-nav-toggle,
+.site-nav-row.is-current .site-nav-link {
+    color: var(--text-primary);
+}
+
+.site-nav-row:hover .site-nav-toggle,
+.site-nav-row:hover .site-nav-link {
+    color: var(--nav-hover-text);
+}
+
+.site-nav-toggle,
+.site-nav-toggle-spacer {
+    display: grid;
+    place-items: center;
+    height: 1.5rem;
+    flex: none;
+}
+
+.site-nav-toggle {
+    display: flex;
+    align-items: center;
+    justify-content: flex-start;
+    align-self: stretch;
+    width: calc(2.375rem + var(--indent-depth) * 0.75rem);
+    height: auto;
+    margin-left: calc(-1.125rem - var(--indent-depth) * 0.75rem);
+    padding: 0 0 0 calc(1.125rem + var(--indent-depth) * 0.75rem);
+    border: 0;
+    border-radius: 5px;
+    background: transparent;
+    color: var(--text-secondary);
+    cursor: pointer;
+}
+
+.site-nav-toggle-spacer {
+    width: calc(2.375rem + var(--indent-depth) * 0.75rem);
+    margin-left: calc(-1.125rem - var(--indent-depth) * 0.75rem);
+}
+
+.site-nav-toggle:focus-visible {
+    position: relative;
+    z-index: 1;
+    outline: 2px solid var(--link);
+    outline-offset: -2px;
+}
+
+.site-nav-toggle svg {
+    width: 12px;
+    height: 12px;
+    fill: none;
+    stroke: currentColor;
+    stroke-linecap: round;
+    stroke-linejoin: round;
+    stroke-width: 1.5;
+    transition: transform 120ms ease;
+}
+
+.site-nav-toggle[aria-expanded="true"] svg {
+    transform: rotate(90deg);
 }
 
 .site-nav-link {
     display: block;
-    padding: 0.45rem 0.65rem;
+    min-width: 0;
+    flex: 1;
+    padding: 0.45rem 0.4rem 0.45rem 0;
     border-radius: 6px;
     color: var(--text-secondary);
     line-height: 1.35;
     overflow-wrap: anywhere;
 }
 
-.site-nav-link:hover:not(.is-current) {
-    border-radius: 8px;
-    background: var(--nav-hover);
-    color: var(--nav-hover-text);
+.site-nav-link:hover {
     text-decoration: none;
 }
 
 .site-nav-link.is-current {
-    background: var(--surface-current);
-    color: var(--text-primary);
     text-decoration: none;
-}
-
-.site-nav-link.is-current {
     font-weight: 600;
 }
 

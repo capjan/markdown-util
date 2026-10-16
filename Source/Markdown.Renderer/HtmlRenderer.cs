@@ -76,12 +76,54 @@ public class HtmlRenderer
         await writer.WriteAsync(renderedHtml);
     }
 
-    private static string RenderNavigationItems(IReadOnlyList<NavigationItem> navigationItems) =>
-        string.Join(Environment.NewLine, navigationItems.Select(item => $$"""
-            <li class="site-nav-item" style="--depth: {{item.Depth}}">
-                <a class="site-nav-link {{(item.IsCurrent ? "is-current" : string.Empty)}}" href="{{HtmlEncoder.Default.Encode(item.Url)}}" aria-current="{{(item.IsCurrent ? "page" : "false")}}">{{HtmlEncoder.Default.Encode(item.Title)}}</a>
-            </li>
-            """));
+    private static string RenderNavigationItems(IReadOnlyList<NavigationItem> navigationItems)
+    {
+        var output = new StringBuilder();
+        var index = 0;
+        RenderItems(0);
+        return output.ToString();
+
+        void RenderItems(int depth)
+        {
+            while (index < navigationItems.Count && navigationItems[index].Depth == depth)
+            {
+                var itemIndex = index++;
+                var item = navigationItems[itemIndex];
+                var hasChildren = index < navigationItems.Count && navigationItems[index].Depth > depth;
+                var hasToggle = hasChildren && depth > 0;
+                var indentDepth = Math.Max(0, item.Depth - 1);
+                var encodedTitle = HtmlEncoder.Default.Encode(item.Title);
+                var encodedUrl = HtmlEncoder.Default.Encode(item.Url);
+                var childrenId = $"site-nav-children-{itemIndex}";
+                var itemIndent = new string(' ', 16 + depth * 8);
+                var rowIndent = itemIndent + "    ";
+                var contentIndent = rowIndent + "    ";
+
+                output.Append(itemIndent).AppendLine($"<li class=\"site-nav-item\" style=\"--indent-depth: {indentDepth}\">");
+                output.Append(rowIndent).AppendLine($"<div class=\"site-nav-row{(item.IsCurrent ? " is-current" : string.Empty)}\">");
+                if (hasToggle)
+                {
+                    output.Append(contentIndent).AppendLine($"<button class=\"site-nav-toggle\" type=\"button\" aria-expanded=\"true\" aria-controls=\"{childrenId}\" aria-label=\"Collapse {encodedTitle}\"><svg viewBox=\"0 0 12 12\" aria-hidden=\"true\" focusable=\"false\"><path d=\"M3 2l4 4-4 4\"></path></svg></button>");
+                }
+                else if (depth > 0)
+                {
+                    output.Append(contentIndent).AppendLine("<span class=\"site-nav-toggle-spacer\" aria-hidden=\"true\"></span>");
+                }
+
+                output.Append(contentIndent).AppendLine($"<a class=\"site-nav-link{(item.IsCurrent ? " is-current" : string.Empty)}\" href=\"{encodedUrl}\" aria-current=\"{(item.IsCurrent ? "page" : "false")}\">{encodedTitle}</a>");
+                output.Append(rowIndent).AppendLine("</div>");
+
+                if (hasChildren)
+                {
+                    output.Append(rowIndent).AppendLine($"<ul class=\"site-nav-list site-nav-children\" id=\"{childrenId}\">");
+                    RenderItems(depth + 1);
+                    output.Append(rowIndent).AppendLine("</ul>");
+                }
+
+                output.Append(itemIndent).AppendLine("</li>");
+            }
+        }
+    }
 
     private static string RenderEditPageLink(string editPageLink) =>
         string.IsNullOrEmpty(editPageLink)
