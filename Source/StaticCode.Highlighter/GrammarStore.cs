@@ -15,8 +15,19 @@ public static class GrammarStore
             case "swift": return Swift();
             case "yaml": case "yml": return Yaml();
             case "bash": case "zsh": case "sh": case "shell": return Shell();
+            case "md": case "markdown": return Markdown();
             default: return Plain();
         }
+    }
+
+    private static Grammar Markdown()
+    {
+        return new Grammar(
+            keywords: Array.Empty<string>(),
+            operators: Array.Empty<string>(),
+            strings: Array.Empty<LanguageString>(),
+            lineCommentStart: string.Empty,
+            highlightMarkdown: true);
     }
     
     private static Grammar CSharp()

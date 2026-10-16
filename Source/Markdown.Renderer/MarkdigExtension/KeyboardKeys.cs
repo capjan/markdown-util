@@ -110,7 +110,7 @@ public static class KeyboardKeys
         Add("left-control", "Left Ctrl", "⌃", aliases: new[] { "lcontrol", "lctrl", "left-ctrl" });
         Add("right-control", "Right Ctrl", "⌃", aliases: new[] { "rcontrol", "rctrl", "right-ctrl" });
         AddPlain("function", "Fn", "fn");
-        Add("globe", "Globe", "🌐");
+        Add("globe", "Globe", "🌐" + TextStyle);
         AddPlain("meta", "Meta");
         AddPlain("left-meta", "Left Meta", "lmeta");
         AddPlain("right-meta", "Right Meta", "rmeta");

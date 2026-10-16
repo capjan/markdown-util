@@ -38,5 +38,6 @@ Use one of these language identifiers:
 | Swift | `swift` |
 | YAML | `yaml`, `yml` |
 | Shell | `bash`, `zsh`, `sh`, `shell` |
+| Markdown | `md`, `markdown` |
 
-The highlighter uses lightweight language rules rather than full language parsers, so it colors selected syntax elements. Other languages remain readable as plain code.
+Markdown code blocks highlight headings, block markers, links, inline code, and emphasis while keeping the Markdown source visible as code. The highlighter uses lightweight language rules rather than full language parsers, so it colors selected syntax elements. Other languages remain readable as plain code.

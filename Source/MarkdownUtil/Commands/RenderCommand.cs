@@ -66,7 +66,11 @@ public class RenderCommand
         return 0;
     }
 
-    private void RenderNodesToHtml(string rootPath, string outPath, MarkdownFile[] graph, string editPageRoot)
+    private void RenderNodesToHtml(
+        string rootPath,
+        string outPath,
+        MarkdownFile[] graph,
+        string editPageRoot)
     {
         var rendererVisitor = new MarkdigVisitor(rootPath, outPath, _renderer, editPageRoot, _searchIndexBuilder, graph);
         

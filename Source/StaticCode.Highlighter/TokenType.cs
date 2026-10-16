@@ -14,5 +14,17 @@ public enum TokenType
     Command,
     Subcommand,
     Option,
-    Argument
+    Argument,
+    MarkdownHeading,
+    MarkdownSyntax,
+    MarkdownLink,
+    MarkdownUrl,
+    MarkdownCode,
+    MarkdownEmphasis,
+    MarkdownStrong,
+    MarkdownAlertNote,
+    MarkdownAlertTip,
+    MarkdownAlertImportant,
+    MarkdownAlertWarning,
+    MarkdownAlertCaution
 }

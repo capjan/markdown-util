@@ -5,7 +5,7 @@
 ## Usage
 
 ```bash
-mdu serve PATH OUTPATH --pattern PATTERN --port PORT --no-browser --editPageRoot URL
+mdu serve [PATH [OUTPATH]]
 ```
 
 For all arguments, options, and defaults, here is the output of `mdu serve --help`:
@@ -24,10 +24,10 @@ Arguments:
 Options:
   -p, --pattern <pattern>        Search pattern for Markdown files. [default: *.md]
   --hidden                       Include hidden files and folders.
-  --port <port>                  Local preview server port. [default: 4173]
-  --no-browser                   Do not open the preview in a browser.
-  --editPageRoot <editPageRoot>  URL to the root URL for editing the source files.
-  -?, -h, --help                 Show help and usage information
+  --port <port>                      Local preview server port. [default: 4173]
+  --no-browser                       Do not open the preview in a browser.
+  --editPageRoot <editPageRoot>      URL to the root URL for editing the source files.
+  -?, -h, --help                     Show help and usage information
 ```
 
 ## Examples

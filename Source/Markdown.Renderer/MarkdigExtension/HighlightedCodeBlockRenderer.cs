@@ -17,81 +17,57 @@ public class HighlightedCodeBlockRenderer : HtmlObjectRenderer<CodeBlock>
 
   protected override void Write(Markdig.Renderers.HtmlRenderer renderer, CodeBlock obj)
     {
-      var fencedCodeBlock = obj as FencedCodeBlock ?? throw new InvalidOperationException("Expected FencedCodeBlock");
-      var parser = obj.Parser as FencedCodeBlockParser ?? throw new InvalidOperationException("expected FencedCodeBlockParser");
-      
-        var languageName = fencedCodeBlock.Info?.Replace(parser.InfoPrefix ?? string.Empty, string.Empty);
-        if (string.IsNullOrEmpty(languageName)) languageName = "NoHighlight";
+        var code = GetCode(obj);
+        var languageName = "NoHighlight";
 
-   
-        var code = GetCode(obj, out _);
-
-        if (languageName == IconSearch.CodeBlockLanguage)
+        if (obj is FencedCodeBlock fencedCodeBlock)
         {
-            renderer.WriteLine(IconSearch.Html);
-            return;
-        }
+            var parser = fencedCodeBlock.Parser as FencedCodeBlockParser
+                ?? throw new InvalidOperationException("expected FencedCodeBlockParser");
+            languageName = fencedCodeBlock.Info?.Replace(parser.InfoPrefix ?? string.Empty, string.Empty);
+            if (string.IsNullOrEmpty(languageName)) languageName = "NoHighlight";
 
-        if (languageName.Equals("math", StringComparison.OrdinalIgnoreCase))
-        {
-            renderer.WriteLine(MathFormulaRenderer.Render(code, display: true));
-            return;
-        }
+            if (languageName == IconSearch.CodeBlockLanguage)
+            {
+                renderer.WriteLine(IconSearch.Html);
+                return;
+            }
 
-        // Supported diagrams become static SVG; everything else stays a readable code block.
-        if (DiagramRenderer.TryRenderSvg(languageName, code, out var svg))
-        {
-            renderer.Write("<figure class=\"diagram\">").Write(svg).WriteLine("</figure>");
-            return;
+            if (languageName.Equals("math", StringComparison.OrdinalIgnoreCase))
+            {
+                renderer.WriteLine(MathFormulaRenderer.Render(code, display: true));
+                return;
+            }
+
+            // Supported diagrams become static SVG; everything else stays a readable code block.
+            if (DiagramRenderer.TryRenderSvg(languageName, code, out var svg))
+            {
+                renderer.Write("<figure class=\"diagram\">").Write(svg).WriteLine("</figure>");
+                return;
+            }
         }
 
         var lexer = Lexer.ForLanguage(languageName);
         var tokens = lexer.Analyse(code);
         var renderedHtml = _codeFormatter.WriteToString(tokens);
         renderer.WriteLine(renderedHtml);
-          
-          // attributes.AddClass(string.Format("lang-{0}", (object) languageMoniker));
-          // attributes.Classes.Remove(string.Format("language-{0}", (object) languageMoniker));
-          // attributes.AddClass("editor-colors");
-          // string firstLine;
-          //
-          // var htmlFormattedCode = 
-          // renderer.Write("<div").WriteAttributes(attributes, (Func<string, string>) null).Write(">");
-          // var content = code;
-          //
-          // renderer.WriteLine("</div>");
-        
-      
     }
 
-    // private string ApplySyntaxHighlighting(string languageMoniker, string firstLine, string code)
-    // {
-    //   var language = new LanguageTypeAdapter().Parse(languageMoniker, firstLine);
-    //   if (language == null)
-    //     return code;
-    //   var sb = new StringBuilder();
-    //   var stringWriter = new StringWriter(sb);
-    //   new CodeColorizer().Colorize(code, language, Formatters.Default, styleSheet, (TextWriter) stringWriter);
-    //   return sb.ToString();
-    // }
-
-    private static string GetCode(LeafBlock obj, out string? firstLine)
+    private static string GetCode(LeafBlock obj)
     {
       var stringBuilder = new StringBuilder();
-      firstLine = null;
       // An empty code block has no line array.
       if (obj.Lines.Lines == null) return string.Empty;
+      var isFirstLine = true;
       foreach (var line in obj.Lines.Lines)
       {
         var slice = line.Slice;
         if (slice.Text != null)
         {
-          var str = slice.Text.Substring(slice.Start, slice.Length);
-          if (firstLine == null)
-            firstLine = str;
-          else
+          if (!isFirstLine)
             stringBuilder.AppendLine();
-          stringBuilder.Append(str);
+          stringBuilder.Append(slice.Text.Substring(slice.Start, slice.Length));
+          isFirstLine = false;
         }
       }
       return stringBuilder.ToString();

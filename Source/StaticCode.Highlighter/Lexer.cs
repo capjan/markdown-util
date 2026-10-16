@@ -24,6 +24,33 @@ public class Lexer
     private static readonly Regex YamlMappingKeyRegex = new(
         "^(?<indent>[ \\t]*)(?:-[ \\t]+)?(?<key>\"(?:\\\\.|[^\"])*\"|'(?:''|[^'])*'|[^:#\\r\\n][^:#\\r\\n]*?):(?=[ \\t]|$)",
         RegexOptions.Compiled);
+    private static readonly Regex MarkdownHeadingRegex = new(
+        @"(?m)^[ \t]{0,3}(?<marker>#{1,6})(?<spacing>[ \t]+)(?<heading>.*)$",
+        RegexOptions.Compiled);
+    private static readonly Regex MarkdownBlockMarkerRegex = new(
+        @"(?m)^[ \t]{0,3}(?:>[ \t]?|[-+*](?=[ \t])|\d{1,9}[.)](?=[ \t])|`{3,}[^`\r\n]*|~{3,}[^~\r\n]*)",
+        RegexOptions.Compiled);
+    private static readonly Regex MarkdownHorizontalRuleRegex = new(
+        @"(?m)^[ \t]{0,3}(?:(?:\*[ \t]*){3,}|(?:-[ \t]*){3,}|(?:_[ \t]*){3,})[ \t]*$",
+        RegexOptions.Compiled);
+    private static readonly Regex MarkdownTaskRegex = new(
+        @"(?m)^[ \t]{0,3}(?:[-+*]|\d+[.)])[ \t]+\[(?: |x|X)\]",
+        RegexOptions.Compiled);
+    private static readonly Regex MarkdownLinkRegex = new(
+        @"(?<image>!?)[\[](?<label>(?:\\.|[^\]])+)\]\((?<url>(?:\\.|[^)])*)\)",
+        RegexOptions.Compiled);
+    private static readonly Regex MarkdownStrongRegex = new(
+        @"(?<marker>\*\*|__)(?<content>\S(?:[^\r\n]*?\S)?)\k<marker>",
+        RegexOptions.Compiled);
+    private static readonly Regex MarkdownEmphasisRegex = new(
+        @"(?<marker>(?<!\*)\*(?!\*)|(?<!_)_(?!_))(?<content>\S(?:[^\r\n]*?\S)?)\k<marker>(?!\*|_)",
+        RegexOptions.Compiled);
+    private static readonly Regex MarkdownCodeRegex = new(
+        @"(?<marker>`+)(?<content>[^`\r\n]+?)\k<marker>",
+        RegexOptions.Compiled);
+    private static readonly Regex MarkdownAlertRegex = new(
+        @"\[!(?<kind>NOTE|TIP|IMPORTANT|WARNING|CAUTION)\]",
+        RegexOptions.Compiled | RegexOptions.IgnoreCase);
 
     public static Lexer ForLanguage(string name)
     {
@@ -39,11 +66,13 @@ public class Lexer
     private readonly IParserInputPredicate _lineComment;
     private readonly bool _highlightKeys;
     private readonly bool _highlightShellTokens;
+    private readonly bool _highlightMarkdown;
 
     private Lexer(Grammar settings)
     {
         _highlightKeys = settings.HighlightKeys;
         _highlightShellTokens = settings.HighlightShellTokens;
+        _highlightMarkdown = settings.HighlightMarkdown;
         _keywordPredicate = ParserInput.Predicate()
             .EqualsWordBoundary()
             .EqualsAny(settings.Keywords)
@@ -94,6 +123,15 @@ public class Lexer
 
     public IEnumerable<LanguageToken> Analyse(TextReader reader)
     {
+        if (_highlightMarkdown)
+        {
+            var markdownSource = reader.ReadToEnd();
+            return ApplyTokenRanges(
+                AnalyseCore(new StringReader(markdownSource)),
+                markdownSource.Length,
+                FindMarkdownRanges(markdownSource));
+        }
+
         if (!_highlightKeys && !_highlightShellTokens)
             return AnalyseCore(reader);
 
@@ -105,6 +143,86 @@ public class Lexer
             ranges.AddRange(FindShellTokenRanges(source));
 
         return ApplyTokenRanges(AnalyseCore(new StringReader(source)), source.Length, ranges);
+    }
+
+    private static List<(int Start, int End, TokenType Type)> FindMarkdownRanges(string source)
+    {
+        var ranges = new List<(int Start, int End, TokenType Type)>();
+
+        foreach (Match match in MarkdownLinkRegex.Matches(source))
+        {
+            var image = match.Groups["image"];
+            var label = match.Groups["label"];
+            var url = match.Groups["url"];
+            ranges.Add((match.Index, match.Index + image.Length + 1, TokenType.MarkdownSyntax));
+            ranges.Add((label.Index, label.Index + label.Length, TokenType.MarkdownLink));
+            ranges.Add((label.Index + label.Length, label.Index + label.Length + 2, TokenType.MarkdownSyntax));
+            if (url.Length > 0)
+                ranges.Add((url.Index, url.Index + url.Length, TokenType.MarkdownUrl));
+            ranges.Add((url.Index + url.Length, url.Index + url.Length + 1, TokenType.MarkdownSyntax));
+        }
+
+        AddDelimitedRanges(source, MarkdownStrongRegex, TokenType.MarkdownStrong, ranges);
+        AddDelimitedRanges(source, MarkdownEmphasisRegex, TokenType.MarkdownEmphasis, ranges);
+
+        foreach (Match match in MarkdownHeadingRegex.Matches(source))
+        {
+            var marker = match.Groups["marker"];
+            var heading = match.Groups["heading"];
+            ranges.Add((marker.Index, marker.Index + marker.Length, TokenType.MarkdownSyntax));
+            if (heading.Length > 0)
+                ranges.Add((heading.Index, heading.Index + heading.Length, TokenType.MarkdownHeading));
+        }
+
+        foreach (Match match in MarkdownBlockMarkerRegex.Matches(source))
+            ranges.Add((match.Index, match.Index + match.Length, TokenType.MarkdownSyntax));
+
+        foreach (Match match in MarkdownHorizontalRuleRegex.Matches(source))
+            ranges.Add((match.Index, match.Index + match.Length, TokenType.MarkdownSyntax));
+
+        foreach (Match match in MarkdownTaskRegex.Matches(source))
+            ranges.Add((match.Index, match.Index + match.Length, TokenType.MarkdownSyntax));
+
+        foreach (Match match in MarkdownCodeRegex.Matches(source))
+        {
+            var marker = match.Groups["marker"];
+            var content = match.Groups["content"];
+            ranges.Add((marker.Index, marker.Index + marker.Length, TokenType.MarkdownSyntax));
+            ranges.Add((content.Index, content.Index + content.Length, TokenType.MarkdownCode));
+            ranges.Add((content.Index + content.Length, content.Index + content.Length + marker.Length, TokenType.MarkdownSyntax));
+        }
+
+        foreach (Match match in MarkdownAlertRegex.Matches(source))
+        {
+            var alertType = match.Groups["kind"].Value.ToUpperInvariant() switch
+            {
+                "NOTE" => TokenType.MarkdownAlertNote,
+                "TIP" => TokenType.MarkdownAlertTip,
+                "IMPORTANT" => TokenType.MarkdownAlertImportant,
+                "WARNING" => TokenType.MarkdownAlertWarning,
+                "CAUTION" => TokenType.MarkdownAlertCaution,
+                _ => TokenType.MarkdownSyntax
+            };
+            ranges.Add((match.Index, match.Index + match.Length, alertType));
+        }
+
+        return ranges;
+    }
+
+    private static void AddDelimitedRanges(
+        string source,
+        Regex regex,
+        TokenType contentType,
+        ICollection<(int Start, int End, TokenType Type)> ranges)
+    {
+        foreach (Match match in regex.Matches(source))
+        {
+            var marker = match.Groups["marker"];
+            var content = match.Groups["content"];
+            ranges.Add((marker.Index, marker.Index + marker.Length, TokenType.MarkdownSyntax));
+            ranges.Add((content.Index, content.Index + content.Length, contentType));
+            ranges.Add((content.Index + content.Length, content.Index + content.Length + marker.Length, TokenType.MarkdownSyntax));
+        }
     }
 
     private IEnumerable<LanguageToken> AnalyseCore(TextReader reader)

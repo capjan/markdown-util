@@ -30,6 +30,7 @@ public sealed class ServeCommand
     private readonly HashSet<string> _generatedFiles = new(PathComparer);
 
     private MarkdownFile[] _navigationRoots = Array.Empty<MarkdownFile>();
+    private IReadOnlyCollection<string> _siteMediaProviders = Array.Empty<string>();
     private RenderCommandSettings _settings = new();
     private string _rootPath = string.Empty;
     private string _outputPath = string.Empty;
@@ -164,7 +165,15 @@ public sealed class ServeCommand
         SearchClientAsset.WriteTo(_outputPath);
         _searchIndexBuilder.Clear();
         graph.Visit(new LocalAssetsCopy(_rootPath, _outputPath));
-        graph.Visit(new MarkdigVisitor(_rootPath, _outputPath, _renderer, _settings.EditPageRoot, _searchIndexBuilder, _navigationRoots));
+        var rendererVisitor = new MarkdigVisitor(
+            _rootPath,
+            _outputPath,
+            _renderer,
+            _settings.EditPageRoot,
+            _searchIndexBuilder,
+            _navigationRoots);
+        _siteMediaProviders = rendererVisitor.SiteMediaProviders;
+        graph.Visit(rendererVisitor);
         _searchIndexBuilder.WriteIndex(_outputPath);
 
         RebuildDependencyIndex(graph);
@@ -304,7 +313,21 @@ public sealed class ServeCommand
 
             UpdatePageAssets(pagePath, page);
             new LocalAssetsCopy(_rootPath, _outputPath).Process(page, depth);
-            new MarkdigVisitor(_rootPath, _outputPath, _renderer, _settings.EditPageRoot, _searchIndexBuilder, _navigationRoots).Process(page, depth);
+            var rendererVisitor = new MarkdigVisitor(
+                _rootPath,
+                _outputPath,
+                _renderer,
+                _settings.EditPageRoot,
+                _searchIndexBuilder,
+                _navigationRoots);
+            if (!new HashSet<string>(_siteMediaProviders, StringComparer.Ordinal).SetEquals(rendererVisitor.SiteMediaProviders))
+            {
+                RebuildSite();
+                server.Publish(reloadAll: true);
+                return;
+            }
+
+            rendererVisitor.Process(page, depth);
             affectedPageUrls.Add(PreviewServer.ToUrlPath(_outputPath, GetPageOutputPath(page)));
         }
 

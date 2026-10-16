@@ -73,9 +73,66 @@ public class HtmlFormatter : ITextFormatter<IEnumerable<LanguageToken>>
                     writer.Write(WebUtility.HtmlEncode(token.Text));
                     writer.Write("</span>");
                     break;
+                case TokenType.MarkdownHeading:
+                    writer.Write("<span class=\"md-heading\">");
+                    writer.Write(WebUtility.HtmlEncode(token.Text));
+                    writer.Write("</span>");
+                    break;
+                case TokenType.MarkdownSyntax:
+                    writer.Write("<span class=\"md-syntax\">");
+                    writer.Write(WebUtility.HtmlEncode(token.Text));
+                    writer.Write("</span>");
+                    break;
+                case TokenType.MarkdownLink:
+                    writer.Write("<span class=\"md-link\">");
+                    writer.Write(WebUtility.HtmlEncode(token.Text));
+                    writer.Write("</span>");
+                    break;
+                case TokenType.MarkdownUrl:
+                    writer.Write("<span class=\"md-url\">");
+                    writer.Write(WebUtility.HtmlEncode(token.Text));
+                    writer.Write("</span>");
+                    break;
+                case TokenType.MarkdownCode:
+                    writer.Write("<span class=\"md-code\">");
+                    writer.Write(WebUtility.HtmlEncode(token.Text));
+                    writer.Write("</span>");
+                    break;
+                case TokenType.MarkdownEmphasis:
+                    writer.Write("<span class=\"md-emphasis\">");
+                    writer.Write(WebUtility.HtmlEncode(token.Text));
+                    writer.Write("</span>");
+                    break;
+                case TokenType.MarkdownStrong:
+                    writer.Write("<span class=\"md-strong\">");
+                    writer.Write(WebUtility.HtmlEncode(token.Text));
+                    writer.Write("</span>");
+                    break;
+                case TokenType.MarkdownAlertNote:
+                    WriteMarkdownAlert(token, writer, "note");
+                    break;
+                case TokenType.MarkdownAlertTip:
+                    WriteMarkdownAlert(token, writer, "tip");
+                    break;
+                case TokenType.MarkdownAlertImportant:
+                    WriteMarkdownAlert(token, writer, "important");
+                    break;
+                case TokenType.MarkdownAlertWarning:
+                    WriteMarkdownAlert(token, writer, "warning");
+                    break;
+                case TokenType.MarkdownAlertCaution:
+                    WriteMarkdownAlert(token, writer, "caution");
+                    break;
             }
         }
         writer.Write("</code>");
         writer.Write("</pre>");
+    }
+
+    private static void WriteMarkdownAlert(LanguageToken token, TextWriter writer, string kind)
+    {
+        writer.Write($"<span class=\"md-alert-{kind}\">");
+        writer.Write(WebUtility.HtmlEncode(token.Text));
+        writer.Write("</span>");
     }
 }

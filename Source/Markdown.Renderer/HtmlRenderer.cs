@@ -2,6 +2,7 @@ using System.Text;
 using System.Text.Encodings.Web;
 using System.Text.RegularExpressions;
 using Markdig;
+using Markdig.Renderers.Html;
 using Markdig.Syntax;
 using Markdown.Renderer.MarkdigExtension;
 using Markdown.Renderer.Res.Model;
@@ -11,6 +12,10 @@ namespace Markdown.Renderer;
 public class HtmlRenderer
 {
     private static readonly Regex TemplateTokenRegex = new(@"%%(?<name>[A-Z_]+)%%", RegexOptions.Compiled);
+    private static readonly Regex HeadingRegex = new(
+        @"<h(?<level>[1-6])(?<attributes>\s[^>]*)?>(?<content>.*?)</h\k<level>>",
+        RegexOptions.Compiled | RegexOptions.Singleline);
+    private static readonly Regex HeadingIdRegex = new(@"\bid=""(?<id>[^""]+)""", RegexOptions.Compiled);
     private readonly MarkdownPipeline _pipeline;
     private readonly LinkReplacer _linkReplacer = new LinkReplacer();
     private string? _basePath;
@@ -43,6 +48,15 @@ public class HtmlRenderer
 
         WriteCssFileTo(cssFilePath);
     }
+
+    public IReadOnlyCollection<string> FindMediaProviders(string markdown)
+    {
+        var document = Markdig.Markdown.Parse(_linkReplacer.ReplaceAll(markdown), _pipeline);
+        var html = document.ToHtml(_pipeline);
+        MediaLinkEmbedder.ReplaceStandaloneLinks(html, out var providers);
+        return providers;
+    }
+
     public async Task WriteHtml(
         TextWriter writer,
         string title,
@@ -51,7 +65,8 @@ public class HtmlRenderer
         string markdown,
         string editPageLink,
         IReadOnlyList<NavigationItem>? navigationItems = null,
-        IReadOnlyList<BreadcrumbItem>? breadcrumbs = null)
+        IReadOnlyList<BreadcrumbItem>? breadcrumbs = null,
+        IReadOnlyCollection<string>? siteMediaProviders = null)
     {
         var prefix = string.Concat(Enumerable.Repeat("../", nestingDeep));
         var cssFileLink = prefix + "css/main.css";
@@ -65,6 +80,9 @@ public class HtmlRenderer
             .Any(block => block.Info == IconSearch.CodeBlockLanguage);
         if (hasIconSearch) EnsureIconSearchAssets();
         var renderedMarkdown = document.ToHtml(_pipeline);
+        renderedMarkdown = MediaLinkEmbedder.ReplaceStandaloneLinks(renderedMarkdown, out var mediaProviders);
+        var providersForSettings = siteMediaProviders is { Count: > 0 } ? siteMediaProviders : mediaProviders;
+        renderedMarkdown = InsertHeadingPermalinks(renderedMarkdown);
         renderedMarkdown = InsertBreadcrumbsAboveHeading(renderedMarkdown, breadcrumbs ?? Array.Empty<BreadcrumbItem>());
         var model = new MainModel
         {
@@ -84,11 +102,15 @@ public class HtmlRenderer
             ["SEARCH_SCRIPT_LINK"] = HtmlEncoder.Default.Encode(searchScriptLink),
             ["SEARCH_INDEX_LINK"] = HtmlEncoder.Default.Encode(searchIndexLink),
             ["NAVIGATION_ITEMS"] = RenderNavigationItems(model.NavigationItems),
+            ["MEDIA_SETTINGS_BUTTON"] = providersForSettings.Count > 0 ? MediaLinkEmbedder.SettingsButtonHtml : string.Empty,
+            ["MEDIA_SETTINGS_DIALOG"] = MediaLinkEmbedder.RenderSettingsDialog(providersForSettings),
             ["MARKDOWN"] = model.RenderedMarkdown,
             ["EDIT_PAGE_LINK"] = RenderEditPageLink(model.EditPageLink),
-            ["PAGE_SCRIPTS"] = hasIconSearch
-                ? $"<script defer src=\"{HtmlEncoder.Default.Encode(prefix + "js/" + IconSearch.ScriptFileName)}\"></script>{Environment.NewLine}"
-                : string.Empty
+            ["PAGE_SCRIPTS"] =
+                (hasIconSearch
+                    ? $"<script defer src=\"{HtmlEncoder.Default.Encode(prefix + "js/" + IconSearch.ScriptFileName)}\"></script>{Environment.NewLine}"
+                    : string.Empty)
+                + (providersForSettings.Count > 0 ? $"<script>{MediaLinkEmbedder.Script}</script>{Environment.NewLine}" : string.Empty)
         };
         var renderedHtml = TemplateTokenRegex.Replace(Resources.HtmlTemplateContent(), match =>
             values.TryGetValue(match.Groups["name"].Value, out var value) ? value : match.Value);
@@ -175,6 +197,18 @@ public class HtmlRenderer
         var breadcrumb = $"<nav class=\"breadcrumbs\" aria-label=\"Breadcrumb\">{string.Join(separatorIcon, breadcrumbItems)}</nav>";
         return renderedMarkdown[..headingStart] + breadcrumb + Environment.NewLine + renderedMarkdown[headingStart..];
     }
+
+    private static string InsertHeadingPermalinks(string renderedMarkdown) =>
+        HeadingRegex.Replace(renderedMarkdown, match =>
+        {
+            var idMatch = HeadingIdRegex.Match(match.Groups["attributes"].Value);
+            if (!idMatch.Success) return match.Value;
+
+            var encodedId = HtmlEncoder.Default.Encode(idMatch.Groups["id"].Value);
+            var permalink = $"<a class=\"headerlink\" href=\"#{encodedId}\" title=\"Permanent link\" aria-label=\"Permanent link\">¶</a>";
+            var contentEnd = match.Groups["content"].Index + match.Groups["content"].Length - match.Index;
+            return match.Value.Insert(contentEnd, permalink);
+        });
     
     private string GetEnsuredCssFolderPath(string basePath)
     {

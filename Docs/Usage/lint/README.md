@@ -5,7 +5,7 @@
 ## Usage
 
 ```bash
-mdu lint PATH --pattern PATTERN
+mdu lint [PATH]
 ```
 
 The alias `mdu l` runs the same command. For all arguments, options, and defaults, here is the output of `mdu lint --help`:

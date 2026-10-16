@@ -36,3 +36,54 @@
 .operator {
     color: var(--syntax-operator);
 }
+
+.md-heading {
+    color: var(--syntax-keyword);
+    font-weight: 700;
+}
+
+.md-syntax {
+    color: var(--syntax-operator);
+    font-weight: 600;
+}
+
+.md-link {
+    color: var(--syntax-string);
+    text-decoration: underline;
+}
+
+.md-url {
+    color: var(--syntax-comment);
+}
+
+.md-code {
+    color: var(--syntax-string);
+}
+
+.md-emphasis {
+    font-style: italic;
+}
+
+.md-strong {
+    font-weight: 700;
+}
+
+.md-alert-note {
+    color: var(--alert-note-accent);
+}
+
+.md-alert-tip {
+    color: var(--alert-tip-accent);
+}
+
+.md-alert-important {
+    color: var(--alert-important-accent);
+}
+
+.md-alert-warning {
+    color: var(--alert-warning-accent);
+}
+
+.md-alert-caution {
+    color: var(--alert-caution-accent);
+}

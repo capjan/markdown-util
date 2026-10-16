@@ -21,6 +21,7 @@ public class MarkdigVisitor : BaseVisitor
         _editPageRoot = editPageRoot;
         _searchIndexBuilder = searchIndexBuilder;
         _navigationRoots = navigationRoots ?? Array.Empty<MarkdownFile>();
+        _siteMediaProviders = FindSiteMediaProviders();
     }
     
     private readonly HtmlRenderer _htmlFoundation;
@@ -29,7 +30,10 @@ public class MarkdigVisitor : BaseVisitor
     private readonly string _rootPath;
     private readonly string _outPath;
     private readonly MarkdownFile[] _navigationRoots;
+    private readonly IReadOnlyCollection<string> _siteMediaProviders;
     private IReadOnlyList<NavigationEntry>? _navigationEntries;
+
+    public IReadOnlyCollection<string> SiteMediaProviders => _siteMediaProviders;
 
     private static readonly StringComparison PathComparison = OperatingSystem.IsWindows() || OperatingSystem.IsMacOS()
         ? StringComparison.OrdinalIgnoreCase
@@ -39,10 +43,7 @@ public class MarkdigVisitor : BaseVisitor
     {
         Console.WriteLine($"{io.InputRelativeFilePathToRootDirectory} => {io.OutputRelativeFilePathToRootDirectory}");
 
-        var markdown = io.ReadAllText();
-        if (!string.IsNullOrEmpty(entity.FrontMatter) &&
-            markdown.StartsWith(entity.FrontMatter, StringComparison.Ordinal))
-            markdown = markdown[entity.FrontMatter.Length..].TrimStart('\r', '\n');
+        var markdown = RemoveFrontMatter(io.ReadAllText(), entity.FrontMatter);
         io.CreateOutputDirectory();    // ensures that the output directory exits
 
         var editPageLink = string.IsNullOrEmpty(_editPageRoot) ? string.Empty : Path.Combine(_editPageRoot, io.InputRelativeFilePathToRootDirectory);
@@ -73,7 +74,8 @@ public class MarkdigVisitor : BaseVisitor
                     markdown,
                     editPageLink,
                     BuildNavigation(outputFileName),
-                    BuildBreadcrumbs(entity, outputFileName)).GetAwaiter().GetResult();
+                    BuildBreadcrumbs(entity, outputFileName),
+                    _siteMediaProviders).GetAwaiter().GetResult();
 
             File.Move(temporaryPath, outputFileName, true);
         }
@@ -83,6 +85,36 @@ public class MarkdigVisitor : BaseVisitor
         }
 
         return true;
+    }
+
+    private IReadOnlyCollection<string> FindSiteMediaProviders()
+    {
+        var providers = new HashSet<string>(StringComparer.Ordinal);
+        foreach (var page in Flatten(_navigationRoots))
+        {
+            var markdown = RemoveFrontMatter(File.ReadAllText(page.FileInfo.FullName), page.FrontMatter);
+            providers.UnionWith(_htmlFoundation.FindMediaProviders(markdown));
+        }
+
+        return new[] { "YouTube", "Vimeo" }.Where(providers.Contains).ToArray();
+    }
+
+    private static string RemoveFrontMatter(string markdown, string frontMatter)
+    {
+        if (!string.IsNullOrEmpty(frontMatter) && markdown.StartsWith(frontMatter, StringComparison.Ordinal))
+            return markdown[frontMatter.Length..].TrimStart('\r', '\n');
+
+        return markdown;
+    }
+
+    private static IEnumerable<MarkdownFile> Flatten(IEnumerable<MarkdownFile> pages)
+    {
+        foreach (var page in pages)
+        {
+            yield return page;
+            foreach (var child in Flatten(page.Children))
+                yield return child;
+        }
     }
 
     private IReadOnlyList<NavigationItem> BuildNavigation(string currentOutputPath)

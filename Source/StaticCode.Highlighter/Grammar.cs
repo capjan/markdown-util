@@ -19,7 +19,8 @@ public class Grammar
         IReadOnlyCollection<LanguageString> strings,
         string lineCommentStart,
         bool highlightKeys = false,
-        bool highlightShellTokens = false)
+        bool highlightShellTokens = false,
+        bool highlightMarkdown = false)
     {
         Keywords = keywords;
         Operators = operators;
@@ -27,6 +28,7 @@ public class Grammar
         LineCommentStart = lineCommentStart;
         HighlightKeys = highlightKeys;
         HighlightShellTokens = highlightShellTokens;
+        HighlightMarkdown = highlightMarkdown;
     }
 
     public IReadOnlyCollection<string> Keywords { get; }
@@ -39,4 +41,6 @@ public class Grammar
     public bool HighlightKeys { get; }
 
     public bool HighlightShellTokens { get; }
+
+    public bool HighlightMarkdown { get; }
 }

@@ -25,11 +25,11 @@ For example, a missing local link is reported with its file and line:
 Linter detected 1 error.
 ```
 
-You can specify the source directory, output directory, and port when needed. The preview defaults to `./site` and port `4173`.
+You can specify the source directory, output directory, or a different port when needed. The preview defaults to `./site` and port `4173`.
 
 ```bash
-mdu render
-mdu serve --port 4173
+mdu render ./ProjectDocs ./public/docs
+mdu serve --port 8080
 ```
 
 Use `--no-browser` to start the server without opening a browser.

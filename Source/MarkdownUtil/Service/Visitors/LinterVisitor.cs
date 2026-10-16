@@ -1,5 +1,6 @@
 using Core.Collections.NodeGraph;
 using Markdown.Document;
+using Markdown.Document.Model;
 using Markdown.Linter;
 using Markdown.Linter.Rules.Rule2;
 using Markdown.Linter.Rules.Rule3;

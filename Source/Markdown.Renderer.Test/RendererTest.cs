@@ -20,4 +20,15 @@ public class RendererTest
         Assert.Contains("<span class=\"string\">", renderedHtml);
         Assert.Contains("Hello World", renderedHtml);
     }
+
+    [Fact]
+    public async Task RendersTwoTrailingSpacesAsHardLineBreak()
+    {
+        var sb = new StringBuilder();
+        using var sw = new StringWriter(sb);
+        await new HtmlRenderer().WriteHtml(sw, "test", "", 0, "First line  \nSecond line", "");
+
+        Assert.Contains("<p>First line<br />\nSecond line</p>", sb.ToString());
+    }
+
 }
