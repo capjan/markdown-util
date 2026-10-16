@@ -5,6 +5,7 @@ using Markdig.Parsers;
 using Markdig.Renderers;
 using Markdig.Renderers.Html;
 using Markdig.Syntax;
+using StaticCode.Diagrams;
 using StaticCode.Highlighter;
 
 namespace Markdown.Renderer;
@@ -23,7 +24,14 @@ public class HighlightedCodeBlockRenderer : HtmlObjectRenderer<CodeBlock>
 
    
         var code = GetCode(obj, out _);
-        
+
+        // Supported Mermaid diagrams become static SVG; everything else stays a readable code block.
+        if (languageName.Equals("mermaid", StringComparison.OrdinalIgnoreCase) && MermaidRenderer.TryRenderSvg(code, out var svg))
+        {
+            renderer.Write("<figure class=\"diagram\">").Write(svg).WriteLine("</figure>");
+            return;
+        }
+
         var lexer = Lexer.ForLanguage(languageName);
         var tokens = lexer.Analyse(code);
         var renderedHtml = _codeFormatter.WriteToString(tokens);

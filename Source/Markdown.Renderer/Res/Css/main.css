@@ -30,6 +30,11 @@
     --alert-warning-background: #fdf6e7;
     --alert-caution-accent: #c9252d;
     --alert-caution-background: #fdf1f1;
+    --diagram-node-background: #f5f5f7;
+    --diagram-node-border: #c7c7cc;
+    --diagram-decision-background: #eef5fd;
+    --diagram-decision-border: #8ab6e6;
+    --diagram-edge: #8e8e93;
 }
 
 :root[data-theme="light"] {
@@ -68,6 +73,11 @@
     --alert-warning-background: #2a1e00;
     --alert-caution-accent: #ff8a80;
     --alert-caution-background: #2e0d0c;
+    --diagram-node-background: #1d1d1f;
+    --diagram-node-border: #48484a;
+    --diagram-decision-background: #0b2440;
+    --diagram-decision-border: #2f6db0;
+    --diagram-edge: #8e8e93;
 }
 
 @media (prefers-color-scheme: dark) {
@@ -103,6 +113,11 @@
         --alert-warning-background: #2a1e00;
         --alert-caution-accent: #ff8a80;
         --alert-caution-background: #2e0d0c;
+        --diagram-node-background: #1d1d1f;
+        --diagram-node-border: #48484a;
+        --diagram-decision-background: #0b2440;
+        --diagram-decision-border: #2f6db0;
+        --diagram-edge: #8e8e93;
     }
 }
 
@@ -643,6 +658,66 @@ pre code {
     padding: 0;
     background: transparent;
     font-size: inherit;
+}
+
+.diagram {
+    margin: 1.5rem 0;
+    text-align: center;
+}
+
+.diagram svg {
+    max-width: 100%;
+    height: auto;
+    font-family: inherit;
+}
+
+.diagram-node-shape {
+    fill: var(--diagram-node-background);
+    stroke: var(--diagram-node-border);
+    stroke-width: 1.25;
+}
+
+.diagram-node-diamond .diagram-node-shape {
+    fill: var(--diagram-decision-background);
+    stroke: var(--diagram-decision-border);
+}
+
+.diagram-node-text {
+    fill: var(--text-primary);
+}
+
+.diagram-edge {
+    fill: none;
+    stroke: var(--diagram-edge);
+    stroke-width: 1.5;
+    stroke-linecap: round;
+}
+
+.diagram-edge-dotted {
+    stroke-dasharray: 1 5;
+}
+
+.diagram-edge-thick {
+    stroke-width: 3;
+}
+
+.diagram-marker {
+    fill: var(--diagram-edge);
+}
+
+.diagram-marker-cross {
+    fill: none;
+    stroke: var(--diagram-edge);
+    stroke-width: 1.5;
+    stroke-linecap: round;
+}
+
+.diagram-edge-label-background {
+    fill: var(--page-background);
+}
+
+.diagram-edge-label-text {
+    fill: var(--text-secondary);
 }
 
 img {

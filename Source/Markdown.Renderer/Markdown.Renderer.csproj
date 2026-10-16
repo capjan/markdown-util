@@ -18,6 +18,7 @@
     </ItemGroup>
 
     <ItemGroup>
+      <ProjectReference Include="..\StaticCode.Diagrams\StaticCode.Diagrams.csproj" />
       <ProjectReference Include="..\StaticCode.Highlighter\StaticCode.Highlighter.csproj" />
     </ItemGroup>
 
