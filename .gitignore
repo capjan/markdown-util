@@ -6,3 +6,4 @@ riderModule.iml
 nupkg/
 artifacts/
 temp/
+/site/
