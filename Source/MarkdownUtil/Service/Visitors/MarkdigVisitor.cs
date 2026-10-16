@@ -29,6 +29,11 @@ public class MarkdigVisitor : BaseVisitor
     private readonly string _rootPath;
     private readonly string _outPath;
     private readonly MarkdownFile[] _navigationRoots;
+    private IReadOnlyList<NavigationEntry>? _navigationEntries;
+
+    private static readonly StringComparison PathComparison = OperatingSystem.IsWindows() || OperatingSystem.IsMacOS()
+        ? StringComparison.OrdinalIgnoreCase
+        : StringComparison.Ordinal;
 
     protected override bool ProcessFile(MarkdownFile entity, int graphDepth, FilePathInfo io)
     {
@@ -82,15 +87,28 @@ public class MarkdigVisitor : BaseVisitor
 
     private IReadOnlyList<NavigationItem> BuildNavigation(string currentOutputPath)
     {
-        var navigation = new List<NavigationItem>();
         var currentPath = Path.GetFullPath(currentOutputPath);
-        var currentDirectory = Path.GetDirectoryName(currentPath)!;
-        var pathComparison = OperatingSystem.IsWindows() || OperatingSystem.IsMacOS()
-            ? StringComparison.OrdinalIgnoreCase
-            : StringComparison.Ordinal;
+        var currentDirectorySegments = GetSiteRelativeSegments(Path.GetDirectoryName(currentPath)!);
 
+        return NavigationEntries
+            .Select(entry => new NavigationItem
+            {
+                Title = entry.Title,
+                Url = GetRelativeUrl(currentDirectorySegments, entry.UrlSegments),
+                Depth = entry.Depth,
+                IsCurrent = string.Equals(entry.OutputPath, currentPath, PathComparison)
+            })
+            .ToArray();
+    }
+
+    // The sidebar lists every page, so its entries are collected once per visitor instead of once per page.
+    private IReadOnlyList<NavigationEntry> NavigationEntries => _navigationEntries ??= CreateNavigationEntries();
+
+    private IReadOnlyList<NavigationEntry> CreateNavigationEntries()
+    {
+        var entries = new List<NavigationEntry>();
         AddPages(_navigationRoots, 0);
-        return navigation;
+        return entries;
 
         void AddPages(IEnumerable<MarkdownFile> pages, int depth)
         {
@@ -99,26 +117,40 @@ public class MarkdigVisitor : BaseVisitor
                          .ThenBy(page => page.SidebarOrder)
                          .ThenBy(GetNavigationTitle, StringComparer.OrdinalIgnoreCase))
             {
-                var pagePath = FilePathInfo.CreateRenderFileInfo(_rootPath, _outPath, page.FileInfo, ".html")
-                    .OutputFullFilePath;
-                pagePath = GetOutputPagePath(pagePath);
-                var url = GetRelativeUrl(currentDirectory, pagePath);
-
                 if (page.SidebarVisible)
                 {
-                    navigation.Add(new NavigationItem
-                    {
-                        Title = GetNavigationTitle(page),
-                        Url = url,
-                        Depth = depth,
-                        IsCurrent = string.Equals(pagePath, currentPath, pathComparison)
-                    });
+                    var pagePath = GetOutputPagePath(FilePathInfo.CreateRenderFileInfo(_rootPath, _outPath, page.FileInfo, ".html")
+                        .OutputFullFilePath);
+                    entries.Add(new NavigationEntry(GetNavigationTitle(page), pagePath, GetSiteRelativeSegments(pagePath), depth));
                 }
 
                 AddPages(page.Children, page.SidebarVisible ? depth + 1 : depth);
             }
         }
     }
+
+    private string[] GetSiteRelativeSegments(string path)
+    {
+        var relativePath = Path.GetRelativePath(_outPath, path);
+        return relativePath == "." ? Array.Empty<string>() : relativePath.Split(Path.DirectorySeparatorChar);
+    }
+
+    /// <summary>
+    /// Returns the URL of a page relative to a directory, both given as path segments relative to the site root;
+    /// the same result as <see cref="Path.GetRelativePath"/> with escaped segments, without touching the file system.
+    /// </summary>
+    private static string GetRelativeUrl(string[] fromDirectory, string[] toFile)
+    {
+        var common = 0;
+        while (common < fromDirectory.Length && common < toFile.Length - 1 &&
+               string.Equals(fromDirectory[common], toFile[common], PathComparison))
+            common++;
+
+        return string.Join('/', Enumerable.Repeat("..", fromDirectory.Length - common)
+            .Concat(toFile.Skip(common).Select(Uri.EscapeDataString)));
+    }
+
+    private sealed record NavigationEntry(string Title, string OutputPath, string[] UrlSegments, int Depth);
 
     private IReadOnlyList<BreadcrumbItem> BuildBreadcrumbs(MarkdownFile page, string currentOutputPath)
     {

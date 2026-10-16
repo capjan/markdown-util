@@ -238,7 +238,7 @@ public sealed class ServeCommand
     {
         while (await changes.WaitToReadAsync(cancellationToken))
         {
-            await Task.Delay(TimeSpan.FromMilliseconds(180), cancellationToken);
+            await Task.Delay(TimeSpan.FromMilliseconds(75), cancellationToken);
             var batch = new List<FileChange>();
             while (changes.TryRead(out var change)) batch.Add(change);
 
@@ -262,11 +262,17 @@ public sealed class ServeCommand
             .ToArray();
         if (relevantChanges.Length == 0) return;
 
+        // Editors that save through a temporary file report creations, renames, and deletions for a page whose
+        // content only changed. Only the state after the batch decides whether pages were added or removed.
         var requiresRebuild = relevantChanges.Any(change =>
-            change.Kind == FileChangeKind.Rescan ||
-            change.Kind is (FileChangeKind.Created or FileChangeKind.Deleted or FileChangeKind.Renamed) &&
-            (IsDirectoryChange(change) || IsMarkdownCandidate(change.Path) ||
-             change.OldPath is not null && IsMarkdownCandidate(change.OldPath)));
+                change.Kind == FileChangeKind.Rescan ||
+                change.Kind is (FileChangeKind.Created or FileChangeKind.Deleted or FileChangeKind.Renamed) &&
+                IsDirectoryChange(change)) ||
+            relevantChanges
+                .Where(change => change.Kind is FileChangeKind.Created or FileChangeKind.Deleted or FileChangeKind.Renamed)
+                .SelectMany(change => change.OldPath is null ? new[] { change.Path } : new[] { change.Path, change.OldPath })
+                .Distinct(PathComparer)
+                .Any(ChangesPageSet);
 
         if (requiresRebuild)
         {
@@ -276,7 +282,8 @@ public sealed class ServeCommand
         }
 
         var changedPages = relevantChanges
-            .Where(change => change.Kind == FileChangeKind.Changed && _pages.ContainsKey(change.Path))
+            .Where(change => change.Kind is FileChangeKind.Changed or FileChangeKind.Created or FileChangeKind.Renamed &&
+                             _pages.ContainsKey(change.Path) && File.Exists(change.Path))
             .Select(change => change.Path)
             .Distinct(PathComparer)
             .ToArray();
@@ -330,6 +337,9 @@ public sealed class ServeCommand
             server.Publish(affectedPageUrls);
         }
     }
+
+    private bool ChangesPageSet(string path) =>
+        _pages.ContainsKey(path) ? !File.Exists(path) : File.Exists(path) && IsMarkdownCandidate(path);
 
     private bool IsMarkdownCandidate(string path)
     {

@@ -15,8 +15,8 @@ internal sealed class IconSetData
     public string Author { get; init; } = string.Empty;
     public string License { get; init; } = string.Empty;
     public string LicenseUrl { get; init; } = string.Empty;
-    public int Width { get; init; } = 16;
-    public int Height { get; init; } = 16;
+    public double Width { get; init; } = 16;
+    public double Height { get; init; } = 16;
     public Dictionary<string, IconData> Icons { get; init; } = new();
     public Dictionary<string, string> Aliases { get; init; } = new();
 
@@ -33,7 +33,12 @@ internal sealed class IconSetData
 internal sealed class IconData
 {
     public string Body { get; init; } = string.Empty;
-    public int? Width { get; init; }
-    public int? Height { get; init; }
+    public double Left { get; init; }
+    public double Top { get; init; }
+    public double? Width { get; init; }
+    public double? Height { get; init; }
     public bool Hidden { get; init; }
+
+    /// <summary>The variant for the dark theme, if the icon has light and dark variants.</summary>
+    public IconData? Dark { get; init; }
 }

@@ -61,11 +61,16 @@ public static class IconSearch
                 json.WriteStartArray("icons");
                 foreach (var icon in set.VisibleIcons)
                 {
+                    // [name, viewBox, body] or, for themed icons, [name, viewBox, body, dark viewBox, dark body]
                     json.WriteStartArray();
                     json.WriteStringValue(icon.Shortcode[set.ShortcodePrefix.Length..]);
-                    json.WriteNumberValue(icon.Width);
-                    json.WriteNumberValue(icon.Height);
-                    json.WriteStringValue(icon.Body);
+                    json.WriteStringValue(icon.Glyph.ViewBox);
+                    json.WriteStringValue(icon.Glyph.Body);
+                    if (icon.DarkGlyph is not null)
+                    {
+                        json.WriteStringValue(icon.DarkGlyph.ViewBox);
+                        json.WriteStringValue(icon.DarkGlyph.Body);
+                    }
                     json.WriteEndArray();
                 }
                 json.WriteEndArray();

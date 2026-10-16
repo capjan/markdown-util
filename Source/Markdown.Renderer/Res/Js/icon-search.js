@@ -5,6 +5,8 @@
     const pageSize = 120;
     const indexUrl = new URL("icon-search-index.json", document.currentScript.src);
     const numberFormat = new Intl.NumberFormat("en");
+    const toSvg = (viewBox, body, className) =>
+        `<svg${className ? ` class="${className}"` : ""} xmlns="http://www.w3.org/2000/svg" viewBox="${viewBox}" aria-hidden="true" focusable="false">${body}</svg>`;
     let itemsPromise;
     // The index holds every icon, so it is only loaded when a search comes into view.
     const loadItems = () => itemsPromise ??= fetch(indexUrl)
@@ -13,12 +15,14 @@
             return response.json();
         })
         .then((index) => [
-            ...index.sets.flatMap((set) => set.icons.map(([name, width, height, body]) => ({
+            ...index.sets.flatMap((set) => set.icons.map(([name, viewBox, body, darkViewBox, darkBody]) => ({
                 kind: "icons",
                 name,
                 shortcode: set.prefix + name,
                 setName: set.name,
-                svg: `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 ${width} ${height}" aria-hidden="true" focusable="false">${body}</svg>`
+                svg: darkBody === undefined
+                    ? toSvg(viewBox, body)
+                    : toSvg(viewBox, body, "icon-light") + toSvg(darkViewBox, darkBody, "icon-dark")
             }))),
             ...index.emojis.map(([name, emoji]) => ({ kind: "emojis", name, shortcode: name, emoji }))
         ]);

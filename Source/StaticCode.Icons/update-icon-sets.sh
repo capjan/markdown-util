@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
-# Downloads the bundled icon sets from the Iconify JSON packages on npm and stores them,
-# reduced to what the renderer needs, as gzip-compressed embedded resources in Res/.
-# Requires npm and node. Update a set by changing its version below and running this script.
+# Downloads the bundled icon sets from the Iconify JSON packages on npm and from the Dashboard Icons repository
+# and stores them, reduced to what the renderer needs, as gzip-compressed embedded resources in Res/.
+# Requires git, npm, and node. Update a set by changing its version or commit below and running this script.
 set -euo pipefail
 
 SETS=(
@@ -12,6 +12,8 @@ SETS=(
     "octicon@1.2.39"
     "simple-icons@1.2.100"
 )
+DASHBOARD_ICONS_COMMIT="6d31345986eba2067a63eb41c1a5a87d4e8e850a"
+SVGO_VERSION="4.1.0"
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 RESOURCE_DIR="$SCRIPT_DIR/Res"
@@ -54,3 +56,16 @@ EOF
     gzip -9 -n -c "$WORK_DIR/$NAME.json" > "$RESOURCE_DIR/$NAME.json.gz"
     echo "Updated $NAME ($SET)"
 done
+
+# Dashboard Icons are SVG files in a Git repository; only the svg folder and the license are checked out.
+DASHBOARD_DIR="$WORK_DIR/dashboard-icons"
+git init -q "$DASHBOARD_DIR"
+git -C "$DASHBOARD_DIR" remote add origin https://github.com/homarr-labs/dashboard-icons.git
+git -C "$DASHBOARD_DIR" sparse-checkout set --no-cone /svg/ /LICENSE
+git -C "$DASHBOARD_DIR" fetch -q --depth 1 --filter=blob:none origin "$DASHBOARD_ICONS_COMMIT"
+git -C "$DASHBOARD_DIR" checkout -q FETCH_HEAD
+npm install --silent --prefix "$WORK_DIR/svgo" "svgo@$SVGO_VERSION" > /dev/null
+node "$SCRIPT_DIR/dashboard-icons.mjs" "$DASHBOARD_DIR" "$WORK_DIR/svgo" "$WORK_DIR/dashboard-icons.json" "$DASHBOARD_ICONS_COMMIT"
+gzip -9 -n -c "$WORK_DIR/dashboard-icons.json" > "$RESOURCE_DIR/dashboard-icons.json.gz"
+cp "$DASHBOARD_DIR/LICENSE" "$RESOURCE_DIR/dashboard-icons.LICENSE"
+echo "Updated dashboard-icons ($DASHBOARD_ICONS_COMMIT)"

@@ -66,6 +66,52 @@ public class ServeCommandIntegrationTest
         }
     }
 
+    [Fact]
+    public async Task UpdatesPagesSavedThroughTemporaryFilesAndFindsNewPages()
+    {
+        var root = Path.Combine(Path.GetTempPath(), Guid.NewGuid().ToString("N"));
+        var docs = Path.Combine(root, "Docs");
+        var site = Path.Combine(root, "site");
+        Directory.CreateDirectory(docs);
+        var markdownPath = Path.Combine(docs, "README.md");
+        File.WriteAllText(markdownPath, "# Home\n\nBefore");
+
+        var port = FindAvailablePort();
+        using var process = StartServer(docs, site, port);
+        using var client = new HttpClient { Timeout = TimeSpan.FromSeconds(2) };
+        var pageUrl = $"http://127.0.0.1:{port}/index.html";
+
+        try
+        {
+            await WaitUntilAsync(async () => await PageContainsAsync(client, pageUrl, "Before"), process);
+
+            // Saves the way JetBrains IDEs do with "safe write": a temporary file replaces the page.
+            File.WriteAllText(markdownPath + "___jb_tmp___", "# Home\n\nAfter");
+            File.Move(markdownPath, markdownPath + "___jb_old___");
+            File.Move(markdownPath + "___jb_tmp___", markdownPath);
+            File.Delete(markdownPath + "___jb_old___");
+            await WaitUntilAsync(async () => await PageContainsAsync(client, pageUrl, "After"), process);
+
+            Directory.CreateDirectory(Path.Combine(docs, "Guide"));
+            File.WriteAllText(Path.Combine(docs, "Guide", "README.md"), "# Guide\n\nNew page");
+            await WaitUntilAsync(async () =>
+                await PageContainsAsync(client, $"http://127.0.0.1:{port}/Guide/index.html", "New page") &&
+                await PageContainsAsync(client, pageUrl, "Guide/index.html"), process);
+        }
+        finally
+        {
+            StopServer(process);
+            Directory.Delete(root, recursive: true);
+        }
+    }
+
+    private static async Task<bool> PageContainsAsync(HttpClient client, string url, string text)
+    {
+        using var response = await client.GetAsync(url);
+        return response.IsSuccessStatusCode &&
+               (await response.Content.ReadAsStringAsync()).Contains(text, StringComparison.Ordinal);
+    }
+
     private static Process StartServer(string docs, string site, int port)
     {
         var projectPath = Path.GetFullPath(Path.Combine(

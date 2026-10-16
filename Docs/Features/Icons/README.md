@@ -1,8 +1,8 @@
 # Icons and Emojis
 
-MarkdownUtil turns shortcodes such as `:rocket:` or `:material-account-circle:` into emojis and icons while it renders your Markdown. More than 14,000 icons from six open source icon sets and 1,600 emojis are built in. You do not need to configure anything, and the rendered pages load nothing from a CDN.
+MarkdownUtil turns shortcodes such as `:rocket:` or `:material-account-circle:` into emojis and icons while it renders your Markdown. More than 17,000 icons and logos from seven open source icon sets and 1,600 emojis are built in. You do not need to configure anything, and the rendered pages load nothing from a CDN.
 
-:rocket: :tada: :white_check_mark: :material-account-circle: :fontawesome-brands-github: :octicons-heart-fill-24: :simple-dotnet: :fontawesome-solid-terminal:
+:rocket: :tada: :white_check_mark: :material-account-circle: :fontawesome-brands-github: :octicons-heart-fill-24: :simple-dotnet: :fontawesome-solid-terminal: :dashboard-home-assistant: :dashboard-github:
 
 ## Search
 
@@ -60,6 +60,7 @@ Sign in with :material-account-circle: or :fontawesome-brands-github: GitHub.
 | :fontawesome-solid-rocket: Font Awesome Free Solid | `fontawesome-solid-` | 2,000 |
 | :octicons-heart-fill-24: [Octicons](https://primer.style/octicons/) | `octicons-` | 774 |
 | :simple-dotnet: [Simple Icons](https://simpleicons.org/) | `simple-` | 3,466 |
+| :dashboard-jellyfin: [Dashboard Icons](https://dashboardicons.com/) | `dashboard-` | 2,602 |
 
 For example, `:material-account-circle:` shows the `account-circle` icon from Material Design Icons, and `:octicons-heart-fill-24:` shows the 24-pixel version of the filled Octicons heart.
 
@@ -69,6 +70,18 @@ Icons are embedded into the page as inline SVG. They scale with the font size an
 > :octicons-light-bulb-16: Icons in admonitions take the color of the text around them.
 
 Outside of MarkdownUtil, for example on GitHub, icon shortcodes are shown as plain text.
+
+#### Logos in color
+
+Dashboard Icons are logos of apps and self-hosted services, such as :dashboard-home-assistant: Home Assistant, :dashboard-jellyfin: Jellyfin, or :dashboard-proxmox: Proxmox. Unlike the other sets, they keep their own colors. When a logo has a light and a dark variant, MarkdownUtil adds both and shows the one that fits the current theme. Switch the theme in the header to see :dashboard-github: GitHub and :dashboard-apple: Apple change:
+
+```markdown
+:dashboard-github: GitHub and :dashboard-apple: Apple
+```
+
+The variants also have their own shortcodes, for example `:dashboard-github-light:`, if a page should always show the same one.
+
+MarkdownUtil includes the Dashboard Icons whose SVG files are at most 20 KB and contain no embedded images, scripts, or links, which are about nine out of ten.
 
 ### Where shortcodes work
 
@@ -101,5 +114,8 @@ The icon sets are published by their authors under these licenses:
 - Font Awesome Free: [CC BY 4.0](https://fontawesome.com/license/free), by Fonticons, Inc.
 - Octicons: [MIT License](https://github.com/primer/octicons/blob/main/LICENSE), by GitHub
 - Simple Icons: [CC0 1.0](https://github.com/simple-icons/simple-icons/blob/develop/LICENSE.md), by the Simple Icons contributors
+- Dashboard Icons: [Apache License 2.0](https://github.com/homarr-labs/dashboard-icons/blob/main/LICENSE), Copyright (c) 2024 Bjorn Lammers, Meier Lukas, Thomas Camlong and Homarr Labs
 
-Simple Icons contains brand logos. The logos remain trademarks of their owners, so check a brand's guidelines before you use its logo.
+MarkdownUtil converts the icons for inline use: it reduces the Iconify packages to their SVG content and optimizes the Dashboard Icons with [SVGO](https://svgo.dev/). The MarkdownUtil package contains the license texts and these notices in `THIRD-PARTY-NOTICES.md`.
+
+Simple Icons and Dashboard Icons contain logos of products and companies. The logos remain trademarks of their owners, and the icon licenses do not grant any trademark rights. Use a logo to refer to its product, as documentation usually does, and check the brand's guidelines for other uses.

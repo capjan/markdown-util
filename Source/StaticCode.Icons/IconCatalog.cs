@@ -13,7 +13,8 @@ public static class IconCatalog
         new IconSet("fontawesome-regular-", "fa7-regular", "https://fontawesome.com/search?ic=free&s=regular"),
         new IconSet("fontawesome-solid-", "fa7-solid", "https://fontawesome.com/search?ic=free&s=solid"),
         new IconSet("octicons-", "octicon", "https://primer.style/octicons/"),
-        new IconSet("simple-", "simple-icons", "https://simpleicons.org/")
+        new IconSet("simple-", "simple-icons", "https://simpleicons.org/"),
+        new IconSet("dashboard-", "dashboard-icons", "https://dashboardicons.com/")
     };
 
     /// <summary>

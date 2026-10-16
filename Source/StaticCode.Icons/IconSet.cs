@@ -26,7 +26,7 @@ public sealed class IconSet
     /// <summary>All icons shown in the icon search; hidden icons and aliases are left out but can still be used.</summary>
     public IEnumerable<Icon> VisibleIcons =>
         _data.Value.Icons
-            .Where(entry => !entry.Value.Hidden)
+            .Where(entry => !entry.Value.Hidden && !(ShortcodePrefix == "dashboard-" && entry.Key == "docker"))
             .Select(entry => CreateIcon(entry.Key, entry.Value));
 
     internal bool TryGetIcon(string name, out Icon icon)
@@ -45,7 +45,13 @@ public sealed class IconSet
 
     private Icon CreateIcon(string name, IconData iconData) => new(
         ShortcodePrefix + name,
+        CreateGlyph(iconData),
+        iconData.Dark is null ? null : CreateGlyph(iconData.Dark));
+
+    private IconGlyph CreateGlyph(IconData iconData) => new(
         iconData.Body,
+        iconData.Left,
+        iconData.Top,
         iconData.Width ?? _data.Value.Width,
         iconData.Height ?? _data.Value.Height);
 }

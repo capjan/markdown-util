@@ -37,11 +37,56 @@ public class IconTest
     }
 
     [Fact]
+    public void RendersDashboardIconsInTheirOwnColors()
+    {
+        var html = Render(":dashboard-docker:");
+
+        Assert.Matches("^<p><span class=\"icon\"><svg xmlns=\"http://www.w3.org/2000/svg\" viewBox=\"[-0-9. ]+\" aria-hidden=\"true\" focusable=\"false\"><g fill=", html);
+        Assert.DoesNotContain("icon-dark", html);
+    }
+
+    [Fact]
+    public void RendersOneSvgPerThemeForIconsWithVariants()
+    {
+        Assert.True(IconCatalog.TryGetIcon("dashboard-github", out var icon));
+        Assert.NotNull(icon.DarkGlyph);
+        Assert.NotEqual(icon.Glyph.Body, icon.DarkGlyph!.Body);
+
+        var html = Render(":dashboard-github:");
+
+        Assert.Contains("<span class=\"icon\"><svg class=\"icon-light\"", html);
+        Assert.Contains("</svg><svg class=\"icon-dark\"", html);
+    }
+
+    [Fact]
+    public void KeepsDashboardIconVariantsUsableButOutOfTheSearch()
+    {
+        Assert.True(IconCatalog.TryGetIcon("dashboard-github-light", out var variant));
+        Assert.Null(variant.DarkGlyph);
+
+        var dashboard = IconCatalog.Sets.Single(set => set.ShortcodePrefix == "dashboard-");
+        Assert.DoesNotContain(dashboard.VisibleIcons, icon => icon.Shortcode == "dashboard-github-light");
+        Assert.Contains(dashboard.VisibleIcons, icon => icon.Shortcode == "dashboard-github");
+    }
+
+    [Fact]
+    public void BundlesOnlySelfContainedDashboardIcons()
+    {
+        var dashboard = IconCatalog.Sets.Single(set => set.ShortcodePrefix == "dashboard-");
+        var unsafeContent = new System.Text.RegularExpressions.Regex(
+            "<(script|image|foreignObject|iframe|a|style)\\b|\\son[a-z]+\\s*=|href\\s*=\\s*\"(?!#)",
+            System.Text.RegularExpressions.RegexOptions.IgnoreCase);
+
+        Assert.All(dashboard.VisibleIcons.SelectMany(icon => new[] { icon.Glyph, icon.DarkGlyph }).OfType<IconGlyph>(),
+            glyph => Assert.False(unsafeContent.IsMatch(glyph.Body), glyph.Body));
+    }
+
+    [Fact]
     public void ResolvesIconAliases()
     {
         Assert.True(IconCatalog.TryGetIcon("material-123", out var alias));
         Assert.True(IconCatalog.TryGetIcon("material-numeric", out var icon));
-        Assert.Equal(icon.Body, alias.Body);
+        Assert.Equal(icon.Glyph, alias.Glyph);
         Assert.Equal("material-123", alias.Shortcode);
     }
 

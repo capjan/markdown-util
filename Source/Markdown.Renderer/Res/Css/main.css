@@ -820,6 +820,26 @@ blockquote {
     fill: currentColor;
 }
 
+/* Icons with light and dark variants contain one SVG per theme. */
+.icon .icon-dark,
+:root[data-theme="dark"] .icon .icon-light {
+    display: none;
+}
+
+:root[data-theme="dark"] .icon .icon-dark {
+    display: inline;
+}
+
+@media (prefers-color-scheme: dark) {
+    :root[data-theme="auto"] .icon .icon-light {
+        display: none;
+    }
+
+    :root[data-theme="auto"] .icon .icon-dark {
+        display: inline;
+    }
+}
+
 .icon-search {
     margin: 1.5rem 0;
 }
