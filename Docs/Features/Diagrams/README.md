@@ -2,11 +2,34 @@
 
 ## Overview
 
-MarkdownUtil renders Mermaid flowcharts and sequence diagrams, PlantUML component diagrams, and its own context diagrams to static SVG while it renders your Markdown. The diagrams need no JavaScript, appear immediately, and follow the page's light or dark theme because their colors come from the stylesheet instead of the diagram.
+MarkdownUtil draws diagrams from fenced code blocks while it renders your Markdown. It understands a subset of the Mermaid and PlantUML syntax and turns each diagram into static SVG that is embedded directly in the generated HTML page.
 
-Mermaid diagrams stay ordinary ` ```mermaid ` code blocks, so the same file still shows them on GitHub and in other Mermaid-aware tools. PlantUML diagrams use ` ```plantuml ` code blocks, which PlantUML-aware tools render as well. Context diagrams use a ` ```context ` code block, which other tools show as plain text.
+> [!IMPORTANT]
+> MarkdownUtil does not contain Mermaid or PlantUML, and it does not call them. It only imitates part of their syntax and draws the diagrams with its own implementation. The result therefore looks different from the originals, and not every feature is available.
 
-If a diagram uses syntax outside the supported subset, such as `subgraph` or other diagram types, MarkdownUtil shows its source as a code block instead.
+### Why MarkdownUtil draws diagrams itself
+
+Mermaid and PlantUML are fantastic projects, and I have enormous respect for the people who build and maintain them. Many documentation sites would not be what they are without them.
+
+MarkdownUtil follows one firm architectural rule: .NET and NuGet packages are its only dependencies. Mermaid renders in the browser with JavaScript, and PlantUML needs a Java runtime. Bundling either of them would break that rule, so I decided to implement the diagrams myself instead of depending on these projects.
+
+### Static rendering
+
+Every diagram is finished when `mdu render` or `mdu serve` writes the page:
+
+- The page contains plain SVG. No JavaScript runs in the browser, and no diagram service is contacted.
+- Diagrams appear immediately and also work offline.
+- The colors come from the page's stylesheet, so diagrams follow the light and dark theme automatically.
+
+### Your exit strategy
+
+Your diagrams stay in the standard notation, so you can leave MarkdownUtil at any time without rewriting them:
+
+- Mermaid diagrams stay ordinary ` ```mermaid ` code blocks. GitHub and other Mermaid-aware tools render the same files with the real Mermaid.
+- PlantUML diagrams stay ordinary ` ```plantuml ` code blocks that PlantUML itself and PlantUML-aware tools render.
+- Context diagrams are the exception: they are a MarkdownUtil extension in ` ```context ` code blocks, which other tools show as plain code.
+
+If a diagram uses syntax outside the supported subset, such as `subgraph` or other diagram types, MarkdownUtil shows its source as a code block instead of guessing.
 
 ## Flowcharts
 
