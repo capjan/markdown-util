@@ -11,6 +11,10 @@
     </ItemGroup>
 
     <ItemGroup>
+      <ProjectReference Include="..\Markdown.Renderer\Markdown.Renderer.csproj" />
+    </ItemGroup>
+
+    <ItemGroup>
       <None Remove="Res\search.js" />
       <EmbeddedResource Include="Res\search.js" />
     </ItemGroup>

@@ -19,6 +19,7 @@ public class HtmlRenderer
             .UseGridTables()
             .UsePipeTables()
             .UseAdvancedExtensions()
+            .UseGitHubAlerts()
             .UseStaticCodeHighlighter()
             .Build();
     }
