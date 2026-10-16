@@ -4,6 +4,7 @@ using System.Text.Json;
 using System.Text.Json.Serialization;
 using System.Text.RegularExpressions;
 using Markdig;
+using Markdown.Renderer.MarkdigExtension;
 
 namespace Markdown.Search;
 
@@ -23,6 +24,7 @@ public sealed class SearchIndexBuilder
         .UseGridTables()
         .UsePipeTables()
         .UseAdvancedExtensions()
+        .UseGitHubAlerts()
         .Build();
 
     public void Clear() => _entries.Clear();

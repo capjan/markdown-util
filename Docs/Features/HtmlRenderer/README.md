@@ -6,6 +6,7 @@
 - A collapsible, responsive sitemap navigation.
 - Responsive, mobile-first layouts.
 - Syntax highlighting for code blocks.
+- GitHub-compatible [admonitions](../Admonitions/README.md) for notes, tips, and warnings.
 - Client-side search with direct links to matching sections and highlighted occurrences.
 - Automatic copying of assets to the output directory.
 - Breadcrumb navigation generated from the Markdown file structure.
