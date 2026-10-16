@@ -33,4 +33,14 @@ public static class MarkdownPipelineRelated
         pipeline.Extensions.AddIfNotAlready<ShortcodeExtension>();
         return pipeline;
     }
+
+    /// <summary>
+    /// Renders keyboard shortcuts, such as <c>++ctrl+alt+del++</c>, as keys.
+    /// </summary>
+    public static MarkdownPipelineBuilder UseKeyboardKeys(
+        this MarkdownPipelineBuilder pipeline)
+    {
+        pipeline.Extensions.AddIfNotAlready<KeysExtension>();
+        return pipeline;
+    }
 }

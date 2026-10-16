@@ -24,6 +24,7 @@ public class HtmlRenderer
             .UseAdvancedExtensions()
             .UseGitHubAlerts()
             .UseIconsAndEmojis()
+            .UseKeyboardKeys()
             .UseStaticCodeHighlighter()
             .Build();
     }

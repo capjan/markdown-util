@@ -26,6 +26,7 @@ public sealed class SearchIndexBuilder
         .UseAdvancedExtensions()
         .UseGitHubAlerts()
         .UseIconsAndEmojis()
+        .UseKeyboardKeys()
         .Build();
 
     public void Clear() => _entries.Clear();

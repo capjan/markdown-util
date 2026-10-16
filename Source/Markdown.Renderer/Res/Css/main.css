@@ -39,6 +39,10 @@
     --diagram-note-border: #e3c27a;
     --diagram-highlight-background: rgb(0 0 0 / 3.5%);
     --diagram-container-background: rgb(0 0 0 / 2.5%);
+    --key-top: #fff;
+    --key-bottom: #f2f2f5;
+    --key-border: #c7c7cc;
+    --key-edge: #aeaeb2;
 }
 
 :root[data-theme="light"] {
@@ -86,6 +90,10 @@
     --diagram-note-border: #7a5a14;
     --diagram-highlight-background: rgb(255 255 255 / 6%);
     --diagram-container-background: rgb(255 255 255 / 4%);
+    --key-top: #3a3a3c;
+    --key-bottom: #2c2c2e;
+    --key-border: #545458;
+    --key-edge: #0e0e10;
 }
 
 @media (prefers-color-scheme: dark) {
@@ -130,6 +138,10 @@
         --diagram-note-border: #7a5a14;
         --diagram-highlight-background: rgb(255 255 255 / 6%);
         --diagram-container-background: rgb(255 255 255 / 4%);
+        --key-top: #3a3a3c;
+        --key-bottom: #2c2c2e;
+        --key-border: #545458;
+        --key-edge: #0e0e10;
     }
 }
 
@@ -722,6 +734,44 @@ blockquote {
     margin: 0.75rem 0;
 }
 
+.keys {
+    white-space: nowrap;
+}
+
+.keys kbd {
+    display: inline-flex;
+    align-items: baseline;
+    justify-content: center;
+    gap: 0.3em;
+    min-width: 1.75em;
+    margin: 0 0.05em 0.2em;
+    padding: 0.1em 0.5em 0.15em;
+    border: 1px solid var(--key-border);
+    border-radius: 0.45em;
+    background: linear-gradient(var(--key-top), var(--key-bottom));
+    box-shadow: 0 0.18em 0 var(--key-edge), 0 0.25em 0.35em rgb(0 0 0 / 12%);
+    color: var(--text-primary);
+    font-family: inherit;
+    font-size: 0.8em;
+    font-weight: 500;
+    line-height: 1.35;
+    vertical-align: 0.1em;
+}
+
+.keys .key-symbol {
+    font-size: 1.05em;
+}
+
+.keys .key-space {
+    min-width: 5em;
+}
+
+.keys > span {
+    margin: 0 0.15em;
+    color: var(--text-secondary);
+    font-size: 0.85em;
+}
+
 .icon,
 .emoji {
     display: inline-flex;
@@ -850,6 +900,10 @@ blockquote {
     margin: 1rem auto 0;
     background: var(--surface-current);
     color: var(--text-primary);
+}
+
+.icon-search-more[hidden] {
+    display: none;
 }
 
 .icon-search-input:focus-visible,

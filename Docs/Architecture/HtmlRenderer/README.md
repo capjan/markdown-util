@@ -8,6 +8,7 @@
 - Syntax highlighting for code blocks.
 - GitHub-compatible [admonitions](../../Features/Admonitions/README.md) for notes, tips, and warnings.
 - [Icons and emojis](../../Features/Icons/README.md) from shortcodes, with a searchable icon index.
+- [Keyboard keys](../../Features/Keys/README.md) drawn as keycaps with their usual symbols.
 - Client-side search with direct links to matching sections and highlighted occurrences.
 - Automatic copying of assets to the output directory.
 - Breadcrumb navigation generated from the Markdown file structure.

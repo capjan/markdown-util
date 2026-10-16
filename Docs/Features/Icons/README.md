@@ -1,36 +1,56 @@
 # Icons and Emojis
 
-## Overview
-
 MarkdownUtil turns shortcodes such as `:rocket:` or `:material-account-circle:` into emojis and icons while it renders your Markdown. More than 14,000 icons from six open source icon sets and 1,600 emojis are built in. You do not need to configure anything, and the rendered pages load nothing from a CDN.
 
 :rocket: :tada: :white_check_mark: :material-account-circle: :fontawesome-brands-github: :octicons-heart-fill-24: :simple-dotnet: :fontawesome-solid-terminal:
 
-Use the [icon search](#search) below to find a shortcode and copy it to the clipboard with one click.
+## Search
 
-## Syntax
+Type part of a name, such as `github`, `arrow right`, or `heart`. Click a result to copy its shortcode. The filters limit the results to icons or emojis.
 
-Write the name of an emoji or icon between two colons:
+```icon-search
+```
+
+Add the same search to your own documentation with an empty `icon-search` code block:
+
+````markdown
+```icon-search
+```
+````
+
+MarkdownUtil writes the search script and its index to the `js` folder of the site only when a page contains an icon search.
+
+## Usage
+
+### Using emojis
+
+The best way to add an emoji is usually to type the emoji itself. It needs no conversion, so your Markdown reads the same on GitHub, in your editor, and in every other tool. Every major operating system has an emoji picker:
+
+| Operating system | Shortcut |
+|---|---|
+| macOS | ++ctrl+cmd+space++ or ++globe+e++ |
+| Windows | ++win+period++ or ++win+semicolon++ |
+| Linux (GNOME and GTK apps) | ++ctrl+period++ or ++ctrl+semicolon++ |
+
+If you prefer to keep your files plain ASCII, use a shortcode instead. Emojis use the same shortcodes as GitHub, such as `:smile:`, `:+1:`, `:warning:`, or `:de:`:
 
 ```markdown
 Ship it :rocket:
-
-Sign in with :material-account-circle: or :fontawesome-brands-github: GitHub.
 ```
 
 Ship it :rocket:
 
-Sign in with :material-account-circle: or :fontawesome-brands-github: GitHub.
+MarkdownUtil writes the Unicode character into the page, so both ways produce the same result: emojis look like the emojis of the reader's operating system, and GitHub shows them too.
 
-Shortcodes work anywhere in text, for example in paragraphs, lists, tables, links, and admonitions. They are not replaced inside code spans and code blocks, so you can still write about them, as this page does. A shortcode that MarkdownUtil does not know stays as it is.
-
-### Emojis
-
-Emojis use the same shortcodes as GitHub, such as `:smile:`, `:+1:`, `:warning:`, or `:de:`. MarkdownUtil writes the Unicode character into the page, so emojis look like the emojis of the reader's operating system, and your files show the same emojis on GitHub.
-
-### Icons
+### Using icons
 
 Icons use the name of their icon set as a prefix, followed by the icon name. The prefixes are the same as in [Material for MkDocs](https://squidfunk.github.io/mkdocs-material/reference/icons-emojis/), so existing documentation keeps working.
+
+```markdown
+Sign in with :material-account-circle: or :fontawesome-brands-github: GitHub.
+```
+
+Sign in with :material-account-circle: or :fontawesome-brands-github: GitHub.
 
 | Icon set | Prefix | Icons |
 |---|---|---|
@@ -50,23 +70,11 @@ Icons are embedded into the page as inline SVG. They scale with the font size an
 
 Outside of MarkdownUtil, for example on GitHub, icon shortcodes are shown as plain text.
 
-## Search
+### Where shortcodes work
 
-Type part of a name, such as `github`, `arrow right`, or `heart`. Click a result to copy its shortcode. The filters limit the results to icons or emojis.
+Shortcodes work anywhere in text, for example in paragraphs, lists, tables, links, and admonitions. They are not replaced inside code spans and code blocks, so you can still write about them, as this page does. A shortcode that MarkdownUtil does not know stays as it is.
 
-```icon-search
-```
-
-Add the same search to your own documentation with an empty `icon-search` code block:
-
-````markdown
-```icon-search
-```
-````
-
-MarkdownUtil writes the search script and its index to the `js` folder of the site only when a page contains an icon search.
-
-## Styling
+### Styling
 
 Add an attribute list directly after a shortcode, without a space, to give the icon or emoji an ID, classes, or HTML attributes. For example, set a color with the `style` attribute:
 
