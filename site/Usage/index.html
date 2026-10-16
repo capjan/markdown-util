@@ -62,10 +62,22 @@
     <a class="site-nav-link is-current" href="index.html" aria-current="page">Usage</a>
 </li>
 <li class="site-nav-item" style="--depth: 2">
-    <a class="site-nav-link " href="Linter/index.html" aria-current="false">Linter</a>
+    <a class="site-nav-link " href="lint/index.html" aria-current="false">lint</a>
+</li>
+<li class="site-nav-item" style="--depth: 2">
+    <a class="site-nav-link " href="render/index.html" aria-current="false">render</a>
+</li>
+<li class="site-nav-item" style="--depth: 2">
+    <a class="site-nav-link " href="serve/index.html" aria-current="false">serve</a>
+</li>
+<li class="site-nav-item" style="--depth: 2">
+    <a class="site-nav-link " href="tree/index.html" aria-current="false">tree</a>
 </li>
 <li class="site-nav-item" style="--depth: 1">
     <a class="site-nav-link " href="../Features/index.html" aria-current="false">Features</a>
+</li>
+<li class="site-nav-item" style="--depth: 2">
+    <a class="site-nav-link " href="../Features/Admonitions/index.html" aria-current="false">Admonitions</a>
 </li>
 <li class="site-nav-item" style="--depth: 2">
     <a class="site-nav-link " href="../Features/HtmlRenderer/index.html" aria-current="false">HTML Renderer</a>
@@ -94,9 +106,42 @@
 <pre><code>/project/Docs/Overview.md:<span class="number">7</span>: MDU004 LocalLinkExists: Local link target &#39;./intro.md&#39; does not exist.
 Linter detected 1 error.</code></pre>
 <p>You can specify the source directory, output directory, and port when needed. The preview defaults to <code>./site</code> and port <code>4173</code>.</p>
-<pre><code><span class="command">mdu</span> <span class="subcommand">render</span> <span class="argument">./Docs</span> <span class="argument">./site</span>
-<span class="command">mdu</span> <span class="subcommand">serve</span> <span class="argument">./Docs</span> <span class="argument">./site</span> <span class="option">--port</span> <span class="argument">4173</span></code></pre>
+<pre><code><span class="command">mdu</span> <span class="subcommand">render</span>
+<span class="command">mdu</span> <span class="subcommand">serve</span> <span class="option">--port</span> <span class="argument">4173</span></code></pre>
 <p>Use <code>--no-browser</code> to start the server without opening a browser.</p>
+<h2 id="commands">Commands</h2>
+<table>
+<thead>
+<tr>
+<th>Command</th>
+<th>Purpose</th>
+<th>Details</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>mdu lint [path]</code></td>
+<td>Checks Markdown pages and local links. Alias: <code>mdu l</code>.</td>
+<td><a href="./lint/index.html">lint</a></td>
+</tr>
+<tr>
+<td><code>mdu render [path] [outpath]</code></td>
+<td>Writes a static HTML site. Alias: <code>mdu r</code>.</td>
+<td><a href="./render/index.html">render</a></td>
+</tr>
+<tr>
+<td><code>mdu serve [path] [outpath]</code></td>
+<td>Serves a local preview and updates it when files change.</td>
+<td><a href="./serve/index.html">serve</a></td>
+</tr>
+<tr>
+<td><code>mdu tree [path]</code></td>
+<td>Prints the detected Markdown page structure. Alias: <code>mdu print</code>.</td>
+<td><a href="./tree/index.html">tree</a></td>
+</tr>
+</tbody>
+</table>
+<p>For <code>path</code>, MarkdownUtil uses the only <code>./docs</code> or <code>./Docs</code> directory in the current folder when one exists. If neither exists, or both exist, pass the path explicitly. <code>render</code> and <code>serve</code> use <code>./site</code> as the default <code>outpath</code>. All four commands search for <code>*.md</code> files by default; use <code>--pattern</code> (or <code>-p</code>) to choose another file pattern.</p>
 
     </main>
 </div>

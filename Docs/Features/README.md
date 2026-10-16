@@ -6,7 +6,6 @@ sidebar.order: 30
 
 ## Main Features
 
-- [Linter](../Usage/Linter/README.md) - An overview of the included linter and its rules
 - [HTML Renderer](./HtmlRenderer/README.md) - Renders static HTML pages from Markdown files
 - [Sidebar](./Sidebar/README.md) - Describes the generated sidebar and how to control its order
 - [Admonitions](./Admonitions/README.md) - Highlights notes, tips, and warnings with GitHub-compatible alert syntax

@@ -40,15 +40,14 @@ lintCommand.SetAction(parseResult =>
         GetVisitorSettings(parseResult, lintPath, lintPattern, lintHidden)));
 rootCommand.Subcommands.Add(lintCommand);
 
-var printTreeCommand = new Command("print-tree", "Prints the detected Markdown files as a tree.");
-printTreeCommand.Aliases.Add("print");
-printTreeCommand.Aliases.Add("tree");
-var (treePattern, treeHidden) = AddVisitorOptions(printTreeCommand);
-var treePath = AddRootPathArgument(printTreeCommand);
-printTreeCommand.SetAction(parseResult =>
+var treeCommand = new Command("tree", "Prints the detected Markdown files as a tree.");
+treeCommand.Aliases.Add("print");
+treeCommand.Aliases.Add("print-tree");
+var (treePattern, treeHidden) = AddVisitorOptions(treeCommand);
+var treePath = AddRootPathArgument(treeCommand, "Root folder containing Markdown files. Defaults to ./docs or ./Docs.");
+treeCommand.SetAction(parseResult =>
     services.GetRequiredService<PrintTreeCommand>().Execute(
         GetVisitorSettings(parseResult, treePath, treePattern, treeHidden)));
-rootCommand.Subcommands.Add(printTreeCommand);
 
 var renderCommand = new Command("render", "Renders Markdown files to a static HTML site.");
 renderCommand.Aliases.Add("r");
@@ -126,6 +125,7 @@ serveCommand.SetAction(parseResult =>
         parseResult.GetValue(servePort),
         parseResult.GetValue(noBrowser)));
 rootCommand.Subcommands.Add(serveCommand);
+rootCommand.Subcommands.Add(treeCommand);
 
 return rootCommand.Parse(args).Invoke();
 

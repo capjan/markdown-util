@@ -28,8 +28,19 @@ Linter detected 1 error.
 You can specify the source directory, output directory, and port when needed. The preview defaults to `./site` and port `4173`.
 
 ```bash
-mdu render ./Docs ./site
-mdu serve ./Docs ./site --port 4173
+mdu render
+mdu serve --port 4173
 ```
 
 Use `--no-browser` to start the server without opening a browser.
+
+## Commands
+
+| Command | Purpose | Details |
+| --- | --- | --- |
+| `mdu lint [path]` | Checks Markdown pages and local links. Alias: `mdu l`. | [lint](./lint/README.md) |
+| `mdu render [path] [outpath]` | Writes a static HTML site. Alias: `mdu r`. | [render](./render/README.md) |
+| `mdu serve [path] [outpath]` | Serves a local preview and updates it when files change. | [serve](./serve/README.md) |
+| `mdu tree [path]` | Prints the detected Markdown page structure. Alias: `mdu print`. | [tree](./tree/README.md) |
+
+For `path`, MarkdownUtil uses the only `./docs` or `./Docs` directory in the current folder when one exists. If neither exists, or both exist, pass the path explicitly. `render` and `serve` use `./site` as the default `outpath`. All four commands search for `*.md` files by default; use `--pattern` (or `-p`) to choose another file pattern.

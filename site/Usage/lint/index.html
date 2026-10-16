@@ -2,7 +2,7 @@
 
 <html data-theme="auto">
 <head>
-    <title>Linter</title>
+    <title>lint</title>
     <meta charset="utf-8">
     <meta name="description" content="">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -62,10 +62,22 @@
     <a class="site-nav-link " href="../index.html" aria-current="false">Usage</a>
 </li>
 <li class="site-nav-item" style="--depth: 2">
-    <a class="site-nav-link is-current" href="index.html" aria-current="page">Linter</a>
+    <a class="site-nav-link is-current" href="index.html" aria-current="page">lint</a>
+</li>
+<li class="site-nav-item" style="--depth: 2">
+    <a class="site-nav-link " href="../render/index.html" aria-current="false">render</a>
+</li>
+<li class="site-nav-item" style="--depth: 2">
+    <a class="site-nav-link " href="../serve/index.html" aria-current="false">serve</a>
+</li>
+<li class="site-nav-item" style="--depth: 2">
+    <a class="site-nav-link " href="../tree/index.html" aria-current="false">tree</a>
 </li>
 <li class="site-nav-item" style="--depth: 1">
     <a class="site-nav-link " href="../../Features/index.html" aria-current="false">Features</a>
+</li>
+<li class="site-nav-item" style="--depth: 2">
+    <a class="site-nav-link " href="../../Features/Admonitions/index.html" aria-current="false">Admonitions</a>
 </li>
 <li class="site-nav-item" style="--depth: 2">
     <a class="site-nav-link " href="../../Features/HtmlRenderer/index.html" aria-current="false">HTML Renderer</a>
@@ -81,8 +93,25 @@
     </aside>
     <button class="sidebar-backdrop" id="sidebar-backdrop" type="button" tabindex="-1" aria-label="Close navigation"></button>
     <main class="site-main">
-<nav class="breadcrumbs" aria-label="Breadcrumb"><a href="../../index.html">Documentation</a><span class="breadcrumb-separator" aria-hidden="true"><svg viewBox="0 0 12 20" focusable="false"><path d="M2 2L9 10L2 18" /></svg></span><a href="../index.html">Usage</a><span class="breadcrumb-separator" aria-hidden="true"><svg viewBox="0 0 12 20" focusable="false"><path d="M2 2L9 10L2 18" /></svg></span><span aria-current="page">Linter</span></nav>
-<h1 id="linter">Linter</h1>
+<nav class="breadcrumbs" aria-label="Breadcrumb"><a href="../../index.html">Documentation</a><span class="breadcrumb-separator" aria-hidden="true"><svg viewBox="0 0 12 20" focusable="false"><path d="M2 2L9 10L2 18" /></svg></span><a href="../index.html">Usage</a><span class="breadcrumb-separator" aria-hidden="true"><svg viewBox="0 0 12 20" focusable="false"><path d="M2 2L9 10L2 18" /></svg></span><span aria-current="page">lint</span></nav>
+<h1 id="lint">lint</h1>
+<p><code>mdu lint</code> checks Markdown files under a root folder and reports rule violations with the source file and line number. It exits with code <code>1</code> when it finds errors and <code>0</code> when it does not.</p>
+<h2 id="usage">Usage</h2>
+<pre><code><span class="command">mdu</span> <span class="subcommand">lint</span> <span class="argument">PATH</span> <span class="option">--pattern</span> <span class="argument">PATTERN</span></code></pre>
+<p>The alias <code>mdu l</code> runs the same command. For all arguments, options, and defaults, here is the output of <code>mdu lint --help</code>:</p>
+<pre><code>Description:
+  Runs the linter and prints the results.
+
+Usage:
+  mdu lint [&lt;path&gt;] [options]
+
+Arguments:
+  &lt;path&gt;  Root folder containing Markdown files. Defaults to ./docs or ./Docs.
+
+Options:
+  -p, --pattern &lt;pattern&gt;  Search pattern for Markdown files. [default: *.md]
+  --hidden                 Include hidden files and folders.
+  -?, -h, --help           Show help and usage information</code></pre>
 <h2 id="rules">Rules</h2>
 <ul>
 <li>Rule 1 - Every Markdown page must have a level-one heading that defines its title (after any YAML front matter).</li>
@@ -93,6 +122,15 @@
 <p>Each diagnostic includes a stable code, a descriptive rule name, the source path, and the line number. For example, <code>MDU004</code> is named <code>LocalLinkExists</code>:</p>
 <pre><code>/project/Docs/Overview.md:<span class="number">7</span>: MDU004 LocalLinkExists: Local link target &#39;./intro.md&#39; does not exist.</code></pre>
 <p>The linter also lists completely orphaned pages: pages hidden from the sidebar with <code>sidebar.visible: false</code> that no visible page links to. This list is informational and does not affect the lint exit code.</p>
+<h2 id="examples">Examples</h2>
+<p>Check the default documentation folder:</p>
+<pre><code><span class="command">mdu</span> <span class="subcommand">lint</span></code></pre>
+<p>Check a specific folder or only files matching a different pattern:</p>
+<pre><code><span class="command">mdu</span> <span class="subcommand">lint</span> <span class="argument">./ProjectDocs</span>
+<span class="command">mdu</span> <span class="subcommand">lint</span> <span class="argument">./ProjectDocs</span> <span class="option">--pattern</span> <span class="string">&quot;*.markdown&quot;</span></code></pre>
+<p>An error includes the path, line, rule code, and message. For example:</p>
+<pre><code>/project/Docs/Overview.md:<span class="number">7</span>: MDU004 LocalLinkExists: Local link target &#39;./intro.md&#39; does not exist.</code></pre>
+<p><a href="../index.html">Back to Usage</a></p>
 
     </main>
 </div>

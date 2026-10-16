@@ -18,7 +18,23 @@ public class PrintTreeCommand
 
     public int Execute(VisitorSettings settings)
     {
-        var graph = _graphBuilder.CreateGraph(settings);
+        string rootPath;
+        try
+        {
+            rootPath = CommandPathDefaults.ResolveRootPath(settings.RootPath);
+        }
+        catch (InvalidOperationException exception)
+        {
+            Console.Error.WriteLine(exception.Message);
+            return 1;
+        }
+
+        var graph = _graphBuilder.CreateGraph(new VisitorSettings
+        {
+            RootPath = rootPath,
+            SearchPattern = settings.SearchPattern,
+            IncludeHidden = settings.IncludeHidden
+        });
         graph.Visit(_printTreeVisitor);
         return 0;
     }
