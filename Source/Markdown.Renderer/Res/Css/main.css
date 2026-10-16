@@ -796,13 +796,13 @@ pre code {
     fill: var(--diagram-highlight-background);
 }
 
-.diagram-sequence-actor-head {
+.diagram-actor-head {
     fill: var(--diagram-node-background);
     stroke: var(--diagram-edge);
     stroke-width: 1.5;
 }
 
-.diagram-sequence-actor-body {
+.diagram-actor-body {
     fill: none;
     stroke: var(--diagram-edge);
     stroke-width: 1.5;
@@ -815,6 +815,16 @@ pre code {
 
 .diagram-sequence-number text {
     fill: var(--page-background);
+    font-weight: 600;
+}
+
+.diagram-context-center .diagram-node-shape {
+    fill: var(--diagram-decision-background);
+    stroke: var(--diagram-decision-border);
+    stroke-width: 2;
+}
+
+.diagram-context-center .diagram-node-text {
     font-weight: 600;
 }
 

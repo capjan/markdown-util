@@ -33,6 +33,15 @@ public class DiagramTest
     }
 
     [Fact]
+    public void RendersContextDiagramsAsInlineSvg()
+    {
+        var html = Render("```context\nApp[App]\nactor User\nUser --> App\n```\n");
+
+        Assert.StartsWith("<figure class=\"diagram\"><svg xmlns=\"http://www.w3.org/2000/svg\" class=\"diagram-context\"", html);
+        Assert.DoesNotContain("<pre", html);
+    }
+
+    [Fact]
     public void KeepsUnsupportedMermaidDiagramsAsCodeBlocks()
     {
         var html = Render("```mermaid\nclassDiagram\n    Animal <|-- Duck\n```\n");

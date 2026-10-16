@@ -62,7 +62,7 @@ public class SequenceRendererTest
         foreach (var cssClass in new[]
                  {
                      "diagram-sequence-lifeline", "diagram-sequence-activation", "diagram-sequence-participant",
-                     "diagram-sequence-actor-head", "diagram-sequence-note-shape", "diagram-sequence-frame",
+                     "diagram-actor-head", "diagram-sequence-note-shape", "diagram-sequence-frame",
                      "diagram-sequence-frame-tab", "diagram-sequence-frame-divider", "diagram-sequence-highlight",
                      "diagram-sequence-number", "diagram-sequence-title", "diagram-marker-open", "diagram-marker-cross",
                      "diagram-edge-dotted"

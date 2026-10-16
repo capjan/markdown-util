@@ -14,6 +14,7 @@ public sealed class FlowchartParser
         RegexOptions.Compiled | RegexOptions.CultureInvariant);
     private static readonly Regex KeywordRegex = new(@"\G(?<keyword>[A-Za-z]+)(?=[ \t:{]|$)", RegexOptions.Compiled);
     private static readonly Regex IdRegex = new(@"\G[\p{L}\p{N}_]+", RegexOptions.Compiled);
+    private static readonly Regex ActorRegex = new(@"^(?<id>[\p{L}\p{N}_]+)(?:[ \t]+as[ \t]+(?<label>.+))?$", RegexOptions.Compiled);
     private static readonly Regex ClassSuffixRegex = new(@"\G:::[\w-]+", RegexOptions.Compiled);
     private static readonly Regex TextLinkOpenRegex = new(@"\G(?<start>[<ox])?(?<kind>--|==|-\.)(?=[ \t])", RegexOptions.Compiled);
     private static readonly Regex SolidCloseRegex = new(@"(?<line>-{3,}|--(?=[>ox]))(?<end>[>ox])?", RegexOptions.Compiled);
@@ -37,6 +38,7 @@ public sealed class FlowchartParser
     private static readonly string[] UnsupportedKeywords = { "subgraph", "end", "direction" };
 
     private readonly string[] _lines;
+    private readonly bool _context;
     private readonly Dictionary<string, FlowchartNode> _nodes = new(StringComparer.Ordinal);
     private readonly List<FlowchartNode> _nodeOrder = new();
     private readonly List<FlowchartEdge> _edges = new();
@@ -45,9 +47,10 @@ public sealed class FlowchartParser
     private int _pos;
     private int _lineNumber;
 
-    private FlowchartParser(string source)
+    private FlowchartParser(string source, bool context)
     {
         _lines = source.ReplaceLineEndings("\n").Split('\n');
+        _context = context;
     }
 
     /// <summary>Returns <c>true</c> when the first statement is a <c>flowchart</c> or <c>graph</c> header.</summary>
@@ -59,11 +62,17 @@ public sealed class FlowchartParser
         return firstLine != null && HeaderRegex.IsMatch(firstLine);
     }
 
-    public static FlowchartDiagram Parse(string source) => new FlowchartParser(source).Parse();
+    public static FlowchartDiagram Parse(string source) => new FlowchartParser(source, context: false).Parse();
+
+    /// <summary>
+    /// Parses the statements of a context diagram: flowchart nodes and links without a header, plus
+    /// <c>actor Id as Label</c> for people.
+    /// </summary>
+    internal static FlowchartDiagram ParseContext(string source) => new FlowchartParser(source, context: true).Parse();
 
     private FlowchartDiagram Parse()
     {
-        FlowDirection? direction = null;
+        FlowDirection? direction = _context ? FlowDirection.TopToBottom : null;
         for (var index = 0; index < _lines.Length; index++)
         {
             var line = _lines[index].Trim();
@@ -124,9 +133,20 @@ public sealed class FlowchartParser
         var keyword = match.Groups["keyword"].Value;
         if (UnsupportedKeywords.Contains(keyword)) throw Error($"'{keyword}' is not supported yet.");
         if (IgnoredKeywords.Contains(keyword)) return true;
-        if (keyword != "accTitle") return false;
 
         var rest = _text[(_pos + match.Length)..].TrimStart();
+        if (_context && keyword == "actor")
+        {
+            var actor = ActorRegex.Match(rest);
+            if (!actor.Success) throw Error("Expected 'actor Id' or 'actor Id as Label'.");
+            var node = GetNode(actor.Groups["id"].Value);
+            node.Shape = NodeShape.Actor;
+            if (actor.Groups["label"].Success) node.Label = CleanLabel(actor.Groups["label"].Value) ?? node.Id;
+            return true;
+        }
+
+        if (keyword != "accTitle") return false;
+
         if (!rest.StartsWith(':')) throw Error("Expected ':' after 'accTitle'.");
         _title = rest[1..].Trim();
         return true;
@@ -174,13 +194,7 @@ public sealed class FlowchartParser
         var match = IdRegex.Match(_text, _pos);
         if (!match.Success) throw Error(AtEnd ? "Expected a node." : $"Expected a node at '{_text[_pos..]}'.");
         _pos += match.Length;
-
-        if (!_nodes.TryGetValue(match.Value, out var node))
-        {
-            node = new FlowchartNode(match.Value);
-            _nodes.Add(node.Id, node);
-            _nodeOrder.Add(node);
-        }
+        var node = GetNode(match.Value);
 
         var unsupported = UnsupportedShapeOpeners.FirstOrDefault(opener => Rest.StartsWith(opener, StringComparison.Ordinal));
         if (unsupported != null) throw Error($"Node shape '{unsupported}' is not supported yet.");
@@ -196,6 +210,15 @@ public sealed class FlowchartParser
 
         var classSuffix = ClassSuffixRegex.Match(_text, _pos);
         if (classSuffix.Success) _pos += classSuffix.Length;
+        return node;
+    }
+
+    private FlowchartNode GetNode(string id)
+    {
+        if (_nodes.TryGetValue(id, out var node)) return node;
+        node = new FlowchartNode(id);
+        _nodes.Add(id, node);
+        _nodeOrder.Add(node);
         return node;
     }
 

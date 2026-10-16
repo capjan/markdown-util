@@ -12,13 +12,6 @@ namespace StaticCode.Diagrams.Flowchart;
 /// </summary>
 internal static class FlowchartSvgWriter
 {
-    private const double NodePaddingX = 16;
-    private const double NodePaddingY = 10;
-    private const double MinNodeWidth = 56;
-    private const double MaxNodeTextWidth = 200;
-    private const double MaxEdgeTextWidth = 160;
-    private const double LabelPaddingX = 6;
-    private const double LabelPaddingY = 2;
     private const double LoopSize = 22;
     private const double CanvasPadding = 4;
 
@@ -29,8 +22,8 @@ internal static class FlowchartSvgWriter
         var cross = horizontal ? new Point(0, 1) : new Point(1, 0);
 
         var nodeIndex = diagram.Nodes.Select((node, index) => (node.Id, index)).ToDictionary(item => item.Id, item => item.index);
-        var boxes = diagram.Nodes.Select(CreateNodeBox).ToList();
-        var labels = diagram.Edges.Select(edge => edge.Label == null ? null : CreateLabelBox(edge.Label)).ToList();
+        var boxes = diagram.Nodes.Select(NodeShapes.CreateNode).ToList();
+        var labels = diagram.Edges.Select(edge => edge.Label == null ? null : NodeShapes.CreateLabel(edge.Label)).ToList();
 
         var loopSizes = new double[diagram.Edges.Count];
         var margins = new double[boxes.Count];
@@ -95,61 +88,14 @@ internal static class FlowchartSvgWriter
         {
             var label = labels[index];
             if (label == null || labelCenters[index] is not { } center) continue;
-            svg.Append("<g class=\"diagram-edge-label\">")
-                .Append($"<rect class=\"diagram-edge-label-background\" x=\"{F(center.X - label.Width / 2)}\" y=\"{F(center.Y - label.Height / 2)}\"")
-                .Append($" width=\"{F(label.Width)}\" height=\"{F(label.Height)}\" rx=\"4\"/>");
-            SvgText.WriteText(svg, label.Lines, center, "diagram-edge-label-text");
-            svg.Append("</g>\n");
+            NodeShapes.WriteLabel(svg, label, center);
         }
 
         svg.Append("</g>\n<g class=\"diagram-nodes\">\n");
         for (var index = 0; index < boxes.Count; index++)
-            WriteNode(svg, boxes[index], layout.NodeCenters[index]);
+            NodeShapes.WriteNode(svg, boxes[index], layout.NodeCenters[index]);
         svg.Append("</g>\n</svg>");
         return svg.ToString();
-    }
-
-    private static NodeBox CreateNodeBox(FlowchartNode node)
-    {
-        var lines = TextMetrics.Wrap(node.Label, MaxNodeTextWidth);
-        var (textWidth, textHeight) = TextMetrics.Measure(lines);
-        switch (node.Shape)
-        {
-            case NodeShape.Stadium:
-            {
-                var height = textHeight + 2 * NodePaddingY;
-                return new NodeBox(node.Shape, lines, Math.Max(textWidth + height + 8, MinNodeWidth), height, height / 2);
-            }
-            case NodeShape.Circle:
-            {
-                var halfWidth = textWidth / 2 + 10;
-                var halfHeight = textHeight / 2 + 6;
-                var diameter = Math.Max(2 * Math.Sqrt(halfWidth * halfWidth + halfHeight * halfHeight), 40);
-                return new NodeBox(node.Shape, lines, diameter, diameter, diameter / 2);
-            }
-            case NodeShape.Diamond:
-            {
-                // A diamond with half diagonals a and b contains the text box (p, q) when p/a + q/b <= 1.
-                // a = p + q·c and b = q + p/c satisfy this for any c; a larger c gives a flatter diamond.
-                var p = textWidth / 2 + 12;
-                var q = textHeight / 2 + 6;
-                var c = Math.Clamp(p / q / 2, 1, 2.5);
-                return new NodeBox(node.Shape, lines, 2 * (p + q * c), 2 * (q + p / c), 0);
-            }
-            default:
-            {
-                var height = textHeight + 2 * NodePaddingY;
-                var radius = node.Shape == NodeShape.Rounded ? Math.Min(12, height / 2) : 4;
-                return new NodeBox(node.Shape, lines, Math.Max(textWidth + 2 * NodePaddingX, MinNodeWidth), height, radius);
-            }
-        }
-    }
-
-    private static LabelBox CreateLabelBox(string text)
-    {
-        var lines = TextMetrics.Wrap(text, MaxEdgeTextWidth);
-        var (width, height) = TextMetrics.Measure(lines);
-        return new LabelBox(lines, width + 2 * LabelPaddingX, height + 2 * LabelPaddingY);
     }
 
     /// <summary>Moves an edge end from the node's bounding box onto its actual outline.</summary>
@@ -160,26 +106,8 @@ internal static class FlowchartSvgWriter
         var across = offset.Dot(cross);
         var halfAlong = (horizontal ? box.Width : box.Height) / 2;
         var halfAcross = (horizontal ? box.Height : box.Width) / 2;
-        var extent = Extent(box, halfAlong, halfAcross, across);
+        var extent = NodeShapes.Extent(box, halfAlong, halfAcross, across);
         return center + cross * across + axis * ((along < 0 ? -1 : 1) * extent);
-    }
-
-    /// <summary>Distance from the center to the outline in one direction, at an offset in the perpendicular direction.</summary>
-    private static double Extent(NodeBox box, double halfAlong, double halfAcross, double offset)
-    {
-        var distance = Math.Min(Math.Abs(offset), halfAcross);
-        switch (box.Shape)
-        {
-            case NodeShape.Circle:
-                return Math.Sqrt(Math.Max(0, halfAlong * halfAlong - distance * distance));
-            case NodeShape.Diamond:
-                return halfAlong * (1 - distance / halfAcross);
-            default:
-                var radius = Math.Min(box.CornerRadius, Math.Min(halfAlong, halfAcross));
-                if (distance <= halfAcross - radius) return halfAlong;
-                var inset = distance - (halfAcross - radius);
-                return halfAlong - radius + Math.Sqrt(Math.Max(0, radius * radius - inset * inset));
-        }
     }
 
     /// <summary>
@@ -192,8 +120,8 @@ internal static class FlowchartSvgWriter
         var endDirection = axis * Math.Sign((points[^1] - points[^2]).Dot(axis));
         var start = points[0];
         var end = points[^1];
-        points[0] = start + startDirection * SvgMarkers.Inset(Marker(edge.StartMarker), MarkerScale(edge.Style));
-        points[^1] = end - endDirection * SvgMarkers.Inset(Marker(edge.EndMarker), MarkerScale(edge.Style));
+        points[0] = start + startDirection * SvgMarkers.Inset(NodeShapes.Marker(edge.StartMarker), NodeShapes.MarkerScale(edge.Style));
+        points[^1] = end - endDirection * SvgMarkers.Inset(NodeShapes.Marker(edge.EndMarker), NodeShapes.MarkerScale(edge.Style));
 
         var count = points.Count;
         var tangents = new Point[count];
@@ -210,9 +138,9 @@ internal static class FlowchartSvgWriter
             path.Append($" C{F(c1.X)} {F(c1.Y)} {F(c2.X)} {F(c2.Y)} {F(points[index + 1].X)} {F(points[index + 1].Y)}");
         }
 
-        svg.Append($"<path class=\"{EdgeClass(edge.Style)}\" d=\"{path}\"/>");
-        SvgMarkers.Write(svg, Marker(edge.EndMarker), end, endDirection, MarkerScale(edge.Style));
-        SvgMarkers.Write(svg, Marker(edge.StartMarker), start, startDirection * -1, MarkerScale(edge.Style));
+        svg.Append($"<path class=\"{NodeShapes.EdgeClass(edge.Style)}\" d=\"{path}\"/>");
+        SvgMarkers.Write(svg, NodeShapes.Marker(edge.EndMarker), end, endDirection, NodeShapes.MarkerScale(edge.Style));
+        SvgMarkers.Write(svg, NodeShapes.Marker(edge.StartMarker), start, startDirection * -1, NodeShapes.MarkerScale(edge.Style));
         svg.Append('\n');
     }
 
@@ -222,66 +150,23 @@ internal static class FlowchartSvgWriter
         var halfAlong = (horizontal ? box.Width : box.Height) / 2;
         var halfAcross = (horizontal ? box.Height : box.Width) / 2;
         var attach = Math.Min(halfAlong * 0.45, 10);
-        var side = Extent(box, halfAcross, halfAlong, attach);
+        var side = NodeShapes.Extent(box, halfAcross, halfAlong, attach);
         var start = center - axis * attach + cross * side;
         var end = center + axis * attach + cross * side;
         var c1 = start + cross * (size * 1.4) - axis * (size * 0.5);
         var c2 = end + cross * (size * 1.4) + axis * (size * 0.5);
         var endDirection = (end - c2).Normalized;
         var startDirection = (start - c1).Normalized;
-        var pathEnd = end - endDirection * SvgMarkers.Inset(Marker(edge.EndMarker), MarkerScale(edge.Style));
-        var pathStart = start - startDirection * SvgMarkers.Inset(Marker(edge.StartMarker), MarkerScale(edge.Style));
+        var pathEnd = end - endDirection * SvgMarkers.Inset(NodeShapes.Marker(edge.EndMarker), NodeShapes.MarkerScale(edge.Style));
+        var pathStart = start - startDirection * SvgMarkers.Inset(NodeShapes.Marker(edge.StartMarker), NodeShapes.MarkerScale(edge.Style));
 
-        svg.Append($"<path class=\"{EdgeClass(edge.Style)}\" d=\"M{F(pathStart.X)} {F(pathStart.Y)} C{F(c1.X)} {F(c1.Y)} {F(c2.X)} {F(c2.Y)} {F(pathEnd.X)} {F(pathEnd.Y)}\"/>");
-        SvgMarkers.Write(svg, Marker(edge.EndMarker), end, endDirection, MarkerScale(edge.Style));
-        SvgMarkers.Write(svg, Marker(edge.StartMarker), start, startDirection, MarkerScale(edge.Style));
+        svg.Append($"<path class=\"{NodeShapes.EdgeClass(edge.Style)}\" d=\"M{F(pathStart.X)} {F(pathStart.Y)} C{F(c1.X)} {F(c1.Y)} {F(c2.X)} {F(c2.Y)} {F(pathEnd.X)} {F(pathEnd.Y)}\"/>");
+        SvgMarkers.Write(svg, NodeShapes.Marker(edge.EndMarker), end, endDirection, NodeShapes.MarkerScale(edge.Style));
+        SvgMarkers.Write(svg, NodeShapes.Marker(edge.StartMarker), start, startDirection, NodeShapes.MarkerScale(edge.Style));
         svg.Append('\n');
 
         if (label == null) return null;
         var labelExtent = horizontal ? label.Height : label.Width;
         return center + cross * (side + size * 1.1 + 6 + labelExtent / 2);
     }
-
-    private static string EdgeClass(LineStyle style) => style switch
-    {
-        LineStyle.Dotted => "diagram-edge diagram-edge-dotted",
-        LineStyle.Thick => "diagram-edge diagram-edge-thick",
-        _ => "diagram-edge"
-    };
-
-    private static MarkerKind Marker(EdgeMarker marker) => marker switch
-    {
-        EdgeMarker.Arrow => MarkerKind.Arrow,
-        EdgeMarker.Circle => MarkerKind.Circle,
-        EdgeMarker.Cross => MarkerKind.Cross,
-        _ => MarkerKind.None
-    };
-
-    private static double MarkerScale(LineStyle style) => style == LineStyle.Thick ? 1.3 : 1;
-
-    private static void WriteNode(StringBuilder svg, NodeBox box, Point center)
-    {
-        svg.Append($"<g class=\"diagram-node diagram-node-{box.Shape.ToString().ToLowerInvariant()}\">");
-        var left = center.X - box.Width / 2;
-        var top = center.Y - box.Height / 2;
-        switch (box.Shape)
-        {
-            case NodeShape.Circle:
-                svg.Append($"<circle class=\"diagram-node-shape\" cx=\"{F(center.X)}\" cy=\"{F(center.Y)}\" r=\"{F(box.Width / 2)}\"/>");
-                break;
-            case NodeShape.Diamond:
-                svg.Append($"<polygon class=\"diagram-node-shape\" points=\"{F(center.X)},{F(top)} {F(left + box.Width)},{F(center.Y)} {F(center.X)},{F(top + box.Height)} {F(left)},{F(center.Y)}\"/>");
-                break;
-            default:
-                svg.Append($"<rect class=\"diagram-node-shape\" x=\"{F(left)}\" y=\"{F(top)}\" width=\"{F(box.Width)}\" height=\"{F(box.Height)}\" rx=\"{F(box.CornerRadius)}\"/>");
-                break;
-        }
-
-        SvgText.WriteText(svg, box.Lines, center, "diagram-node-text");
-        svg.Append("</g>\n");
-    }
-
-    private sealed record NodeBox(NodeShape Shape, IReadOnlyList<string> Lines, double Width, double Height, double CornerRadius);
-
-    private sealed record LabelBox(IReadOnlyList<string> Lines, double Width, double Height);
 }

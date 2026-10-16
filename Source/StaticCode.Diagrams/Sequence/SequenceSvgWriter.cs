@@ -20,7 +20,6 @@ internal sealed class SequenceSvgWriter
     private const double MaxParticipantTextWidth = 160;
     private const double MaxMessageTextWidth = 260;
     private const double MaxNoteTextWidth = 200;
-    private const double StickFigureHeight = 38;
     private const double MessagePadding = 14;
     private const double ActivationWidth = 10;
     private const double SelfLoopWidth = 32;
@@ -160,9 +159,13 @@ internal sealed class SequenceSvgWriter
     {
         var lines = TextMetrics.Wrap(participant.Label, MaxParticipantTextWidth);
         var (textWidth, textHeight) = TextMetrics.Measure(lines);
-        return participant.Kind == ParticipantKind.Actor
-            ? new ParticipantBox(participant.Kind, lines, Math.Max(textWidth + 8, 48), StickFigureHeight + 4 + textHeight)
-            : new ParticipantBox(participant.Kind, lines, Math.Max(textWidth + 2 * ParticipantPaddingX, MinParticipantWidth), textHeight + 2 * ParticipantPaddingY);
+        if (participant.Kind == ParticipantKind.Actor)
+        {
+            var (width, height) = SvgActor.Size(lines);
+            return new ParticipantBox(participant.Kind, lines, width, height);
+        }
+
+        return new ParticipantBox(participant.Kind, lines, Math.Max(textWidth + 2 * ParticipantPaddingX, MinParticipantWidth), textHeight + 2 * ParticipantPaddingY);
     }
 
     /// <summary>
@@ -423,14 +426,10 @@ internal sealed class SequenceSvgWriter
     {
         var box = _boxes[index];
         var x = _x[index];
-        var textHeight = box.Lines.Count * TextMetrics.LineHeight;
         if (box.Kind == ParticipantKind.Actor)
         {
-            svg.Append("<g class=\"diagram-sequence-actor\">")
-                .Append($"<circle class=\"diagram-sequence-actor-head\" cx=\"{F(x)}\" cy=\"{F(top + 7)}\" r=\"7\"/>")
-                .Append($"<path class=\"diagram-sequence-actor-body\" d=\"M{F(x)} {F(top + 14)} V{F(top + 27)} M{F(x - 11)} {F(top + 19)} H{F(x + 11)}")
-                .Append($" M{F(x)} {F(top + 27)} L{F(x - 9)} {F(top + 37)} M{F(x)} {F(top + 27)} L{F(x + 9)} {F(top + 37)}\"/>");
-            WriteText(svg, box.Lines, new Point(x, top + StickFigureHeight + 4 + textHeight / 2), "diagram-node-text");
+            svg.Append("<g class=\"diagram-sequence-actor\">");
+            SvgActor.Write(svg, box.Lines, x, top);
         }
         else
         {

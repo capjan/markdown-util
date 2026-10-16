@@ -14,7 +14,10 @@ public enum NodeShape
     Rounded,
     Stadium,
     Circle,
-    Diamond
+    Diamond,
+
+    /// <summary>A person, drawn as a stick figure; available in context diagrams.</summary>
+    Actor
 }
 
 public enum LineStyle

@@ -2,9 +2,9 @@
 
 ## Overview
 
-MarkdownUtil renders Mermaid flowcharts and sequence diagrams to static SVG while it renders your Markdown. The diagrams need no JavaScript, appear immediately, and follow the page's light or dark theme because their colors come from the stylesheet instead of the diagram.
+MarkdownUtil renders Mermaid flowcharts and sequence diagrams, as well as its own context diagrams, to static SVG while it renders your Markdown. The diagrams need no JavaScript, appear immediately, and follow the page's light or dark theme because their colors come from the stylesheet instead of the diagram.
 
-The source stays an ordinary ` ```mermaid ` code block, so the same file still shows its diagrams on GitHub and in other Mermaid-aware tools.
+Mermaid diagrams stay ordinary ` ```mermaid ` code blocks, so the same file still shows them on GitHub and in other Mermaid-aware tools. Context diagrams use a ` ```context ` code block, which other tools show as plain text.
 
 If a diagram uses syntax outside the supported subset, such as `subgraph` or other diagram types, MarkdownUtil shows its source as a code block instead.
 
@@ -117,3 +117,47 @@ sequenceDiagram
 | Comments | Lines starting with `%%` |
 
 Participants appear in the order they are declared or first used. `box`, `create`, `destroy`, and participant links are not supported yet.
+
+## Context diagrams
+
+A context diagram shows one system in the center and the people and systems it works with around it. It uses the flowchart syntax for systems and links, and `actor` for people:
+
+~~~markdown
+```context
+MC[Mobile Capture]
+MC <--> IdP[Zuvex<br>IdP]
+MC <--> DRiVe[DRiVe<br>Verfahren]
+MC --> DB[Datenbank]
+MC --> Mail[Dataport<br>E-Mail Server]
+MC --> AD[Active<br>Directory]
+actor LK as Lehrkräfte
+actor SL as Schulleitung
+LK -. Verwendet .-> MC
+SL -.-> MC
+```
+~~~
+
+```context
+MC[Mobile Capture]
+MC <--> IdP[Zuvex<br>IdP]
+MC <--> DRiVe[DRiVe<br>Verfahren]
+MC --> DB[Datenbank]
+MC --> Mail[Dataport<br>E-Mail Server]
+MC --> AD[Active<br>Directory]
+actor LK as Lehrkräfte
+actor SL as Schulleitung
+LK -. Verwendet .-> MC
+SL -.-> MC
+```
+
+### Supported context diagram syntax
+
+| Element | Syntax |
+| --- | --- |
+| Systems | The flowchart shapes, for example `A[Text]`, `A(Text)`, `A([Text])`, `A((Text))`, `A{Text}` |
+| People | `actor A` or `actor A as Label` |
+| Links | The flowchart links, link ends, and labels, for example `-->`, `<-->`, `-.->`, `==>`, and `A -- Text --> B` |
+| Titles | `accTitle: Text` |
+| Comments | Lines starting with `%%` |
+
+The system in the center is the one that every link connects to. If several systems qualify, for example with a single link, the first one in the source is used. All other systems and people are spread evenly around the center, clockwise from the top in the order they first appear, so you control the arrangement by reordering the lines. A context diagram needs no header line.

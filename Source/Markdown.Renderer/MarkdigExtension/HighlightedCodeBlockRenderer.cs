@@ -25,8 +25,8 @@ public class HighlightedCodeBlockRenderer : HtmlObjectRenderer<CodeBlock>
    
         var code = GetCode(obj, out _);
 
-        // Supported Mermaid diagrams become static SVG; everything else stays a readable code block.
-        if (languageName.Equals("mermaid", StringComparison.OrdinalIgnoreCase) && MermaidRenderer.TryRenderSvg(code, out var svg))
+        // Supported diagrams become static SVG; everything else stays a readable code block.
+        if (DiagramRenderer.TryRenderSvg(languageName, code, out var svg))
         {
             renderer.Write("<figure class=\"diagram\">").Write(svg).WriteLine("</figure>");
             return;
