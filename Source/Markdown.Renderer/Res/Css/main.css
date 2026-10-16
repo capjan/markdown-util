@@ -795,12 +795,6 @@ blockquote {
 
 .keys .key-enter {
     width: 1.5em;
-    height: 4.2em;
-}
-
-.keys .key-arrow-up,
-.keys .key-arrow-down {
-    height: 1em;
 }
 
 .keys .key-space {
