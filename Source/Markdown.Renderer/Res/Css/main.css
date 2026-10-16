@@ -35,6 +35,9 @@
     --diagram-decision-background: #eef5fd;
     --diagram-decision-border: #8ab6e6;
     --diagram-edge: #8e8e93;
+    --diagram-note-background: #fdf6e7;
+    --diagram-note-border: #e3c27a;
+    --diagram-highlight-background: rgb(0 0 0 / 3.5%);
 }
 
 :root[data-theme="light"] {
@@ -78,6 +81,9 @@
     --diagram-decision-background: #0b2440;
     --diagram-decision-border: #2f6db0;
     --diagram-edge: #8e8e93;
+    --diagram-note-background: #2a1e00;
+    --diagram-note-border: #7a5a14;
+    --diagram-highlight-background: rgb(255 255 255 / 6%);
 }
 
 @media (prefers-color-scheme: dark) {
@@ -118,6 +124,9 @@
         --diagram-decision-background: #0b2440;
         --diagram-decision-border: #2f6db0;
         --diagram-edge: #8e8e93;
+        --diagram-note-background: #2a1e00;
+        --diagram-note-border: #7a5a14;
+        --diagram-highlight-background: rgb(255 255 255 / 6%);
     }
 }
 
@@ -718,6 +727,95 @@ pre code {
 
 .diagram-edge-label-text {
     fill: var(--text-secondary);
+}
+
+.diagram-marker-open {
+    fill: none;
+    stroke: var(--diagram-edge);
+    stroke-width: 1.5;
+    stroke-linecap: round;
+    stroke-linejoin: round;
+}
+
+.diagram-sequence-lifeline {
+    stroke: var(--diagram-node-border);
+    stroke-width: 1;
+}
+
+.diagram-sequence-activation {
+    fill: var(--diagram-node-background);
+    stroke: var(--diagram-node-border);
+    stroke-width: 1.25;
+}
+
+.diagram-sequence-note-shape {
+    fill: var(--diagram-note-background);
+    stroke: var(--diagram-note-border);
+    stroke-width: 1.25;
+}
+
+.diagram-sequence-message-text,
+.diagram-sequence-note-text {
+    fill: var(--text-primary);
+}
+
+.diagram-sequence-title {
+    fill: var(--text-primary);
+    font-weight: 600;
+}
+
+.diagram-sequence-frame {
+    fill: none;
+    stroke: var(--diagram-node-border);
+    stroke-width: 1.25;
+}
+
+.diagram-sequence-frame-tab {
+    fill: var(--diagram-node-background);
+    stroke: var(--diagram-node-border);
+    stroke-width: 1.25;
+}
+
+.diagram-sequence-frame-keyword {
+    fill: var(--text-primary);
+    font-weight: 600;
+}
+
+.diagram-sequence-frame-label {
+    fill: var(--text-secondary);
+}
+
+.diagram-sequence-frame-divider {
+    fill: none;
+    stroke: var(--diagram-node-border);
+    stroke-width: 1.25;
+    stroke-dasharray: 4 4;
+}
+
+.diagram-sequence-highlight {
+    fill: var(--diagram-highlight-background);
+}
+
+.diagram-sequence-actor-head {
+    fill: var(--diagram-node-background);
+    stroke: var(--diagram-edge);
+    stroke-width: 1.5;
+}
+
+.diagram-sequence-actor-body {
+    fill: none;
+    stroke: var(--diagram-edge);
+    stroke-width: 1.5;
+    stroke-linecap: round;
+}
+
+.diagram-sequence-number circle {
+    fill: var(--diagram-edge);
+}
+
+.diagram-sequence-number text {
+    fill: var(--page-background);
+    font-weight: 600;
 }
 
 img {

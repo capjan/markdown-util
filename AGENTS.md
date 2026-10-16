@@ -9,7 +9,7 @@ MarkdownUtil is a .NET command-line tool distributed as a .NET tool with the `md
 - `Source/MarkdownUtil` contains the command-line entry point, command handlers, dependency injection setup, and orchestration services. `Program.cs` defines the CLI with `System.CommandLine`.
 - `Source/Markdown.Document` reads Markdown files and exposes document, header, and link models. It uses Markdig for Markdown parsing.
 - `Source/Markdown.Linter` contains validation rules and depends on `Source/SuperiorIO` for path and file helpers.
-- `Source/Markdown.Renderer` renders documents to HTML with an embedded template, .NET HTML encoding, and Markdig. `Source/StaticCode.Highlighter` provides syntax highlighting for rendered code blocks. `Source/StaticCode.Diagrams` renders a Mermaid flowchart subset to static SVG with its own layered (Sugiyama) layout; the SVG carries only CSS classes, so `main.css` themes it for light and dark mode.
+- `Source/Markdown.Renderer` renders documents to HTML with an embedded template, .NET HTML encoding, and Markdig. `Source/StaticCode.Highlighter` provides syntax highlighting for rendered code blocks. `Source/StaticCode.Diagrams` renders a Mermaid subset to static SVG: flowcharts with its own layered (Sugiyama) layout and sequence diagrams; the SVG carries only CSS classes, so `main.css` themes it for light and dark mode.
 - `Source/Core.Collections.NodeGraph` supplies the graph and visitor abstractions used to traverse Markdown documents.
 - Projects ending in `.Test` contain the corresponding xUnit tests.
 - `Docs` contains the user documentation. `.github/workflows` contains CI, Pages deployment, and release workflows.

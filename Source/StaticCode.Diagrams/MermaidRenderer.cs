@@ -1,5 +1,6 @@
 using System.Diagnostics.CodeAnalysis;
 using StaticCode.Diagrams.Flowchart;
+using StaticCode.Diagrams.Sequence;
 
 namespace StaticCode.Diagrams;
 
@@ -11,9 +12,9 @@ public static class MermaidRenderer
     /// <exception cref="DiagramSyntaxException">The source is not a supported diagram.</exception>
     public static string RenderSvg(string source)
     {
-        if (!FlowchartParser.CanParse(source))
-            throw new DiagramSyntaxException("Only flowchart diagrams are supported.", 1);
-        return FlowchartSvgWriter.Write(FlowchartParser.Parse(source));
+        if (FlowchartParser.CanParse(source)) return FlowchartSvgWriter.Write(FlowchartParser.Parse(source));
+        if (SequenceParser.CanParse(source)) return SequenceSvgWriter.Write(SequenceParser.Parse(source));
+        throw new DiagramSyntaxException("Only flowcharts and sequence diagrams are supported.", 1);
     }
 
     public static bool TryRenderSvg(string source, [NotNullWhen(true)] out string? svg)

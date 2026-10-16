@@ -24,12 +24,21 @@ public class DiagramTest
     }
 
     [Fact]
-    public void KeepsUnsupportedMermaidDiagramsAsCodeBlocks()
+    public void RendersMermaidSequenceDiagramsAsInlineSvg()
     {
         var html = Render("```mermaid\nsequenceDiagram\n    A->>B: Hello\n```\n");
 
+        Assert.StartsWith("<figure class=\"diagram\"><svg xmlns=\"http://www.w3.org/2000/svg\" class=\"diagram-sequence\"", html);
+        Assert.DoesNotContain("<pre", html);
+    }
+
+    [Fact]
+    public void KeepsUnsupportedMermaidDiagramsAsCodeBlocks()
+    {
+        var html = Render("```mermaid\nclassDiagram\n    Animal <|-- Duck\n```\n");
+
         Assert.Contains("<pre", html);
-        Assert.Contains("sequenceDiagram", html);
+        Assert.Contains("classDiagram", html);
         Assert.DoesNotContain("<svg", html);
     }
 }

@@ -1,5 +1,5 @@
-using System.Globalization;
 using System.Text.RegularExpressions;
+using StaticCode.Diagrams.Text;
 
 namespace StaticCode.Diagrams.Flowchart;
 
@@ -22,8 +22,6 @@ public sealed class FlowchartParser
     private static readonly Regex SimpleLinkRegex = new(
         @"\G(?<start>[<ox])?(?:(?<solid>-{3,}|--(?=[>ox]))|(?<thick>={3,}|==(?=[>ox]))|-(?<dots>\.+)-)(?<end>[>ox])?",
         RegexOptions.Compiled);
-    private static readonly Regex LineBreakRegex = new(@"<br\s*/?>", RegexOptions.Compiled | RegexOptions.IgnoreCase);
-    private static readonly Regex EntityRegex = new(@"#(?<code>\d+|[a-zA-Z]+);", RegexOptions.Compiled);
 
     private static readonly (string Open, string Close, NodeShape Shape)[] Shapes =
     {
@@ -307,27 +305,8 @@ public sealed class FlowchartParser
     {
         text = text.Trim();
         if (text.Length >= 2 && text[0] == '"' && text[^1] == '"') text = text[1..^1];
-        text = LineBreakRegex.Replace(text, "\n");
-        text = EntityRegex.Replace(text, match => DecodeEntity(match.Groups["code"].Value) ?? match.Value);
-        var lines = text.Split('\n').Select(line => line.Trim());
-        text = string.Join('\n', lines).Trim();
+        text = MermaidText.Clean(text);
         return text.Length == 0 ? null : text;
-    }
-
-    private static string? DecodeEntity(string code)
-    {
-        if (int.TryParse(code, NumberStyles.None, CultureInfo.InvariantCulture, out var codePoint))
-            return codePoint is > 0 and <= 0x10FFFF ? char.ConvertFromUtf32(codePoint) : null;
-
-        return code switch
-        {
-            "quot" => "\"",
-            "amp" => "&",
-            "lt" => "<",
-            "gt" => ">",
-            "nbsp" => " ",
-            _ => null
-        };
     }
 
     private bool AtEnd => _pos >= _text.Length;

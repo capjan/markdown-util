@@ -2,11 +2,13 @@
 
 ## Overview
 
-MarkdownUtil renders Mermaid flowcharts to static SVG while it renders your Markdown. The diagrams need no JavaScript, appear immediately, and follow the page's light or dark theme because their colors come from the stylesheet instead of the diagram.
+MarkdownUtil renders Mermaid flowcharts and sequence diagrams to static SVG while it renders your Markdown. The diagrams need no JavaScript, appear immediately, and follow the page's light or dark theme because their colors come from the stylesheet instead of the diagram.
 
 The source stays an ordinary ` ```mermaid ` code block, so the same file still shows its diagrams on GitHub and in other Mermaid-aware tools.
 
-## Example
+If a diagram uses syntax outside the supported subset, such as `subgraph` or other diagram types, MarkdownUtil shows its source as a code block instead.
+
+## Flowcharts
 
 ~~~markdown
 ```mermaid
@@ -36,9 +38,7 @@ flowchart LR
     Render -.-> Search[Search index]
 ```
 
-## Supported syntax
-
-MarkdownUtil supports this subset of Mermaid's flowchart syntax:
+### Supported flowchart syntax
 
 | Element | Syntax |
 | --- | --- |
@@ -60,4 +60,60 @@ Write a link label between pipes directly after the link, for example `A -->|Tex
 
 Styling statements such as `style`, `classDef`, `class`, and `linkStyle` are ignored, because the page theme defines the colors. `accTitle: Text` sets the accessible name of the diagram.
 
-If a diagram uses syntax outside this subset, such as `subgraph` or other diagram types, MarkdownUtil shows its source as a code block instead.
+## Sequence diagrams
+
+~~~markdown
+```mermaid
+sequenceDiagram
+    actor User
+    participant Web as Web app
+    participant API
+    User->>Web: Open dashboard
+    Web->>+API: GET /dashboard
+    alt Cached
+        API-->>Web: Cached widgets
+    else Not cached
+        API->>API: Load widgets
+        API-->>Web: Fresh widgets
+    end
+    deactivate API
+    Note over Web,API: All calls use TLS
+    Web-->>User: Render page
+```
+~~~
+
+```mermaid
+sequenceDiagram
+    actor User
+    participant Web as Web app
+    participant API
+    User->>Web: Open dashboard
+    Web->>+API: GET /dashboard
+    alt Cached
+        API-->>Web: Cached widgets
+    else Not cached
+        API->>API: Load widgets
+        API-->>Web: Fresh widgets
+    end
+    deactivate API
+    Note over Web,API: All calls use TLS
+    Web-->>User: Render page
+```
+
+### Supported sequence diagram syntax
+
+| Element | Syntax |
+| --- | --- |
+| Header | `sequenceDiagram` |
+| Participants | `participant A`, `participant A as Label`, `actor A as Label` |
+| Messages | `->`, `-->`, `->>`, `-->>`, `-x`, `--x`, `-)`, `--)`, `<<->>`, `<<-->>`, each followed by `: Text` |
+| Activations | `activate A`, `deactivate A`, or `+` and `-` after the arrow, for example `A->>+B: Text` |
+| Notes | `Note left of A: Text`, `Note right of A: Text`, `Note over A: Text`, `Note over A,B: Text` |
+| Blocks | `loop`, `alt` with `else`, `opt`, `par` with `and`, `critical` with `option`, `break`, each closed with `end` |
+| Highlighted areas | `rect` … `end`; the color argument is ignored |
+| Numbering | `autonumber`, `autonumber 10 5` (start and step), `autonumber off` |
+| Titles | `title Text`, `accTitle: Text` |
+| Line breaks | `<br>` inside a label, message, or note |
+| Comments | Lines starting with `%%` |
+
+Participants appear in the order they are declared or first used. `box`, `create`, `destroy`, and participant links are not supported yet.

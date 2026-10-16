@@ -1,7 +1,8 @@
-using System.Globalization;
 using System.Text;
 using StaticCode.Diagrams.Layout;
+using StaticCode.Diagrams.Svg;
 using StaticCode.Diagrams.Text;
+using static StaticCode.Diagrams.Svg.SvgText;
 
 namespace StaticCode.Diagrams.Flowchart;
 
@@ -18,8 +19,6 @@ internal static class FlowchartSvgWriter
     private const double MaxEdgeTextWidth = 160;
     private const double LabelPaddingX = 6;
     private const double LabelPaddingY = 2;
-    private const double ArrowLength = 9;
-    private const double ArrowWidth = 8;
     private const double LoopSize = 22;
     private const double CanvasPadding = 4;
 
@@ -99,7 +98,7 @@ internal static class FlowchartSvgWriter
             svg.Append("<g class=\"diagram-edge-label\">")
                 .Append($"<rect class=\"diagram-edge-label-background\" x=\"{F(center.X - label.Width / 2)}\" y=\"{F(center.Y - label.Height / 2)}\"")
                 .Append($" width=\"{F(label.Width)}\" height=\"{F(label.Height)}\" rx=\"4\"/>");
-            WriteText(svg, label.Lines, center, "diagram-edge-label-text");
+            SvgText.WriteText(svg, label.Lines, center, "diagram-edge-label-text");
             svg.Append("</g>\n");
         }
 
@@ -193,8 +192,8 @@ internal static class FlowchartSvgWriter
         var endDirection = axis * Math.Sign((points[^1] - points[^2]).Dot(axis));
         var start = points[0];
         var end = points[^1];
-        points[0] = start + startDirection * MarkerInset(edge.StartMarker, edge.Style);
-        points[^1] = end - endDirection * MarkerInset(edge.EndMarker, edge.Style);
+        points[0] = start + startDirection * SvgMarkers.Inset(Marker(edge.StartMarker), MarkerScale(edge.Style));
+        points[^1] = end - endDirection * SvgMarkers.Inset(Marker(edge.EndMarker), MarkerScale(edge.Style));
 
         var count = points.Count;
         var tangents = new Point[count];
@@ -212,8 +211,8 @@ internal static class FlowchartSvgWriter
         }
 
         svg.Append($"<path class=\"{EdgeClass(edge.Style)}\" d=\"{path}\"/>");
-        WriteMarker(svg, edge.EndMarker, edge.Style, end, endDirection);
-        WriteMarker(svg, edge.StartMarker, edge.Style, start, startDirection * -1);
+        SvgMarkers.Write(svg, Marker(edge.EndMarker), end, endDirection, MarkerScale(edge.Style));
+        SvgMarkers.Write(svg, Marker(edge.StartMarker), start, startDirection * -1, MarkerScale(edge.Style));
         svg.Append('\n');
     }
 
@@ -230,12 +229,12 @@ internal static class FlowchartSvgWriter
         var c2 = end + cross * (size * 1.4) + axis * (size * 0.5);
         var endDirection = (end - c2).Normalized;
         var startDirection = (start - c1).Normalized;
-        var pathEnd = end - endDirection * MarkerInset(edge.EndMarker, edge.Style);
-        var pathStart = start - startDirection * MarkerInset(edge.StartMarker, edge.Style);
+        var pathEnd = end - endDirection * SvgMarkers.Inset(Marker(edge.EndMarker), MarkerScale(edge.Style));
+        var pathStart = start - startDirection * SvgMarkers.Inset(Marker(edge.StartMarker), MarkerScale(edge.Style));
 
         svg.Append($"<path class=\"{EdgeClass(edge.Style)}\" d=\"M{F(pathStart.X)} {F(pathStart.Y)} C{F(c1.X)} {F(c1.Y)} {F(c2.X)} {F(c2.Y)} {F(pathEnd.X)} {F(pathEnd.Y)}\"/>");
-        WriteMarker(svg, edge.EndMarker, edge.Style, end, endDirection);
-        WriteMarker(svg, edge.StartMarker, edge.Style, start, startDirection);
+        SvgMarkers.Write(svg, Marker(edge.EndMarker), end, endDirection, MarkerScale(edge.Style));
+        SvgMarkers.Write(svg, Marker(edge.StartMarker), start, startDirection, MarkerScale(edge.Style));
         svg.Append('\n');
 
         if (label == null) return null;
@@ -250,48 +249,15 @@ internal static class FlowchartSvgWriter
         _ => "diagram-edge"
     };
 
-    /// <summary>How far the line stops before the marker tip so that it does not poke through the marker.</summary>
-    private static double MarkerInset(EdgeMarker marker, LineStyle style) => marker switch
+    private static MarkerKind Marker(EdgeMarker marker) => marker switch
     {
-        EdgeMarker.Arrow => ArrowLength * ArrowScale(style) * 0.7,
-        EdgeMarker.Circle => 8,
-        EdgeMarker.Cross => 1,
-        _ => 0
+        EdgeMarker.Arrow => MarkerKind.Arrow,
+        EdgeMarker.Circle => MarkerKind.Circle,
+        EdgeMarker.Cross => MarkerKind.Cross,
+        _ => MarkerKind.None
     };
 
-    private static double ArrowScale(LineStyle style) => style == LineStyle.Thick ? 1.3 : 1;
-
-    private static void WriteMarker(StringBuilder svg, EdgeMarker marker, LineStyle style, Point tip, Point direction)
-    {
-        var normal = direction.Perpendicular;
-        switch (marker)
-        {
-            case EdgeMarker.Arrow:
-            {
-                var scale = ArrowScale(style);
-                var back = tip - direction * (ArrowLength * scale);
-                var notch = tip - direction * (ArrowLength * scale * 0.7);
-                var left = back + normal * (ArrowWidth * scale / 2);
-                var right = back - normal * (ArrowWidth * scale / 2);
-                svg.Append($"<path class=\"diagram-marker\" d=\"M{F(tip.X)} {F(tip.Y)} L{F(left.X)} {F(left.Y)} L{F(notch.X)} {F(notch.Y)} L{F(right.X)} {F(right.Y)} Z\"/>");
-                break;
-            }
-            case EdgeMarker.Circle:
-            {
-                var center = tip - direction * 4;
-                svg.Append($"<circle class=\"diagram-marker\" cx=\"{F(center.X)}\" cy=\"{F(center.Y)}\" r=\"4\"/>");
-                break;
-            }
-            case EdgeMarker.Cross:
-            {
-                var center = tip - direction * 6;
-                var a = (direction + normal) * 3.2;
-                var b = (direction - normal) * 3.2;
-                svg.Append($"<path class=\"diagram-marker-cross\" d=\"M{F((center - a).X)} {F((center - a).Y)} L{F((center + a).X)} {F((center + a).Y)} M{F((center - b).X)} {F((center - b).Y)} L{F((center + b).X)} {F((center + b).Y)}\"/>");
-                break;
-            }
-        }
-    }
+    private static double MarkerScale(LineStyle style) => style == LineStyle.Thick ? 1.3 : 1;
 
     private static void WriteNode(StringBuilder svg, NodeBox box, Point center)
     {
@@ -311,34 +277,9 @@ internal static class FlowchartSvgWriter
                 break;
         }
 
-        WriteText(svg, box.Lines, center, "diagram-node-text");
+        SvgText.WriteText(svg, box.Lines, center, "diagram-node-text");
         svg.Append("</g>\n");
     }
-
-    private static void WriteText(StringBuilder svg, IReadOnlyList<string> lines, Point center, string cssClass)
-    {
-        // Baselines are computed instead of using dominant-baseline, which renders inconsistently across browsers.
-        var firstBaseline = center.Y - (lines.Count - 1) / 2.0 * TextMetrics.LineHeight + TextMetrics.FontSize * 0.35;
-        if (lines.Count == 1)
-        {
-            svg.Append($"<text class=\"{cssClass}\" x=\"{F(center.X)}\" y=\"{F(firstBaseline)}\" text-anchor=\"middle\">{Escape(lines[0])}</text>");
-            return;
-        }
-
-        svg.Append($"<text class=\"{cssClass}\" text-anchor=\"middle\">");
-        for (var index = 0; index < lines.Count; index++)
-            svg.Append($"<tspan x=\"{F(center.X)}\" y=\"{F(firstBaseline + index * TextMetrics.LineHeight)}\">{Escape(lines[index])}</tspan>");
-        svg.Append("</text>");
-    }
-
-    private static string F(double value) =>
-        Math.Abs(value) < 0.005 ? "0" : value.ToString("0.##", CultureInfo.InvariantCulture);
-
-    private static string Escape(string text) => text
-        .Replace("&", "&amp;")
-        .Replace("<", "&lt;")
-        .Replace(">", "&gt;")
-        .Replace("\"", "&quot;");
 
     private sealed record NodeBox(NodeShape Shape, IReadOnlyList<string> Lines, double Width, double Height, double CornerRadius);
 

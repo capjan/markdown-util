@@ -78,7 +78,7 @@ public class MermaidRendererTest
     }
 
     [Theory]
-    [InlineData("sequenceDiagram\nA->>B: Hi")]
+    [InlineData("classDiagram\nAnimal <|-- Duck")]
     [InlineData("flowchart TD\nsubgraph One\nA\nend")]
     public void RejectsUnsupportedDiagrams(string source)
     {
