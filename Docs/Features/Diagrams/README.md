@@ -217,30 +217,34 @@ A context diagram uses the flowchart syntax for systems and links, and `actor` f
 
 ~~~markdown
 ```context
-MC[Mobile Capture]
-MC <--> IdP[Zuvex<br>IdP]
-MC <--> DRiVe[DRiVe<br>Verfahren]
-MC --> DB[Datenbank]
-MC --> Mail[Dataport<br>E-Mail Server]
-MC --> AD[Active<br>Directory]
-actor LK as Lehrkräfte
-actor SL as Schulleitung
-LK -. Verwendet .-> MC
-SL -.-> MC
+Store[Online Store]
+Store <--> IdP[Identity Provider<br>OIDC]
+Store <--> Payment[Payment Provider]
+Store --> Shipping[Shipping Service]
+Store <--> Inventory[Inventory and Order System]
+Store --> Email[Email Service]
+actor Customer
+actor Manager as Store Manager
+actor Warehouse as Warehouse Team
+Customer -. Browses and orders .-> Store
+Manager -. Manages catalog .-> Store
+Warehouse -. Handles shipments .-> Store
 ```
 ~~~
 
 ```context
-MC[Mobile Capture]
-MC <--> IdP[Zuvex<br>IdP]
-MC <--> DRiVe[DRiVe<br>Verfahren]
-MC --> DB[Datenbank]
-MC --> Mail[Dataport<br>E-Mail Server]
-MC --> AD[Active<br>Directory]
-actor LK as Lehrkräfte
-actor SL as Schulleitung
-LK -. Verwendet .-> MC
-SL -.-> MC
+Store[Online Store]
+Store <--> IdP[Identity Provider<br>OIDC]
+Store <--> Payment[Payment Provider]
+Store --> Shipping[Shipping Service]
+Store <--> Inventory[Inventory and Order System]
+Store --> Email[Email Service]
+actor Customer
+actor Manager as Store Manager
+actor Warehouse as Warehouse Team
+Customer -. Browses and orders .-> Store
+Manager -. Manages catalog .-> Store
+Warehouse -. Handles shipments .-> Store
 ```
 
 ### Supported context diagram syntax
