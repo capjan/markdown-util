@@ -725,9 +725,9 @@ a:hover {
 .breadcrumb-separator {
     display: inline-block;
     margin: 0 0.4em;
-    color: var(--border);
-    font-size: 0.8em;
-    font-weight: 300;
+    color: var(--text-secondary);
+    font-size: 0.9em;
+    font-weight: 500;
     vertical-align: 0.05em;
 }
 
