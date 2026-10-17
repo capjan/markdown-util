@@ -1719,6 +1719,11 @@ th, td {
 
 .site-main.has-on-this-page {
     display: block;
+    max-width: none;
+}
+
+.site-main.has-on-this-page .markdown-content {
+    max-width: calc(1400px - 4rem);
 }
 
 .page-toolbar[hidden] {
