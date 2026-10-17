@@ -726,8 +726,8 @@ a:hover {
     display: inline-block;
     margin: 0 0.4em;
     color: var(--text-secondary);
-    font-size: 1em;
-    font-weight: 700;
+    font-size: 0.95em;
+    font-weight: 600;
     vertical-align: 0.05em;
 }
 
