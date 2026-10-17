@@ -911,6 +911,11 @@ h6 {
     box-decoration-break: clone;
 }
 
+.site-main del {
+    text-decoration-color: var(--alert-caution-accent);
+    text-decoration-thickness: 0.12em;
+}
+
 .breadcrumbs + h1 {
     margin-top: 0;
 }
