@@ -2,7 +2,7 @@
 
 ## Overview
 
-When you run `mdu serve`, MarkdownUtil creates a collapsible sidebar from the Markdown files in the documentation folder. A `README.md` represents its folder in the navigation, and child folders appear nested below it. The root documentation page stays expanded; nested pages with child pages have a disclosure button to expand or collapse them. Selecting a nested page with child pages expands its section automatically. The current page stays highlighted in gray until hovered, when it uses the hover color. Expanded sections stay open while you navigate during the current session.
+When you run `mdu serve`, MarkdownUtil creates a collapsible sidebar from the Markdown files in the documentation folder. A `README.md` represents its folder in the navigation, and child folders appear nested below it. The root documentation page stays expanded; other pages with child pages have a disclosure button to expand or collapse them. These sections are collapsed by default when the site is first opened. Set `sidebar.expanded` to `true` in a page's front matter to expand its section by default. Selecting a nested page still expands its section and the sections leading to it automatically. The current page stays highlighted in gray until hovered, when it uses the hover color. Expanded sections stay open while you navigate during the current session.
 
 By default, entries at the same level are sorted alphabetically by page title. Add a `sidebar.order` number to a page's YAML front matter to choose its position. Smaller numbers appear first. Pages with an order are listed before pages without one; unordered pages remain alphabetical. If two pages have the same order, they are sorted alphabetically by title.
 
@@ -38,6 +38,19 @@ sidebar.order: 10
 MarkdownUtil recognizes `sidebar.order` as a compact alternative to the nested form. If both `sidebar: { order: ... }` and `sidebar.order: ...` are present, the nested form takes precedence.
 
 The numbers only order siblings at the same level. For example, the value in `Docs/Features/README.md` positions the Features section among the other top-level sections. Values in files beneath `Docs/Features/` control their positions inside that section.
+
+## Expanding a section by default
+
+Set `sidebar.expanded` to `true` on a page with child pages to have its section open by default:
+
+```yaml
+---
+sidebar:
+  expanded: true
+---
+```
+
+The compact form `sidebar.expanded: true` is also supported. Sections are collapsed by default when this setting is omitted. The setting provides the initial state; a section leading to the current page still expands automatically, and manual changes remain in effect while navigating during the current session.
 
 ## Hiding a page
 

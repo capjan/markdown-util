@@ -128,7 +128,8 @@ public class MarkdigVisitor : BaseVisitor
                 Title = entry.Title,
                 Url = GetRelativeUrl(currentDirectorySegments, entry.UrlSegments),
                 Depth = entry.Depth,
-                IsCurrent = string.Equals(entry.OutputPath, currentPath, PathComparison)
+                IsCurrent = string.Equals(entry.OutputPath, currentPath, PathComparison),
+                IsExpandedByDefault = entry.IsExpandedByDefault
             })
             .ToArray();
     }
@@ -153,7 +154,7 @@ public class MarkdigVisitor : BaseVisitor
                 {
                     var pagePath = GetOutputPagePath(FilePathInfo.CreateRenderFileInfo(_rootPath, _outPath, page.FileInfo, ".html")
                         .OutputFullFilePath);
-                    entries.Add(new NavigationEntry(GetNavigationTitle(page), pagePath, GetSiteRelativeSegments(pagePath), depth));
+                    entries.Add(new NavigationEntry(GetNavigationTitle(page), pagePath, GetSiteRelativeSegments(pagePath), depth, page.SidebarExpanded));
                 }
 
                 AddPages(page.Children, page.SidebarVisible ? depth + 1 : depth);
@@ -182,7 +183,7 @@ public class MarkdigVisitor : BaseVisitor
             .Concat(toFile.Skip(common).Select(Uri.EscapeDataString)));
     }
 
-    private sealed record NavigationEntry(string Title, string OutputPath, string[] UrlSegments, int Depth);
+    private sealed record NavigationEntry(string Title, string OutputPath, string[] UrlSegments, int Depth, bool IsExpandedByDefault);
 
     private IReadOnlyList<BreadcrumbItem> BuildBreadcrumbs(MarkdownFile page, string currentOutputPath)
     {

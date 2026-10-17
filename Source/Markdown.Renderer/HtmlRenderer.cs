@@ -143,6 +143,7 @@ public class HtmlRenderer
                 var encodedTitle = HtmlEncoder.Default.Encode(item.Title);
                 var encodedUrl = HtmlEncoder.Default.Encode(item.Url);
                 var childrenId = $"site-nav-children-{itemIndex}";
+                var expanded = !hasToggle || item.IsExpandedByDefault;
                 var itemIndent = new string(' ', 16 + depth * 8);
                 var rowIndent = itemIndent + "    ";
                 var contentIndent = rowIndent + "    ";
@@ -151,7 +152,9 @@ public class HtmlRenderer
                 output.Append(rowIndent).AppendLine($"<div class=\"site-nav-row{(item.IsCurrent ? " is-current" : string.Empty)}\">");
                 if (hasToggle)
                 {
-                    output.Append(contentIndent).AppendLine($"<button class=\"site-nav-toggle\" type=\"button\" aria-expanded=\"true\" aria-controls=\"{childrenId}\" aria-label=\"Collapse {encodedTitle}\"><svg viewBox=\"0 0 12 12\" aria-hidden=\"true\" focusable=\"false\"><path d=\"M3 2l4 4-4 4\"></path></svg></button>");
+                    var label = expanded ? "Collapse" : "Expand";
+                    var expandedValue = expanded ? "true" : "false";
+                    output.Append(contentIndent).AppendLine($"<button class=\"site-nav-toggle\" type=\"button\" aria-expanded=\"{expandedValue}\" aria-controls=\"{childrenId}\" aria-label=\"{label} {encodedTitle}\"><svg viewBox=\"0 0 12 12\" aria-hidden=\"true\" focusable=\"false\"><path d=\"M3 2l4 4-4 4\"></path></svg></button>");
                 }
                 else if (depth > 0)
                 {
@@ -163,7 +166,7 @@ public class HtmlRenderer
 
                 if (hasChildren)
                 {
-                    output.Append(rowIndent).AppendLine($"<ul class=\"site-nav-list site-nav-children\" id=\"{childrenId}\">");
+                    output.Append(rowIndent).AppendLine($"<ul class=\"site-nav-list site-nav-children\" id=\"{childrenId}\"{(expanded ? string.Empty : " hidden")}>");
                     RenderItems(depth + 1);
                     output.Append(rowIndent).AppendLine("</ul>");
                 }

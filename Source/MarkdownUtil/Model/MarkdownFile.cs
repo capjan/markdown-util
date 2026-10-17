@@ -19,4 +19,5 @@ public class MarkdownFile: INode<MarkdownFile>
     public string FrontMatter { get; set; } = string.Empty;
     public int? SidebarOrder { get; set; }
     public bool SidebarVisible { get; set; } = true;
+    public bool SidebarExpanded { get; set; }
 }

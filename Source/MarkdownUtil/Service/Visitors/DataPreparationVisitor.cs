@@ -30,13 +30,14 @@ public class DataPreparationVisitor: IVisitor<MarkdownFile>
         var sidebarSettings = ReadSidebarSettings(header.FrontMatter);
         entity.SidebarOrder = sidebarSettings.Order;
         entity.SidebarVisible = sidebarSettings.Visible;
+        entity.SidebarExpanded = sidebarSettings.Expanded;
         return true;
     }
 
-    private static (int? Order, bool Visible) ReadSidebarSettings(string frontMatter)
+    private static (int? Order, bool Visible, bool Expanded) ReadSidebarSettings(string frontMatter)
     {
         if (string.IsNullOrWhiteSpace(frontMatter) || !frontMatter.Contains("sidebar", StringComparison.Ordinal))
-            return (null, true);
+            return (null, true, false);
 
         var lines = frontMatter.Split('\n').Select(line => line.TrimEnd('\r')).ToList();
         if (lines.Count > 0 && lines[0].Trim() == "---") lines.RemoveAt(0);
@@ -52,6 +53,7 @@ public class DataPreparationVisitor: IVisitor<MarkdownFile>
 
             YamlNode? orderNode = null;
             YamlNode? visibleNode = null;
+            YamlNode? expandedNode = null;
             if (metadata.Children.TryGetValue(new YamlScalarNode("sidebar"), out var sidebarNode) &&
                 sidebarNode is YamlMappingNode sidebar)
             {
@@ -59,6 +61,8 @@ public class DataPreparationVisitor: IVisitor<MarkdownFile>
                     orderNode = nestedOrderNode;
                 if (sidebar.Children.TryGetValue(new YamlScalarNode("visible"), out var nestedVisibleNode))
                     visibleNode = nestedVisibleNode;
+                if (sidebar.Children.TryGetValue(new YamlScalarNode("expanded"), out var nestedExpandedNode))
+                    expandedNode = nestedExpandedNode;
             }
 
             if (orderNode is null && metadata.Children.TryGetValue(new YamlScalarNode("sidebar.order"), out var compactOrderNode))
@@ -68,6 +72,10 @@ public class DataPreparationVisitor: IVisitor<MarkdownFile>
             if (visibleNode is null && metadata.Children.TryGetValue(new YamlScalarNode("sidebar.visible"), out var compactVisibleNode))
             {
                 visibleNode = compactVisibleNode;
+            }
+            if (expandedNode is null && metadata.Children.TryGetValue(new YamlScalarNode("sidebar.expanded"), out var compactExpandedNode))
+            {
+                expandedNode = compactExpandedNode;
             }
 
             int? order = null;
@@ -81,12 +89,14 @@ public class DataPreparationVisitor: IVisitor<MarkdownFile>
                           bool.TryParse(visibleValue.Value, out var parsedVisible)
                 ? parsedVisible
                 : true;
+            var expanded = expandedNode is YamlScalarNode expandedValue &&
+                           bool.TryParse(expandedValue.Value, out var parsedExpanded) && parsedExpanded;
 
-            return (order, visible);
+            return (order, visible, expanded);
         }
         catch (YamlException)
         {
-            return (null, true);
+            return (null, true, false);
         }
     }
 }

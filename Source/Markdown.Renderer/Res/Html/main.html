@@ -161,7 +161,9 @@
             children.hidden = !expanded;
         };
 
-        const shouldExpand = isCurrentPage || containsCurrentPage || savedState !== "false";
+        const isExpandedByDefault = navToggle.getAttribute("aria-expanded") === "true";
+        const shouldExpand = isCurrentPage || containsCurrentPage ||
+            (savedState === null ? isExpandedByDefault : savedState === "true");
         setExpanded(shouldExpand);
         if ((isCurrentPage || containsCurrentPage) && savedState !== "true") {
             try {
