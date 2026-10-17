@@ -59,7 +59,7 @@
     </aside>
     <button class="sidebar-backdrop" id="sidebar-backdrop" type="button" tabindex="-1" aria-label="Close navigation"></button>
     <main class="site-main%%TOC_LAYOUT_CLASS%%">
-%%ON_THIS_PAGE%%
+%%PAGE_TOOLBAR%%
         <div class="markdown-content">
 %%MARKDOWN%%%%EDIT_PAGE_LINK%%
         </div>
@@ -205,18 +205,36 @@
         .filter((item) => item.heading);
     const currentLabel = toc.querySelector(".toc-current-label");
     const currentButton = toc.querySelector(".toc-current");
+    const pageToolbar = toc.closest(".page-toolbar");
     const progressIndicators = toc.querySelectorAll(".toc-progress-value");
     const backToTop = toc.querySelector(".toc-back-to-top");
+    let selectedHeading = null;
+    let selectedHeadingWasVisible = false;
+    let lastScrollY = window.scrollY;
+    let scrollDirection = 1;
     let scrollFrame = 0;
 
-    const setActiveHeading = (activeHeading) => {
+    const setVisibleHeadings = () => {
+        const visibleHeadings = [];
         for (const item of headings) {
-            const isActive = item === activeHeading;
-            item.link.classList.toggle("is-active", isActive);
-            if (isActive) item.link.setAttribute("aria-current", "location");
-            else item.link.removeAttribute("aria-current");
+            const bounds = item.heading.getBoundingClientRect();
+            const isVisible = bounds.bottom > 56 && bounds.top < window.innerHeight;
+            item.link.classList.toggle("is-visible", isVisible);
+            item.link.removeAttribute("aria-current");
+            if (isVisible) visibleHeadings.push(item);
         }
 
+        if (selectedHeading && visibleHeadings.includes(selectedHeading)) {
+            selectedHeadingWasVisible = true;
+        } else if (selectedHeadingWasVisible) {
+            selectedHeading = null;
+            selectedHeadingWasVisible = false;
+        }
+
+        const activeHeading = (selectedHeading && visibleHeadings.includes(selectedHeading) ? selectedHeading : null) ??
+            (scrollDirection > 0 ? visibleHeadings.at(-1) : visibleHeadings[0]) ??
+            [...headings].reverse().find((item) => item.heading.getBoundingClientRect().top <= 140) ?? headings[0];
+        activeHeading?.link.setAttribute("aria-current", "location");
         if (currentLabel && activeHeading) {
             currentLabel.textContent = activeHeading.link.textContent;
             currentButton.setAttribute("aria-label", `On this Page: ${currentLabel.textContent}`);
@@ -225,15 +243,25 @@
 
     const updateOnScroll = () => {
         scrollFrame = 0;
-        const activeHeading = [...headings].reverse().find((item) => item.heading.getBoundingClientRect().top <= 140) ?? headings[0];
-        if (activeHeading) setActiveHeading(activeHeading);
+        if (window.scrollY !== lastScrollY) {
+            scrollDirection = window.scrollY > lastScrollY ? 1 : -1;
+            lastScrollY = window.scrollY;
+        }
+        setVisibleHeadings();
 
         const scrollableHeight = document.documentElement.scrollHeight - window.innerHeight;
+        toc.hidden = scrollableHeight <= 0;
+        if (pageToolbar) {
+            pageToolbar.classList.toggle("is-toc-hidden", toc.hidden);
+            const hasVisibleBreadcrumbs = pageToolbar.querySelector(".breadcrumbs") &&
+                (!window.matchMedia("(max-width: 760px)").matches || toc.hidden);
+            pageToolbar.hidden = toc.hidden && !hasVisibleBreadcrumbs;
+        }
         const pageProgress = scrollableHeight > 0 ? Math.min(1, Math.max(0, window.scrollY / scrollableHeight)) : 0;
         for (const indicator of progressIndicators) {
             indicator.style.setProperty("stroke-dashoffset", String(50.265 * (1 - pageProgress)));
         }
-        if (backToTop) backToTop.hidden = window.scrollY < 300;
+        if (backToTop) backToTop.hidden = window.scrollY <= 0;
     };
 
     const scheduleScrollUpdate = () => {
@@ -247,7 +275,14 @@
     });
 
     toc.querySelector(".toc-nav")?.addEventListener("click", (event) => {
-        if (event.target.closest(".toc-link")) {
+        const selectedLink = event.target.closest(".toc-link");
+        if (selectedLink) {
+            selectedHeading = headings.find((item) => item.link === selectedLink) ?? null;
+            selectedHeadingWasVisible = false;
+            if (selectedHeading && currentLabel) {
+                currentLabel.textContent = selectedHeading.link.textContent;
+                currentButton.setAttribute("aria-label", `On this Page: ${currentLabel.textContent}`);
+            }
             currentButton?.setAttribute("aria-expanded", "false");
             toc.classList.remove("is-expanded");
         }
@@ -263,6 +298,7 @@
 
     window.addEventListener("scroll", scheduleScrollUpdate, { passive: true });
     window.addEventListener("resize", scheduleScrollUpdate);
+    window.addEventListener("load", scheduleScrollUpdate);
     scheduleScrollUpdate();
 })();
 </script>

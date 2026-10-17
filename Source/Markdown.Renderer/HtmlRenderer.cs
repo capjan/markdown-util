@@ -83,9 +83,13 @@ public class HtmlRenderer
         var renderedMarkdown = document.ToHtml(_pipeline);
         renderedMarkdown = MediaLinkEmbedder.ReplaceStandaloneLinks(renderedMarkdown, out var mediaProviders);
         var providersForSettings = siteMediaProviders is { Count: > 0 } ? siteMediaProviders : mediaProviders;
-        renderedMarkdown = InsertHeadingPermalinks(renderedMarkdown);
-        renderedMarkdown = InsertBreadcrumbsAboveHeading(renderedMarkdown, breadcrumbs ?? Array.Empty<BreadcrumbItem>());
         var tocHeadings = GetTableOfContentsHeadings(renderedMarkdown);
+        renderedMarkdown = InsertHeadingPermalinks(renderedMarkdown);
+        var breadcrumbMarkup = RenderBreadcrumbs(renderedMarkdown, breadcrumbs ?? Array.Empty<BreadcrumbItem>());
+        if (tocHeadings.Count == 0)
+        {
+            renderedMarkdown = InsertBreadcrumbsAboveHeading(renderedMarkdown, breadcrumbMarkup);
+        }
         var model = new MainModel
         {
             Title = title,
@@ -109,7 +113,7 @@ public class HtmlRenderer
             ["MEDIA_SETTINGS_DIALOG"] = MediaLinkEmbedder.RenderSettingsDialog(providersForSettings),
             ["MARKDOWN"] = model.RenderedMarkdown,
             ["EDIT_PAGE_LINK"] = tocHeadings.Count == 0 ? RenderEditPageLink(model.EditPageLink) : string.Empty,
-            ["ON_THIS_PAGE"] = RenderOnThisPage(tocHeadings, model.EditPageLink),
+            ["PAGE_TOOLBAR"] = RenderPageToolbar(breadcrumbMarkup, tocHeadings, model.EditPageLink),
             ["PAGE_SCRIPTS"] =
                 (hasIconSearch
                     ? $"<script defer src=\"{HtmlEncoder.Default.Encode(prefix + "js/" + IconSearch.ScriptFileName)}\"></script>{Environment.NewLine}"
@@ -223,11 +227,10 @@ public class HtmlRenderer
         for (var index = 0; index < headings.Count; index++)
         {
             var heading = headings[index];
-            var current = index == 0;
             var id = HtmlEncoder.Default.Encode(heading.Id);
             var title = HtmlEncoder.Default.Encode(heading.Title);
             var depth = heading.Level - 2;
-            output.AppendLine($"                    <li style=\"--toc-depth: {depth}\"><a class=\"toc-link{(current ? " is-active" : string.Empty)}\" href=\"#{id}\"{(current ? " aria-current=\"location\"" : string.Empty)}>{title}</a></li>");
+            output.AppendLine($"                    <li style=\"--toc-depth: {depth}\"><a class=\"toc-link\" href=\"#{id}\">{title}</a></li>");
         }
         output.AppendLine("                </ul>");
         output.AppendLine("                <div class=\"toc-actions\">");
@@ -242,23 +245,46 @@ public class HtmlRenderer
         return output.ToString();
     }
 
+    private static string RenderPageToolbar(
+        string breadcrumbMarkup,
+        IReadOnlyList<TocHeading> headings,
+        string editPageLink)
+    {
+        if (headings.Count == 0) return string.Empty;
+
+        var output = new StringBuilder();
+        output.AppendLine("        <div class=\"page-toolbar\">");
+        if (breadcrumbMarkup.Length > 0) output.AppendLine($"            {breadcrumbMarkup}");
+        output.Append(RenderOnThisPage(headings, editPageLink));
+        output.AppendLine("        </div>");
+        return output.ToString();
+    }
+
     private sealed record TocHeading(int Level, string Id, string Title);
 
-    private static string InsertBreadcrumbsAboveHeading(
+    private static string RenderBreadcrumbs(
         string renderedMarkdown,
         IReadOnlyList<BreadcrumbItem> breadcrumbs)
     {
-        if (breadcrumbs.Count == 0) return renderedMarkdown;
+        if (breadcrumbs.Count == 0) return string.Empty;
         var headingStart = renderedMarkdown.IndexOf("<h1", StringComparison.Ordinal);
-        if (headingStart < 0) return renderedMarkdown;
+        if (headingStart < 0) return string.Empty;
 
         const string separator =
             """<span class="breadcrumb-separator" aria-hidden="true">/</span>""";
         var breadcrumbItems = breadcrumbs.Select(item => item.Url is null
             ? $"<span aria-current=\"page\">{HtmlEncoder.Default.Encode(item.Title)}</span>"
             : $"<a href=\"{HtmlEncoder.Default.Encode(item.Url)}\">{HtmlEncoder.Default.Encode(item.Title)}</a>");
-        var breadcrumb = $"<nav class=\"breadcrumbs\" aria-label=\"Breadcrumb\">{string.Join(separator, breadcrumbItems)}</nav>";
-        return renderedMarkdown[..headingStart] + breadcrumb + Environment.NewLine + renderedMarkdown[headingStart..];
+        return $"<nav class=\"breadcrumbs\" aria-label=\"Breadcrumb\">{string.Join(separator, breadcrumbItems)}</nav>";
+    }
+
+    private static string InsertBreadcrumbsAboveHeading(string renderedMarkdown, string breadcrumbMarkup)
+    {
+        if (breadcrumbMarkup.Length == 0) return renderedMarkdown;
+        var headingStart = renderedMarkdown.IndexOf("<h1", StringComparison.Ordinal);
+        if (headingStart < 0) return renderedMarkdown;
+
+        return renderedMarkdown[..headingStart] + breadcrumbMarkup + Environment.NewLine + renderedMarkdown[headingStart..];
     }
 
     private static string InsertHeadingPermalinks(string renderedMarkdown) =>
