@@ -192,12 +192,12 @@ public class HtmlRenderer
         var headingStart = renderedMarkdown.IndexOf("<h1", StringComparison.Ordinal);
         if (headingStart < 0) return renderedMarkdown;
 
-        const string separatorIcon =
-            """<span class="breadcrumb-separator" aria-hidden="true"><svg viewBox="0 0 12 20" focusable="false"><path d="M2 2L9 10L2 18" /></svg></span>""";
+        const string separator =
+            """<span class="breadcrumb-separator" aria-hidden="true">/</span>""";
         var breadcrumbItems = breadcrumbs.Select(item => item.Url is null
             ? $"<span aria-current=\"page\">{HtmlEncoder.Default.Encode(item.Title)}</span>"
             : $"<a href=\"{HtmlEncoder.Default.Encode(item.Url)}\">{HtmlEncoder.Default.Encode(item.Title)}</a>");
-        var breadcrumb = $"<nav class=\"breadcrumbs\" aria-label=\"Breadcrumb\">{string.Join(separatorIcon, breadcrumbItems)}</nav>";
+        var breadcrumb = $"<nav class=\"breadcrumbs\" aria-label=\"Breadcrumb\">{string.Join(separator, breadcrumbItems)}</nav>";
         return renderedMarkdown[..headingStart] + breadcrumb + Environment.NewLine + renderedMarkdown[headingStart..];
     }
 

@@ -723,22 +723,12 @@ a:hover {
 }
 
 .breadcrumb-separator {
-    display: inline-flex;
-    width: 0.55em;
-    height: 0.9em;
+    display: inline-block;
     margin: 0 0.4em;
-    color: var(--text-secondary);
-    vertical-align: middle;
-}
-
-.breadcrumb-separator svg {
-    width: 100%;
-    height: 100%;
-    fill: none;
-    stroke: currentColor;
-    stroke-width: 4;
-    stroke-linecap: round;
-    stroke-linejoin: round;
+    color: var(--border);
+    font-size: 0.8em;
+    font-weight: 300;
+    vertical-align: 0.05em;
 }
 
 h1, h2, h3, h4, h5, h6 {
