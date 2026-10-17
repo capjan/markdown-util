@@ -21,7 +21,7 @@ For example, if a `README.md` file is in a `docs` directory, its title should be
 
 Assume a `README.md` file with the following content:
 
-```markdown
+```markdown title="Markdown"
 # notes
 
 These are my notes.

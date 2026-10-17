@@ -8,7 +8,7 @@ An embedded player contacts its provider as soon as it loads. That request can s
 
 Use a standard Markdown link on its own line:
 
-~~~markdown
+~~~markdown title="Markdown"
 [:simple-youtube: Watch the first version of ten fingers on YouTube](https://youtu.be/hyeCMRQhVOI)
 ~~~
 

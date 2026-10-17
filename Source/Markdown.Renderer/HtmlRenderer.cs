@@ -1,5 +1,6 @@
 using System.Text;
 using System.Text.Encodings.Web;
+using System.Net;
 using System.Text.RegularExpressions;
 using Markdig;
 using Markdig.Renderers.Html;
@@ -84,6 +85,7 @@ public class HtmlRenderer
         var providersForSettings = siteMediaProviders is { Count: > 0 } ? siteMediaProviders : mediaProviders;
         renderedMarkdown = InsertHeadingPermalinks(renderedMarkdown);
         renderedMarkdown = InsertBreadcrumbsAboveHeading(renderedMarkdown, breadcrumbs ?? Array.Empty<BreadcrumbItem>());
+        var tocHeadings = GetTableOfContentsHeadings(renderedMarkdown);
         var model = new MainModel
         {
             Title = title,
@@ -101,11 +103,13 @@ public class HtmlRenderer
             ["CSS_LINK"] = HtmlEncoder.Default.Encode(model.CssLink),
             ["SEARCH_SCRIPT_LINK"] = HtmlEncoder.Default.Encode(searchScriptLink),
             ["SEARCH_INDEX_LINK"] = HtmlEncoder.Default.Encode(searchIndexLink),
+            ["TOC_LAYOUT_CLASS"] = tocHeadings.Count > 0 ? " has-on-this-page" : string.Empty,
             ["NAVIGATION_ITEMS"] = RenderNavigationItems(model.NavigationItems),
             ["MEDIA_SETTINGS_BUTTON"] = providersForSettings.Count > 0 ? MediaLinkEmbedder.SettingsButtonHtml : string.Empty,
             ["MEDIA_SETTINGS_DIALOG"] = MediaLinkEmbedder.RenderSettingsDialog(providersForSettings),
             ["MARKDOWN"] = model.RenderedMarkdown,
-            ["EDIT_PAGE_LINK"] = RenderEditPageLink(model.EditPageLink),
+            ["EDIT_PAGE_LINK"] = tocHeadings.Count == 0 ? RenderEditPageLink(model.EditPageLink) : string.Empty,
+            ["ON_THIS_PAGE"] = RenderOnThisPage(tocHeadings, model.EditPageLink),
             ["PAGE_SCRIPTS"] =
                 (hasIconSearch
                     ? $"<script defer src=\"{HtmlEncoder.Default.Encode(prefix + "js/" + IconSearch.ScriptFileName)}\"></script>{Environment.NewLine}"
@@ -183,6 +187,62 @@ public class HtmlRenderer
               <hr />
               <a href="{{HtmlEncoder.Default.Encode(editPageLink)}}">✎ Edit Page</a>
               """;
+
+    private static IReadOnlyList<TocHeading> GetTableOfContentsHeadings(string renderedMarkdown)
+    {
+        var headings = new List<TocHeading>();
+        foreach (Match match in HeadingRegex.Matches(renderedMarkdown))
+        {
+            var level = match.Groups["level"].Value[0] - '0';
+            if (level < 2) continue;
+
+            var idMatch = HeadingIdRegex.Match(match.Groups["attributes"].Value);
+            if (!idMatch.Success) continue;
+
+            var text = Regex.Replace(match.Groups["content"].Value, "<[^>]+>", string.Empty);
+            var title = WebUtility.HtmlDecode(text).Trim();
+            if (title.Length == 0) continue;
+
+            headings.Add(new TocHeading(level, idMatch.Groups["id"].Value, title));
+        }
+
+        return headings;
+    }
+
+    private static string RenderOnThisPage(IReadOnlyList<TocHeading> headings, string editPageLink)
+    {
+        if (headings.Count == 0) return string.Empty;
+
+        var output = new StringBuilder();
+        var firstHeading = HtmlEncoder.Default.Encode(headings[0].Title);
+        output.AppendLine("        <aside class=\"on-this-page\" id=\"on-this-page\" aria-label=\"On this Page\">");
+        output.AppendLine("            <h2 class=\"toc-heading\"><span>On this Page</span><svg class=\"toc-progress\" viewBox=\"0 0 20 20\" aria-hidden=\"true\"><circle class=\"toc-progress-track\" cx=\"10\" cy=\"10\" r=\"8\"></circle><circle class=\"toc-progress-value\" cx=\"10\" cy=\"10\" r=\"8\" stroke-dasharray=\"50.265\" stroke-dashoffset=\"50.265\"></circle></svg></h2>");
+        output.AppendLine($"            <button class=\"toc-current\" id=\"toc-current\" type=\"button\" aria-expanded=\"false\" aria-controls=\"toc-nav\" aria-label=\"On this Page: {firstHeading}\"><span class=\"toc-current-label\">{firstHeading}</span><svg class=\"toc-progress\" viewBox=\"0 0 20 20\" aria-hidden=\"true\"><circle class=\"toc-progress-track\" cx=\"10\" cy=\"10\" r=\"8\"></circle><circle class=\"toc-progress-value\" cx=\"10\" cy=\"10\" r=\"8\" stroke-dasharray=\"50.265\" stroke-dashoffset=\"50.265\"></circle></svg><svg class=\"toc-chevron\" viewBox=\"0 0 16 16\" aria-hidden=\"true\"><path d=\"m4 6 4 4 4-4\"></path></svg></button>");
+        output.AppendLine("            <nav class=\"toc-nav\" id=\"toc-nav\" aria-label=\"On this Page\">");
+        output.AppendLine("                <ul class=\"toc-list\">");
+        for (var index = 0; index < headings.Count; index++)
+        {
+            var heading = headings[index];
+            var current = index == 0;
+            var id = HtmlEncoder.Default.Encode(heading.Id);
+            var title = HtmlEncoder.Default.Encode(heading.Title);
+            var depth = heading.Level - 2;
+            output.AppendLine($"                    <li style=\"--toc-depth: {depth}\"><a class=\"toc-link{(current ? " is-active" : string.Empty)}\" href=\"#{id}\"{(current ? " aria-current=\"location\"" : string.Empty)}>{title}</a></li>");
+        }
+        output.AppendLine("                </ul>");
+        output.AppendLine("                <div class=\"toc-actions\">");
+        if (!string.IsNullOrEmpty(editPageLink))
+        {
+            output.AppendLine($"                    <a class=\"toc-action\" href=\"{HtmlEncoder.Default.Encode(editPageLink)}\"><svg viewBox=\"0 0 20 20\" aria-hidden=\"true\"><path d=\"m3 14.5-.8 3.3 3.3-.8L16.8 5.7a1.8 1.8 0 0 0-2.5-2.5L3 14.5Z\"></path><path d=\"m11.8 5.7 2.5 2.5\"></path></svg><span>Edit this page</span></a>");
+        }
+        output.AppendLine("                    <a class=\"toc-action toc-back-to-top\" href=\"#top\" hidden><svg viewBox=\"0 0 20 20\" aria-hidden=\"true\"><circle cx=\"10\" cy=\"10\" r=\"8\"></circle><path d=\"m6.5 11 3.5-3.5 3.5 3.5\"></path></svg><span>Back to top</span></a>");
+        output.AppendLine("                </div>");
+        output.AppendLine("            </nav>");
+        output.AppendLine("        </aside>");
+        return output.ToString();
+    }
+
+    private sealed record TocHeading(int Level, string Id, string Title);
 
     private static string InsertBreadcrumbsAboveHeading(
         string renderedMarkdown,

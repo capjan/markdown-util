@@ -8,9 +8,12 @@ MarkdownUtil renders images with standard Markdown syntax. Images keep their rel
 
 Add alternative text in square brackets and the image URL in parentheses. An optional title appears when a visitor hovers over the image:
 
-~~~markdown
-![Screenshot of the rendered page](https://example.com/images/page.png "Rendered page")
+~~~markdown title="Markdown"
+![Hand checking off items on a to-do list](https://images.unsplash.com/photo-1768055105012-4c53791b2877)
 ~~~
+
+![Hand checking off items on a to-do list](https://images.unsplash.com/photo-1768055105012-4c53791b2877)
+> Photo by [Jakub Żerdzicki](https://unsplash.com/@jakubzerdzicki) on [unsplash](https://unsplash.com/photos/hand-checking-off-items-on-a-to-do-list-fXlL5I0IvK0)
 
 Alternative text is included in the generated image element and helps describe the image to people using assistive technology.
 

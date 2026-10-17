@@ -35,7 +35,7 @@ If a diagram uses syntax outside the supported subset, such as `subgraph` or oth
 
 ## Flowcharts
 
-~~~markdown
+~~~markdown title="Markdown"
 ```mermaid
 flowchart TD
     Start([Open a Markdown file]) --> Lint{Lint passes?}
@@ -87,7 +87,7 @@ Styling statements such as `style`, `classDef`, `class`, and `linkStyle` are ign
 
 ## Sequence diagrams
 
-~~~markdown
+~~~markdown title="Markdown"
 ```mermaid
 sequenceDiagram
     actor User
@@ -145,7 +145,7 @@ Participants appear in the order they are declared or first used. `box`, `create
 
 ## PlantUML component diagrams
 
-~~~markdown
+~~~markdown title="Markdown"
 ```plantuml
 @startuml
 actor Customer
@@ -215,7 +215,7 @@ A context diagram shows one system in the center and the people and systems it w
 
 A context diagram uses the flowchart syntax for systems and links, and `actor` for people:
 
-~~~markdown
+~~~markdown title="Markdown"
 ```context
 Store[Online Store]
 Store <--> IdP[Identity Provider<br>OIDC]

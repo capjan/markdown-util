@@ -16,8 +16,8 @@
     </script>
     <link rel="stylesheet" href="%%CSS_LINK%%">
 </head>
-<body data-search-index="%%SEARCH_INDEX_LINK%%">
-<header class="site-header">
+<body id="top" data-search-index="%%SEARCH_INDEX_LINK%%">
+<header class="site-header" id="site-header">
     <button class="navigation-toggle" id="navigation-toggle" type="button" aria-expanded="true" aria-controls="site-navigation">
         <svg viewBox="0 0 20 20" aria-hidden="true" focusable="false">
             <rect x="2.5" y="3.5" width="15" height="13" rx="2"></rect>
@@ -58,8 +58,11 @@
         </nav>
     </aside>
     <button class="sidebar-backdrop" id="sidebar-backdrop" type="button" tabindex="-1" aria-label="Close navigation"></button>
-    <main class="site-main">
+    <main class="site-main%%TOC_LAYOUT_CLASS%%">
+%%ON_THIS_PAGE%%
+        <div class="markdown-content">
 %%MARKDOWN%%%%EDIT_PAGE_LINK%%
+        </div>
     </main>
 </div>
 <dialog class="search-dialog" id="search-dialog" aria-labelledby="search-dialog-title">
@@ -189,6 +192,128 @@
     });
     breakpoint.addEventListener("change", (event) =>
         setOpen(!event.matches && !isDesktopSidebarCollapsed()));
+})();
+</script>
+<script>
+(() => {
+    const toc = document.getElementById("on-this-page");
+    if (!toc) return;
+
+    const links = Array.from(toc.querySelectorAll(".toc-link"));
+    const headings = links
+        .map((link) => ({ link, heading: document.getElementById(link.hash.slice(1)) }))
+        .filter((item) => item.heading);
+    const currentLabel = toc.querySelector(".toc-current-label");
+    const currentButton = toc.querySelector(".toc-current");
+    const progressIndicators = toc.querySelectorAll(".toc-progress-value");
+    const backToTop = toc.querySelector(".toc-back-to-top");
+    let scrollFrame = 0;
+
+    const setActiveHeading = (activeHeading) => {
+        for (const item of headings) {
+            const isActive = item === activeHeading;
+            item.link.classList.toggle("is-active", isActive);
+            if (isActive) item.link.setAttribute("aria-current", "location");
+            else item.link.removeAttribute("aria-current");
+        }
+
+        if (currentLabel && activeHeading) {
+            currentLabel.textContent = activeHeading.link.textContent;
+            currentButton.setAttribute("aria-label", `On this Page: ${currentLabel.textContent}`);
+        }
+    };
+
+    const updateOnScroll = () => {
+        scrollFrame = 0;
+        const activeHeading = [...headings].reverse().find((item) => item.heading.getBoundingClientRect().top <= 140) ?? headings[0];
+        if (activeHeading) setActiveHeading(activeHeading);
+
+        const scrollableHeight = document.documentElement.scrollHeight - window.innerHeight;
+        const pageProgress = scrollableHeight > 0 ? Math.min(1, Math.max(0, window.scrollY / scrollableHeight)) : 0;
+        for (const indicator of progressIndicators) {
+            indicator.style.setProperty("stroke-dashoffset", String(50.265 * (1 - pageProgress)));
+        }
+        if (backToTop) backToTop.hidden = window.scrollY < 300;
+    };
+
+    const scheduleScrollUpdate = () => {
+        if (!scrollFrame) scrollFrame = window.requestAnimationFrame(updateOnScroll);
+    };
+
+    currentButton?.addEventListener("click", () => {
+        const expanded = currentButton.getAttribute("aria-expanded") !== "true";
+        currentButton.setAttribute("aria-expanded", String(expanded));
+        toc.classList.toggle("is-expanded", expanded);
+    });
+
+    toc.querySelector(".toc-nav")?.addEventListener("click", (event) => {
+        if (event.target.closest(".toc-link")) {
+            currentButton?.setAttribute("aria-expanded", "false");
+            toc.classList.remove("is-expanded");
+        }
+    });
+
+    document.addEventListener("keydown", (event) => {
+        if (event.key === "Escape" && toc.classList.contains("is-expanded")) {
+            currentButton.setAttribute("aria-expanded", "false");
+            toc.classList.remove("is-expanded");
+            currentButton.focus();
+        }
+    });
+
+    window.addEventListener("scroll", scheduleScrollUpdate, { passive: true });
+    window.addEventListener("resize", scheduleScrollUpdate);
+    scheduleScrollUpdate();
+})();
+</script>
+<script>
+(() => {
+    const resetTimers = new WeakMap();
+
+    const copyText = async (text) => {
+        try {
+            await navigator.clipboard.writeText(text);
+            return true;
+        } catch {
+            const field = document.createElement("textarea");
+            field.value = text;
+            field.setAttribute("readonly", "");
+            field.style.position = "fixed";
+            field.style.opacity = "0";
+            document.body.append(field);
+            field.select();
+            let copied = false;
+            try {
+                copied = document.execCommand("copy");
+            } catch { }
+            field.remove();
+            return copied;
+        }
+    };
+
+    document.addEventListener("click", async (event) => {
+        const button = event.target.closest(".code-block-copy");
+        if (!button) return;
+
+        const code = button.closest(".code-block")?.querySelector("pre code");
+        if (!code) return;
+
+        const copied = await copyText(code.textContent ?? "");
+        const label = button.querySelector("span");
+        clearTimeout(resetTimers.get(button));
+        label.textContent = copied ? "Copied" : "Copy failed";
+        button.setAttribute("aria-label", copied ? "Copied to clipboard" : "Could not copy code");
+        button.title = copied ? "Copied to clipboard" : "Could not copy code";
+        button.classList.toggle("is-copied", copied);
+        button.classList.toggle("is-failed", !copied);
+        resetTimers.set(button, setTimeout(() => {
+            label.textContent = "Copy";
+            button.setAttribute("aria-label", "Copy code");
+            button.title = "Copy code";
+            button.classList.remove("is-copied");
+            button.classList.remove("is-failed");
+        }, 1500));
+    });
 })();
 </script>
 <script defer src="%%SEARCH_SCRIPT_LINK%%"></script>

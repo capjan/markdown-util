@@ -1,35 +1,35 @@
-# Admonitions
+# Callouts
 
 ## Overview
 
-Admonitions, also called alerts or callouts, highlight information that readers should not miss. MarkdownUtil uses the same syntax as [GitHub alerts](https://docs.github.com/en/get-started/writing-on-github/getting-started-with-writing-and-formatting-on-github/basic-writing-and-formatting-syntax#alerts), so your files look right on GitHub and in the rendered site.
+Callouts, also called admonitions or alerts, highlight information that readers should not miss. MarkdownUtil uses the same syntax as [GitHub alerts](https://docs.github.com/en/get-started/writing-on-github/getting-started-with-writing-and-formatting-syntax#alerts), so your files look right on GitHub and in the rendered site.
 
 ## Syntax
 
 Start a block quote with the alert type on its own line, then write the content on the following lines:
 
-```markdown
+```markdown title="Markdown"
 > [!NOTE]
 > Useful information that users should know, even when skimming content.
 ```
 
 MarkdownUtil supports all five GitHub alert types:
 
-```markdown
+```markdown title="Markdown"
 > [!NOTE]
-> Useful information that users should know, even when skimming content.
+> Useful `information` that users should know, even when skimming content.
 
 > [!TIP]
-> Helpful advice for doing things better or more easily.
+> `Helpful advice` for doing things better or more easily.
 
 > [!IMPORTANT]
-> Key information users need to know to achieve their goal.
+> `Key information` users need to know to achieve their goal.
 
 > [!WARNING]
-> Urgent info that needs immediate user attention to avoid problems.
+> `Urgent info` that needs immediate user attention to avoid problems.
 
 > [!CAUTION]
-> Advises about risks or negative outcomes of certain actions.
+> Advises about `risks` or `negative` outcomes of certain actions.
 ```
 
 ## Examples
@@ -37,21 +37,21 @@ MarkdownUtil supports all five GitHub alert types:
 The examples below are rendered from the Markdown above. Use the theme switch in the header to see them in light and dark mode.
 
 > [!NOTE]
-> Useful information that users should know, even when skimming content.
+> Useful `information` that users should know, even when skimming content.
 
 > [!TIP]
-> Helpful advice for doing things better or more easily.
+> `Helpful advice` for doing things better or more easily.
 
 > [!IMPORTANT]
-> Key information users need to know to achieve their goal.
+> `Key information` users need to know to achieve their goal.
 
 > [!WARNING]
-> Urgent info that needs immediate user attention to avoid problems.
+> `Urgent info` that needs immediate user attention to avoid problems.
 
 > [!CAUTION]
-> Advises about risks or negative outcomes of certain actions.
+> Advises about `risks` or `negative` outcomes of certain actions.
 
-An admonition can contain any Markdown, such as several paragraphs, lists, links, and code:
+A callout can contain any Markdown, such as several paragraphs, lists, links, and code:
 
 > [!TIP]
 > Preview your documentation while you write:
@@ -70,7 +70,7 @@ MarkdownUtil follows the same rules as GitHub:
 - The type is not case-sensitive: `[!NOTE]`, `[!Note]`, and `[!note]` are equivalent.
 - Only `NOTE`, `TIP`, `IMPORTANT`, `WARNING`, and `CAUTION` are alert types. Any other type renders a regular block quote.
 - The marker must be followed by content. A block quote that contains only the marker remains a regular block quote.
-- Admonitions cannot be nested inside lists or other block quotes.
+- Callouts cannot be nested inside lists or other block quotes.
 
 ## Styling
 

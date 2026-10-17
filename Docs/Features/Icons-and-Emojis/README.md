@@ -13,7 +13,7 @@ Type part of a name, such as `github`, `arrow right`, or `heart`. Click a result
 
 Add the same search to your own documentation with an empty `icon-search` code block:
 
-````markdown
+````markdown title="Markdown"
 ```icon-search
 ```
 ````
@@ -34,7 +34,7 @@ The best way to add an emoji is usually to type the emoji itself. It needs no co
 
 If you prefer to keep your files plain ASCII, use a shortcode instead. Emojis use the same shortcodes as GitHub, such as `:smile:`, `:+1:`, `:warning:`, or `:de:`:
 
-```markdown
+```markdown title="Markdown"
 Ship it :rocket:
 ```
 
@@ -46,7 +46,7 @@ MarkdownUtil writes the Unicode character into the page, so both ways produce th
 
 Icons use the name of their icon set as a prefix, followed by the icon name. The prefixes are the same as in [Material for MkDocs](https://squidfunk.github.io/mkdocs-material/reference/icons-emojis/), so existing documentation keeps working.
 
-```markdown
+```markdown title="Markdown"
 Sign in with :material-account-circle: or :fontawesome-brands-github: GitHub.
 ```
 
@@ -67,7 +67,7 @@ For example, `:material-account-circle:` shows the `account-circle` icon from Ma
 Icons are embedded into the page as inline SVG. They scale with the font size and take the color of the surrounding text, so they fit headings, links, and the light and dark theme without extra work:
 
 > [!TIP]
-> :octicons-light-bulb-16: Icons in admonitions take the color of the text around them.
+> :octicons-light-bulb-16: Icons in callouts take the color of the text around them.
 
 Outside of MarkdownUtil, for example on GitHub, icon shortcodes are shown as plain text.
 
@@ -75,7 +75,7 @@ Outside of MarkdownUtil, for example on GitHub, icon shortcodes are shown as pla
 
 Dashboard Icons are logos of apps and self-hosted services, such as :dashboard-home-assistant: Home Assistant, :dashboard-jellyfin: Jellyfin, or :dashboard-proxmox: Proxmox. Unlike the other sets, they keep their own colors. When a logo has a light and a dark variant, MarkdownUtil adds both and shows the one that fits the current theme. Switch the theme in the header to see :dashboard-github: GitHub and :dashboard-apple: Apple change:
 
-```markdown
+```markdown title="Markdown"
 :dashboard-github: GitHub and :dashboard-apple: Apple
 ```
 
@@ -85,13 +85,13 @@ MarkdownUtil includes the Dashboard Icons whose SVG files are at most 20 KB and 
 
 ### Where shortcodes work
 
-Shortcodes work anywhere in text, for example in paragraphs, lists, tables, links, and admonitions. They are not replaced inside code spans and code blocks, so you can still write about them, as this page does. A shortcode that MarkdownUtil does not know stays as it is.
+Shortcodes work anywhere in text, for example in paragraphs, lists, tables, links, and callouts. They are not replaced inside code spans and code blocks, so you can still write about them, as this page does. A shortcode that MarkdownUtil does not know stays as it is.
 
 ### Styling
 
 Add an attribute list directly after a shortcode, without a space, to give the icon or emoji an ID, classes, or HTML attributes. For example, set a color with the `style` attribute:
 
-```markdown
+```markdown title="Markdown"
 :octicons-heart-fill-24:{ style="color: #e5484d" } Made with love
 ```
 

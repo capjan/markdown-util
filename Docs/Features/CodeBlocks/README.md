@@ -8,19 +8,30 @@ Fenced code blocks display code or commands without interpreting their contents 
 
 Add a language identifier after the opening backticks:
 
-~~~markdown
+~~~markdown title="Markdown"
 ```csharp
 var greeting = "Hello, world!";
 Console.WriteLine(greeting);
 ```
 ~~~
 
-The rendered result keeps the code in a scrollable block and highlights supported syntax:
+Add `title="..."` after the language to display a title above the code:
 
-```csharp
-var greeting = "Hello, world!";
-Console.WriteLine(greeting);
+~~~markdown title="Markdown"
+```js title="index.js"
+console.log('Hello World!')
 ```
+~~~
+
+GitHub still displays this as a JavaScript code block, but does not render the title because GitHub Markdown has no code block title syntax. MarkdownUtil displays the title above the code.
+
+MarkdownUtil renders the titled code block with a header and syntax highlighting:
+
+```js title="index.js"
+console.log('Hello World!')
+```
+
+Hover over a code block or focus it with the keyboard to show the copy button. It copies the source without the title.
 
 If you omit the language identifier or use an unsupported one, the code is rendered without syntax highlighting:
 

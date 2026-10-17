@@ -49,7 +49,7 @@ public class DataPreparationVisitor: IVisitor<MarkdownFile>
             yaml.Load(new StringReader(string.Join(Environment.NewLine, lines)));
 
             if (yaml.Documents.Count == 0 || yaml.Documents[0].RootNode is not YamlMappingNode metadata)
-                return (null, true);
+                return (null, true, false);
 
             YamlNode? orderNode = null;
             YamlNode? visibleNode = null;

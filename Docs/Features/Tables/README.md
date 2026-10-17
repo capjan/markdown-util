@@ -8,7 +8,7 @@ These examples show basic tables, column alignment, and Markdown formatting insi
 
 **Markdown source:**
 
-```markdown
+```markdown title="Markdown"
 | Command      | Purpose                    | Output        |
 | ------------ | -------------------------- | ------------- |
 | `mdu lint`   | Check Markdown files       | Lint results  |
@@ -28,7 +28,7 @@ These examples show basic tables, column alignment, and Markdown formatting insi
 
 **Markdown source:**
 
-```markdown
+```markdown title="Markdown"
 | Left aligned | Center aligned | Right aligned |
 | :----------- | :------------: | ------------: |
 | Markdown     | Markdown       | Markdown      |
@@ -46,7 +46,7 @@ These examples show basic tables, column alignment, and Markdown formatting insi
 
 **Markdown source:**
 
-```markdown
+```markdown title="Markdown"
 | Feature  | Example                      |
 | -------- | ---------------------------- |
 | Emphasis | **Important** and *helpful*  |

@@ -1,3 +1,4 @@
+using System.Net;
 using System.Text;
 using Core.Extensions.TextRelated;
 using Markdig.Helpers;
@@ -19,12 +20,20 @@ public class HighlightedCodeBlockRenderer : HtmlObjectRenderer<CodeBlock>
     {
         var code = GetCode(obj);
         var languageName = "NoHighlight";
+        string? title = null;
 
         if (obj is FencedCodeBlock fencedCodeBlock)
         {
             var parser = fencedCodeBlock.Parser as FencedCodeBlockParser
                 ?? throw new InvalidOperationException("expected FencedCodeBlockParser");
-            languageName = fencedCodeBlock.Info?.Replace(parser.InfoPrefix ?? string.Empty, string.Empty);
+            var info = fencedCodeBlock.Info?.Trim() ?? string.Empty;
+            var infoPrefix = parser.InfoPrefix ?? string.Empty;
+            if (info.StartsWith(infoPrefix, StringComparison.Ordinal))
+                info = info[infoPrefix.Length..].TrimStart();
+
+            var languageEnd = info.IndexOfAny([' ', '\t']);
+            languageName = languageEnd < 0 ? info : info[..languageEnd];
+            title = GetTitle(fencedCodeBlock.Arguments ?? string.Empty);
             if (string.IsNullOrEmpty(languageName)) languageName = "NoHighlight";
 
             if (languageName == IconSearch.CodeBlockLanguage)
@@ -50,7 +59,24 @@ public class HighlightedCodeBlockRenderer : HtmlObjectRenderer<CodeBlock>
         var lexer = Lexer.ForLanguage(languageName);
         var tokens = lexer.Analyse(code);
         var renderedHtml = _codeFormatter.WriteToString(tokens);
+
+        if (title != null)
+        {
+            renderer.WriteLine("<figure class=\"code-block code-block-titled\">");
+            renderer.Write("<figcaption class=\"code-block-title\">")
+                .Write(WebUtility.HtmlEncode(title))
+                .WriteLine("</figcaption>");
+        }
+        else
+        {
+            renderer.WriteLine("<figure class=\"code-block code-block-untitled\">");
+        }
+
+        renderer.WriteLine("<div class=\"code-block-body\">");
+        WriteCopyButton(renderer);
         renderer.WriteLine(renderedHtml);
+        renderer.WriteLine("</div>");
+        renderer.WriteLine("</figure>");
     }
 
     private static string GetCode(LeafBlock obj)
@@ -72,5 +98,28 @@ public class HighlightedCodeBlockRenderer : HtmlObjectRenderer<CodeBlock>
       }
       return stringBuilder.ToString();
     }
+
+    private static string? GetTitle(string info)
+    {
+        var titleIndex = info.IndexOf("title=", StringComparison.Ordinal);
+        if (titleIndex < 0) return null;
+
+        var titleStart = titleIndex + "title=".Length;
+        if (titleStart == info.Length) return null;
+
+        var quote = info[titleStart] is '"' or '\'' ? info[titleStart++] : '\0';
+        var titleEnd = quote == '\0'
+            ? info.IndexOfAny([' ', '\t'], titleStart)
+            : info.IndexOf(quote, titleStart);
+        if (titleEnd < 0) titleEnd = info.Length;
+
+        var title = info[titleStart..titleEnd];
+        return string.IsNullOrWhiteSpace(title) ? null : title;
+    }
+
+    private static void WriteCopyButton(Markdig.Renderers.HtmlRenderer renderer) =>
+        renderer.Write("<button class=\"code-block-copy\" type=\"button\" aria-label=\"Copy code\" title=\"Copy code\">")
+            .Write("<svg class=\"copy-icon\" viewBox=\"0 0 20 20\" aria-hidden=\"true\" focusable=\"false\"><rect x=\"7\" y=\"6\" width=\"10\" height=\"12\" rx=\"1.5\"></rect><path d=\"M13 6V4.5A1.5 1.5 0 0 0 11.5 3h-7A1.5 1.5 0 0 0 3 4.5v9A1.5 1.5 0 0 0 4.5 15H7\"></path></svg><svg class=\"success-icon\" viewBox=\"0 0 20 20\" aria-hidden=\"true\" focusable=\"false\"><path d=\"m4 10 4 4 8-8\"></path></svg><span>Copy</span>")
+            .WriteLine("</button>");
     
   }

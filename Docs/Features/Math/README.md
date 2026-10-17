@@ -9,7 +9,7 @@ Wrap an expression in single dollar signs. For example, the area of a circle is 
 
 **Markdown:**
 
-```markdown
+```markdown title="Markdown"
 The area of a circle is $A = \pi r^2$.
 ```
 
@@ -23,7 +23,7 @@ $$
 
 **Markdown:**
 
-```markdown
+```markdown title="Markdown"
 $$
 \int_0^1 x^2\,dx = \frac{1}{3}
 $$
@@ -39,7 +39,7 @@ GitHub's `math` code fence renders a display formula:
 
 **Markdown:**
 
-````markdown
+````markdown title="Markdown"
 ```math
 \sum_{i=1}^{n} i
 ```
