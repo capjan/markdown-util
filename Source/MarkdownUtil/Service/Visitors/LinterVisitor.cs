@@ -16,6 +16,7 @@ public class LinterVisitor: IVisitor<MarkdownFile>
     private readonly Rule3Validator _rule3Validator = new();
     private readonly Rule4Validator _rule4Validator = new();
     private readonly List<MarkdownFile> _pages = new();
+    private IReadOnlyList<MarkdownFile> _allPages = Array.Empty<MarkdownFile>();
     private readonly HashSet<string> _linkedPages = new(PathComparer);
 
     private static StringComparer PathComparer => OperatingSystem.IsWindows() || OperatingSystem.IsMacOS()
@@ -30,6 +31,25 @@ public class LinterVisitor: IVisitor<MarkdownFile>
     public LinterVisitor(ILinterErrorReceiver errorReceiver)
     {
         ErrorReceiver = errorReceiver;
+    }
+
+    public void Prepare(MarkdownFile[] graph)
+    {
+        var pages = new List<MarkdownFile>();
+        var visited = new HashSet<string>(PathComparer);
+        Visit(graph);
+        _allPages = pages;
+        return;
+
+        void Visit(IEnumerable<MarkdownFile> currentPages)
+        {
+            foreach (var page in currentPages)
+            {
+                if (!visited.Add(Path.GetFullPath(page.FileInfo.FullName))) continue;
+                pages.Add(page);
+                Visit(page.Children);
+            }
+        }
     }
 
     public TraversalAlgorithm Algorithm { get; }
@@ -52,6 +72,25 @@ public class LinterVisitor: IVisitor<MarkdownFile>
             var rule2Input = new Rule2Input(title, directoryName);
             var result = _rule2Validator.Validate(rule2Input);
             ProcessValidationResult(markdownFilePath, 1, result);
+
+            if (entity.IsOnlyReadmeInSection && !HasMatchingMarkdownFileBeside(entity.FileInfo.Directory))
+            {
+                ErrorReceiver.AddWarning(
+                    markdownFilePath,
+                    1,
+                    $"{RuleCodes.ReadmeWithoutSubpages}: This section has no Markdown subpages; '{directoryName}.md' would be sufficient.");
+            }
+        }
+        else if (!entity.FileInfo.Name.Equals("README.md", StringComparison.OrdinalIgnoreCase))
+        {
+            var readmePath = FindReadmeInMatchingDirectory(entity.FileInfo);
+            if (readmePath is not null)
+            {
+                ErrorReceiver.Add(
+                    markdownFilePath,
+                    1,
+                    $"{RuleCodes.DuplicatePageRepresentation}: '{entity.FileInfo.Name}' and '{Path.GetRelativePath(entity.FileInfo.Directory!.FullName, readmePath)}' represent the same page. Keep only one.");
+            }
         }
         
         // Rule 3: casing of links must match the casing on the current machine
@@ -74,6 +113,39 @@ public class LinterVisitor: IVisitor<MarkdownFile>
         
         return true;
     }
+
+    private bool HasMatchingMarkdownFileBeside(DirectoryInfo? sectionDirectory)
+    {
+        var parentDirectory = sectionDirectory?.Parent;
+        if (sectionDirectory is null || parentDirectory is null) return false;
+
+        return _allPages.Any(page =>
+            IsMarkdownFile(page.FileInfo.Extension) &&
+            !page.FileInfo.Name.Equals("README.md", StringComparison.OrdinalIgnoreCase) &&
+            SamePath(page.FileInfo.DirectoryName, parentDirectory.FullName) &&
+            Path.GetFileNameWithoutExtension(page.FileInfo.Name).Equals(sectionDirectory.Name, StringComparison.OrdinalIgnoreCase));
+    }
+
+    private string? FindReadmeInMatchingDirectory(FileInfo pageFile)
+    {
+        var parentDirectory = pageFile.Directory;
+        if (parentDirectory is null || !IsMarkdownFile(pageFile.Extension)) return null;
+
+        var pageName = Path.GetFileNameWithoutExtension(pageFile.Name);
+        return _allPages
+            .Where(page => page.FileInfo.Name.Equals("README.md", StringComparison.OrdinalIgnoreCase))
+            .FirstOrDefault(page =>
+                SamePath(page.FileInfo.Directory?.Parent?.FullName, parentDirectory.FullName) &&
+                page.FileInfo.Directory?.Name.Equals(pageName, StringComparison.OrdinalIgnoreCase) == true)
+            ?.FileInfo.FullName;
+    }
+
+    private static bool SamePath(string? left, string right) =>
+        left is not null && Path.GetFullPath(left).Equals(Path.GetFullPath(right), StringComparison.OrdinalIgnoreCase);
+
+    private static bool IsMarkdownFile(string extension) =>
+        extension.Equals(".md", StringComparison.OrdinalIgnoreCase) ||
+        extension.Equals(".markdown", StringComparison.OrdinalIgnoreCase);
 
     private static bool TryResolvePageLink(MarkdownFile source, string destination, out string targetPath)
     {

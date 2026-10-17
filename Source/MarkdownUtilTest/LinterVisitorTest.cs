@@ -113,9 +113,14 @@ public class LinterVisitorTest
     private sealed class RecordingLintErrorReceiver : ILinterErrorReceiver
     {
         public List<ReceivedError> Errors { get; } = new();
+        public List<ReceivedError> Warnings { get; } = new();
         public int ErrorCount => Errors.Count;
+        public int WarningCount => Warnings.Count;
 
         public void Add(string filePath, int lineNumber, string message) =>
             Errors.Add(new ReceivedError(filePath, lineNumber, message));
+
+        public void AddWarning(string filePath, int lineNumber, string message) =>
+            Warnings.Add(new ReceivedError(filePath, lineNumber, message));
     }
 }

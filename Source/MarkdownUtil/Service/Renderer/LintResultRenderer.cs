@@ -14,17 +14,17 @@ public class LintResultRenderer
     public int Render(IReadOnlyCollection<MarkdownFile> orphanedPages)
     {
         var errorCount = _receiver.ErrorCount;
-        if (errorCount == 1)
+        var warningCount = _receiver.WarningCount;
+        if (errorCount == 0 && warningCount == 0)
         {
-            Console.WriteLine($"Linter detected {errorCount} error.");
-        }
-        else if (errorCount > 1)
-        {
-            Console.WriteLine($"Linter detected {errorCount} errors.");
+            Console.WriteLine("Party! 🥳 The Markdown linter does not detect any errors!");
         }
         else
         {
-            Console.WriteLine("Party! 🥳 The Markdown linter does not detect any errors!");
+            var summary = new List<string>();
+            if (errorCount > 0) summary.Add($"{errorCount} error{(errorCount == 1 ? "" : "s")}");
+            if (warningCount > 0) summary.Add($"{warningCount} warning{(warningCount == 1 ? "" : "s")}");
+            Console.WriteLine($"Linter detected {string.Join(" and ", summary)}.");
         }
 
         if (orphanedPages.Count > 0)

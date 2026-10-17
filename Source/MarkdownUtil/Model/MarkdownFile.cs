@@ -20,4 +20,5 @@ public class MarkdownFile: INode<MarkdownFile>
     public int? SidebarOrder { get; set; }
     public bool SidebarVisible { get; set; } = true;
     public bool SidebarExpanded { get; set; }
+    public bool IsOnlyReadmeInSection { get; set; }
 }

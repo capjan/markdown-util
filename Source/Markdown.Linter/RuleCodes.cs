@@ -7,4 +7,6 @@ public static class RuleCodes
     public const string LinkCasing = "MDU003";
     public const string LocalLinkExists = "MDU004";
     public const string LocalLinkExistsName = "LocalLinkExists";
+    public const string DuplicatePageRepresentation = "MDU005";
+    public const string ReadmeWithoutSubpages = "MDU006";
 }

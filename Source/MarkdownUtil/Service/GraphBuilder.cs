@@ -55,17 +55,19 @@ public class GraphBuilder
             .SingleOrDefault(itm => itm.FileInfo.Name.Equals("README.md", StringComparison.OrdinalIgnoreCase));
 
         if (usedParent == null) return markdownFilesInFolder;
+
+        var childPages = directoryInfo
+            .GetDirectories()
+            .SelectMany(dirInfoOfChildren =>
+                GetMarkdownFilesAt(usedParent, dirInfoOfChildren, searchPattern, searchOptions)).ToArray();
+        usedParent.IsOnlyReadmeInSection = markdownFilesInFolder.Count == 1 && childPages.Length == 0;
         
         return markdownFilesInFolder
             .Select(file =>
             {
                 if (file == usedParent)
                 {
-                    file.Children = file.FileInfo.Directory?
-                                        .GetDirectories()
-                                        .SelectMany(dirInfoOfChildren =>
-                                            GetMarkdownFilesAt(usedParent, dirInfoOfChildren, searchPattern, searchOptions)).ToArray()
-                                    ?? Array.Empty<MarkdownFile>();
+                    file.Children = childPages;
                 }
                 else
                 {
