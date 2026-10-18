@@ -1,6 +1,6 @@
 # Icons and Emojis
 
-MarkdownUtil turns shortcodes such as `:rocket:` or `:material-account-circle:` into emojis and icons while it renders your Markdown. More than 17,000 icons and logos from seven open source icon sets and 1,600 emojis are built in. You do not need to configure anything, and the rendered pages load nothing from a CDN.
+MarkdownUtil turns shortcodes such as `:rocket:` or `:material-account-circle:` into emojis and icons while it renders your Markdown. Seven open source icon sets and GitHub-compatible emoji shortcodes are built in. You do not need to configure anything, and the rendered pages load nothing from a CDN.
 
 :rocket: :tada: :white_check_mark: :material-account-circle: :fontawesome-brands-github: :octicons-heart-fill-24: :simple-dotnet: :fontawesome-solid-terminal: :dashboard-home-assistant: :dashboard-github:
 
@@ -52,15 +52,15 @@ Sign in with :material-account-circle: or :fontawesome-brands-github: GitHub.
 
 Sign in with :material-account-circle: or :fontawesome-brands-github: GitHub.
 
-| Icon set | Prefix | Icons |
+| Icon set | Prefix | Example |
 |---|---|---|
-| :material-account-circle: [Material Design Icons](https://pictogrammers.com/library/mdi/) | `material-` | 7,447 |
-| :fontawesome-brands-github: [Font Awesome Free](https://fontawesome.com/search?ic=free) Brands | `fontawesome-brands-` | 608 |
-| :fontawesome-regular-face-laugh-wink: Font Awesome Free Regular | `fontawesome-regular-` | 272 |
-| :fontawesome-solid-rocket: Font Awesome Free Solid | `fontawesome-solid-` | 2,000 |
-| :octicons-heart-fill-24: [Octicons](https://primer.style/octicons/) | `octicons-` | 774 |
-| :simple-dotnet: [Simple Icons](https://simpleicons.org/) | `simple-` | 3,466 |
-| :dashboard-jellyfin: [Dashboard Icons](https://dashboardicons.com/) | `dashboard-` | 2,602 |
+| :material-account-circle: [Material Design Icons](https://pictogrammers.com/library/mdi/) | `material-` | `:material-account-circle:` |
+| :fontawesome-brands-github: [Font Awesome Free](https://fontawesome.com/search?ic=free) Brands | `fontawesome-brands-` | `:fontawesome-brands-github:` |
+| :fontawesome-regular-face-laugh-wink: Font Awesome Free Regular | `fontawesome-regular-` | `:fontawesome-regular-face-laugh-wink:` |
+| :fontawesome-solid-rocket: Font Awesome Free Solid | `fontawesome-solid-` | `:fontawesome-solid-rocket:` |
+| :octicons-heart-fill-24: [Octicons](https://primer.style/octicons/) | `octicons-` | `:octicons-heart-fill-24:` |
+| :simple-dotnet: [Simple Icons](https://simpleicons.org/) | `simple-` | `:simple-dotnet:` |
+| :dashboard-jellyfin: [Dashboard Icons](https://dashboardicons.com/) | `dashboard-` | `:dashboard-jellyfin:` |
 
 For example, `:material-account-circle:` shows the `account-circle` icon from Material Design Icons, and `:octicons-heart-fill-24:` shows the 24-pixel version of the filled Octicons heart.
 

@@ -34,6 +34,7 @@ MarkdownUtil is a .NET command-line tool distributed as a .NET tool with the `md
   PACKAGE_VERSION=3.0.0-local.YYYYMMDD.N
   PACKAGE_DIR=/tmp/mdu-local-package
   mkdir -p "$PACKAGE_DIR"
+  dotnet clean Source/MarkdownUtil/MarkdownUtil.csproj --configuration Release
   dotnet pack Source/MarkdownUtil/MarkdownUtil.csproj --configuration Release --no-restore -p:Version="$PACKAGE_VERSION" --output "$PACKAGE_DIR"
   dotnet tool update --global markdownutil --version "$PACKAGE_VERSION" --add-source "$PACKAGE_DIR"
   dotnet tool list --global

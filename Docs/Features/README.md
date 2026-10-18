@@ -15,7 +15,7 @@ sidebar.order: 30
 - [Keyboard Keys](./Keyboard-Keys/README.md) - Shows keyboard shortcuts such as `++cmd+s++` as keycaps with their usual symbols
 - [Math](Math.md) - Renders GitHub-compatible math syntax as static SVG
 - [Media Links](MediaLinks.md) - Embeds standalone YouTube and Vimeo links as video players
-- [Icons and Emojis](Icons-and-Emojis.md) - Adds more than 17,000 icons, colored logos, and GitHub emojis with shortcodes, with a search that copies them to the clipboard
+- [Icons and Emojis](Icons-and-Emojis.md) - Adds icons, colored logos, and GitHub-compatible emoji shortcodes, with a search that copies them to the clipboard
 - [Images](Images.md) - Renders Markdown images, copies linked local image files, and checks local image paths
 - Breadcrumb navigation is generated from the Markdown file structure during rendering; source files remain unchanged.
 

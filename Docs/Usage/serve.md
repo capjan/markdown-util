@@ -4,7 +4,7 @@ sidebar.order: 5
 
 # serve
 
-`mdu serve` renders the Markdown site, starts a local preview server, and watches the source folder for changes. Markdown pages and linked local assets are updated as you work. By default, the command opens the preview in a browser and listens on port `4173`. Press `Ctrl+C` to stop it.
+`mdu serve` renders the Markdown site, starts a local preview server, and watches the source folder for changes. Markdown pages and linked local assets are updated as you work. By default, the command opens the preview in a browser. Press `Ctrl+C` to stop it.
 
 ## Usage
 
@@ -12,27 +12,13 @@ sidebar.order: 5
 mdu serve [PATH [OUTPATH]]
 ```
 
-For all arguments, options, and defaults, here is the output of `mdu serve --help`:
+See [Paths and file search](README.md#paths-and-file-search) for the default source and output paths, and [common options](README.md#common-options) for `--pattern` and `--hidden`. Run `mdu serve --help` for the current command help.
 
-```text
-Description:
-  Renders, serves, and watches a Markdown site.
-
-Usage:
-  mdu serve [<path> [<outpath>]] [options]
-
-Arguments:
-  <path>     Root folder containing the Markdown files. Defaults to ./docs or ./Docs.
-  <outpath>  Output folder for the rendered site. Defaults to ./site.
-
-Options:
-  -p, --pattern <pattern>        Search pattern for Markdown files. [default: *.md]
-  --hidden                       Include hidden files and folders.
-  --port <port>                      Local preview server port. [default: 4173]
-  --no-browser                       Do not open the preview in a browser.
-  --editPageRoot <editPageRoot>      URL to the root URL for editing the source files.
-  -?, -h, --help                     Show help and usage information
-```
+| Option | Effect |
+| --- | --- |
+| `--port <port>` | Choose the local preview server port. Default: `4173`. |
+| `--no-browser` | Start the server without opening a browser. |
+| `--editPageRoot <editPageRoot>` | Add an **Edit Page** link to each rendered page. |
 
 ## Examples
 

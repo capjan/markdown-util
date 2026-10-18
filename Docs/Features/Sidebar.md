@@ -25,7 +25,7 @@ The MarkdownUtil documentation uses this ordering for its top-level sections:
 | `Docs/Usage/README.md` | 20 |
 | `Docs/Features/README.md` | 30 |
 | `Docs/Architecture/README.md` | 35 |
-| `Docs/OtherTools/README.md` | 40 |
+| `Docs/OtherTools.md` | 40 |
 
 For a single setting, you can also use the compact form:
 

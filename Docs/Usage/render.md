@@ -12,25 +12,7 @@ sidebar.order: 4
 mdu render [PATH [OUTPATH]]
 ```
 
-The alias `mdu r` runs the same command. For all arguments, options, and defaults, here is the output of `mdu render --help`:
-
-```text
-Description:
-  Renders Markdown files to a static HTML site.
-
-Usage:
-  mdu render [<path> [<outpath>]] [options]
-
-Arguments:
-  <path>     Root folder containing Markdown files. Defaults to ./docs or ./Docs.
-  <outpath>  Output folder for rendered files. Defaults to ./site.
-
-Options:
-  -p, --pattern <pattern>        Search pattern for Markdown files. [default: *.md]
-  --hidden                       Include hidden files and folders.
-  --editPageRoot <editPageRoot>      URL to the root URL for editing the source files.
-  -?, -h, --help                 Show help and usage information
-```
+The alias `mdu r` runs the same command. See [Paths and file search](README.md#paths-and-file-search) for the default source and output paths, and [common options](README.md#common-options) for `--pattern` and `--hidden`. Run `mdu render --help` for the current command help.
 
 `--editPageRoot` adds an **Edit Page** link to each rendered page.
 

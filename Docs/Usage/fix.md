@@ -12,23 +12,7 @@ sidebar.order: 3
 mdu fix [PATH] [options]
 ```
 
-For all arguments, options, and defaults, here is the output of `mdu fix --help`:
-
-```text
-Description:
-  Applies automatic fixes for supported warnings.
-
-Usage:
-  mdu fix [<path>] [options]
-
-Arguments:
-  <path>  Root folder containing Markdown files. Defaults to ./docs or ./Docs.
-
-Options:
-  -p, --pattern <pattern>  Search pattern for Markdown files. [default: *.md]
-  --hidden                 Include hidden files and folders.
-  -?, -h, --help           Show help and usage information
-```
+See [Paths and file search](README.md#paths-and-file-search) for the default source path and [common options](README.md#common-options) for `--pattern` and `--hidden`. Run `mdu fix --help` for the current command help.
 
 ## Fixing MDU006
 
@@ -36,7 +20,7 @@ When a section folder contains only `README.md`, `mdu fix` moves that page besid
 
 The command updates Markdown links that point to the old page, including links to the section folder and reference links. It also adjusts relative links from the moved page so they continue to point to the same local pages and assets. Query strings and fragments are preserved. If the section folder still contains assets or other files, the folder remains in place.
 
-Run the linter afterward to check the result:
+`mdu fix` changes Markdown files and links when it applies a fix. Review those changes, then run the linter again:
 
 ```bash
 mdu fix ./ProjectDocs

@@ -9,26 +9,10 @@ sidebar.order: 1
 ## Usage
 
 ```bash
-mdu tree PATH --pattern PATTERN
+mdu tree [PATH] [options]
 ```
 
-The alias `mdu print` also runs this command. For all arguments, options, and defaults, here is the output of `mdu tree --help`:
-
-```text
-Description:
-  Prints the detected Markdown files as a tree.
-
-Usage:
-  mdu tree [<path>] [options]
-
-Arguments:
-  <path>  Root folder containing Markdown files. Defaults to ./docs or ./Docs.
-
-Options:
-  -p, --pattern <pattern>  Search pattern for Markdown files. [default: *.md]
-  --hidden                 Include hidden files and folders.
-  -?, -h, --help           Show help and usage information
-```
+The alias `mdu print` also runs this command. See [Paths and file search](README.md#paths-and-file-search) for the default source path, and [common options](README.md#common-options) for `--pattern` and `--hidden`. Run `mdu tree --help` for the current command help.
 
 ## Examples
 
