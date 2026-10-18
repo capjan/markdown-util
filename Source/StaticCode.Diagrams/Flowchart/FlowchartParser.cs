@@ -15,6 +15,9 @@ public sealed class FlowchartParser
     private static readonly Regex KeywordRegex = new(@"\G(?<keyword>[A-Za-z]+)(?=[ \t:{]|$)", RegexOptions.Compiled);
     private static readonly Regex IdRegex = new(@"\G[\p{L}\p{N}_]+", RegexOptions.Compiled);
     private static readonly Regex ActorRegex = new(@"^(?<id>[\p{L}\p{N}_]+)(?:[ \t]+as[ \t]+(?<label>.+))?$", RegexOptions.Compiled);
+    private static readonly Regex ClickRegex = new(
+        "^(?<id>[\\p{L}\\p{N}_]+)[ \\t]+(?:href[ \\t]+)?(?:\"(?<doubleUrl>[^\"]*)\"|'(?<singleUrl>[^']*)'|(?<bareUrl>[^ \\t]+))(?:[ \\t]+\"[^\"]*\")?[ \\t]*;?$",
+        RegexOptions.Compiled | RegexOptions.CultureInvariant);
     private static readonly Regex ClassSuffixRegex = new(@"\G:::[\w-]+", RegexOptions.Compiled);
     private static readonly Regex TextLinkOpenRegex = new(@"\G(?<start>[<ox])?(?<kind>--|==|-\.)(?=[ \t])", RegexOptions.Compiled);
     private static readonly Regex SolidCloseRegex = new(@"(?<line>-{3,}|--(?=[>ox]))(?<end>[>ox])?", RegexOptions.Compiled);
@@ -34,13 +37,14 @@ public sealed class FlowchartParser
     };
 
     private static readonly string[] UnsupportedShapeOpeners = { "(((", "[[", "[(", "[/", "[\\", "{{", ">", "@{" };
-    private static readonly string[] IgnoredKeywords = { "classDef", "class", "style", "linkStyle", "click", "accDescr" };
+    private static readonly string[] IgnoredKeywords = { "classDef", "class", "style", "linkStyle", "accDescr" };
     private static readonly string[] UnsupportedKeywords = { "subgraph", "end", "direction" };
 
     private readonly string[] _lines;
     private readonly bool _context;
     private readonly Dictionary<string, FlowchartNode> _nodes = new(StringComparer.Ordinal);
     private readonly List<FlowchartNode> _nodeOrder = new();
+    private readonly List<(string Id, string Href)> _nodeLinks = new();
     private readonly List<FlowchartEdge> _edges = new();
     private string? _title;
     private string _text = string.Empty;
@@ -92,6 +96,8 @@ public sealed class FlowchartParser
         }
 
         if (direction == null) throw new DiagramSyntaxException("Missing 'flowchart' header.", 1);
+        foreach (var (id, href) in _nodeLinks)
+            if (_nodes.TryGetValue(id, out var node)) node.Href = href;
         return new FlowchartDiagram(direction.Value, _nodeOrder, _edges, _title);
     }
 
@@ -132,6 +138,19 @@ public sealed class FlowchartParser
 
         var keyword = match.Groups["keyword"].Value;
         if (UnsupportedKeywords.Contains(keyword)) throw Error($"'{keyword}' is not supported yet.");
+        if (keyword == "click")
+        {
+            var click = ClickRegex.Match(_text[(_pos + match.Length)..].Trim());
+            if (click.Success)
+            {
+                var href = click.Groups["doubleUrl"].Success ? click.Groups["doubleUrl"].Value
+                    : click.Groups["singleUrl"].Success ? click.Groups["singleUrl"].Value
+                    : click.Groups["bareUrl"].Value;
+                _nodeLinks.Add((click.Groups["id"].Value, href));
+            }
+
+            return true;
+        }
         if (IgnoredKeywords.Contains(keyword)) return true;
 
         var rest = _text[(_pos + match.Length)..].TrimStart();

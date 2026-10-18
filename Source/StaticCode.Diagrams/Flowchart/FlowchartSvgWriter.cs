@@ -93,7 +93,7 @@ internal static class FlowchartSvgWriter
 
         svg.Append("</g>\n<g class=\"diagram-nodes\">\n");
         for (var index = 0; index < boxes.Count; index++)
-            NodeShapes.WriteNode(svg, boxes[index], layout.NodeCenters[index]);
+            NodeShapes.WriteNode(svg, boxes[index], layout.NodeCenters[index], href: diagram.Nodes[index].Href);
         svg.Append("</g>\n</svg>");
         return svg.ToString();
     }

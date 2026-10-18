@@ -86,8 +86,9 @@ internal static class ContextSvgWriter
             .Append("<g class=\"diagram-edges\">\n").Append(edges)
             .Append("</g>\n<g class=\"diagram-edge-labels\">\n").Append(labelLayer)
             .Append("</g>\n<g class=\"diagram-nodes\">\n");
-        for (var index = 0; index < boxes.Count; index++) NodeShapes.WriteNode(svg, boxes[index], positions[index]);
-        NodeShapes.WriteNode(svg, centerBox, new Point(0, 0), CenterClass);
+        for (var index = 0; index < boxes.Count; index++)
+            NodeShapes.WriteNode(svg, boxes[index], positions[index], href: diagram.Neighbors[index].Href);
+        NodeShapes.WriteNode(svg, centerBox, new Point(0, 0), CenterClass, diagram.Center.Href);
         svg.Append("</g>\n</svg>");
         return svg.ToString();
     }

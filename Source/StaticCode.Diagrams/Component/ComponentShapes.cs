@@ -67,10 +67,12 @@ internal static class ComponentShapes
 
     public static double InterfaceRadiusValue => InterfaceRadius;
 
-    public static void WriteElement(StringBuilder svg, ElementBox box, Point center)
+    public static void WriteElement(StringBuilder svg, ElementBox box, Point center, string? href = null)
     {
         var kind = box.Kind.ToString().ToLowerInvariant();
         var noteClass = box.Kind == ElementKind.Note ? " diagram-note" : string.Empty;
+        var safeHref = SafeHref(href);
+        if (safeHref != null) svg.Append($"<a class=\"diagram-link\" href=\"{safeHref}\">");
         svg.Append($"<g class=\"diagram-node diagram-component-{kind}{noteClass}\">");
         var left = center.X - box.Width / 2;
         var top = center.Y - box.Height / 2;
@@ -82,7 +84,9 @@ internal static class ComponentShapes
         {
             case ElementKind.Actor:
                 SvgActor.Write(svg, box.Lines, center.X, top);
-                svg.Append("</g>\n");
+                svg.Append("</g>");
+                if (safeHref != null) svg.Append("</a>");
+                svg.Append('\n');
                 return;
             case ElementKind.Interface:
             {
@@ -141,7 +145,9 @@ internal static class ComponentShapes
         }
 
         WriteText(svg, box.Lines, textCenter, box.Kind == ElementKind.Note ? "diagram-note-text" : "diagram-node-text");
-        svg.Append("</g>\n");
+        svg.Append("</g>");
+        if (safeHref != null) svg.Append("</a>");
+        svg.Append('\n');
     }
 
     /// <summary>Space between the top of a container and its content, for the label.</summary>
@@ -169,6 +175,8 @@ internal static class ComponentShapes
         var label = TextMetrics.Wrap(Text(element), double.MaxValue);
         var labelWidth = TextMetrics.Measure(label).Width;
         var labelClass = "diagram-container-label";
+        var safeHref = SafeHref(element.Href);
+        if (safeHref != null) svg.Append($"<a class=\"diagram-link\" href=\"{safeHref}\">");
         svg.Append($"<g class=\"diagram-container diagram-container-{kind}\">");
 
         switch (element.Kind)
@@ -211,7 +219,9 @@ internal static class ComponentShapes
                 break;
         }
 
-        svg.Append("</g>\n");
+        svg.Append("</g>");
+        if (safeHref != null) svg.Append("</a>");
+        svg.Append('\n');
     }
 
     private static void Rect(StringBuilder svg, double left, double top, double width, double height, double radius) =>

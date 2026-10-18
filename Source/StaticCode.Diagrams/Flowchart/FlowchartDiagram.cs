@@ -46,6 +46,7 @@ public sealed class FlowchartNode
     public string Id { get; }
     public string Label { get; set; }
     public NodeShape Shape { get; set; } = NodeShape.Rectangle;
+    public string? Href { get; set; }
 }
 
 /// <param name="Length">Minimum number of ranks the edge spans; <c>---&gt;</c> is longer than <c>--&gt;</c>.</param>

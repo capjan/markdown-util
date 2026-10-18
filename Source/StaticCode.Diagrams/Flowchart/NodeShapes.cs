@@ -129,9 +129,11 @@ internal static class NodeShapes
         };
     }
 
-    public static void WriteNode(StringBuilder svg, NodeBox box, Point center, string? extraClass = null)
+    public static void WriteNode(StringBuilder svg, NodeBox box, Point center, string? extraClass = null, string? href = null)
     {
         var classes = $"diagram-node diagram-node-{box.Shape.ToString().ToLowerInvariant()}" + (extraClass == null ? string.Empty : $" {extraClass}");
+        var safeHref = SafeHref(href);
+        if (safeHref != null) svg.Append($"<a class=\"diagram-link\" href=\"{safeHref}\">");
         svg.Append($"<g class=\"{classes}\">");
         var left = center.X - box.Width / 2;
         var top = center.Y - box.Height / 2;
@@ -139,7 +141,9 @@ internal static class NodeShapes
         {
             case NodeShape.Actor:
                 SvgActor.Write(svg, box.Lines, center.X, top);
-                svg.Append("</g>\n");
+                svg.Append("</g>");
+                if (safeHref != null) svg.Append("</a>");
+                svg.Append('\n');
                 return;
             case NodeShape.Circle:
                 svg.Append($"<circle class=\"diagram-node-shape\" cx=\"{F(center.X)}\" cy=\"{F(center.Y)}\" r=\"{F(box.Width / 2)}\"/>");
@@ -153,7 +157,9 @@ internal static class NodeShapes
         }
 
         WriteText(svg, box.Lines, center, "diagram-node-text");
-        svg.Append("</g>\n");
+        svg.Append("</g>");
+        if (safeHref != null) svg.Append("</a>");
+        svg.Append('\n');
     }
 
     public static void WriteLabel(StringBuilder svg, LabelBox label, Point center)

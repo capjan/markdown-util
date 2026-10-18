@@ -57,6 +57,7 @@ public sealed class ComponentElement
     public string Label { get; set; }
     public ElementKind Kind { get; set; }
     public string? Stereotype { get; set; }
+    public string? Href { get; set; }
 
     /// <summary>The id of the container that holds this element, or <c>null</c> at the top level.</summary>
     public string? Parent { get; }

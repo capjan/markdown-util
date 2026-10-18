@@ -23,6 +23,41 @@ internal static class SvgText
         .Replace(">", "&gt;")
         .Replace("\"", "&quot;");
 
+    public static string? SafeHref(string? href)
+    {
+        if (string.IsNullOrWhiteSpace(href)) return null;
+        href = href.Trim();
+
+        var colon = href.IndexOf(':');
+        var separator = href.IndexOfAny(new[] { '/', '?', '#' });
+        if (colon >= 0 && (separator < 0 || colon < separator))
+        {
+            var scheme = href[..colon];
+            if (!scheme.Equals("http", StringComparison.OrdinalIgnoreCase) &&
+                !scheme.Equals("https", StringComparison.OrdinalIgnoreCase) &&
+                !scheme.Equals("mailto", StringComparison.OrdinalIgnoreCase))
+                return null;
+        }
+        else
+        {
+            var suffixStart = href.IndexOfAny(new[] { '?', '#' });
+            var path = suffixStart < 0 ? href : href[..suffixStart];
+            var suffix = suffixStart < 0 ? string.Empty : href[suffixStart..];
+            if (path.EndsWith(".md", StringComparison.OrdinalIgnoreCase))
+            {
+                var fileNameStart = path.LastIndexOf('/') + 1;
+                var fileName = path[fileNameStart..^3];
+                path = fileName.Equals("readme", StringComparison.OrdinalIgnoreCase)
+                    ? path[..fileNameStart] + "index.html"
+                    : path[..^3] + ".html";
+            }
+
+            href = path + suffix;
+        }
+
+        return Escape(href);
+    }
+
     /// <summary>Writes lines vertically centered on <paramref name="anchor"/>; <paramref name="anchor"/>.X is the center or the start of each line.</summary>
     public static void WriteText(StringBuilder svg, IReadOnlyList<string> lines, Point anchor, string cssClass, TextAlignment alignment = TextAlignment.Middle)
     {
