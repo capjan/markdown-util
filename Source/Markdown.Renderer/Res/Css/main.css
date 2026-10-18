@@ -1648,18 +1648,29 @@ th, td {
         display: none;
         position: fixed;
         top: 56px;
-        bottom: 0;
+        bottom: auto;
         left: 0;
         z-index: 32;
         width: min(300px, calc(100vw - 3rem));
-        height: auto;
+        height: calc(100vh - 56px);
+        height: calc(100dvh - 56px);
+        flex-direction: column;
+        overflow: hidden;
         border-right: 1px solid var(--border);
         background: var(--surface-header);
         box-shadow: var(--sidebar-shadow);
     }
 
+    .site-sidebar nav {
+        flex: 1;
+        min-height: 0;
+        overflow-x: hidden;
+        overflow-y: auto;
+        -webkit-overflow-scrolling: touch;
+    }
+
     .site-layout.sidebar-open .site-sidebar {
-        display: block;
+        display: flex;
     }
 
     .site-layout.sidebar-open .sidebar-backdrop {
