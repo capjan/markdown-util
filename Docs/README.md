@@ -11,9 +11,9 @@ MarkdownUtil is a .NET 10 tool for writing documentation in ordinary Markdown an
 
 ## Contents
 
-- [Setup](./Setup/README.md) - How to install and set up the tool
+- [Setup](Setup.md) - How to install and set up the tool
 - [Usage](./Usage/README.md) - How to use the tool
 - [Publish](./Publish/README.md) - How to publish a rendered site
 - [Features](./Features/README.md) - An overview of the features
 - [Architecture](./Architecture/README.md) - How MarkdownUtil turns Markdown into a rendered site
-- [Other Tools](./OtherTools/README.md) - More established tools with similar goals
+- [Other Tools](OtherTools.md) - More established tools with similar goals

@@ -47,4 +47,4 @@ mdu render ./Docs ./site --pattern "*.markdown" --editPageRoot "https://github.c
 
 The Markdown source files are left unchanged.
 
-[Back to Usage](../README.md)
+[Back to Usage](README.md)

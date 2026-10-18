@@ -4,7 +4,7 @@ sidebar.order: 3
 
 # Custom
 
-Install MarkdownUtil once, see [setup instructions](../Setup/README.md), then render your documentation:
+Install MarkdownUtil once, see [setup instructions](../Setup.md), then render your documentation:
 
 ```bash
 mdu render docs site

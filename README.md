@@ -72,6 +72,7 @@ Upload the generated `site` folder to GitHub Pages, GitLab Pages, Netlify, or an
 | `mdu serve`       | Renders, serves, and live-reloads the site.        |
 | `mdu render`      | Writes the static site to `./site`.                |
 | `mdu lint`        | Checks the docs and reports problems.              |
+| `mdu fix`         | Applies automatic fixes for supported warnings.    |
 | `mdu tree`        | Prints Markdown files under `./docs` or `./Docs` as a tree. |
 
 The defaults (`./docs` in, `./site` out, port `4173`) cover the common case. Pass paths or options only when your layout differs:

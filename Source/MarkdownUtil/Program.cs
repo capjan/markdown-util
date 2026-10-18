@@ -19,6 +19,7 @@ registrations.AddScoped<DataPreparationVisitor>();
 registrations.AddScoped<PrintTreeVisitor>();
 registrations.AddScoped<LintResultRenderer>();
 registrations.AddScoped<GraphBuilder>();
+registrations.AddScoped<FixCommand>();
 registrations.AddScoped<CountNodesVisitor<MarkdownFile>>();
 registrations.AddScoped<HtmlRenderer>();
 registrations.AddScoped<SearchIndexBuilder>();
@@ -51,6 +52,14 @@ lintCommand.SetAction(parseResult =>
         parseResult.GetValue(lintPretty),
         parseResult.GetValue(lintColor)));
 rootCommand.Subcommands.Add(lintCommand);
+
+var fixCommand = new Command("fix", "Applies automatic fixes for supported warnings.");
+var (fixPattern, fixHidden) = AddVisitorOptions(fixCommand);
+var fixPath = AddRootPathArgument(fixCommand, "Root folder containing Markdown files. Defaults to ./docs or ./Docs.");
+fixCommand.SetAction(parseResult =>
+    services.GetRequiredService<FixCommand>().Execute(
+        GetVisitorSettings(parseResult, fixPath, fixPattern, fixHidden)));
+rootCommand.Subcommands.Add(fixCommand);
 
 var treeCommand = new Command("tree", "Prints the detected Markdown files as a tree.");
 treeCommand.Aliases.Add("print");

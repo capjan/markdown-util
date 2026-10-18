@@ -136,4 +136,4 @@ MarkdownUtil uses Markdig.[^markdig]
 
 ## Related features
 
-For GitHub-style callouts, see [Callouts](../Callouts/README.md).
+For GitHub-style callouts, see [Callouts](Callouts.md).

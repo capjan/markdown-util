@@ -31,10 +31,10 @@ Options:
 ## Rules
 
 - Rule 1 - Every Markdown page must have a level-one heading that defines its title (after any YAML front matter).
-- [Rule 2](./Rule2/README.md) - Directory names must match the title in the index file (`README.md`).
-- [Rule 3](./Rule3/README.md) - The casing of internal links in a Markdown file must match the casing of their targets.
+- [Rule 2](Rule2.md) - Directory names must match the title in the index file (`README.md`).
+- [Rule 3](Rule3.md) - The casing of internal links in a Markdown file must match the casing of their targets.
 - Rule 4 - Local links and image targets must point to an existing file or to a directory with a `README.md` index.
-- [Rule 5](./Rule5/README.md) - A page must not be represented by both a Markdown file and a same-named directory README; a directory README without subpages is unnecessary.
+- [Rule 5](Rule5.md) - A page must not be represented by both a Markdown file and a same-named directory README; a directory README without subpages is unnecessary.
 
 Each diagnostic includes a stable code, a descriptive rule name, the source path, and the line number. Errors make `mdu lint` exit with code `1`; warnings do not. For example, `MDU004` is named `LocalLinkExists`:
 
@@ -43,6 +43,15 @@ Each diagnostic includes a stable code, a descriptive rule name, the source path
 ```
 
 Use `--pretty` to group diagnostics by file and show paths relative to the lint root. Add `--color` to colorize errors and warnings. The linter also lists completely orphaned pages: pages hidden from the sidebar with `sidebar.visible: false` that no visible page links to. This list is informational and does not affect the lint exit code.
+
+## Automatic fixes
+
+`mdu fix [PATH]` applies warning fixes that are safe to determine automatically. It currently fixes `MDU006` by moving a section's only `README.md` to a same-named Markdown file beside the section folder. It updates links to the page and rebases relative links from the moved page, including links to local assets.
+
+```bash
+mdu fix
+mdu fix ./ProjectDocs --pattern "*.markdown"
+```
 
 ## Examples
 
