@@ -178,6 +178,35 @@ public class FixCommandTest
     }
 
     [Fact]
+    public void MissingSectionReadmeIsAWarningForPlainMarkdownProjects()
+    {
+        var root = Path.Combine(Path.GetTempPath(), Guid.NewGuid().ToString("N"));
+        var section = Path.Combine(root, "Guides");
+        Directory.CreateDirectory(section);
+        try
+        {
+            File.WriteAllText(Path.Combine(root, "README.md"), "# Docs\n");
+            File.WriteAllText(Path.Combine(section, "First.md"), "# First\n");
+            File.WriteAllText(Path.Combine(section, "Second.md"), "# Second\n");
+
+            var graph = CreateGraphBuilder().CreateGraph(new VisitorSettings { RootPath = root, SearchPattern = "*.md", IncludeHidden = true });
+            var receiver = new ConsoleLintErrorReceiver();
+            var linter = new LinterVisitor(receiver);
+            linter.Prepare(graph);
+            graph.Visit(linter);
+
+            Assert.Equal(0, receiver.ErrorCount);
+            Assert.Equal(1, receiver.WarningCount);
+            Assert.Contains(receiver.Diagnostics, diagnostic => diagnostic.IsWarning &&
+                                                                  diagnostic.Message.StartsWith("MDU013:", StringComparison.Ordinal));
+        }
+        finally
+        {
+            Directory.Delete(root, recursive: true);
+        }
+    }
+
+    [Fact]
     public void DoesNotTreatReindexMarkdownAsIndexInPagesArrange()
     {
         var root = Path.Combine(Path.GetTempPath(), Guid.NewGuid().ToString("N"));
@@ -270,7 +299,7 @@ public class FixCommandTest
             File.WriteAllText(Path.Combine(root, "README.md"), "# Docs\n");
             File.WriteAllText(Path.Combine(root, "Tags.md"), "# Tags\n\n<!-- material/tags -->\n");
             File.WriteAllText(Path.Combine(root, "blog", "index.md"), "---\ntitle: Wiki Blog\n---\n# Blog\n");
-            File.WriteAllText(Path.Combine(root, "blog", ".pages"), "title: Blog\n");
+            File.WriteAllText(Path.Combine(root, "blog", ".pages"), "title: Blog\narrange:\n  - index.md\n");
             File.WriteAllText(Path.Combine(posts, "First.md"), "---\ntitle: First post\ndate: 2026-01-01\ntags:\n  - Release\n---\n# First\n");
             File.WriteAllText(Path.Combine(posts, "Second.md"), "---\ntitle: Second post\ndate: 2026-01-02\n---\n# Second\n");
 
@@ -282,6 +311,7 @@ public class FixCommandTest
             Assert.Contains("sidebar:", blogIndex);
             Assert.Contains("title: Wiki Blog", blogIndex);
             Assert.Contains("title: Blog", blogIndex);
+            Assert.Contains("order: 0", blogIndex);
             Assert.Contains("posts/First.md", blogIndex);
             Assert.Contains("posts/Second.md", blogIndex);
             Assert.DoesNotContain("posts/README.md", blogIndex);
