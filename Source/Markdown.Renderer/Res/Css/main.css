@@ -2034,10 +2034,6 @@ th, td {
         width: 100vw;
     }
 
-    .page-toolbar .breadcrumbs {
-        display: none;
-    }
-
     .on-this-page {
         max-width: 100%;
     }
