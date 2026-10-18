@@ -979,6 +979,7 @@ blockquote {
 }
 
 .math-svg {
+    width: auto;
     max-width: 100%;
     height: auto;
     vertical-align: middle;
@@ -1417,6 +1418,7 @@ pre code {
 }
 
 .diagram svg {
+    width: auto;
     max-width: 100%;
     height: auto;
     font-family: inherit;
@@ -1426,6 +1428,10 @@ pre code {
     fill: var(--diagram-node-background);
     stroke: var(--diagram-node-border);
     stroke-width: 1.25;
+}
+
+.diagram-link {
+    cursor: pointer;
 }
 
 .diagram-node-diamond .diagram-node-shape {

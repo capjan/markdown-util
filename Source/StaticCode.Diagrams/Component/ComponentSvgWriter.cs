@@ -91,7 +91,7 @@ internal sealed class ComponentSvgWriter
 
         var nodes = new StringBuilder();
         foreach (var element in _diagram.Elements.Where(element => !element.IsContainer))
-            ComponentShapes.WriteElement(nodes, _boxes[element.Id], _centers[element.Id]);
+            ComponentShapes.WriteElement(nodes, _boxes[element.Id], _centers[element.Id], element.Href);
 
         var title = new StringBuilder();
         if (_diagram.Title != null)

@@ -38,11 +38,13 @@ public sealed class ComponentParser
     private static readonly Regex TogetherRegex = new(@"^together\s*\{$", Options);
     private static readonly Regex IgnoredRegex = new(@"^(?:skinparam|hide|show|scale|!theme|!pragma|allowmixing|allow_mixing)\b", Options);
     private static readonly Regex DirectionRegex = new(@"^(?<direction>left to right|top to bottom) direction$", Options);
+    private static readonly Regex UrlRegex = new($@"^url\s+of\s+(?<id>{Name})\s+is\s+\[\[(?<url>[^\]]+)\]\]$", Options);
 
     private readonly List<string> _lines;
     private readonly Dictionary<string, ComponentElement> _elements = new(StringComparer.Ordinal);
     private readonly List<ComponentElement> _elementOrder = new();
     private readonly List<ComponentLink> _links = new();
+    private readonly List<(string Id, string Href)> _elementLinks = new();
 
     // Open braces: a container id, or null for a group such as "together" that draws nothing.
     private readonly Stack<string?> _blocks = new();
@@ -80,6 +82,8 @@ public sealed class ComponentParser
 
         if (_blocks.Count > 0) throw Error("Missing '}'.");
         if (!_hasComponentSyntax) throw new DiagramSyntaxException("This is not a component diagram.", 1);
+        foreach (var (id, href) in _elementLinks)
+            if (_elements.TryGetValue(id, out var element)) element.Href = href;
         return new ComponentDiagram(_title, _leftToRight, _elementOrder, _links);
     }
 
@@ -101,6 +105,12 @@ public sealed class ComponentParser
         if (DirectionRegex.Match(line) is { Success: true } direction)
         {
             _leftToRight = direction.Groups["direction"].Value == "left to right";
+            return;
+        }
+
+        if (UrlRegex.Match(line) is { Success: true } url)
+        {
+            _elementLinks.Add((url.Groups["id"].Value, url.Groups["url"].Value));
             return;
         }
 

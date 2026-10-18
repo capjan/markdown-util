@@ -34,5 +34,3 @@ Run the preview without opening a browser:
 ```bash
 mdu serve --no-browser
 ```
-
-[Back to Usage](README.md)

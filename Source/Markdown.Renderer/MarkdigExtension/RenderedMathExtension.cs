@@ -55,7 +55,7 @@ internal static class MathFormulaRenderer
             var painter = new MathPainter
             {
                 LaTeX = latex,
-                FontSize = display ? 24 : 16,
+                FontSize = 16,
                 TextColor = Colours.Black
             };
             if (!string.IsNullOrEmpty(painter.ErrorMessage)) return RenderSource(latex, display);

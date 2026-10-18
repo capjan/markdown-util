@@ -6,11 +6,11 @@ sidebar.order: 10
 
 MarkdownUtil is distributed as a [.NET tool](https://learn.microsoft.com/en-us/dotnet/core/tools/global-tools) through [NuGet](https://www.nuget.org/packages/MarkdownUtil). It requires .NET 10.
 
-## Step 1: Install the .NET 10 SDK
+## Requirements
 
 Install the [.NET 10 SDK](https://dotnet.microsoft.com/en-us/download/dotnet/10.0) for your operating system. The SDK includes the .NET runtime that MarkdownUtil needs.
 
-## Step 2: Installation
+## Installation
 
 Install the tool globally for your system or locally for a repository.
 

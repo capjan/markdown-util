@@ -60,7 +60,7 @@ Upload the generated `site` folder to GitHub Pages, GitLab Pages, Netlify, or an
 
 ## Why MarkdownUtil?
 
-- **One .NET workflow for your docs.** `mdu lint`, `mdu serve`, and `mdu render` run from the .NET 10 tool; there is no separate Node.js or Python build toolchain.
+- **One .NET workflow for your docs.** `mdu lint`, `mdu serve`, `mdu render`, and `mdu pdf` run from the .NET 10 tool; there is no separate Node.js or Python build toolchain.
 - **Your folder structure becomes navigation.** `README.md` files represent sections, and MarkdownUtil builds the sidebar and breadcrumbs from the folder tree. Set `sidebar.order` only when you want a custom order.
 - **Catch problems before publishing.** The linter checks page titles, directory names, link casing, and missing local links or images, then points to the source file and line.
 - **Keep your content and hosting portable.** Your source stays Markdown and the generated site is static HTML you can host anywhere. The optional `sidebar.order` field is MarkdownUtil-specific.
@@ -71,6 +71,7 @@ Upload the generated `site` folder to GitHub Pages, GitLab Pages, Netlify, or an
 | ----------------- | -------------------------------------------------- |
 | `mdu serve`       | Renders, serves, and live-reloads the site.        |
 | `mdu render`      | Writes the static site to `./site`.                |
+| `mdu pdf`         | Writes all detected Markdown files to `./documentation.pdf`. |
 | `mdu lint`        | Checks the docs and reports problems.              |
 | `mdu fix`         | Applies automatic fixes for supported warnings.    |
 | `mdu tree`        | Prints Markdown files under `./docs` or `./Docs` as a tree. |

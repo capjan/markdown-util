@@ -28,5 +28,3 @@ Use a different file pattern when pages use another extension:
 ```bash
 mdu tree ./ProjectDocs --pattern "*.markdown"
 ```
-
-[Back to Usage](README.md)

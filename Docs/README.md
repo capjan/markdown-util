@@ -14,6 +14,7 @@ Use these guides to install MarkdownUtil, preview and publish a site, and write 
 - [lint](./Usage/lint/README.md) - Find documentation and link issues.
 - [fix](./Usage/fix.md) - Apply the supported automatic fix.
 - [render](./Usage/render.md) - Generate the static site.
+- [pdf](./Usage/pdf.md) - Combine Markdown files into one local PDF.
 - [serve](./Usage/serve.md) - Preview the site with live reload.
 
 ## Write and organize content

@@ -58,6 +58,13 @@ public class HtmlRenderer
         return providers;
     }
 
+    public string RenderMarkdownFragment(string markdown)
+    {
+        var document = Markdig.Markdown.Parse(_linkReplacer.ReplaceAll(markdown), _pipeline);
+        var html = document.ToHtml(_pipeline);
+        return MediaLinkEmbedder.ReplaceStandaloneLinks(html, out _);
+    }
+
     public async Task WriteHtml(
         TextWriter writer,
         string title,
