@@ -1,19 +1,26 @@
 # Documentation
 
-MarkdownUtil is a .NET 10 tool for writing documentation in ordinary Markdown and publishing it as a static HTML site. It brings linting, local preview, and rendering into one CLI, while the folder structure supplies the site navigation.
+Use these guides to install MarkdownUtil, preview and publish a site, and write Markdown that renders the way you expect.
 
-## Why MarkdownUtil?
+## Get started
 
-- **Use one .NET tool for the docs workflow.** Lint pages, preview changes, and render the site without a separate Node.js or Python build toolchain.
-- **Turn folders into a navigable site.** MarkdownUtil builds the sidebar and breadcrumbs from `README.md` pages and their folder structure.
-- **Find link issues before publishing.** The linter checks local links, images, and path casing, and reports the source file and line.
-- **Keep your Markdown and choose your host.** The sources remain readable Markdown, and the rendered output is static HTML. Optional `sidebar.order` metadata is specific to MarkdownUtil.
+- [Setup](Setup.md) - Install the .NET tool globally or in a repository.
+- [Usage](./Usage/README.md) - Run the commands and preview a documentation site.
+- [Publish](./Publish/README.md) - Publish the generated static site.
 
-## Contents
+## Look up a command
 
-- [Setup](Setup.md) - How to install and set up the tool
-- [Usage](./Usage/README.md) - How to use the tool
-- [Publish](./Publish/README.md) - How to publish a rendered site
-- [Features](./Features/README.md) - An overview of the features
-- [Architecture](./Architecture/README.md) - How MarkdownUtil turns Markdown into a rendered site
-- [Other Tools](OtherTools.md) - More established tools with similar goals
+- [tree](./Usage/tree.md) - Inspect the page structure.
+- [lint](./Usage/lint/README.md) - Find documentation and link issues.
+- [fix](./Usage/fix.md) - Apply the supported automatic fix.
+- [render](./Usage/render.md) - Generate the static site.
+- [serve](./Usage/serve.md) - Preview the site with live reload.
+
+## Write and organize content
+
+- [Features](./Features/README.md) - Browse supported Markdown syntax and rendering features.
+
+## About MarkdownUtil
+
+- [Architecture](./Architecture/README.md) - Learn how MarkdownUtil renders a site.
+- [Other tools](OtherTools.md) - Compare a few documentation site generators by their typical use case.

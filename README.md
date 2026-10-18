@@ -102,6 +102,6 @@ Skip the first command if `.config/dotnet-tools.json` already exists. Run the lo
 ## Learn more
 
 - [Documentation](https://capjan.github.io/markdown-util/)
-- [Usage](https://github.com/capjan/markdown-util/blob/main/Docs/Usage/README.md), [linter rules](https://github.com/capjan/markdown-util/blob/main/Docs/Usage/lint/README.md), and [sidebar ordering](https://github.com/capjan/markdown-util/blob/main/Docs/Features/Sidebar/README.md)
+- [Usage](https://github.com/capjan/markdown-util/blob/main/Docs/Usage/README.md), [linter rules](https://github.com/capjan/markdown-util/blob/main/Docs/Usage/lint/README.md), and [sidebar ordering](https://github.com/capjan/markdown-util/blob/main/Docs/Features/Sidebar.md)
 
 > **Project status:** MarkdownUtil is under active development. Expect changes before the first stable release.

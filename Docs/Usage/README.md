@@ -6,18 +6,15 @@ sidebar.order: 20
 
 ## Quick start
 
-Run commands from the project folder. Commands that read Markdown use `./docs` or `./Docs` by default. `render` and `serve` write the generated site to `./site`. For a project with a `Docs` directory:
+Run these commands from your project folder. `serve` is for local preview; use `render` when you are ready to create the site for publishing.
 
 ```bash
 mdu tree
 mdu lint
-mdu fix
-mdu lint
-mdu render
 mdu serve
 ```
 
-`mdu tree` shows the detected page structure. `mdu lint` reports problems, and `mdu fix` applies supported automatic fixes and updates affected links. Run `mdu lint` again to check the result. `mdu render` writes the static site to `./site` and exits. `mdu serve` renders the site to `./site`, opens it in your browser, and watches Markdown files and linked local assets for changes. Press `Ctrl+C` to stop the preview server.
+`mdu tree` shows the detected page structure. `mdu lint` reports problems. If it reports an `MDU006` warning, see [fix](fix.md) for the automatic fix; it moves a Markdown page and updates affected links. Run `mdu lint` again afterward. `mdu serve` renders the site, opens it in your browser, and watches Markdown files and linked local assets for changes. Press `Ctrl+C` to stop the preview server. When you are ready to publish, run `mdu render` to create the static site in `./site`.
 
 Both `render` and `serve` generate breadcrumb navigation in the HTML from the Markdown file structure. The Markdown files are left unchanged.
 
@@ -42,9 +39,23 @@ Use `--no-browser` to start the server without opening a browser.
 | Command | Purpose | Details |
 | --- | --- | --- |
 | `mdu tree [path]` | Prints the detected Markdown page structure. Alias: `mdu print`. | [tree](tree.md) |
-| `mdu lint [path]` | Checks Markdown pages and local links. Alias: `mdu l`. | [lint](./lint/README.md) |
+| `mdu lint [path]` | Checks Markdown pages and local links. Alias: `mdu l`. | [lint](./lint/README.md) · [rules reference](./lint/Rules.md) |
 | `mdu fix [path]` | Applies automatic fixes for supported warnings. | [fix](fix.md) |
 | `mdu render [path] [outpath]` | Writes a static HTML site. Alias: `mdu r`. | [render](render.md) |
 | `mdu serve [path] [outpath]` | Serves a local preview and updates it when files change. | [serve](serve.md) |
 
-For `path`, MarkdownUtil uses the only `./docs` or `./Docs` directory in the current folder when one exists. If neither exists, or both exist, pass the path explicitly. `render` and `serve` use `./site` as the default `outpath`. Commands that search for Markdown files use `*.md` by default; use `--pattern` (or `-p`) to choose another file pattern.
+## Paths and file search
+
+Commands that read Markdown use the only `./docs` or `./Docs` directory in the current folder by default. If neither exists, or both exist, pass the source path explicitly. `render` and `serve` write to `./site` by default. All five commands search for `*.md` files unless you choose another pattern.
+
+## Common options
+
+These options are available on `tree`, `lint`, `fix`, `render`, and `serve`:
+
+| Option | Effect |
+| --- | --- |
+| `-p, --pattern <pattern>` | Search for files matching the pattern. Default: `*.md`. |
+| `--hidden` | Include hidden files and folders in the search. |
+| `-?, -h, --help` | Show help for the command. |
+
+Some commands have additional options; see their command pages. Run `mdu <command> --help` to see the current help output.

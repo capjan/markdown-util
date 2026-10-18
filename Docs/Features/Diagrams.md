@@ -7,14 +7,6 @@ MarkdownUtil draws diagrams from fenced code blocks while it renders your Markdo
 > [!IMPORTANT]
 > MarkdownUtil does not contain Mermaid or PlantUML, and it does not call them. It only imitates part of their syntax and draws the diagrams with its own implementation. The result therefore looks different from the originals, and not every feature is available.
 
-### Why MarkdownUtil draws diagrams itself
-
-Mermaid and PlantUML are fantastic projects, and I have enormous respect for the people who build and maintain them. Many documentation sites would not be what they are without them.
-
-MarkdownUtil follows one firm architectural rule: .NET and NuGet packages are its only dependencies. Mermaid renders in the browser with JavaScript, and PlantUML needs a Java runtime. Bundling either of them would break that rule, so I decided to implement the diagrams myself instead of depending on these projects.
-
-Drawing the diagrams myself also has big advantages for me. Because every shape, line, and label comes from MarkdownUtil's own code, it is extremely easy to give the diagrams exactly the look and feel of the rest of the page: the same fonts, colors, and light and dark themes, without fighting another tool's styling.
-
 ### Static rendering
 
 Every diagram is finished when `mdu render` or `mdu serve` writes the page:
@@ -23,7 +15,7 @@ Every diagram is finished when `mdu render` or `mdu serve` writes the page:
 - Diagrams appear immediately and also work offline.
 - The colors come from the page's stylesheet, so diagrams follow the light and dark theme automatically.
 
-### Your exit strategy
+### Portability
 
 Your diagrams stay in the standard notation, so you can leave MarkdownUtil at any time without rewriting them:
 

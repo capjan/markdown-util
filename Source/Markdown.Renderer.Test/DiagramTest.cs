@@ -57,6 +57,6 @@ public class DiagramTest
 
         Assert.Contains("<pre", html);
         Assert.Contains("classDiagram", html);
-        Assert.DoesNotContain("<svg", html);
+        Assert.DoesNotContain("<figure class=\"diagram\"", html);
     }
 }
