@@ -9,13 +9,15 @@ sidebar.order: 20
 Run commands from the project folder. Commands that read Markdown use `./docs` or `./Docs` by default. `render` and `serve` write the generated site to `./site`. For a project with a `Docs` directory:
 
 ```bash
+mdu tree
 mdu lint
 mdu fix
+mdu lint
 mdu render
 mdu serve
 ```
 
-`mdu lint` reads the Markdown files and reports any problems. `mdu fix` applies supported automatic fixes and updates affected links. `mdu render` writes the static site to `./site` and exits. `mdu serve` renders the site to `./site`, opens it in your browser, and watches Markdown files and linked local assets for changes. Press `Ctrl+C` to stop the preview server.
+`mdu tree` shows the detected page structure. `mdu lint` reports problems, and `mdu fix` applies supported automatic fixes and updates affected links. Run `mdu lint` again to check the result. `mdu render` writes the static site to `./site` and exits. `mdu serve` renders the site to `./site`, opens it in your browser, and watches Markdown files and linked local assets for changes. Press `Ctrl+C` to stop the preview server.
 
 Both `render` and `serve` generate breadcrumb navigation in the HTML from the Markdown file structure. The Markdown files are left unchanged.
 
@@ -39,10 +41,10 @@ Use `--no-browser` to start the server without opening a browser.
 
 | Command | Purpose | Details |
 | --- | --- | --- |
+| `mdu tree [path]` | Prints the detected Markdown page structure. Alias: `mdu print`. | [tree](tree.md) |
 | `mdu lint [path]` | Checks Markdown pages and local links. Alias: `mdu l`. | [lint](./lint/README.md) |
 | `mdu fix [path]` | Applies automatic fixes for supported warnings. | [fix](fix.md) |
 | `mdu render [path] [outpath]` | Writes a static HTML site. Alias: `mdu r`. | [render](render.md) |
 | `mdu serve [path] [outpath]` | Serves a local preview and updates it when files change. | [serve](serve.md) |
-| `mdu tree [path]` | Prints the detected Markdown page structure. Alias: `mdu print`. | [tree](tree.md) |
 
 For `path`, MarkdownUtil uses the only `./docs` or `./Docs` directory in the current folder when one exists. If neither exists, or both exist, pass the path explicitly. `render` and `serve` use `./site` as the default `outpath`. Commands that search for Markdown files use `*.md` by default; use `--pattern` (or `-p`) to choose another file pattern.

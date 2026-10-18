@@ -1,3 +1,7 @@
+---
+sidebar.order: 3
+---
+
 # fix
 
 `mdu fix` applies supported automatic fixes to Markdown files. It currently fixes the `MDU006` warning for a section that contains only a `README.md` page.

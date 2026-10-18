@@ -1,3 +1,7 @@
+---
+sidebar.order: 2
+---
+
 # lint
 
 `mdu lint` checks Markdown files under a root folder and reports rule violations with the source file and line number. It exits with code `1` when it finds errors and `0` when it does not.
