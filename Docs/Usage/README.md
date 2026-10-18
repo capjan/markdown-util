@@ -40,7 +40,7 @@ Use `--no-browser` to start the server without opening a browser.
 | Command | Purpose | Details |
 | --- | --- | --- |
 | `mdu lint [path]` | Checks Markdown pages and local links. Alias: `mdu l`. | [lint](./lint/README.md) |
-| `mdu fix [path]` | Applies automatic fixes for supported warnings. | [lint rules](./lint/README.md) |
+| `mdu fix [path]` | Applies automatic fixes for supported warnings. | [fix](fix.md) |
 | `mdu render [path] [outpath]` | Writes a static HTML site. Alias: `mdu r`. | [render](render.md) |
 | `mdu serve [path] [outpath]` | Serves a local preview and updates it when files change. | [serve](serve.md) |
 | `mdu tree [path]` | Prints the detected Markdown page structure. Alias: `mdu print`. | [tree](tree.md) |
