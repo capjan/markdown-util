@@ -14,7 +14,7 @@ mdu render [PATH [OUTPATH]]
 
 The alias `mdu r` runs the same command. See [Paths and file search](README.md#paths-and-file-search) for the default source and output paths, and [common options](README.md#common-options) for `--pattern` and `--hidden`. Run `mdu render --help` for the current command help.
 
-`--editPageRoot` adds an **Edit Page** link to each rendered page.
+`--editPageRoot` adds an **Edit Page** link to each rendered page and a GitHub repository button in the top bar. The button links to the repository root and shows its `owner/repository` name.
 
 ## Examples
 
