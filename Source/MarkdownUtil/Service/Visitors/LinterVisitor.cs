@@ -39,6 +39,8 @@ public class LinterVisitor: IVisitor<MarkdownFile>
         var visited = new HashSet<string>(PathComparer);
         Visit(graph);
         _allPages = pages;
+        ReportMissingSectionReadmes(pages);
+        ReportMkDocsPagesFiles(pages);
         return;
 
         void Visit(IEnumerable<MarkdownFile> currentPages)
@@ -52,6 +54,37 @@ public class LinterVisitor: IVisitor<MarkdownFile>
         }
     }
 
+    private void ReportMissingSectionReadmes(IReadOnlyCollection<MarkdownFile> pages)
+    {
+        var pagePaths = pages.Select(page => Path.GetFullPath(page.FileInfo.FullName)).ToHashSet(PathComparer);
+        var directories = pages.Select(page => page.FileInfo.Directory)
+            .Where(directory => directory is not null)
+            .Cast<DirectoryInfo>()
+            .DistinctBy(directory => Path.GetFullPath(directory.FullName), PathComparer);
+
+        foreach (var directory in directories)
+        {
+            var directMarkdown = Directory.EnumerateFiles(directory.FullName)
+                .Where(path => IsMarkdownFile(Path.GetExtension(path))).ToArray();
+            var childSections = Directory.GetDirectories(directory.FullName)
+                .Any(child => pagePaths.Any(path => SamePath(Path.GetDirectoryName(path), child)));
+            if (!childSections && directMarkdown.Length < 2) continue;
+            if (directMarkdown.Any(path => Path.GetFileName(path).Equals("README.md", StringComparison.OrdinalIgnoreCase) ||
+                                           Path.GetFileName(path).Equals("index.md", StringComparison.OrdinalIgnoreCase))) continue;
+
+            ErrorReceiver.Add(directory.FullName, 1,
+                $"{RuleCodes.MissingSectionReadme}: Section '{directory.Name}' needs a README.md page; run 'mdu fix'.");
+        }
+    }
+
+    private void ReportMkDocsPagesFiles(IReadOnlyCollection<MarkdownFile> pages)
+    {
+        var directories = pages.Select(page => page.FileInfo.Directory).Where(directory => directory is not null)
+            .Cast<DirectoryInfo>().DistinctBy(directory => Path.GetFullPath(directory.FullName), PathComparer);
+        foreach (var file in directories.SelectMany(directory => Directory.EnumerateFiles(directory.FullName, ".pages")))
+            ErrorReceiver.Add(file, 1, $"{RuleCodes.MkDocsPagesFile}: MkDocs .pages configuration must be migrated; run 'mdu fix'.");
+    }
+
     public TraversalAlgorithm Algorithm { get; }
     
     public bool Process(MarkdownFile entity, int graphDepth)
@@ -59,14 +92,21 @@ public class LinterVisitor: IVisitor<MarkdownFile>
         _pages.Add(entity);
         var markdownFilePath = entity.FileInfo.FullName;
         var markdownContent = File.ReadAllText(entity.FileInfo.FullName);
-        var title = entity.Title;
+        foreach (var issue in MarkdownCompatibility.FindIssues(markdownContent))
+            ErrorReceiver.Add(markdownFilePath, issue.LineNumber, $"{issue.Code}: {issue.Message}");
+
+        if (entity.FileInfo.Name.Equals("index.md", StringComparison.OrdinalIgnoreCase))
+            ErrorReceiver.Add(markdownFilePath, 1, $"{RuleCodes.MkDocsIndexPage}: MkDocs index.md pages should be renamed to README.md; run 'mdu fix'.");
+
+        var title = string.IsNullOrWhiteSpace(entity.HeadingTitle) ? entity.Title : entity.HeadingTitle;
         if (string.IsNullOrWhiteSpace(title))
         {
             ErrorReceiver.Add(markdownFilePath, 1, $"{RuleCodes.HeadingRequired}: Page must start with a level-one heading that defines its title.");
         }
 
         // Rule 2: The title of a markdown file must match the folder name 
-        if (graphDepth > 0 && entity.FileInfo.Name.Equals("README.md", StringComparison.OrdinalIgnoreCase))
+        if (graphDepth > 0 && entity.FileInfo.Name.Equals("README.md", StringComparison.OrdinalIgnoreCase) &&
+            string.IsNullOrWhiteSpace(entity.SidebarTitle))
         {
             var directoryName = entity.FileInfo.Directory?.Name ?? "";
             var rule2Input = new Rule2Input(title, directoryName);

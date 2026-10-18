@@ -55,7 +55,7 @@ lintCommand.SetAction(parseResult =>
         parseResult.GetValue(lintColor)));
 rootCommand.Subcommands.Add(lintCommand);
 
-var fixCommand = new Command("fix", "Applies automatic fixes for supported warnings.");
+var fixCommand = new Command("fix", "Migrates MkDocs-specific Markdown to supported Markdown and applies automatic fixes.");
 var (fixPattern, fixHidden) = AddVisitorOptions(fixCommand);
 var fixPath = AddRootPathArgument(fixCommand, "Root folder containing Markdown files. Defaults to ./docs or ./Docs.");
 fixCommand.SetAction(parseResult =>

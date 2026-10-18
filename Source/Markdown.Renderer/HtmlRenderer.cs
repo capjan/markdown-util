@@ -21,6 +21,7 @@ public class HtmlRenderer
     private readonly LinkReplacer _linkReplacer = new LinkReplacer();
     private string? _basePath;
     private IReadOnlyList<string> _iconSearchAssets = Array.Empty<string>();
+    private SiteConfiguration _siteConfiguration = new();
 
     public HtmlRenderer()
     {
@@ -40,9 +41,10 @@ public class HtmlRenderer
     /// </summary>
     public IReadOnlyList<string> IconSearchAssets => _iconSearchAssets;
 
-    public void PrepareBasePath(string basePath)
+    public void PrepareBasePath(string basePath, SiteConfiguration? siteConfiguration = null)
     {
         _basePath = basePath;
+        _siteConfiguration = siteConfiguration ?? new SiteConfiguration();
         _iconSearchAssets = Array.Empty<string>();
         var cssFolder = GetEnsuredCssFolderPath(basePath);
         var cssFilePath = Path.Combine(cssFolder, "main.css");
@@ -74,7 +76,8 @@ public class HtmlRenderer
         string editPageLink,
         IReadOnlyList<NavigationItem>? navigationItems = null,
         IReadOnlyList<BreadcrumbItem>? breadcrumbs = null,
-        IReadOnlyCollection<string>? siteMediaProviders = null)
+        IReadOnlyCollection<string>? siteMediaProviders = null,
+        string pageIcon = "")
     {
         var prefix = string.Concat(Enumerable.Repeat("../", nestingDeep));
         var cssFileLink = prefix + "css/main.css";
@@ -89,6 +92,20 @@ public class HtmlRenderer
         if (hasIconSearch) EnsureIconSearchAssets();
         var renderedMarkdown = document.ToHtml(_pipeline);
         renderedMarkdown = MediaLinkEmbedder.ReplaceStandaloneLinks(renderedMarkdown, out var mediaProviders);
+        if (!string.IsNullOrWhiteSpace(pageIcon))
+        {
+            var iconName = pageIcon.Trim().Trim(':').Replace('/', '-');
+            var iconHtml = Markdig.Markdown.Parse($":{iconName}:", _pipeline).ToHtml(_pipeline)
+                .Replace("<p>", string.Empty, StringComparison.Ordinal)
+                .Replace("</p>\n", string.Empty, StringComparison.Ordinal)
+                .Trim();
+            renderedMarkdown = HeadingRegex.Replace(renderedMarkdown, match =>
+            {
+                if (match.Groups["level"].Value != "1") return match.Value;
+                var openEnd = match.Value.IndexOf('>');
+                return match.Value.Insert(openEnd + 1, iconHtml + " ");
+            }, 1);
+        }
         var providersForSettings = siteMediaProviders is { Count: > 0 } ? siteMediaProviders : mediaProviders;
         var tocHeadings = GetTableOfContentsHeadings(renderedMarkdown);
         renderedMarkdown = InsertHeadingPermalinks(renderedMarkdown);
@@ -108,10 +125,15 @@ public class HtmlRenderer
             ["TITLE"] = HtmlEncoder.Default.Encode(model.Title),
             ["DESCRIPTION"] = HtmlEncoder.Default.Encode(model.Description),
             ["CSS_LINK"] = HtmlEncoder.Default.Encode(model.CssLink),
+            ["SITE_NAME"] = HtmlEncoder.Default.Encode(_siteConfiguration.SiteName),
+            ["SITE_BRAND"] = RenderSiteBrand(prefix, _siteConfiguration),
+            ["FAVICON_LINK"] = RenderFavicon(prefix, _siteConfiguration),
+            ["SITE_THEME_STYLE"] = RenderThemeStyles(_siteConfiguration),
             ["SEARCH_SCRIPT_LINK"] = HtmlEncoder.Default.Encode(searchScriptLink),
             ["SEARCH_INDEX_LINK"] = HtmlEncoder.Default.Encode(searchIndexLink),
             ["TOC_LAYOUT_CLASS"] = " has-on-this-page",
             ["NAVIGATION_ITEMS"] = RenderNavigationItems(model.NavigationItems),
+            ["TOP_NAVIGATION_ITEMS"] = RenderTopNavigationItems(model.NavigationItems),
             ["MEDIA_SETTINGS_BUTTON"] = providersForSettings.Count > 0 ? MediaLinkEmbedder.SettingsButtonHtml : string.Empty,
             ["MEDIA_SETTINGS_DIALOG"] = MediaLinkEmbedder.RenderSettingsDialog(providersForSettings),
             ["MARKDOWN"] = model.RenderedMarkdown,
@@ -133,6 +155,61 @@ public class HtmlRenderer
     {
         if (_basePath is null || _iconSearchAssets.Count > 0) return;
         _iconSearchAssets = IconSearch.WriteAssetsTo(_basePath);
+    }
+
+    private static string RenderSiteBrand(string prefix, SiteConfiguration configuration)
+    {
+        var name = HtmlEncoder.Default.Encode(configuration.SiteName);
+        var light = ResolveAssetUrl(prefix, configuration.LogoLight);
+        var dark = ResolveAssetUrl(prefix, configuration.LogoDark);
+        var logo = light.Length == 0 ? string.Empty :
+            $"<img class=\"site-brand-logo\" src=\"{HtmlEncoder.Default.Encode(light)}\" data-light-src=\"{HtmlEncoder.Default.Encode(light)}\" data-dark-src=\"{HtmlEncoder.Default.Encode(dark)}\" alt=\"\">";
+        return $"<a class=\"site-brand\" href=\"{HtmlEncoder.Default.Encode(prefix + "index.html")}\">{logo}<span>{name}</span></a>";
+    }
+
+    private static string RenderFavicon(string prefix, SiteConfiguration configuration)
+    {
+        var light = ResolveAssetUrl(prefix, configuration.FaviconLight);
+        if (light.Length == 0) return string.Empty;
+        var dark = ResolveAssetUrl(prefix, configuration.FaviconDark);
+        return $"<link rel=\"icon\" href=\"{HtmlEncoder.Default.Encode(light)}\" data-light-href=\"{HtmlEncoder.Default.Encode(light)}\" data-dark-href=\"{HtmlEncoder.Default.Encode(dark)}\">";
+    }
+
+    private static string ResolveAssetUrl(string prefix, string? asset)
+    {
+        if (string.IsNullOrWhiteSpace(asset)) return string.Empty;
+        if (Uri.TryCreate(asset, UriKind.Absolute, out var uri) && uri.Scheme is "http" or "https") return asset;
+        return prefix + string.Join('/', asset.Replace('\\', '/').TrimStart('/').Split('/').Select(Uri.EscapeDataString));
+    }
+
+    private static string RenderThemeStyles(SiteConfiguration configuration)
+    {
+        var light = GetPaletteVariables(configuration.Light);
+        var dark = GetPaletteVariables(configuration.Dark);
+        if (light.Length == 0 && dark.Length == 0) return string.Empty;
+        var css = new StringBuilder("<style>\n");
+        if (light.Length > 0) css.Append(":root,:root[data-theme=\"light\"]{").Append(light).Append("}\n");
+        if (dark.Length > 0)
+        {
+            css.Append(":root[data-theme=\"dark\"]{").Append(dark).Append("}\n")
+                .Append("@media(prefers-color-scheme:dark){:root[data-theme=\"auto\"]{").Append(dark).Append("}}\n");
+        }
+        return css.Append("</style>").ToString();
+    }
+
+    private static string GetPaletteVariables(SitePalette? palette)
+    {
+        if (palette is null) return string.Empty;
+        var values = new List<string>();
+        Add("--page-background", palette.Background);
+        Add("--text-primary", palette.Text);
+        Add("--link", palette.Primary);
+        return string.Join(';', values);
+
+        void Add(string name, string? value)
+        {
+            if (value is not null && Regex.IsMatch(value, @"^[#a-zA-Z0-9(),.% ]+$")) values.Add($"{name}:{value}");
+        }
     }
 
     private static string RenderGitHubRepositoryLink(string editPageLink)
@@ -203,6 +280,25 @@ public class HtmlRenderer
                 output.Append(itemIndent).AppendLine("</li>");
             }
         }
+    }
+
+    private static string RenderTopNavigationItems(IReadOnlyList<NavigationItem> navigationItems)
+    {
+        var output = new StringBuilder();
+        for (var index = 0; index < navigationItems.Count; index++)
+        {
+            var item = navigationItems[index];
+            if (item.Depth != 1) continue;
+            var isCurrentSection = item.IsCurrent;
+            for (var child = index + 1; child < navigationItems.Count && navigationItems[child].Depth > 1; child++)
+                isCurrentSection |= navigationItems[child].IsCurrent;
+
+            var title = HtmlEncoder.Default.Encode(item.Title);
+            var url = HtmlEncoder.Default.Encode(item.Url);
+            output.AppendLine($"            <a class=\"top-nav-link{(isCurrentSection ? " is-current" : string.Empty)}\" href=\"{url}\" aria-current=\"{(item.IsCurrent ? "page" : isCurrentSection ? "location" : "false")}\">{title}</a>");
+        }
+
+        return output.ToString();
     }
 
     private static IReadOnlyList<TocHeading> GetTableOfContentsHeadings(string renderedMarkdown)

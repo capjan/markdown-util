@@ -6,6 +6,7 @@
     <meta charset="utf-8">
     <meta name="description" content="%%DESCRIPTION%%">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    %%FAVICON_LINK%%
     <script>
         try {
             const savedTheme = localStorage.getItem("mdu-theme");
@@ -15,15 +16,17 @@
         } catch { }
     </script>
     <link rel="stylesheet" href="%%CSS_LINK%%">
+    %%SITE_THEME_STYLE%%
 </head>
 <body id="top" data-search-index="%%SEARCH_INDEX_LINK%%">
 <header class="site-header" id="site-header">
+    %%SITE_BRAND%%
     <button class="navigation-toggle" id="navigation-toggle" type="button" aria-expanded="true" aria-controls="site-navigation">
         <svg viewBox="0 0 20 20" aria-hidden="true" focusable="false">
             <rect x="2.5" y="3.5" width="15" height="13" rx="2"></rect>
             <path d="M8 4v12M5 7h1M5 10h1M5 13h1"></path>
         </svg>
-        <span>Documentation</span>
+        <span>Menu</span>
     </button>
     <button class="search-button" id="search-button" type="button" aria-label="Search" aria-haspopup="dialog" aria-controls="search-dialog">
         <svg viewBox="0 0 20 20" aria-hidden="true" focusable="false">
@@ -50,6 +53,9 @@
     </button>
 %%GITHUB_REPOSITORY_LINK%%
 </header>
+<nav class="top-navigation" aria-label="Main sections">
+%%TOP_NAVIGATION_ITEMS%%
+</nav>
 <div class="site-layout" id="site-layout">
     <aside class="site-sidebar" id="site-navigation" aria-label="Sitemap">
         <nav aria-label="Documentation pages">
@@ -96,7 +102,17 @@
         themeToggle.setAttribute("aria-label", `Darstellung: ${themeNames[currentTheme]}. Klicken, um auf ${themeNames[nextTheme]} zu wechseln.`);
     };
 
+    const brandLogo = document.querySelector(".site-brand-logo");
+    const favicon = document.querySelector('link[rel="icon"]');
+    const systemDark = window.matchMedia("(prefers-color-scheme: dark)");
+    const updateBranding = () => {
+        const dark = root.dataset.theme === "dark" || root.dataset.theme === "auto" && systemDark.matches;
+        if (brandLogo) brandLogo.src = dark ? brandLogo.dataset.darkSrc : brandLogo.dataset.lightSrc;
+        if (favicon) favicon.href = dark ? favicon.dataset.darkHref : favicon.dataset.lightHref;
+    };
+
     updateThemeLabel();
+    updateBranding();
     themeToggle.addEventListener("click", () => {
         const currentTheme = root.dataset.theme;
         const nextTheme = themes[(themes.indexOf(currentTheme) + 1) % themes.length];
@@ -105,7 +121,9 @@
             localStorage.setItem("mdu-theme", nextTheme);
         } catch { }
         updateThemeLabel();
+        updateBranding();
     });
+    systemDark.addEventListener("change", updateBranding);
 
     const layout = document.getElementById("site-layout");
     const toggle = document.getElementById("navigation-toggle");
@@ -352,5 +370,56 @@
 })();
 </script>
 <script defer src="%%SEARCH_SCRIPT_LINK%%"></script>
-%%PAGE_SCRIPTS%%</body>
+%%PAGE_SCRIPTS%%
+<script>
+(() => {
+    const content = document.querySelector(".markdown-content");
+    if (!content) return;
+
+    let lightbox;
+    const openLightbox = (image) => {
+        if (!lightbox) {
+            lightbox = document.createElement("dialog");
+            lightbox.className = "image-lightbox";
+            lightbox.innerHTML = '<button type="button" aria-label="Close image">×</button><img alt="">';
+            lightbox.addEventListener("click", (event) => {
+                if (event.target === lightbox || event.target.closest("button")) lightbox.close();
+            });
+            document.body.append(lightbox);
+        }
+        const preview = lightbox.querySelector("img");
+        preview.src = image.currentSrc || image.src;
+        preview.alt = image.alt;
+        lightbox.showModal();
+    };
+    content.addEventListener("click", (event) => {
+        const image = event.target.closest("img");
+        if (!image) return;
+        const link = image.closest("a");
+        if (link && link.href !== image.src && link.href !== image.currentSrc) return;
+        event.preventDefault();
+        openLightbox(image);
+    });
+
+    content.querySelectorAll("a.footnote-ref").forEach((link) => {
+        const target = document.getElementById(decodeURIComponent(link.hash.slice(1)));
+        const reference = link.closest("sup") || link.parentElement;
+        if (!target || !reference) return;
+        const preview = document.createElement("span");
+        preview.className = "footnote-preview";
+        const contentCopy = target.cloneNode(true);
+        contentCopy.querySelectorAll(".footnote-backref").forEach((backlink) => backlink.remove());
+        preview.innerHTML = contentCopy.innerHTML;
+        preview.setAttribute("role", "tooltip");
+        reference.append(preview);
+        const show = () => preview.classList.add("is-visible");
+        const hide = () => preview.classList.remove("is-visible");
+        link.addEventListener("pointerenter", show);
+        link.addEventListener("pointerleave", hide);
+        link.addEventListener("focus", show);
+        link.addEventListener("blur", hide);
+    });
+})();
+</script>
+</body>
 </html>

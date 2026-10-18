@@ -43,6 +43,8 @@
     --diagram-note-border: #e3c27a;
     --diagram-highlight-background: rgb(0 0 0 / 3.5%);
     --diagram-container-background: rgb(0 0 0 / 2.5%);
+    --diagram-subgraph-border: #a3a3aa;
+    --diagram-subgraph-title: #6e6e73;
 }
 
 :root[data-theme="light"] {
@@ -94,6 +96,8 @@
     --diagram-note-border: #7a5a14;
     --diagram-highlight-background: rgb(255 255 255 / 6%);
     --diagram-container-background: rgb(255 255 255 / 4%);
+    --diagram-subgraph-border: #69696f;
+    --diagram-subgraph-title: #a1a1a6;
 }
 
 @media (prefers-color-scheme: dark) {
@@ -142,6 +146,8 @@
         --diagram-note-border: #7a5a14;
         --diagram-highlight-background: rgb(255 255 255 / 6%);
         --diagram-container-background: rgb(255 255 255 / 4%);
+        --diagram-subgraph-border: #69696f;
+        --diagram-subgraph-title: #a1a1a6;
     }
 }
 
@@ -169,6 +175,24 @@ body {
     padding: 0 1.25rem;
     border-bottom: 1px solid var(--border);
     background: var(--surface-header);
+}
+
+.site-brand {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.55rem;
+    margin-right: 1.25rem;
+    color: var(--text-primary);
+    font-size: 1rem;
+    font-weight: 650;
+    text-decoration: none;
+    white-space: nowrap;
+}
+
+.site-brand-logo {
+    width: 30px;
+    height: 30px;
+    object-fit: contain;
 }
 
 .navigation-toggle {
@@ -345,6 +369,39 @@ body {
     display: grid;
     grid-template-columns: 260px minmax(0, 1fr);
     min-height: calc(100vh - 56px);
+}
+
+.top-navigation {
+    position: sticky;
+    top: 56px;
+    z-index: 18;
+    display: flex;
+    gap: 0.25rem;
+    overflow-x: auto;
+    padding: 0 1rem;
+    border-bottom: 1px solid var(--border);
+    background: var(--surface-header);
+    scrollbar-width: thin;
+}
+
+.top-nav-link {
+    display: inline-flex;
+    align-items: center;
+    min-height: 42px;
+    padding: 0.45rem 0.75rem;
+    border-bottom: 2px solid transparent;
+    color: var(--text-secondary);
+    text-decoration: none;
+    white-space: nowrap;
+}
+
+.top-nav-link:hover,
+.top-nav-link.is-current {
+    color: var(--text-primary);
+}
+
+.top-nav-link.is-current {
+    border-bottom-color: var(--link);
 }
 
 .site-sidebar {
@@ -1469,6 +1526,18 @@ pre code {
     fill: var(--text-primary);
 }
 
+.diagram-subgraph {
+    fill: var(--diagram-container-background);
+    stroke: var(--diagram-subgraph-border);
+    stroke-dasharray: 5 4;
+}
+
+.diagram-subgraph-title {
+    fill: var(--diagram-subgraph-title);
+    font-size: 13px;
+    font-weight: 600;
+}
+
 .diagram-edge {
     fill: none;
     stroke: var(--diagram-edge);
@@ -1667,6 +1736,64 @@ th, td {
     text-align: left;
 }
 
+.footnote-preview {
+    position: absolute;
+    z-index: 30;
+    bottom: 1.4em;
+    left: 0;
+    display: none;
+    width: min(340px, 80vw);
+    padding: 0.75rem 0.9rem;
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    background: var(--surface-header);
+    color: var(--text-primary);
+    box-shadow: 0 8px 24px rgb(0 0 0 / 20%);
+    font-size: 0.875rem;
+    font-weight: 400;
+    line-height: 1.45;
+    white-space: normal;
+}
+
+.footnote-preview.is-visible {
+    display: block;
+}
+
+.image-lightbox {
+    position: fixed;
+    inset: 0;
+    display: grid;
+    place-items: center;
+    max-width: min(96vw, 1400px);
+    max-height: 96vh;
+    padding: 3rem 1rem 1rem;
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    background: var(--surface-header);
+}
+
+.image-lightbox::backdrop {
+    background: rgb(0 0 0 / 78%);
+}
+
+.image-lightbox img {
+    max-width: 92vw;
+    max-height: 84vh;
+    object-fit: contain;
+}
+
+.image-lightbox button {
+    position: absolute;
+    top: 0.5rem;
+    right: 0.75rem;
+    border: 0;
+    background: transparent;
+    color: var(--text-primary);
+    font: inherit;
+    font-size: 2rem;
+    cursor: pointer;
+}
+
 @media (max-width: 760px) {
     .site-header {
         padding: 0 1rem;
@@ -1674,6 +1801,11 @@ th, td {
 
     .site-layout {
         display: block;
+    }
+
+    .top-navigation {
+        top: 56px;
+        padding: 0 0.5rem;
     }
 
     .site-sidebar {
@@ -1724,6 +1856,17 @@ th, td {
     .search-button {
         min-width: 0;
         margin-left: auto;
+    }
+
+    .site-brand {
+        gap: 0.35rem;
+        margin-right: 0.5rem;
+        font-size: 0.875rem;
+    }
+
+    .site-brand-logo {
+        width: 26px;
+        height: 26px;
     }
 
     .repository-link span {

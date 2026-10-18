@@ -14,6 +14,9 @@ public sealed class FlowchartParser
         RegexOptions.Compiled | RegexOptions.CultureInvariant);
     private static readonly Regex KeywordRegex = new(@"\G(?<keyword>[A-Za-z]+)(?=[ \t:{]|$)", RegexOptions.Compiled);
     private static readonly Regex IdRegex = new(@"\G[\p{L}\p{N}_]+", RegexOptions.Compiled);
+    private static readonly Regex SubgraphRegex = new(
+        "^subgraph[ \\t]+(?<id>[^ \\t\\[]+)(?:\\[(?:\\\"(?<quoted>.*?)\\\"|(?<plain>.*?))\\])?[ \\t]*$",
+        RegexOptions.Compiled | RegexOptions.CultureInvariant);
     private static readonly Regex ActorRegex = new(@"^(?<id>[\p{L}\p{N}_]+)(?:[ \t]+as[ \t]+(?<label>.+))?$", RegexOptions.Compiled);
     private static readonly Regex ClickRegex = new(
         "^(?<id>[\\p{L}\\p{N}_]+)[ \\t]+(?:href[ \\t]+)?(?:\"(?<doubleUrl>[^\"]*)\"|'(?<singleUrl>[^']*)'|(?<bareUrl>[^ \\t]+))(?:[ \\t]+\"[^\"]*\")?[ \\t]*;?$",
@@ -38,7 +41,6 @@ public sealed class FlowchartParser
 
     private static readonly string[] UnsupportedShapeOpeners = { "(((", "[[", "[(", "[/", "[\\", "{{", ">", "@{" };
     private static readonly string[] IgnoredKeywords = { "classDef", "class", "style", "linkStyle", "accDescr" };
-    private static readonly string[] UnsupportedKeywords = { "subgraph", "end", "direction" };
 
     private readonly string[] _lines;
     private readonly bool _context;
@@ -46,6 +48,8 @@ public sealed class FlowchartParser
     private readonly List<FlowchartNode> _nodeOrder = new();
     private readonly List<(string Id, string Href)> _nodeLinks = new();
     private readonly List<FlowchartEdge> _edges = new();
+    private readonly List<FlowchartGroup> _groups = new();
+    private readonly Stack<FlowchartGroup> _groupStack = new();
     private string? _title;
     private string _text = string.Empty;
     private int _pos;
@@ -98,7 +102,7 @@ public sealed class FlowchartParser
         if (direction == null) throw new DiagramSyntaxException("Missing 'flowchart' header.", 1);
         foreach (var (id, href) in _nodeLinks)
             if (_nodes.TryGetValue(id, out var node)) node.Href = href;
-        return new FlowchartDiagram(direction.Value, _nodeOrder, _edges, _title);
+        return new FlowchartDiagram(direction.Value, _nodeOrder, _edges, _title, _groups);
     }
 
     private static FlowDirection ToDirection(string value) => value switch
@@ -111,6 +115,26 @@ public sealed class FlowchartParser
 
     private void ParseLine(string line)
     {
+        if (line == "end")
+        {
+            if (_groupStack.Count == 0) throw Error("Unexpected 'end' without a matching subgraph.");
+            _groupStack.Pop();
+            return;
+        }
+        var subgraph = SubgraphRegex.Match(line);
+        if (subgraph.Success)
+        {
+            if (_context) throw Error("Subgraphs are only supported in Mermaid flowcharts.");
+            var label = subgraph.Groups["quoted"].Success ? subgraph.Groups["quoted"].Value
+                : subgraph.Groups["plain"].Success ? subgraph.Groups["plain"].Value
+                : subgraph.Groups["id"].Value;
+            var group = new FlowchartGroup(subgraph.Groups["id"].Value, label);
+            _groups.Add(group);
+            _groupStack.Push(group);
+            return;
+        }
+        if (line.StartsWith("direction ", StringComparison.Ordinal)) return;
+
         _text = line;
         _pos = 0;
         while (true)
@@ -137,7 +161,7 @@ public sealed class FlowchartParser
         if (!match.Success) return false;
 
         var keyword = match.Groups["keyword"].Value;
-        if (UnsupportedKeywords.Contains(keyword)) throw Error($"'{keyword}' is not supported yet.");
+        if (keyword == "direction") return true;
         if (keyword == "click")
         {
             var click = ClickRegex.Match(_text[(_pos + match.Length)..].Trim());
@@ -238,6 +262,8 @@ public sealed class FlowchartParser
         node = new FlowchartNode(id);
         _nodes.Add(id, node);
         _nodeOrder.Add(node);
+        foreach (var group in _groupStack)
+            if (!group.NodeIds.Contains(id, StringComparer.Ordinal)) group.NodeIds.Add(id);
         return node;
     }
 

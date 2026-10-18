@@ -1,3 +1,4 @@
+using System.Globalization;
 using System.Text.RegularExpressions;
 using System.Xml.Linq;
 
@@ -77,11 +78,77 @@ public class MermaidRendererTest
         Assert.Contains("aria-label=\"Order flow\"", svg);
     }
 
-    [Theory]
-    [InlineData("classDiagram\nAnimal <|-- Duck")]
-    [InlineData("flowchart TD\nsubgraph One\nA\nend")]
-    public void RejectsUnsupportedDiagrams(string source)
+    [Fact]
+    public void RendersClassDiagramRelationships()
     {
+        var svg = MermaidRenderer.RenderSvg("classDiagram\nAnimal <|-- Duck\nCar *-- Engine\nPerson ..> Address");
+
+        Assert.Contains("Animal", svg);
+        Assert.Contains("Duck", svg);
+        Assert.Contains("diagram-edge-dotted", svg);
+    }
+
+    [Fact]
+    public void RendersClassDiagramSyntaxUsedByTheWiki()
+    {
+        const string source = """
+            classDiagram
+            classA <|-- classB
+            classC *-- classD
+            classE o-- classF
+            classG <-- classH
+            classI -- classJ
+            classK <.. classL
+            classM <|.. classN
+            classO .. classP
+            """;
+
+        var svg = MermaidRenderer.RenderSvg(source);
+
+        Assert.Contains("classP", svg);
+        Assert.Contains("diagram-edge-dotted", svg);
+    }
+
+    [Fact]
+    public void RendersConfiguredSubgraphsAndNamespacedNodes()
+    {
+        var source = """
+            ---
+            config:
+              layout: elk
+            ---
+            flowchart TB
+            subgraph environment["environment"]
+              target:App("App")
+              product:App[["App package"]]
+            end
+            product:App --> target:App
+            """;
+
+        var svg = MermaidRenderer.RenderSvg(source);
+
+        Assert.Contains("diagram-subgraph", svg);
+        Assert.Contains("environment", svg);
+        Assert.Contains("App package", svg);
+
+        var root = XElement.Parse(svg);
+        var viewBox = root.Attribute("viewBox")!.Value.Split(' ')
+            .Select(value => double.Parse(value, CultureInfo.InvariantCulture)).ToArray();
+        var group = root.Descendants().Single(element => element.Attribute("class")?.Value == "diagram-subgraph");
+        var left = double.Parse(group.Attribute("x")!.Value, CultureInfo.InvariantCulture);
+        var top = double.Parse(group.Attribute("y")!.Value, CultureInfo.InvariantCulture);
+        var right = left + double.Parse(group.Attribute("width")!.Value, CultureInfo.InvariantCulture);
+        var bottom = top + double.Parse(group.Attribute("height")!.Value, CultureInfo.InvariantCulture);
+        Assert.True(left >= viewBox[0]);
+        Assert.True(top >= viewBox[1]);
+        Assert.True(right <= viewBox[0] + viewBox[2]);
+        Assert.True(bottom <= viewBox[1] + viewBox[3]);
+    }
+
+    [Fact]
+    public void RejectsMermaidTypesNotImplementedByMdu()
+    {
+        const string source = "pie\n\"Dogs\" : 1";
         Assert.Throws<DiagramSyntaxException>(() => MermaidRenderer.RenderSvg(source));
         Assert.False(MermaidRenderer.TryRenderSvg(source, out var svg));
         Assert.Null(svg);

@@ -6,7 +6,7 @@ namespace MarkdownUtil.Service.Visitors;
 public class LocalAssetsCopy : BaseVisitor
 {
     private static readonly Regex AssetLinkPattern = new(
-        @"(?<=\(\s*)(\.{0,2}/)?(\.{2}/){0,}([\w\.-]+/){0,}[\w\.-]+\.(bmp|png|gif|jpg|jpeg|svg|pdf|txt)(?=\s*\))",
+        @"(?<=\(\s*)(\.{0,2}/)?(\.{2}/){0,}([\w\.-]+/){0,}[\w\.-]+\.(bmp|png|gif|jpg|jpeg|webp|svg|pdf|txt)(?=\s*\))",
         RegexOptions.Compiled);
 
     public LocalAssetsCopy(string rootPath, string outPath) : base(rootPath, outPath)

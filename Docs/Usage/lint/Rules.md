@@ -17,6 +17,14 @@ sidebar:
 | `MDU004` | `LocalLinkExists` | Error | A local link or image target exists. | — |
 | `MDU005` | `DuplicatePageRepresentation` | Error | A page is not represented by both a Markdown file and a same-named directory `README.md`. | [Rule 5](Rule5.md) |
 | `MDU006` | `ReadmeWithoutSubpages` | Warning | A section `README.md` is its directory's only Markdown page. | [Rule 5](Rule5.md) |
+| `MDU007` | `MaterialAdmonition` | Error | Material admonitions must be converted to GitHub Alerts. | [fix](../fix.md#migrating-mkdocs-material-markdown) |
+| `MDU008` | `MaterialTabs` | Error | Material tabs must be converted to headings. | [fix](../fix.md#migrating-mkdocs-material-markdown) |
+| `MDU009` | `MaterialCards` | Error | Material card grids must be converted to Markdown link lists. | [fix](../fix.md#migrating-mkdocs-material-markdown) |
+| `MDU010` | `UnsupportedMermaid` | Error | A Mermaid diagram uses syntax MarkdownUtil cannot render. | — |
+| `MDU011` | `CodeAnnotations` | Error | Material code-annotation markers are unsupported. | [fix](../fix.md#migrating-mkdocs-material-markdown) |
+| `MDU012` | `MkDocsIndexPage` | Error | Rename the MkDocs `index.md` page to `README.md`. | [fix](../fix.md#migrating-mkdocs-material-markdown) |
+| `MDU013` | `MissingSectionReadme` | Error | A section with child pages needs a `README.md` page. | [fix](../fix.md#migrating-mkdocs-material-markdown) |
+| `MDU014` | `MkDocsPagesFile` | Error | Migrate MkDocs `.pages` settings to Markdown front matter. | [fix](../fix.md#migrating-mkdocs-material-markdown) |
 
 ## MDU001: HeadingRequired
 
@@ -24,7 +32,7 @@ Every Markdown page needs a level-one heading (`# Page title`) after any YAML fr
 
 ## MDU002: DirectoryTitleMatch
 
-For a section index named `README.md`, the directory name must match the heading title. The comparison ignores case, punctuation, spaces, hyphens, and underscores. If the title contains a colon, only the text before the first colon is compared.
+For a section index named `README.md`, the directory name must match the heading title. The comparison ignores case, punctuation, spaces, hyphens, and underscores. If the title contains a colon, only the text before the first colon is compared. Set `sidebar.title` when a section intentionally uses a different navigation label; `mdu fix` adds this override when it migrates a mismatched MkDocs section title.
 
 For example, `# Keyboard Keys` matches the directory `Keyboard-Keys`. See [Rule 2](Rule2.md) for examples and guidance.
 
@@ -45,6 +53,10 @@ A page cannot have both a Markdown file and a same-named directory containing `R
 ## MDU006: ReadmeWithoutSubpages
 
 This warning appears when a section directory's `README.md` is its only Markdown page and there is no same-named Markdown file beside the directory. The section can be represented by a single file instead. Run `mdu fix` to move the `README.md` beside the directory and update affected links; see [fixing MDU006](../fix.md#fixing-mdu006).
+
+## MkDocs Material compatibility
+
+Rules `MDU007`–`MDU014` identify MkDocs-specific syntax and structure that needs migration. Run `mdu fix` to convert the supported constructs. An `MDU010` error means a Mermaid diagram uses syntax not currently implemented by MarkdownUtil; update the renderer before migrating that source.
 
 ## Informational output
 

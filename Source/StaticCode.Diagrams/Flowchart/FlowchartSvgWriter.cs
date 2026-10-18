@@ -55,13 +55,35 @@ internal static class FlowchartSvgWriter
                 _ => LayoutDirection.TopToBottom
             });
 
-        var width = layout.Width + 2 * CanvasPadding;
-        var height = layout.Height + 2 * CanvasPadding;
+        var groupBounds = new List<(FlowchartGroup Group, double Left, double Top, double Right, double Bottom)>();
+        foreach (var group in diagram.Groups)
+        {
+            var members = group.NodeIds.Where(nodeIndex.ContainsKey).Select(id => nodeIndex[id]).ToArray();
+            if (members.Length == 0) continue;
+            groupBounds.Add((group,
+                members.Min(index => layout.NodeCenters[index].X - boxes[index].Width / 2) - 18,
+                members.Min(index => layout.NodeCenters[index].Y - boxes[index].Height / 2) - 34,
+                members.Max(index => layout.NodeCenters[index].X + boxes[index].Width / 2) + 18,
+                members.Max(index => layout.NodeCenters[index].Y + boxes[index].Height / 2) + 18));
+        }
+
+        var minX = Math.Min(-CanvasPadding, groupBounds.Count == 0 ? -CanvasPadding : groupBounds.Min(group => group.Left));
+        var minY = Math.Min(-CanvasPadding, groupBounds.Count == 0 ? -CanvasPadding : groupBounds.Min(group => group.Top));
+        var maxX = Math.Max(layout.Width + CanvasPadding, groupBounds.Count == 0 ? layout.Width + CanvasPadding : groupBounds.Max(group => group.Right));
+        var maxY = Math.Max(layout.Height + CanvasPadding, groupBounds.Count == 0 ? layout.Height + CanvasPadding : groupBounds.Max(group => group.Bottom));
+        var width = maxX - minX;
+        var height = maxY - minY;
         var svg = new StringBuilder();
         svg.Append("<svg xmlns=\"http://www.w3.org/2000/svg\" class=\"diagram-flowchart\"")
-            .Append($" viewBox=\"{F(-CanvasPadding)} {F(-CanvasPadding)} {F(width)} {F(height)}\"")
+            .Append($" viewBox=\"{F(minX)} {F(minY)} {F(width)} {F(height)}\"")
             .Append($" width=\"{F(width)}\" height=\"{F(height)}\"")
             .Append($" font-size=\"{F(TextMetrics.FontSize)}\" role=\"img\" aria-label=\"{Escape(diagram.Title ?? "Flowchart")}\">\n");
+
+        foreach (var bounds in groupBounds)
+        {
+            svg.Append($"<rect class=\"diagram-subgraph\" x=\"{F(bounds.Left)}\" y=\"{F(bounds.Top)}\" width=\"{F(bounds.Right - bounds.Left)}\" height=\"{F(bounds.Bottom - bounds.Top)}\" rx=\"12\"/>\n")
+                .Append($"<text class=\"diagram-subgraph-title\" x=\"{F(bounds.Left + 12)}\" y=\"{F(bounds.Top + 21)}\">{Escape(bounds.Group.Label)}</text>\n");
+        }
 
         var labelCenters = new Point?[diagram.Edges.Count];
         svg.Append("<g class=\"diagram-edges\">\n");

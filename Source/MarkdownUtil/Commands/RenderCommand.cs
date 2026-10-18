@@ -50,7 +50,8 @@ public class RenderCommand
             EditPageRoot = settings.EditPageRoot
         };
         
-        _renderer.PrepareBasePath(outPath);
+        var siteConfiguration = SiteConfigurationReader.Read(rootPath);
+        _renderer.PrepareBasePath(outPath, siteConfiguration);
         SearchClientAsset.WriteTo(outPath);
         _searchIndexBuilder.Clear();
         var graph = _graphBuilder.CreateGraph(resolvedSettings);
@@ -58,6 +59,7 @@ public class RenderCommand
         
         Console.WriteLine("Preparing Assets");
         CopyAssets(rootPath, outPath, graph);
+        SiteConfigurationReader.CopyAssets(rootPath, outPath, siteConfiguration);
         
         Console.WriteLine($"Rendering {nodeCount} Files");
         RenderNodesToHtml(rootPath, outPath, graph, settings.EditPageRoot);

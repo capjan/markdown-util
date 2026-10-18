@@ -1,3 +1,4 @@
+using System.Text.Encodings.Web;
 using Markdown.Renderer;
 using Markdown.Renderer.Res.Model;
 using Markdown.Search;
@@ -71,15 +72,17 @@ public class MarkdigVisitor : BaseVisitor
                 _htmlFoundation.WriteHtml(
                     sw,
                     entity.Title,
-                    "",
+                    entity.Description,
                     nestingDeep,
                     markdown,
                     editPageLink,
                     BuildNavigation(outputFileName),
                     BuildBreadcrumbs(entity, outputFileName),
-                    _siteMediaProviders).GetAwaiter().GetResult();
+                    _siteMediaProviders,
+                    entity.Icon).GetAwaiter().GetResult();
 
             File.Move(temporaryPath, outputFileName, true);
+            WriteAliasPage(entity, outputFileName);
         }
         finally
         {
@@ -87,6 +90,22 @@ public class MarkdigVisitor : BaseVisitor
         }
 
         return true;
+    }
+
+    private void WriteAliasPage(MarkdownFile page, string outputFileName)
+    {
+        if (page.FileInfo.Name.Equals("README.md", StringComparison.OrdinalIgnoreCase)) return;
+        var aliasDirectory = Path.Combine(page.FileInfo.DirectoryName!, Path.GetFileNameWithoutExtension(page.FileInfo.Name));
+        if (Directory.Exists(aliasDirectory) && Directory.EnumerateFiles(aliasDirectory).Any(filePath =>
+                Path.GetFileName(filePath).Equals("README.md", StringComparison.OrdinalIgnoreCase) ||
+                Path.GetFileName(filePath).Equals("index.md", StringComparison.OrdinalIgnoreCase))) return;
+
+        var aliasPath = Path.Combine(Path.GetDirectoryName(outputFileName)!, Path.GetFileNameWithoutExtension(outputFileName), "index.html");
+        Directory.CreateDirectory(Path.GetDirectoryName(aliasPath)!);
+        var relativeTarget = "../" + Uri.EscapeDataString(Path.GetFileName(outputFileName));
+        var encodedTarget = HtmlEncoder.Default.Encode(relativeTarget);
+        File.WriteAllText(aliasPath,
+            $"<!doctype html><html><head><meta charset=\"utf-8\"><meta http-equiv=\"refresh\" content=\"0; url={encodedTarget}\"><link rel=\"canonical\" href=\"{encodedTarget}\"><title>Moved</title></head><body><a href=\"{encodedTarget}\">Continue to the page</a></body></html>");
     }
 
     private IReadOnlyCollection<string> FindSiteMediaProviders()
@@ -232,6 +251,7 @@ public class MarkdigVisitor : BaseVisitor
 
     private static string GetNavigationTitle(MarkdownFile page)
     {
+        if (!string.IsNullOrWhiteSpace(page.SidebarTitle)) return page.SidebarTitle.Trim();
         if (!string.IsNullOrWhiteSpace(page.Title)) return page.Title.Trim();
 
         return page.FileInfo.Name.Equals("README.md", StringComparison.OrdinalIgnoreCase)

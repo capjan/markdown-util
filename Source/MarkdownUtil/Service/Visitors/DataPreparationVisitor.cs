@@ -25,19 +25,22 @@ public class DataPreparationVisitor: IVisitor<MarkdownFile>
         using var reader = new StreamReader(entity.FileInfo.FullName, Encoding.UTF8);
         var input = new ParserInput(reader);
         var header = _markdownReader.ReadHeader(input);
-        entity.Title = header.Title;
+        entity.HeadingTitle = header.Title;
         entity.FrontMatter = header.FrontMatter;
-        var sidebarSettings = ReadSidebarSettings(header.FrontMatter);
+        var sidebarSettings = ReadFrontMatterSettings(header.FrontMatter);
+        entity.Title = sidebarSettings.Title ?? header.Title;
+        entity.Description = sidebarSettings.Description ?? string.Empty;
+        entity.Icon = sidebarSettings.Icon ?? string.Empty;
+        entity.SidebarTitle = sidebarSettings.SidebarTitle ?? string.Empty;
         entity.SidebarOrder = sidebarSettings.Order;
         entity.SidebarVisible = sidebarSettings.Visible;
         entity.SidebarExpanded = sidebarSettings.Expanded;
         return true;
     }
 
-    private static (int? Order, bool Visible, bool Expanded) ReadSidebarSettings(string frontMatter)
+    private static FrontMatterSettings ReadFrontMatterSettings(string frontMatter)
     {
-        if (string.IsNullOrWhiteSpace(frontMatter) || !frontMatter.Contains("sidebar", StringComparison.Ordinal))
-            return (null, true, false);
+        if (string.IsNullOrWhiteSpace(frontMatter)) return new FrontMatterSettings();
 
         var lines = frontMatter.Split('\n').Select(line => line.TrimEnd('\r')).ToList();
         if (lines.Count > 0 && lines[0].Trim() == "---") lines.RemoveAt(0);
@@ -49,7 +52,12 @@ public class DataPreparationVisitor: IVisitor<MarkdownFile>
             yaml.Load(new StringReader(string.Join(Environment.NewLine, lines)));
 
             if (yaml.Documents.Count == 0 || yaml.Documents[0].RootNode is not YamlMappingNode metadata)
-                return (null, true, false);
+                return new FrontMatterSettings();
+
+            var title = ReadScalar(metadata, "title");
+            var description = ReadScalar(metadata, "description");
+            var icon = ReadScalar(metadata, "icon");
+            string? sidebarTitle = null;
 
             YamlNode? orderNode = null;
             YamlNode? visibleNode = null;
@@ -57,6 +65,7 @@ public class DataPreparationVisitor: IVisitor<MarkdownFile>
             if (metadata.Children.TryGetValue(new YamlScalarNode("sidebar"), out var sidebarNode) &&
                 sidebarNode is YamlMappingNode sidebar)
             {
+                sidebarTitle = ReadScalar(sidebar, "title");
                 if (sidebar.Children.TryGetValue(new YamlScalarNode("order"), out var nestedOrderNode))
                     orderNode = nestedOrderNode;
                 if (sidebar.Children.TryGetValue(new YamlScalarNode("visible"), out var nestedVisibleNode))
@@ -92,11 +101,25 @@ public class DataPreparationVisitor: IVisitor<MarkdownFile>
             var expanded = expandedNode is YamlScalarNode expandedValue &&
                            bool.TryParse(expandedValue.Value, out var parsedExpanded) && parsedExpanded;
 
-            return (order, visible, expanded);
+            return new FrontMatterSettings(title, description, icon, sidebarTitle, order, visible, expanded);
         }
         catch (YamlException)
         {
-            return (null, true, false);
+            return new FrontMatterSettings();
         }
     }
+
+    private static string? ReadScalar(YamlMappingNode mapping, string key) =>
+        mapping.Children.TryGetValue(new YamlScalarNode(key), out var value) && value is YamlScalarNode scalar
+            ? scalar.Value
+            : null;
+
+    private sealed record FrontMatterSettings(
+        string? Title = null,
+        string? Description = null,
+        string? Icon = null,
+        string? SidebarTitle = null,
+        int? Order = null,
+        bool Visible = true,
+        bool Expanded = false);
 }
