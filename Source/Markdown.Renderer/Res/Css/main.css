@@ -1513,6 +1513,12 @@ pre code {
     stroke-width: 1.25;
 }
 
+.diagram-node-subroutine-line {
+    fill: none;
+    stroke: var(--diagram-node-border);
+    stroke-width: 1.25;
+}
+
 .diagram-link {
     cursor: pointer;
 }

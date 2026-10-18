@@ -41,7 +41,7 @@ Use `--no-browser` to start the server without opening a browser.
 | --- | --- | --- |
 | `mdu tree [path]` | Prints the detected Markdown page structure. Alias: `mdu print`. | [tree](tree.md) |
 | `mdu lint [path]` | Checks Markdown pages and local links. Alias: `mdu l`. | [lint](./lint/README.md) · [rules reference](./lint/Rules.md) |
-| `mdu fix [path]` | Applies automatic fixes for supported warnings. | [fix](fix.md) |
+| `mdu fix [path]` | Applies automatic fixes for supported migration issues and warnings. | [fix](fix.md) |
 | `mdu render [path] [outpath]` | Writes a static HTML site. Alias: `mdu r`. | [render](render.md) |
 | `mdu pdf [path] [outpath]` | Writes one local PDF file. | [pdf](pdf.md) |
 | `mdu serve [path] [outpath]` | Serves a local preview and updates it when files change. | [serve](serve.md) |

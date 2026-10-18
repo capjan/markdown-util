@@ -22,8 +22,8 @@ sidebar:
 | `MDU009` | `MaterialCards` | Error | Material card grids must be converted to Markdown link lists. | [fix](../fix.md#migrating-mkdocs-material-markdown) |
 | `MDU010` | `UnsupportedMermaid` | Error | A Mermaid diagram uses syntax MarkdownUtil cannot render. | — |
 | `MDU011` | `CodeAnnotations` | Error | Material code-annotation markers are unsupported. | [fix](../fix.md#migrating-mkdocs-material-markdown) |
-| `MDU012` | `MkDocsIndexPage` | Error | Rename the MkDocs `index.md` page to `README.md`. | [fix](../fix.md#migrating-mkdocs-material-markdown) |
-| `MDU013` | `MissingSectionReadme` | Error | A section with child pages needs a `README.md` page. | [fix](../fix.md#migrating-mkdocs-material-markdown) |
+| `MDU012` | `MkDocsIndexPage` | Warning | Rename the MkDocs `index.md` page to `README.md`. | [fix](../fix.md#migrating-mkdocs-material-markdown) |
+| `MDU013` | `MissingSectionReadme` | Warning | A section with child pages needs a `README.md` page. | [fix](../fix.md#migrating-mkdocs-material-markdown) |
 | `MDU014` | `MkDocsPagesFile` | Error | Migrate MkDocs `.pages` settings to Markdown front matter. | [fix](../fix.md#migrating-mkdocs-material-markdown) |
 
 ## MDU001: HeadingRequired
@@ -32,7 +32,7 @@ Every Markdown page needs a level-one heading (`# Page title`) after any YAML fr
 
 ## MDU002: DirectoryTitleMatch
 
-For a section index named `README.md`, the directory name must match the heading title. The comparison ignores case, punctuation, spaces, hyphens, and underscores. If the title contains a colon, only the text before the first colon is compared. Set `sidebar.title` when a section intentionally uses a different navigation label; `mdu fix` adds this override when it migrates a mismatched MkDocs section title.
+For a section index named `README.md`, the directory name must match the heading title. The comparison ignores case, punctuation, spaces, hyphens, and underscores. If the title contains a colon, only the text before the first colon is compared. Set `sidebar.title` when a section intentionally uses a different navigation label. `mdu fix` migrates this field only when it is explicitly present in a `.pages` file.
 
 For example, `# Keyboard Keys` matches the directory `Keyboard-Keys`. See [Rule 2](Rule2.md) for examples and guidance.
 

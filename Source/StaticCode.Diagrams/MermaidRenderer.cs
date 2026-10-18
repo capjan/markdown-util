@@ -1,7 +1,6 @@
 using System.Diagnostics.CodeAnalysis;
 using StaticCode.Diagrams.Flowchart;
 using StaticCode.Diagrams.Sequence;
-using System.Text.RegularExpressions;
 
 namespace StaticCode.Diagrams;
 
@@ -44,9 +43,6 @@ public static class MermaidRenderer
             if (end >= 0) source = source.Remove(start, end + 4 - start).TrimStart('\n');
         }
 
-        source = Regex.Replace(source, @"\b(?<kind>target|product):(?<id>[\p{L}\p{N}_-]+)", "${kind}_${id}");
-        source = Regex.Replace(source, @"(?<id>[\p{L}\p{N}_-]+)\[\[(?<label>.*?)\]\]", "${id}[${label}]");
-        source = Regex.Replace(source, @"(?<id>[\p{L}\p{N}_-]+)\{\{(?<label>.*?)\}\}", "${id}[${label}]");
         return source;
     }
 }

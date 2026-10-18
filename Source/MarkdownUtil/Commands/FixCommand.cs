@@ -1,6 +1,5 @@
 using Core.Collections.NodeGraph.Extensions;
 using Markdown.Linter;
-using Markdown.Linter.Rules.Rule2;
 using Markdig;
 using Markdig.Syntax;
 using Markdig.Syntax.Inlines;
@@ -16,6 +15,9 @@ namespace MarkdownUtil.Commands;
 
 public class FixCommand
 {
+    private static readonly Regex FrontMatterBlock = new(
+        @"\A---[ \t]*\r?\n(?<yaml>[\s\S]*?)\r?\n---[ \t]*(?:\r?\n|$)",
+        RegexOptions.Compiled);
     private readonly GraphBuilder _graphBuilder;
     private readonly LinterVisitor _linterVisitor;
 
@@ -50,27 +52,8 @@ public class FixCommand
             SearchPattern = settings.SearchPattern,
             IncludeHidden = settings.IncludeHidden
         });
-        var pages = Flatten(graph).ToArray();
         _linterVisitor.Prepare(graph);
         graph.Visit(_linterVisitor);
-
-        var titleOverrides = _linterVisitor.ErrorReceiver.Diagnostics
-            .Where(diagnostic => !diagnostic.IsWarning &&
-                                 diagnostic.Message.StartsWith($"{RuleCodes.DirectoryTitleMatch}:", StringComparison.Ordinal))
-            .Select(diagnostic => pages.FirstOrDefault(page => pathComparer.Equals(
-                Path.GetFullPath(page.FileInfo.FullName), Path.GetFullPath(diagnostic.FilePath))))
-            .Where(page => page is not null && !string.IsNullOrWhiteSpace(page.Title))
-            .Cast<MarkdownFile>()
-            .ToArray();
-        foreach (var page in titleOverrides)
-        {
-            var content = File.ReadAllText(page.FileInfo.FullName);
-            var updatedContent = SetFrontMatterValue(content, "sidebar.title", page.Title);
-            if (updatedContent == content) continue;
-            File.WriteAllText(page.FileInfo.FullName, updatedContent);
-            page.SidebarTitle = page.Title;
-            migrationChanges++;
-        }
 
         var moves = _linterVisitor.ErrorReceiver.Diagnostics
             .Where(diagnostic => diagnostic.IsWarning &&
@@ -167,6 +150,12 @@ public class FixCommand
             Console.Error.WriteLine($"Cannot rename '{duplicateTarget.SourcePath}' because '{duplicateTarget.TargetPath}' already exists.");
             return -1;
         }
+        var duplicateMoveTarget = indexMoves.GroupBy(move => move.TargetPath, pathComparer).FirstOrDefault(group => group.Count() > 1);
+        if (duplicateMoveTarget is not null)
+        {
+            Console.Error.WriteLine($"Cannot rename multiple index pages to '{duplicateMoveTarget.Key}'.");
+            return -1;
+        }
 
         var movedPaths = indexMoves.ToDictionary(move => move.SourcePath, move => move.TargetPath, pathComparer);
         var updated = new Dictionary<string, string>(pathComparer);
@@ -175,15 +164,19 @@ public class FixCommand
         {
             var content = File.ReadAllText(path);
             var fixedContent = MarkdownCompatibility.FixMarkdown(content);
-            if (fixedContent != content)
+            var targetPath = movedPaths.GetValueOrDefault(path, path);
+            if (fixedContent != content || !pathComparer.Equals(path, targetPath))
             {
-                updated[path] = fixedContent;
-                changes++;
+                updated[targetPath] = fixedContent;
+                if (fixedContent != content) changes++;
             }
         }
 
-        var pagesEnumeration = new EnumerationOptions { AttributesToSkip = FileAttributes.System, RecurseSubdirectories = true };
-        var pagesFiles = Directory.EnumerateFiles(rootPath, ".pages", pagesEnumeration).ToArray();
+        var pagesFiles = Directory.EnumerateFiles(rootPath, ".pages", new EnumerationOptions
+        {
+            AttributesToSkip = FileAttributes.System,
+            RecurseSubdirectories = true
+        }).ToArray();
         Dictionary<string, Dictionary<string, string>> pageSettings;
         try
         {
@@ -194,40 +187,39 @@ public class FixCommand
             Console.Error.WriteLine(exception.Message);
             return -1;
         }
-        foreach (var move in indexMoves)
+
+        try
         {
-            File.Move(move.SourcePath, move.TargetPath);
-            changes++;
+            CreateMissingSectionReadmes(rootPath, enumerationOptions, movedPaths, updated, pathComparer, ref changes);
+            foreach (var (path, settings) in pageSettings)
+            {
+                var sourcePath = movedPaths.FirstOrDefault(move => pathComparer.Equals(move.Value, path)).Key ?? path;
+                if (!updated.TryGetValue(path, out var content))
+                {
+                    if (!File.Exists(sourcePath)) continue;
+                    content = File.ReadAllText(sourcePath);
+                }
+
+                foreach (var (key, value) in settings)
+                    content = SetFrontMatterValue(content, key, value, path);
+                updated[path] = content;
+                changes++;
+            }
+
+            WriteStaticBlogAndTags(rootPath, updated, movedPaths, pathComparer, ref changes);
         }
-
-        var normalizedUpdates = new Dictionary<string, string>(pathComparer);
-        foreach (var (sourcePath, content) in updated)
-            normalizedUpdates[movedPaths.GetValueOrDefault(sourcePath, sourcePath)] = content;
-        updated = normalizedUpdates;
-
-        CreateMissingSectionReadmes(rootPath, enumerationOptions, ref changes);
-        foreach (var (path, settings) in pageSettings)
+        catch (InvalidOperationException exception)
         {
-            if (!File.Exists(path)) continue;
-            var originalPath = movedPaths.FirstOrDefault(move => pathComparer.Equals(move.Value, path)).Key;
-            var content = originalPath is not null && updated.TryGetValue(originalPath, out var movedContent)
-                ? movedContent
-                : updated.GetValueOrDefault(path) ?? File.ReadAllText(path);
-            foreach (var (key, value) in settings)
-                content = SetFrontMatterValue(content, key, value);
-            updated[path] = content;
-            if (originalPath is not null) updated.Remove(originalPath);
-            changes++;
+            Console.Error.WriteLine(exception.Message);
+            return -1;
         }
-
-        WriteStaticBlogAndTags(rootPath, updated, pathComparer, ref changes);
 
         var changedLinkCount = 0;
         foreach (var path in markdownFiles)
         {
             var sourcePath = Path.GetFullPath(path);
             var newSourcePath = movedPaths.GetValueOrDefault(sourcePath, sourcePath);
-            var content = updated.GetValueOrDefault(newSourcePath) ?? File.ReadAllText(newSourcePath);
+            var content = updated.GetValueOrDefault(newSourcePath) ?? File.ReadAllText(sourcePath);
             var rewritten = RewriteLinks(content, sourcePath, newSourcePath, movedPaths, pathComparer, out var linksChanged);
             if (rewritten != content)
             {
@@ -236,9 +228,15 @@ public class FixCommand
             }
         }
 
+        foreach (var move in indexMoves) changes++;
+
+        // All Markdown and YAML transformations are prepared before the first filesystem mutation.
+        foreach (var move in indexMoves)
+            File.Move(move.SourcePath, move.TargetPath);
+
         foreach (var (targetPath, content) in updated)
         {
-            if (!File.Exists(targetPath)) continue;
+            Directory.CreateDirectory(Path.GetDirectoryName(targetPath)!);
             File.WriteAllText(targetPath, content);
         }
 
@@ -275,16 +273,28 @@ public class FixCommand
                 throw new InvalidOperationException($"Cannot migrate {pagesFile}: {exception.Message}");
             }
 
-            if (yaml.Documents.FirstOrDefault()?.RootNode is not YamlMappingNode mapping) continue;
-            var directory = Path.GetDirectoryName(pagesFile)!;
-            if (mapping.Children.TryGetValue(new YamlScalarNode("title"), out var titleNode) && titleNode is YamlScalarNode title)
-                Add(Path.Combine(directory, "README.md"), "sidebar.title", title.Value ?? string.Empty);
-
-            if (mapping.Children.TryGetValue(new YamlScalarNode("arrange"), out var arrangeNode) && arrangeNode is YamlSequenceNode arrange)
+            var rootNode = yaml.Documents.FirstOrDefault()?.RootNode;
+            if (rootNode is not YamlMappingNode mapping)
             {
+                if (rootNode is YamlScalarNode empty && string.IsNullOrWhiteSpace(empty.Value)) continue;
+                throw new InvalidOperationException($"Cannot migrate {pagesFile}: expected a YAML mapping.");
+            }
+            var directory = Path.GetDirectoryName(pagesFile)!;
+            if (mapping.Children.TryGetValue(new YamlScalarNode("title"), out var titleNode))
+            {
+                if (titleNode is not YamlScalarNode title)
+                    throw new InvalidOperationException($"Cannot migrate {pagesFile}: 'title' must be a string.");
+                Add(Path.Combine(directory, "README.md"), "sidebar.title", title.Value ?? string.Empty);
+            }
+
+            if (mapping.Children.TryGetValue(new YamlScalarNode("arrange"), out var arrangeNode))
+            {
+                if (arrangeNode is not YamlSequenceNode arrange)
+                    throw new InvalidOperationException($"Cannot migrate {pagesFile}: 'arrange' must be a list.");
                 for (var index = 0; index < arrange.Children.Count; index++)
                 {
-                    if (arrange.Children[index] is not YamlScalarNode entry || string.IsNullOrWhiteSpace(entry.Value)) continue;
+                    if (arrange.Children[index] is not YamlScalarNode entry || string.IsNullOrWhiteSpace(entry.Value))
+                        throw new InvalidOperationException($"Cannot migrate {pagesFile}: 'arrange' entries must be non-empty strings.");
                     var value = entry.Value.Trim();
                     string target;
                     if (value.EndsWith(".md", StringComparison.OrdinalIgnoreCase))
@@ -297,7 +307,7 @@ public class FixCommand
                         target = Path.Combine(section, "README.md");
                     }
 
-                    if (target.EndsWith(Path.Combine("", "index.md"), StringComparison.OrdinalIgnoreCase))
+                    if (Path.GetFileName(target).Equals("index.md", StringComparison.OrdinalIgnoreCase))
                         target = Path.Combine(Path.GetDirectoryName(target)!, "README.md");
                     Add(target, "sidebar.order", index.ToString(System.Globalization.CultureInfo.InvariantCulture));
                 }
@@ -317,7 +327,13 @@ public class FixCommand
         }
     }
 
-    private static void CreateMissingSectionReadmes(string rootPath, EnumerationOptions options, ref int changes)
+    private static void CreateMissingSectionReadmes(
+        string rootPath,
+        EnumerationOptions options,
+        IReadOnlyDictionary<string, string> movedPaths,
+        Dictionary<string, string> updated,
+        StringComparer pathComparer,
+        ref int changes)
     {
         var directOptions = new EnumerationOptions
         {
@@ -331,10 +347,11 @@ public class FixCommand
             var directMarkdown = Directory.EnumerateFiles(directory, "*", directOptions).Where(IsMarkdownFile).ToArray();
             var hasMarkdownChildDirectory = Directory.EnumerateDirectories(directory, "*", directOptions).Any(ContainsMarkdown);
             if (!hasMarkdownChildDirectory && directMarkdown.Length < 2) continue;
-            if (directMarkdown.Any(path => Path.GetFileName(path).Equals("README.md", StringComparison.OrdinalIgnoreCase))) continue;
+            if (directMarkdown.Any(path => Path.GetFileName(path).Equals("README.md", StringComparison.OrdinalIgnoreCase) ||
+                                           movedPaths.Values.Any(target => pathComparer.Equals(target, Path.Combine(directory, "README.md"))))) continue;
 
             var readmePath = Path.Combine(directory, "README.md");
-            File.WriteAllText(readmePath, $"# {Path.GetFileName(directory)}{Environment.NewLine}");
+            updated[readmePath] = $"# {Path.GetFileName(directory)}{Environment.NewLine}";
             changes++;
         }
 
@@ -345,21 +362,31 @@ public class FixCommand
         }
     }
 
-    private static string SetFrontMatterValue(string content, string key, string value)
+    private static string SetFrontMatterValue(string content, string key, string value, string path)
     {
-        var yamlStart = content.StartsWith("---", StringComparison.Ordinal) ? 3 : -1;
-        var yamlEnd = yamlStart < 0 ? -1 : content.IndexOf("---", yamlStart, StringComparison.Ordinal);
         YamlMappingNode mapping;
         string body;
-        if (yamlEnd >= 0)
+        var match = FrontMatterBlock.Match(content);
+        if (match.Success)
         {
             var yaml = new YamlStream();
-            yaml.Load(new StringReader(content[yamlStart..yamlEnd]));
-            mapping = yaml.Documents.FirstOrDefault()?.RootNode as YamlMappingNode ?? new YamlMappingNode();
-            body = content[(yamlEnd + 3)..].TrimStart('\r', '\n');
+            try
+            {
+                yaml.Load(new StringReader(match.Groups["yaml"].Value));
+            }
+            catch (YamlDotNet.Core.YamlException exception)
+            {
+                throw new InvalidOperationException($"Cannot migrate malformed Markdown front matter in '{path}': {exception.Message}");
+            }
+
+            mapping = yaml.Documents.FirstOrDefault()?.RootNode as YamlMappingNode
+                ?? throw new InvalidOperationException($"Cannot migrate Markdown front matter in '{path}' because it must be a YAML mapping.");
+            body = content[match.Length..];
         }
         else
         {
+            if (StartsWithFrontMatter(content))
+                throw new InvalidOperationException($"Cannot migrate Markdown front matter in '{path}' because its closing '---' delimiter is missing.");
             mapping = new YamlMappingNode();
             body = content;
         }
@@ -381,33 +408,57 @@ public class FixCommand
         var serializer = new SerializerBuilder().Build();
         using var writer = new StringWriter();
         serializer.Serialize(writer, mapping);
-        return $"---{Environment.NewLine}{writer.ToString().TrimEnd()}{Environment.NewLine}---{Environment.NewLine}{Environment.NewLine}{body}";
+        var newline = content.Contains("\r\n", StringComparison.Ordinal) ? "\r\n" : "\n";
+        var serialized = writer.ToString().TrimEnd().Replace("\n", newline, StringComparison.Ordinal);
+        return $"---{newline}{serialized}{newline}---{newline}{newline}{body}";
+    }
+
+    private static string ReplaceMarkdownBody(string content, string body, string path)
+    {
+        var match = FrontMatterBlock.Match(content);
+        if (!match.Success)
+        {
+            if (StartsWithFrontMatter(content))
+                throw new InvalidOperationException($"Cannot migrate malformed Markdown front matter in '{path}' because its closing '---' delimiter is missing.");
+            return body;
+        }
+        var newline = content.Contains("\r\n", StringComparison.Ordinal) ? "\r\n" : "\n";
+        return content[..match.Length].TrimEnd('\r', '\n') + newline + newline + body;
     }
 
     private static void WriteStaticBlogAndTags(
         string rootPath,
         Dictionary<string, string> updated,
+        IReadOnlyDictionary<string, string> movedPaths,
         StringComparer pathComparer,
         ref int changes)
     {
         var blogDirectory = Path.Combine(rootPath, "blog");
         var blogIndex = Path.Combine(blogDirectory, "README.md");
-        if (File.Exists(blogIndex))
+        if (File.Exists(blogIndex) || updated.ContainsKey(blogIndex))
         {
-            var existing = updated.GetValueOrDefault(blogIndex) ?? File.ReadAllText(blogIndex);
+            var existing = updated.GetValueOrDefault(blogIndex) ??
+                           (movedPaths.FirstOrDefault(move => pathComparer.Equals(move.Value, blogIndex)).Key is { } oldBlogIndex
+                               ? File.ReadAllText(oldBlogIndex)
+                               : File.ReadAllText(blogIndex));
             var body = RemoveSimpleFrontMatter(existing).Trim();
             if (Regex.IsMatch(body, @"^# Blog\s*$", RegexOptions.IgnoreCase))
             {
                 var posts = Directory.Exists(Path.Combine(blogDirectory, "posts"))
                     ? Directory.EnumerateFiles(Path.Combine(blogDirectory, "posts"), "*.md")
                         .Where(path => !Path.GetFileName(path).Equals("README.md", StringComparison.OrdinalIgnoreCase))
-                        .Select(path => (Path: path, Metadata: ReadMetadata(path)))
+                        .Select(path =>
+                        {
+                            var fullPath = Path.GetFullPath(path);
+                            return (Path: path, TargetPath: movedPaths.GetValueOrDefault(fullPath, fullPath), Metadata: ReadMetadata(path));
+                        })
                         .OrderByDescending(item => item.Metadata.GetValueOrDefault("date"), StringComparer.Ordinal)
                         .ToArray()
-                    : Array.Empty<(string Path, Dictionary<string, string> Metadata)>();
-                var lines = posts.Select(post => $"- [{post.Metadata.GetValueOrDefault("title", Path.GetFileNameWithoutExtension(post.Path))}](posts/{Uri.EscapeDataString(Path.GetFileName(post.Path))})" +
+                    : Array.Empty<(string Path, string TargetPath, Dictionary<string, string> Metadata)>();
+                var lines = posts.Select(post => $"- [{post.Metadata.GetValueOrDefault("title", Path.GetFileNameWithoutExtension(post.Path))}]({EncodeRelativePath(Path.GetRelativePath(blogDirectory, post.TargetPath))})" +
                                                   (post.Metadata.TryGetValue("date", out var date) ? $" — {date}" : string.Empty));
-                updated[blogIndex] = "# Blog" + Environment.NewLine + Environment.NewLine + string.Join(Environment.NewLine, lines) + Environment.NewLine;
+                var generatedBody = "# Blog" + Environment.NewLine + Environment.NewLine + string.Join(Environment.NewLine, lines) + Environment.NewLine;
+                updated[blogIndex] = ReplaceMarkdownBody(existing, generatedBody, blogIndex);
                 changes++;
             }
         }
@@ -424,10 +475,12 @@ public class FixCommand
                     var metadata = ReadMetadata(page);
                     if (metadata.TryGetValue("tags", out var tags))
                     {
+                        var fullPath = Path.GetFullPath(page);
+                        var targetPath = movedPaths.GetValueOrDefault(fullPath, fullPath);
                         foreach (var tag in tags.Split('|', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries))
                         {
                             if (!tagGroups.TryGetValue(tag, out var entries)) tagGroups[tag] = entries = new List<(string, string)>();
-                            entries.Add((Path.GetRelativePath(rootPath, page).Replace(Path.DirectorySeparatorChar, '/'),
+                            entries.Add((Path.GetRelativePath(rootPath, targetPath).Replace(Path.DirectorySeparatorChar, '/'),
                                 metadata.GetValueOrDefault("title", Path.GetFileNameWithoutExtension(page))));
                         }
                     }
@@ -441,7 +494,7 @@ public class FixCommand
                         .Select(entry => $"- [{entry.Title}]({EncodeRelativePath(entry.RelativePath)})"));
                     lines.Add(string.Empty);
                 }
-                updated[tagsPath] = string.Join(Environment.NewLine, lines).TrimEnd() + Environment.NewLine;
+                updated[tagsPath] = ReplaceMarkdownBody(existing, string.Join(Environment.NewLine, lines).TrimEnd() + Environment.NewLine, tagsPath);
                 changes++;
             }
         }
@@ -450,11 +503,10 @@ public class FixCommand
     private static Dictionary<string, string> ReadMetadata(string path)
     {
         var content = File.ReadAllText(path);
-        if (!content.StartsWith("---", StringComparison.Ordinal)) return new Dictionary<string, string>();
-        var end = content.IndexOf("---", 3, StringComparison.Ordinal);
-        if (end < 0) return new Dictionary<string, string>();
+        var frontMatter = FrontMatterBlock.Match(content);
+        if (!frontMatter.Success) return new Dictionary<string, string>();
         var yaml = new YamlStream();
-        try { yaml.Load(new StringReader(content[3..end])); }
+        try { yaml.Load(new StringReader(frontMatter.Groups["yaml"].Value)); }
         catch (YamlDotNet.Core.YamlException) { return new Dictionary<string, string>(); }
         if (yaml.Documents.FirstOrDefault()?.RootNode is not YamlMappingNode mapping) return new Dictionary<string, string>();
         var values = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase);
@@ -470,9 +522,15 @@ public class FixCommand
 
     private static string RemoveSimpleFrontMatter(string content)
     {
-        if (!content.StartsWith("---", StringComparison.Ordinal)) return content;
-        var end = content.IndexOf("---", 3, StringComparison.Ordinal);
-        return end < 0 ? content : content[(end + 3)..];
+        var match = FrontMatterBlock.Match(content);
+        return match.Success ? content[match.Length..] : content;
+    }
+
+    private static bool StartsWithFrontMatter(string content)
+    {
+        var newline = content.IndexOfAny(['\r', '\n']);
+        var firstLine = newline < 0 ? content : content[..newline];
+        return firstLine.Trim() == "---";
     }
 
     private static string EncodeRelativePath(string path) => string.Join('/',
@@ -576,7 +634,7 @@ public class FixCommand
                 if (!File.Exists(readmePath)) return null;
                 targetPath = readmePath;
             }
-        else if (!File.Exists(targetPath) && !movedPaths.ContainsKey(targetPath))
+            else if (!File.Exists(targetPath) && !movedPaths.ContainsKey(targetPath))
             {
                 return null;
             }

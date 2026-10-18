@@ -66,13 +66,16 @@ flowchart LR
 | Stadium | `A([Text])` |
 | Circle | `A((Text))` |
 | Decision | `A{Text}` |
+| Subroutine | `A[[Text]]` |
+| Hexagon | `A{{Text}}` |
 | Links | `-->`, `---`, `-.->`, `-.-`, `==>`, `===` |
 | Link ends | `<-->`, `--o`, `--x` |
 | Link labels | `A -- Text --> B`, or the text between two pipes after the link (see below) |
 | Node links | `click A href "details.md"` |
 | Longer links | Add dashes, dots, or equal signs, for example `--->` |
 | Chains and groups | `A --> B --> C`, `A & B --> C` |
-| Subgraphs | `subgraph Id["Label"]` … `end` |
+| Subgraphs | `subgraph Id ["Label"]` … `end` |
+| Namespaced node identifiers | `target:App`, `product:Library` |
 | Line breaks | `<br>` inside a label |
 | Comments | Lines starting with `%%` |
 

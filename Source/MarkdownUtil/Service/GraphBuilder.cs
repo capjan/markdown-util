@@ -50,8 +50,8 @@ public class GraphBuilder
             .Select(fileInfo => new MarkdownFile(fileInfo, parent))
             .ToList();
         var usedParent = markdownFilesInFolder
-            .SingleOrDefault(itm => itm.FileInfo.Name.Equals("README.md", StringComparison.OrdinalIgnoreCase) ||
-                                    itm.FileInfo.Name.Equals("index.md", StringComparison.OrdinalIgnoreCase));
+            .FirstOrDefault(itm => itm.FileInfo.Name.Equals("README.md", StringComparison.OrdinalIgnoreCase)) ??
+            markdownFilesInFolder.FirstOrDefault(itm => itm.FileInfo.Name.Equals("index.md", StringComparison.OrdinalIgnoreCase));
 
         if (usedParent == null)
         {

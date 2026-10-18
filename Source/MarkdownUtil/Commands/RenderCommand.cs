@@ -50,7 +50,16 @@ public class RenderCommand
             EditPageRoot = settings.EditPageRoot
         };
         
-        var siteConfiguration = SiteConfigurationReader.Read(rootPath);
+        Markdown.Renderer.Res.Model.SiteConfiguration siteConfiguration;
+        try
+        {
+            siteConfiguration = SiteConfigurationReader.Read(rootPath);
+        }
+        catch (YamlDotNet.Core.YamlException exception)
+        {
+            Console.Error.WriteLine($"Could not read mdu.yml: {exception.Message}");
+            return 1;
+        }
         _renderer.PrepareBasePath(outPath, siteConfiguration);
         SearchClientAsset.WriteTo(outPath);
         _searchIndexBuilder.Clear();

@@ -94,7 +94,7 @@ public sealed class ServeCommand
         {
             RebuildSite();
         }
-        catch (Exception exception) when (exception is IOException or UnauthorizedAccessException or ArgumentException or InvalidOperationException)
+        catch (Exception exception) when (exception is IOException or UnauthorizedAccessException or ArgumentException or InvalidOperationException or YamlDotNet.Core.YamlException)
         {
             Console.Error.WriteLine($"Could not render the site: {exception.Message}");
             return 1;
@@ -265,7 +265,7 @@ public sealed class ServeCommand
             {
                 ProcessChangeBatch(batch, server);
             }
-            catch (Exception exception) when (exception is IOException or UnauthorizedAccessException or ArgumentException or InvalidOperationException)
+            catch (Exception exception) when (exception is IOException or UnauthorizedAccessException or ArgumentException or InvalidOperationException or YamlDotNet.Core.YamlException)
             {
                 Console.Error.WriteLine($"Could not update the site: {exception.Message}");
             }
@@ -481,7 +481,9 @@ public sealed class ServeCommand
     {
         if (page.FileInfo.Name.Equals("README.md", StringComparison.OrdinalIgnoreCase)) return null;
         var aliasDirectory = Path.Combine(page.FileInfo.DirectoryName!, Path.GetFileNameWithoutExtension(page.FileInfo.Name));
-        if (Directory.Exists(aliasDirectory)) return null;
+        if (Directory.Exists(aliasDirectory) && Directory.EnumerateFiles(aliasDirectory).Any(filePath =>
+                Path.GetFileName(filePath).Equals("README.md", StringComparison.OrdinalIgnoreCase) ||
+                Path.GetFileName(filePath).Equals("index.md", StringComparison.OrdinalIgnoreCase))) return null;
         return Path.GetFullPath(Path.Combine(_outputPath, Path.GetRelativePath(_rootPath, aliasDirectory), "index.html"));
     }
 

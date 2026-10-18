@@ -57,7 +57,7 @@ public class DataPreparationVisitor: IVisitor<MarkdownFile>
             var title = ReadScalar(metadata, "title");
             var description = ReadScalar(metadata, "description");
             var icon = ReadScalar(metadata, "icon");
-            string? sidebarTitle = null;
+            var sidebarTitle = ReadScalar(metadata, "sidebar.title");
 
             YamlNode? orderNode = null;
             YamlNode? visibleNode = null;

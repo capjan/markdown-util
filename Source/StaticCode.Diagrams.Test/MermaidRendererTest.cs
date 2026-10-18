@@ -146,6 +146,31 @@ public class MermaidRendererTest
     }
 
     [Fact]
+    public void AddsPreviouslyDeclaredNodesToSubgraphsAndAllowsWhitespaceBeforeTheTitle()
+    {
+        const string source = "flowchart LR\nA --> B\nsubgraph group [\"Group\"]\nA --> C\nend";
+
+        var root = XElement.Parse(MermaidRenderer.RenderSvg(source));
+        var group = root.Descendants().Single(element => element.Attribute("class")?.Value == "diagram-subgraph-title");
+
+        Assert.Equal("Group", group.Value);
+        Assert.Contains("diagram-subgraph", root.ToString());
+    }
+
+    [Fact]
+    public void PreservesNamespacedIdentifiersInsideLabelsAndRendersWikiNodeShapes()
+    {
+        const string source = "flowchart LR\ntarget:App(\"target:App\") --> product:Lib[[\"product:Lib\"]]\nproduct:Lib --> Dependency{{\"Dependency\"}}";
+
+        var svg = MermaidRenderer.RenderSvg(source);
+
+        Assert.Contains("target:App", svg);
+        Assert.Contains("product:Lib", svg);
+        Assert.Contains("diagram-node-subroutine", svg);
+        Assert.Contains("diagram-node-hexagon", svg);
+    }
+
+    [Fact]
     public void RejectsMermaidTypesNotImplementedByMdu()
     {
         const string source = "pie\n\"Dogs\" : 1";

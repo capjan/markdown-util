@@ -72,7 +72,7 @@ public class LinterVisitor: IVisitor<MarkdownFile>
             if (directMarkdown.Any(path => Path.GetFileName(path).Equals("README.md", StringComparison.OrdinalIgnoreCase) ||
                                            Path.GetFileName(path).Equals("index.md", StringComparison.OrdinalIgnoreCase))) continue;
 
-            ErrorReceiver.Add(directory.FullName, 1,
+            ErrorReceiver.AddWarning(directory.FullName, 1,
                 $"{RuleCodes.MissingSectionReadme}: Section '{directory.Name}' needs a README.md page; run 'mdu fix'.");
         }
     }
@@ -96,7 +96,7 @@ public class LinterVisitor: IVisitor<MarkdownFile>
             ErrorReceiver.Add(markdownFilePath, issue.LineNumber, $"{issue.Code}: {issue.Message}");
 
         if (entity.FileInfo.Name.Equals("index.md", StringComparison.OrdinalIgnoreCase))
-            ErrorReceiver.Add(markdownFilePath, 1, $"{RuleCodes.MkDocsIndexPage}: MkDocs index.md pages should be renamed to README.md; run 'mdu fix'.");
+            ErrorReceiver.AddWarning(markdownFilePath, 1, $"{RuleCodes.MkDocsIndexPage}: MkDocs index.md pages should be renamed to README.md; run 'mdu fix'.");
 
         var title = string.IsNullOrWhiteSpace(entity.HeadingTitle) ? entity.Title : entity.HeadingTitle;
         if (string.IsNullOrWhiteSpace(title))

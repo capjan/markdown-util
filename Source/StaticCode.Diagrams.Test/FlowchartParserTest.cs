@@ -121,9 +121,7 @@ public class FlowchartParserTest
     }
 
     [Theory]
-    [InlineData("A[[Subroutine]]")]
     [InlineData("A[(Database)]")]
-    [InlineData("A{{Hexagon}}")]
     [InlineData("A>Flag]")]
     [InlineData("A --> ")]
     [InlineData("A -- missing end B")]

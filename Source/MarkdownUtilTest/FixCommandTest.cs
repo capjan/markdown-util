@@ -4,6 +4,8 @@ using MarkdownUtil.Commands;
 using MarkdownUtil.Commands.Settings;
 using MarkdownUtil.Service;
 using MarkdownUtil.Service.Visitors;
+using Markdown.Renderer;
+using Markdown.Search;
 
 namespace MarkdownUtilTest;
 
@@ -102,6 +104,107 @@ public class FixCommandTest
     }
 
     [Fact]
+    public void DoesNotMutateFilesWhenPagesFrontMatterIsMalformed()
+    {
+        var root = Path.Combine(Path.GetTempPath(), Guid.NewGuid().ToString("N"));
+        var section = Path.Combine(root, "Guide");
+        Directory.CreateDirectory(section);
+        try
+        {
+            File.WriteAllText(Path.Combine(root, "README.md"), "# Docs\n");
+            File.WriteAllText(Path.Combine(section, "index.md"), "---\ntitle: [invalid\n---\n# Guide\n");
+            File.WriteAllText(Path.Combine(section, ".pages"), "title: Guide\n");
+
+            var command = new FixCommand(CreateGraphBuilder(), new LinterVisitor(new ConsoleLintErrorReceiver()));
+            var result = command.Execute(new VisitorSettings { RootPath = root, SearchPattern = "*.md", IncludeHidden = true });
+
+            Assert.Equal(1, result);
+            Assert.True(File.Exists(Path.Combine(section, "index.md")));
+            Assert.False(File.Exists(Path.Combine(section, "README.md")));
+            Assert.True(File.Exists(Path.Combine(section, ".pages")));
+        }
+        finally
+        {
+            Directory.Delete(root, recursive: true);
+        }
+    }
+
+    [Fact]
+    public void DoesNotMutateFilesWhenAnIndexConflictsWithAReadme()
+    {
+        var root = Path.Combine(Path.GetTempPath(), Guid.NewGuid().ToString("N"));
+        Directory.CreateDirectory(root);
+        try
+        {
+            File.WriteAllText(Path.Combine(root, "README.md"), "# Docs\n");
+            File.WriteAllText(Path.Combine(root, "index.md"), "# Index\n");
+
+            var command = new FixCommand(CreateGraphBuilder(), new LinterVisitor(new ConsoleLintErrorReceiver()));
+            var result = command.Execute(new VisitorSettings { RootPath = root, SearchPattern = "*.md", IncludeHidden = true });
+
+            Assert.Equal(1, result);
+            Assert.True(File.Exists(Path.Combine(root, "index.md")));
+            Assert.True(File.Exists(Path.Combine(root, "README.md")));
+        }
+        finally
+        {
+            Directory.Delete(root, recursive: true);
+        }
+    }
+
+    [Fact]
+    public void GraphBuilderAndLinterHandleReadmeAndIndexInTheSameFolder()
+    {
+        var root = Path.Combine(Path.GetTempPath(), Guid.NewGuid().ToString("N"));
+        Directory.CreateDirectory(root);
+        try
+        {
+            File.WriteAllText(Path.Combine(root, "README.md"), "# Docs\n");
+            File.WriteAllText(Path.Combine(root, "index.md"), "# Index\n");
+
+            var graph = CreateGraphBuilder().CreateGraph(new VisitorSettings { RootPath = root, SearchPattern = "*.md", IncludeHidden = true });
+            var receiver = new ConsoleLintErrorReceiver();
+            var linter = new LinterVisitor(receiver);
+            linter.Prepare(graph);
+            graph.Visit(linter);
+
+            Assert.Contains(receiver.Diagnostics, diagnostic => diagnostic.IsWarning &&
+                                                                  diagnostic.Message.StartsWith("MDU012:", StringComparison.Ordinal));
+        }
+        finally
+        {
+            Directory.Delete(root, recursive: true);
+        }
+    }
+
+    [Fact]
+    public void DoesNotTreatReindexMarkdownAsIndexInPagesArrange()
+    {
+        var root = Path.Combine(Path.GetTempPath(), Guid.NewGuid().ToString("N"));
+        var section = Path.Combine(root, "Guide");
+        Directory.CreateDirectory(section);
+        try
+        {
+            File.WriteAllText(Path.Combine(root, "README.md"), "# Docs\n");
+            File.WriteAllText(Path.Combine(section, "README.md"), "# Guide\n");
+            File.WriteAllText(Path.Combine(section, "reindex.md"), "# Reindex\n");
+            File.WriteAllText(Path.Combine(section, ".pages"), "arrange:\n  - reindex.md\n");
+
+            var command = new FixCommand(CreateGraphBuilder(), new LinterVisitor(new ConsoleLintErrorReceiver()));
+            var result = command.Execute(new VisitorSettings { RootPath = root, SearchPattern = "*.md", IncludeHidden = true });
+
+            Assert.Equal(0, result);
+            Assert.Contains("sidebar:", File.ReadAllText(Path.Combine(section, "reindex.md")));
+            Assert.Contains("order: 0", File.ReadAllText(Path.Combine(section, "reindex.md")));
+            Assert.DoesNotContain("order:", File.ReadAllText(Path.Combine(section, "README.md")));
+        }
+        finally
+        {
+            Directory.Delete(root, recursive: true);
+        }
+    }
+
+    [Fact]
     public void RemovesMaterialAnnotationMarkersInsideConvertedAlerts()
     {
         const string markdown = "??? note \"Example\"\n\n    Text\n    { .annotate }\n    ```ts\n    const value = 1;\n    ```\n";
@@ -124,6 +227,39 @@ public class FixCommandTest
     }
 
     [Fact]
+    public void PreservesLineEndingsWhenNoCompatibilitySyntaxIsPresent()
+    {
+        const string markdown = "# Guide\r\n\r\nText\r\n";
+
+        Assert.Equal(markdown, MarkdownCompatibility.FixMarkdown(markdown));
+    }
+
+    [Fact]
+    public void PreservesCrLfWhenConvertingMaterialSyntax()
+    {
+        const string markdown = "!!! note\r\n\r\n    Body\r\n";
+
+        var converted = MarkdownCompatibility.FixMarkdown(markdown);
+
+        Assert.Contains("\r\n", converted);
+        Assert.DoesNotContain("\n", converted.Replace("\r\n", string.Empty, StringComparison.Ordinal));
+    }
+
+    [Fact]
+    public void DoesNotConvertCardGridExamplesInsideFencedCodeAndMatchesNestedDivs()
+    {
+        const string markdown = "```html\n<div class=\"grid cards\" markdown>\n- [example](example.md)\n<div>nested</div>\n</div>\n```\n\n<div class=\"grid cards\" markdown>\n- [guide](guide.md)\n<div class=\"nested\">Description</div>\n</div>\n";
+
+        var issues = MarkdownCompatibility.FindIssues(markdown);
+        var converted = MarkdownCompatibility.FixMarkdown(markdown);
+
+        Assert.Single(issues.Where(issue => issue.Code == Markdown.Linter.RuleCodes.MaterialCards));
+        Assert.Contains("<div class=\"grid cards\" markdown>", converted);
+        Assert.Contains("- [guide](guide.md) Description", converted);
+        Assert.DoesNotContain("<div class=\"nested\">", converted);
+    }
+
+    [Fact]
     public void MigratesBlogAndTagIndexesToStaticLists()
     {
         var root = Path.Combine(Path.GetTempPath(), Guid.NewGuid().ToString("N"));
@@ -133,7 +269,8 @@ public class FixCommandTest
         {
             File.WriteAllText(Path.Combine(root, "README.md"), "# Docs\n");
             File.WriteAllText(Path.Combine(root, "Tags.md"), "# Tags\n\n<!-- material/tags -->\n");
-            File.WriteAllText(Path.Combine(root, "blog", "index.md"), "# Blog\n");
+            File.WriteAllText(Path.Combine(root, "blog", "index.md"), "---\ntitle: Wiki Blog\n---\n# Blog\n");
+            File.WriteAllText(Path.Combine(root, "blog", ".pages"), "title: Blog\n");
             File.WriteAllText(Path.Combine(posts, "First.md"), "---\ntitle: First post\ndate: 2026-01-01\ntags:\n  - Release\n---\n# First\n");
             File.WriteAllText(Path.Combine(posts, "Second.md"), "---\ntitle: Second post\ndate: 2026-01-02\n---\n# Second\n");
 
@@ -142,6 +279,9 @@ public class FixCommandTest
 
             Assert.Equal(0, result);
             var blogIndex = File.ReadAllText(Path.Combine(root, "blog", "README.md"));
+            Assert.Contains("sidebar:", blogIndex);
+            Assert.Contains("title: Wiki Blog", blogIndex);
+            Assert.Contains("title: Blog", blogIndex);
             Assert.Contains("posts/First.md", blogIndex);
             Assert.Contains("posts/Second.md", blogIndex);
             Assert.DoesNotContain("posts/README.md", blogIndex);
@@ -155,7 +295,7 @@ public class FixCommandTest
     }
 
     [Fact]
-    public void PreservesMismatchedSectionTitlesAsSidebarOverrides()
+    public void LeavesOrdinaryDirectoryTitleMismatchesForTheLinter()
     {
         var root = Path.Combine(Path.GetTempPath(), Guid.NewGuid().ToString("N"));
         var section = Path.Combine(root, "Guides");
@@ -170,15 +310,102 @@ public class FixCommandTest
             var result = command.Execute(new VisitorSettings { RootPath = root, SearchPattern = "*.md", IncludeHidden = true });
 
             Assert.Equal(0, result);
-            Assert.Contains("title: Overview", File.ReadAllText(Path.Combine(section, "README.md")));
-            Assert.Contains("sidebar:", File.ReadAllText(Path.Combine(section, "README.md")));
+            Assert.DoesNotContain("sidebar:", File.ReadAllText(Path.Combine(section, "README.md")));
 
             var receiver = new ConsoleLintErrorReceiver();
             var graph = CreateGraphBuilder().CreateGraph(new VisitorSettings { RootPath = root, SearchPattern = "*.md", IncludeHidden = true });
             var linter = new LinterVisitor(receiver);
             linter.Prepare(graph);
             graph.Visit(linter);
-            Assert.Equal(0, receiver.ErrorCount);
+            Assert.Equal(1, receiver.ErrorCount);
+        }
+        finally
+        {
+            Directory.Delete(root, recursive: true);
+        }
+    }
+
+    [Fact]
+    public void ReadsCompactSidebarTitleFrontMatter()
+    {
+        var root = Path.Combine(Path.GetTempPath(), Guid.NewGuid().ToString("N"));
+        Directory.CreateDirectory(root);
+        var path = Path.Combine(root, "README.md");
+        File.WriteAllText(path, "---\nsidebar.title: .NET\n---\n# Overview\n");
+        try
+        {
+            var page = new MarkdownUtil.Model.MarkdownFile(new FileInfo(path), null);
+            var visitor = new DataPreparationVisitor(new MarkdownDocumentReader());
+
+            visitor.Process(page, 0);
+
+            Assert.Equal(".NET", page.SidebarTitle);
+        }
+        finally
+        {
+            Directory.Delete(root, recursive: true);
+        }
+    }
+
+    [Fact]
+    public void ReportsMalformedSiteConfigurationWithoutCreatingOutput()
+    {
+        var root = Path.Combine(Path.GetTempPath(), Guid.NewGuid().ToString("N"));
+        var output = Path.Combine(root, "site");
+        Directory.CreateDirectory(root);
+        File.WriteAllText(Path.Combine(root, "README.md"), "# Docs\n");
+        File.WriteAllText(Path.Combine(root, "mdu.yml"), "site_name: [broken\n");
+        try
+        {
+            var command = new RenderCommand(
+                CreateGraphBuilder(),
+                new CountNodesVisitor<MarkdownUtil.Model.MarkdownFile>(),
+                new HtmlRenderer(),
+                new SearchIndexBuilder());
+
+            var result = command.Execute(new RenderCommandSettings
+            {
+                RootPath = root,
+                OutputPath = output,
+                SearchPattern = "*.md",
+                IncludeHidden = true
+            });
+
+            Assert.Equal(1, result);
+            Assert.False(Directory.Exists(output));
+        }
+        finally
+        {
+            Directory.Delete(root, recursive: true);
+        }
+    }
+
+    [Fact]
+    public void ServeReportsMalformedSiteConfigurationBeforeStartingTheServer()
+    {
+        var root = Path.Combine(Path.GetTempPath(), Guid.NewGuid().ToString("N"));
+        var output = Path.Combine(root, "site");
+        Directory.CreateDirectory(root);
+        File.WriteAllText(Path.Combine(root, "README.md"), "# Docs\n");
+        File.WriteAllText(Path.Combine(root, "mdu.yml"), "site_name: [broken\n");
+        try
+        {
+            var command = new ServeCommand(
+                CreateGraphBuilder(),
+                new DataPreparationVisitor(new MarkdownDocumentReader()),
+                new HtmlRenderer(),
+                new SearchIndexBuilder());
+
+            var result = command.Execute(new RenderCommandSettings
+            {
+                RootPath = root,
+                OutputPath = output,
+                SearchPattern = "*.md",
+                IncludeHidden = true
+            }, 43210, noBrowser: true);
+
+            Assert.Equal(1, result);
+            Assert.False(Directory.Exists(output));
         }
         finally
         {

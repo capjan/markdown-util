@@ -15,6 +15,8 @@ public enum NodeShape
     Stadium,
     Circle,
     Diamond,
+    Subroutine,
+    Hexagon,
 
     /// <summary>A person, drawn as a stick figure; available in context diagrams.</summary>
     Actor

@@ -13,9 +13,9 @@ public sealed class FlowchartParser
         @"^(?:flowchart|graph)(?:[ \t]+(?<direction>TB|TD|BT|LR|RL))?[ \t]*(?:;(?<rest>.*))?$",
         RegexOptions.Compiled | RegexOptions.CultureInvariant);
     private static readonly Regex KeywordRegex = new(@"\G(?<keyword>[A-Za-z]+)(?=[ \t:{]|$)", RegexOptions.Compiled);
-    private static readonly Regex IdRegex = new(@"\G[\p{L}\p{N}_]+", RegexOptions.Compiled);
+    private static readonly Regex IdRegex = new(@"\G(?:[\p{L}\p{N}_]+:)?[\p{L}\p{N}_]+", RegexOptions.Compiled);
     private static readonly Regex SubgraphRegex = new(
-        "^subgraph[ \\t]+(?<id>[^ \\t\\[]+)(?:\\[(?:\\\"(?<quoted>.*?)\\\"|(?<plain>.*?))\\])?[ \\t]*$",
+        "^subgraph[ \\t]+(?<id>[^ \\t\\[]+)[ \\t]*(?:\\[(?:\\\"(?<quoted>.*?)\\\"|(?<plain>.*?))\\])?[ \\t]*$",
         RegexOptions.Compiled | RegexOptions.CultureInvariant);
     private static readonly Regex ActorRegex = new(@"^(?<id>[\p{L}\p{N}_]+)(?:[ \t]+as[ \t]+(?<label>.+))?$", RegexOptions.Compiled);
     private static readonly Regex ClickRegex = new(
@@ -34,12 +34,14 @@ public sealed class FlowchartParser
     {
         ("((", "))", NodeShape.Circle),
         ("([", "])", NodeShape.Stadium),
+        ("[[", "]]", NodeShape.Subroutine),
+        ("{{", "}}", NodeShape.Hexagon),
         ("(", ")", NodeShape.Rounded),
         ("[", "]", NodeShape.Rectangle),
         ("{", "}", NodeShape.Diamond)
     };
 
-    private static readonly string[] UnsupportedShapeOpeners = { "(((", "[[", "[(", "[/", "[\\", "{{", ">", "@{" };
+    private static readonly string[] UnsupportedShapeOpeners = { "(((", "[(", "[/", "[\\", ">", "@{" };
     private static readonly string[] IgnoredKeywords = { "classDef", "class", "style", "linkStyle", "accDescr" };
 
     private readonly string[] _lines;

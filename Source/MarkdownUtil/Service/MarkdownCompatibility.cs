@@ -16,9 +16,10 @@ public static class MarkdownCompatibility
     private static readonly Regex TabHeader = new(
         "^(?<indent> *)===[ \\t]+[\\\"'](?<title>.*?)[\\\"'][ \\t]*$",
         RegexOptions.Compiled);
-    private static readonly Regex CardGrid = new(
-        """<div\s+class=["']grid\s+cards["']\s+markdown\s*>(?<body>[\s\S]*?)</div>""",
+    private static readonly Regex CardGridOpening = new(
+        """<div\b(?=[^>]*\bclass=["'][^"']*(?:\bgrid\b[^"']*\bcards\b|\bcards\b[^"']*\bgrid\b)[^"']*["'])(?=[^>]*\bmarkdown\b)[^>]*>""",
         RegexOptions.Compiled | RegexOptions.IgnoreCase);
+    private static readonly Regex DivTag = new("</?div\\b[^>]*>", RegexOptions.Compiled | RegexOptions.IgnoreCase);
     private static readonly Regex Fence = new(@"^\s*(```+|~~~+)", RegexOptions.Compiled);
     private static readonly Regex BlockquotePrefix = new(@"^\s*(?:>\s*)*", RegexOptions.Compiled);
     private static readonly Regex AnnotationMarker = new(@"^\s*(?:>\s*)*\{ \.annotate \}\s*$", RegexOptions.Compiled);
@@ -58,10 +59,9 @@ public static class MarkdownCompatibility
                 issues.Add(new CompatibilityIssue(index + 1, RuleCodes.CodeAnnotations, "Material code annotations are unsupported."));
         }
 
-        foreach (Match match in CardGrid.Matches(content))
+        foreach (var cardGrid in FindCardGrids(content))
         {
-            var line = 1 + content[..match.Index].Count(character => character == '\n');
-            issues.Add(new CompatibilityIssue(line, RuleCodes.MaterialCards, "Material card grids are unsupported; run 'mdu fix' to convert them to Markdown lists."));
+            issues.Add(new CompatibilityIssue(cardGrid.StartLine + 1, RuleCodes.MaterialCards, "Material card grids are unsupported; run 'mdu fix' to convert them to Markdown lists."));
         }
 
         var document = Markdig.Markdown.Parse(content, new MarkdownPipelineBuilder().Build());
@@ -78,11 +78,98 @@ public static class MarkdownCompatibility
 
     public static string FixMarkdown(string content)
     {
-        content = CardGrid.Replace(content, match => ConvertCardGrid(match.Groups["body"].Value));
+        var original = content;
+        var normalized = content.ReplaceLineEndings("\n");
+        content = ConvertCardGrids(normalized);
         content = ConvertBlockSyntax(content, convertTabs: true);
         content = ConvertBlockSyntax(content, convertTabs: false);
         content = RemoveMaterialAnnotationMarkers(content);
-        return content;
+        if (content == normalized) return original;
+        var newline = original.Contains("\r\n", StringComparison.Ordinal) ? "\r\n" : original.Contains('\r') ? "\r" : "\n";
+        return newline == "\n" ? content : content.Replace("\n", newline, StringComparison.Ordinal);
+    }
+
+    private static string ConvertCardGrids(string content)
+    {
+        var lines = content.Split('\n');
+        var blocks = FindCardGrids(content).ToDictionary(block => block.StartLine);
+        var output = new List<string>();
+        for (var index = 0; index < lines.Length; index++)
+        {
+            if (!blocks.TryGetValue(index, out var block))
+            {
+                output.Add(lines[index]);
+                continue;
+            }
+
+            output.AddRange(ConvertCardGrid(block.BodyLines));
+            index = block.EndLine;
+        }
+
+        return string.Join('\n', output);
+    }
+
+    private static IReadOnlyList<CardGridBlock> FindCardGrids(string content)
+    {
+        var lines = content.ReplaceLineEndings("\n").Split('\n');
+        var blocks = new List<CardGridBlock>();
+        for (var index = 0; index < lines.Length; index++)
+        {
+            var fenceMatch = Fence.Match(BlockquotePrefix.Replace(lines[index], string.Empty));
+            if (fenceMatch.Success)
+            {
+                var fence = fenceMatch.Groups[1].Value[..3];
+                while (++index < lines.Length)
+                {
+                    var close = Fence.Match(BlockquotePrefix.Replace(lines[index], string.Empty));
+                    if (close.Success && close.Groups[1].Value.StartsWith(fence, StringComparison.Ordinal)) break;
+                }
+                continue;
+            }
+
+            if (!CardGridOpening.IsMatch(lines[index])) continue;
+            var depth = 1;
+            var bodyLines = new List<string>();
+            var inFence = false;
+            var fenceCharacter = string.Empty;
+            for (var end = index + 1; end < lines.Length; end++)
+            {
+                var currentFence = Fence.Match(BlockquotePrefix.Replace(lines[end], string.Empty));
+                if (currentFence.Success)
+                {
+                    if (!inFence)
+                    {
+                        inFence = true;
+                        fenceCharacter = currentFence.Groups[1].Value[..3];
+                    }
+                    else if (currentFence.Groups[1].Value.StartsWith(fenceCharacter, StringComparison.Ordinal))
+                    {
+                        inFence = false;
+                    }
+                }
+
+                if (!inFence)
+                {
+                    foreach (Match tag in DivTag.Matches(lines[end]))
+                    {
+                        if (tag.Value.StartsWith("</", StringComparison.Ordinal)) depth--;
+                        else if (!tag.Value.EndsWith("/>", StringComparison.Ordinal)) depth++;
+                        if (depth == 0) break;
+                    }
+                }
+
+                if (depth == 0)
+                {
+                    blocks.Add(new CardGridBlock(index, end, bodyLines));
+                    index = end;
+                    break;
+                }
+
+                bodyLines.Add(lines[end]);
+            }
+        }
+
+        return blocks;
     }
 
     private static string RemoveMaterialAnnotationMarkers(string content)
@@ -115,11 +202,11 @@ public static class MarkdownCompatibility
         return string.Join('\n', output);
     }
 
-    private static string ConvertCardGrid(string body)
+    private static string[] ConvertCardGrid(IEnumerable<string> bodyLines)
     {
         var result = new List<string>();
         List<string>? current = null;
-        foreach (var rawLine in body.ReplaceLineEndings("\n").Split('\n'))
+        foreach (var rawLine in bodyLines)
         {
             var line = rawLine.Trim();
             if (line.StartsWith("- ", StringComparison.Ordinal))
@@ -129,12 +216,12 @@ public static class MarkdownCompatibility
             }
             else if (current is not null && line.Length > 0)
             {
-                current.Add(line);
+                current.Add(DivTag.Replace(line, string.Empty).Trim());
             }
         }
 
         if (current is not null) AddItem(current);
-        return string.Join(Environment.NewLine, result);
+        return result.ToArray();
 
         void AddItem(List<string> item)
         {
@@ -241,4 +328,6 @@ public static class MarkdownCompatibility
         if (block.Lines.Lines is null) return string.Empty;
         return string.Join('\n', block.Lines.Lines.Select(line => line.Slice.ToString()));
     }
+
+    private sealed record CardGridBlock(int StartLine, int EndLine, IReadOnlyList<string> BodyLines);
 }
