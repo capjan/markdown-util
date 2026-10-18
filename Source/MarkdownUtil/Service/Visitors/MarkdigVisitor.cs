@@ -39,7 +39,7 @@ public class MarkdigVisitor : BaseVisitor
         ? StringComparison.OrdinalIgnoreCase
         : StringComparison.Ordinal;
 
-    protected override bool ProcessFile(MarkdownFile entity, int graphDepth, FilePathInfo io)
+    protected override bool ProcessFile(MarkdownFile entity, int _, FilePathInfo io)
     {
         Console.WriteLine($"{io.InputRelativeFilePathToRootDirectory} => {io.OutputRelativeFilePathToRootDirectory}");
 
@@ -47,6 +47,8 @@ public class MarkdigVisitor : BaseVisitor
         io.CreateOutputDirectory();    // ensures that the output directory exits
 
         var editPageLink = string.IsNullOrEmpty(_editPageRoot) ? string.Empty : Path.Combine(_editPageRoot, io.InputRelativeFilePathToRootDirectory);
+        var nestingDeep = Path.GetDirectoryName(io.OutputRelativeFilePathToRootDirectory)?
+            .Split(Path.DirectorySeparatorChar, StringSplitOptions.RemoveEmptyEntries).Length ?? 0;
         
         var outputFileName = io.OutputFullFilePath;
    
@@ -70,7 +72,7 @@ public class MarkdigVisitor : BaseVisitor
                     sw,
                     entity.Title,
                     "",
-                    graphDepth,
+                    nestingDeep,
                     markdown,
                     editPageLink,
                     BuildNavigation(outputFileName),
