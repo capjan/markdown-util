@@ -28,5 +28,3 @@ mdu lint ./ProjectDocs
 ```
 
 If there are no supported warnings, the command reports that there are no fixable warnings and makes no changes.
-
-[Back to Usage](README.md)

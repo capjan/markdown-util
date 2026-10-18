@@ -22,10 +22,12 @@ registrations.AddScoped<GraphBuilder>();
 registrations.AddScoped<FixCommand>();
 registrations.AddScoped<CountNodesVisitor<MarkdownFile>>();
 registrations.AddScoped<HtmlRenderer>();
+registrations.AddScoped<PdfRenderer>();
 registrations.AddScoped<SearchIndexBuilder>();
 registrations.AddScoped<LintCommand>();
 registrations.AddScoped<PrintTreeCommand>();
 registrations.AddScoped<RenderCommand>();
+registrations.AddScoped<PdfCommand>();
 registrations.AddScoped<ServeCommand>();
 
 using var services = registrations.BuildServiceProvider();
@@ -101,6 +103,30 @@ renderCommand.SetAction(parseResult =>
         EditPageRoot = parseResult.GetValue(editPageRoot) ?? string.Empty
     }));
 rootCommand.Subcommands.Add(renderCommand);
+
+var pdfCommand = new Command("pdf", "Renders Markdown documentation to one local PDF file.");
+var (pdfPattern, pdfHidden) = AddVisitorOptions(pdfCommand);
+var pdfRootPath = new Argument<string?>("path")
+{
+    Arity = ArgumentArity.ZeroOrOne,
+    Description = "Root folder containing Markdown files or one Markdown file. Defaults to ./docs or ./Docs."
+};
+var pdfOutputPath = new Argument<string?>("outpath")
+{
+    Arity = ArgumentArity.ZeroOrOne,
+    Description = "PDF file to create. Defaults to ./documentation.pdf for a folder, or a PDF named after the selected Markdown file."
+};
+pdfCommand.Arguments.Add(pdfRootPath);
+pdfCommand.Arguments.Add(pdfOutputPath);
+pdfCommand.SetAction(parseResult =>
+    services.GetRequiredService<PdfCommand>().Execute(new RenderCommandSettings
+    {
+        RootPath = parseResult.GetValue(pdfRootPath),
+        OutputPath = parseResult.GetValue(pdfOutputPath),
+        SearchPattern = parseResult.GetValue(pdfPattern),
+        IncludeHidden = parseResult.GetValue(pdfHidden)
+    }));
+rootCommand.Subcommands.Add(pdfCommand);
 
 var serveCommand = new Command("serve", "Renders, serves, and watches a Markdown site.");
 var (servePattern, serveHidden) = AddVisitorOptions(serveCommand);

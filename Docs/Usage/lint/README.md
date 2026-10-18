@@ -64,5 +64,3 @@ An error includes the path, line, rule code, and message. For example:
 ```text
 /project/Docs/Overview.md:7: MDU004 LocalLinkExists: Local link target './intro.md' does not exist.
 ```
-
-[Back to Usage](../README.md)

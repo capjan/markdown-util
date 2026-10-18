@@ -979,6 +979,7 @@ blockquote {
 }
 
 .math-svg {
+    width: auto;
     max-width: 100%;
     height: auto;
     vertical-align: middle;
@@ -1417,6 +1418,7 @@ pre code {
 }
 
 .diagram svg {
+    width: auto;
     max-width: 100%;
     height: auto;
     font-family: inherit;
@@ -1747,10 +1749,6 @@ th, td {
     max-width: calc(1400px - 4rem);
 }
 
-.page-toolbar[hidden] {
-    display: none;
-}
-
 .markdown-content {
     min-width: 0;
 }
@@ -1789,10 +1787,15 @@ th, td {
 }
 
 .toc-progress {
+    display: none;
     width: 18px;
     height: 18px;
     flex: none;
     overflow: visible;
+}
+
+.on-this-page.has-scroll-progress .toc-progress {
+    display: block;
 }
 
 .toc-progress circle {
@@ -1933,21 +1936,6 @@ th, td {
         overflow: hidden;
         text-overflow: ellipsis;
         white-space: nowrap;
-    }
-
-    .page-toolbar.is-toc-hidden {
-        position: static;
-        display: block;
-        z-index: auto;
-        width: auto;
-        margin: 0 0 1rem;
-        padding: 0;
-        border-bottom: 0;
-        background: transparent;
-    }
-
-    .page-toolbar.is-toc-hidden .breadcrumbs {
-        display: block;
     }
 
     .toc-heading {

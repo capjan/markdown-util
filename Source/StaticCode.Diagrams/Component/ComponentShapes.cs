@@ -72,7 +72,8 @@ internal static class ComponentShapes
         var kind = box.Kind.ToString().ToLowerInvariant();
         var noteClass = box.Kind == ElementKind.Note ? " diagram-note" : string.Empty;
         var safeHref = SafeHref(href);
-        if (safeHref != null) svg.Append($"<a class=\"diagram-link\" href=\"{safeHref}\">");
+        var pdfBounds = $"{F(center.X - box.Width / 2)} {F(center.Y - box.Height / 2)} {F(box.Width)} {F(box.Height)}";
+        if (safeHref != null) svg.Append($"<a class=\"diagram-link\" href=\"{safeHref}\" data-pdf-bounds=\"{pdfBounds}\">");
         svg.Append($"<g class=\"diagram-node diagram-component-{kind}{noteClass}\">");
         var left = center.X - box.Width / 2;
         var top = center.Y - box.Height / 2;
@@ -176,7 +177,8 @@ internal static class ComponentShapes
         var labelWidth = TextMetrics.Measure(label).Width;
         var labelClass = "diagram-container-label";
         var safeHref = SafeHref(element.Href);
-        if (safeHref != null) svg.Append($"<a class=\"diagram-link\" href=\"{safeHref}\">");
+        var pdfBounds = $"{F(left)} {F(top)} {F(width)} {F(height)}";
+        if (safeHref != null) svg.Append($"<a class=\"diagram-link\" href=\"{safeHref}\" data-pdf-bounds=\"{pdfBounds}\">");
         svg.Append($"<g class=\"diagram-container diagram-container-{kind}\">");
 
         switch (element.Kind)

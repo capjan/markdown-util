@@ -133,7 +133,8 @@ internal static class NodeShapes
     {
         var classes = $"diagram-node diagram-node-{box.Shape.ToString().ToLowerInvariant()}" + (extraClass == null ? string.Empty : $" {extraClass}");
         var safeHref = SafeHref(href);
-        if (safeHref != null) svg.Append($"<a class=\"diagram-link\" href=\"{safeHref}\">");
+        var pdfBounds = $"{F(center.X - box.Width / 2)} {F(center.Y - box.Height / 2)} {F(box.Width)} {F(box.Height)}";
+        if (safeHref != null) svg.Append($"<a class=\"diagram-link\" href=\"{safeHref}\" data-pdf-bounds=\"{pdfBounds}\">");
         svg.Append($"<g class=\"{classes}\">");
         var left = center.X - box.Width / 2;
         var top = center.Y - box.Height / 2;

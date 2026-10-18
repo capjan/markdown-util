@@ -6,12 +6,13 @@ sidebar.order: 20
 
 ## Quick start
 
-Run these commands from your project folder. `serve` is for local preview; use `render` when you are ready to create the site for publishing.
+Run these commands from your project folder. `serve` is for local preview; use `render` when you are ready to create the site for publishing, or `pdf` to create one local document.
 
 ```bash
 mdu tree
 mdu lint
 mdu serve
+mdu pdf
 ```
 
 `mdu tree` shows the detected page structure. `mdu lint` reports problems. If it reports an `MDU006` warning, see [fix](fix.md) for the automatic fix; it moves a Markdown page and updates affected links. Run `mdu lint` again afterward. `mdu serve` renders the site, opens it in your browser, and watches Markdown files and linked local assets for changes. Press `Ctrl+C` to stop the preview server. When you are ready to publish, run `mdu render` to create the static site in `./site`.
@@ -42,15 +43,16 @@ Use `--no-browser` to start the server without opening a browser.
 | `mdu lint [path]` | Checks Markdown pages and local links. Alias: `mdu l`. | [lint](./lint/README.md) · [rules reference](./lint/Rules.md) |
 | `mdu fix [path]` | Applies automatic fixes for supported warnings. | [fix](fix.md) |
 | `mdu render [path] [outpath]` | Writes a static HTML site. Alias: `mdu r`. | [render](render.md) |
+| `mdu pdf [path] [outpath]` | Writes one local PDF file. | [pdf](pdf.md) |
 | `mdu serve [path] [outpath]` | Serves a local preview and updates it when files change. | [serve](serve.md) |
 
 ## Paths and file search
 
-Commands that read Markdown use the only `./docs` or `./Docs` directory in the current folder by default. If neither exists, or both exist, pass the source path explicitly. `render` and `serve` write to `./site` by default. All five commands search for `*.md` files unless you choose another pattern.
+Commands that read Markdown use the only `./docs` or `./Docs` directory in the current folder by default. If neither exists, or both exist, pass the source path explicitly. `render` and `serve` write to `./site` by default. `pdf` writes `./documentation.pdf`. All six commands search for `*.md` files unless you choose another pattern.
 
 ## Common options
 
-These options are available on `tree`, `lint`, `fix`, `render`, and `serve`:
+These options are available on `tree`, `lint`, `fix`, `render`, `pdf`, and `serve`:
 
 | Option | Effect |
 | --- | --- |
