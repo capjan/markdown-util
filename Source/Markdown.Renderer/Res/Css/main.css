@@ -1704,10 +1704,15 @@ th, td {
     }
 }
 
-@media (max-width: 480px) {
-    .navigation-toggle span,
+@media (max-width: 640px) {
     .search-button span,
     .media-settings-toggle span {
+        display: none;
+    }
+}
+
+@media (max-width: 480px) {
+    .navigation-toggle span {
         display: none;
     }
 
