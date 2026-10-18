@@ -86,10 +86,6 @@ public class HtmlRenderer
         var tocHeadings = GetTableOfContentsHeadings(renderedMarkdown);
         renderedMarkdown = InsertHeadingPermalinks(renderedMarkdown);
         var breadcrumbMarkup = RenderBreadcrumbs(renderedMarkdown, breadcrumbs ?? Array.Empty<BreadcrumbItem>());
-        if (tocHeadings.Count == 0)
-        {
-            renderedMarkdown = InsertBreadcrumbsAboveHeading(renderedMarkdown, breadcrumbMarkup);
-        }
         var model = new MainModel
         {
             Title = title,
@@ -107,13 +103,12 @@ public class HtmlRenderer
             ["CSS_LINK"] = HtmlEncoder.Default.Encode(model.CssLink),
             ["SEARCH_SCRIPT_LINK"] = HtmlEncoder.Default.Encode(searchScriptLink),
             ["SEARCH_INDEX_LINK"] = HtmlEncoder.Default.Encode(searchIndexLink),
-            ["TOC_LAYOUT_CLASS"] = tocHeadings.Count > 0 ? " has-on-this-page" : string.Empty,
+            ["TOC_LAYOUT_CLASS"] = " has-on-this-page",
             ["NAVIGATION_ITEMS"] = RenderNavigationItems(model.NavigationItems),
             ["MEDIA_SETTINGS_BUTTON"] = providersForSettings.Count > 0 ? MediaLinkEmbedder.SettingsButtonHtml : string.Empty,
             ["MEDIA_SETTINGS_DIALOG"] = MediaLinkEmbedder.RenderSettingsDialog(providersForSettings),
             ["MARKDOWN"] = model.RenderedMarkdown,
-            ["EDIT_PAGE_LINK"] = tocHeadings.Count == 0 ? RenderEditPageLink(model.EditPageLink) : string.Empty,
-            ["PAGE_TOOLBAR"] = RenderPageToolbar(breadcrumbMarkup, tocHeadings, model.EditPageLink),
+            ["PAGE_TOOLBAR"] = RenderPageToolbar(breadcrumbMarkup, tocHeadings, model.EditPageLink, model.Title),
             ["PAGE_SCRIPTS"] =
                 (hasIconSearch
                     ? $"<script defer src=\"{HtmlEncoder.Default.Encode(prefix + "js/" + IconSearch.ScriptFileName)}\"></script>{Environment.NewLine}"
@@ -184,14 +179,6 @@ public class HtmlRenderer
         }
     }
 
-    private static string RenderEditPageLink(string editPageLink) =>
-        string.IsNullOrEmpty(editPageLink)
-            ? string.Empty
-            : $$"""
-              <hr />
-              <a href="{{HtmlEncoder.Default.Encode(editPageLink)}}">✎ Edit Page</a>
-              """;
-
     private static IReadOnlyList<TocHeading> GetTableOfContentsHeadings(string renderedMarkdown)
     {
         var headings = new List<TocHeading>();
@@ -213,26 +200,27 @@ public class HtmlRenderer
         return headings;
     }
 
-    private static string RenderOnThisPage(IReadOnlyList<TocHeading> headings, string editPageLink)
+    private static string RenderOnThisPage(IReadOnlyList<TocHeading> headings, string editPageLink, string pageTitle)
     {
-        if (headings.Count == 0) return string.Empty;
-
         var output = new StringBuilder();
-        var firstHeading = HtmlEncoder.Default.Encode(headings[0].Title);
+        var firstHeading = HtmlEncoder.Default.Encode(headings.Count > 0 ? headings[0].Title : pageTitle);
         output.AppendLine("        <aside class=\"on-this-page\" id=\"on-this-page\" aria-label=\"On this Page\">");
         output.AppendLine("            <h2 class=\"toc-heading\"><span>On this Page</span><svg class=\"toc-progress\" viewBox=\"0 0 20 20\" aria-hidden=\"true\"><circle class=\"toc-progress-track\" cx=\"10\" cy=\"10\" r=\"8\"></circle><circle class=\"toc-progress-value\" cx=\"10\" cy=\"10\" r=\"8\" stroke-dasharray=\"50.265\" stroke-dashoffset=\"50.265\"></circle></svg></h2>");
         output.AppendLine($"            <button class=\"toc-current\" id=\"toc-current\" type=\"button\" aria-expanded=\"false\" aria-controls=\"toc-nav\" aria-label=\"On this Page: {firstHeading}\"><span class=\"toc-current-label\">{firstHeading}</span><svg class=\"toc-progress\" viewBox=\"0 0 20 20\" aria-hidden=\"true\"><circle class=\"toc-progress-track\" cx=\"10\" cy=\"10\" r=\"8\"></circle><circle class=\"toc-progress-value\" cx=\"10\" cy=\"10\" r=\"8\" stroke-dasharray=\"50.265\" stroke-dashoffset=\"50.265\"></circle></svg><svg class=\"toc-chevron\" viewBox=\"0 0 16 16\" aria-hidden=\"true\"><path d=\"m4 6 4 4 4-4\"></path></svg></button>");
         output.AppendLine("            <nav class=\"toc-nav\" id=\"toc-nav\" aria-label=\"On this Page\">");
-        output.AppendLine("                <ul class=\"toc-list\">");
-        for (var index = 0; index < headings.Count; index++)
+        if (headings.Count > 0)
         {
-            var heading = headings[index];
-            var id = HtmlEncoder.Default.Encode(heading.Id);
-            var title = HtmlEncoder.Default.Encode(heading.Title);
-            var depth = heading.Level - 2;
-            output.AppendLine($"                    <li style=\"--toc-depth: {depth}\"><a class=\"toc-link\" href=\"#{id}\">{title}</a></li>");
+            output.AppendLine("                <ul class=\"toc-list\">");
+            for (var index = 0; index < headings.Count; index++)
+            {
+                var heading = headings[index];
+                var id = HtmlEncoder.Default.Encode(heading.Id);
+                var title = HtmlEncoder.Default.Encode(heading.Title);
+                var depth = heading.Level - 2;
+                output.AppendLine($"                    <li style=\"--toc-depth: {depth}\"><a class=\"toc-link\" href=\"#{id}\">{title}</a></li>");
+            }
+            output.AppendLine("                </ul>");
         }
-        output.AppendLine("                </ul>");
         output.AppendLine("                <div class=\"toc-actions\">");
         if (!string.IsNullOrEmpty(editPageLink))
         {
@@ -248,14 +236,13 @@ public class HtmlRenderer
     private static string RenderPageToolbar(
         string breadcrumbMarkup,
         IReadOnlyList<TocHeading> headings,
-        string editPageLink)
+        string editPageLink,
+        string pageTitle)
     {
-        if (headings.Count == 0) return string.Empty;
-
         var output = new StringBuilder();
         output.AppendLine("        <div class=\"page-toolbar\">");
         if (breadcrumbMarkup.Length > 0) output.AppendLine($"            {breadcrumbMarkup}");
-        output.Append(RenderOnThisPage(headings, editPageLink));
+        output.Append(RenderOnThisPage(headings, editPageLink, pageTitle));
         output.AppendLine("        </div>");
         return output.ToString();
     }
@@ -276,15 +263,6 @@ public class HtmlRenderer
             ? $"<span aria-current=\"page\">{HtmlEncoder.Default.Encode(item.Title)}</span>"
             : $"<a href=\"{HtmlEncoder.Default.Encode(item.Url)}\">{HtmlEncoder.Default.Encode(item.Title)}</a>");
         return $"<nav class=\"breadcrumbs\" aria-label=\"Breadcrumb\">{string.Join(separator, breadcrumbItems)}</nav>";
-    }
-
-    private static string InsertBreadcrumbsAboveHeading(string renderedMarkdown, string breadcrumbMarkup)
-    {
-        if (breadcrumbMarkup.Length == 0) return renderedMarkdown;
-        var headingStart = renderedMarkdown.IndexOf("<h1", StringComparison.Ordinal);
-        if (headingStart < 0) return renderedMarkdown;
-
-        return renderedMarkdown[..headingStart] + breadcrumbMarkup + Environment.NewLine + renderedMarkdown[headingStart..];
     }
 
     private static string InsertHeadingPermalinks(string renderedMarkdown) =>
