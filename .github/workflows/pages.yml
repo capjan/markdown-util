@@ -25,9 +25,25 @@ jobs:
       url: ${{ steps.deployment.outputs.page_url }}
     runs-on: ubuntu-latest
     steps:
-      - name: Render and deploy
-        id: deployment
-        uses: capjan/markdown-util-action@v1
+      - name: Check out repository
+        uses: actions/checkout@v7
+
+      - name: Set up .NET
+        uses: actions/setup-dotnet@v6
         with:
-          docs-path: Docs
-          edit-page-root: https://github.com/capjan/markdown-util/edit/main/Docs
+          dotnet-version: 10.0.x
+
+      - name: Configure GitHub Pages
+        uses: actions/configure-pages@v6
+
+      - name: Render documentation
+        run: dotnet run --project Source/MarkdownUtil/MarkdownUtil.csproj --configuration Release -- render Docs site --editPageRoot https://github.com/capjan/markdown-util/edit/main/Docs
+
+      - name: Upload Pages artifact
+        uses: actions/upload-pages-artifact@v5
+        with:
+          path: site
+
+      - name: Deploy to GitHub Pages
+        id: deployment
+        uses: actions/deploy-pages@v5
