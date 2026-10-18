@@ -46,7 +46,7 @@ Use `--pretty` to group diagnostics by file and show paths relative to the lint 
 
 ## Automatic fixes
 
-`mdu fix [PATH]` applies warning fixes that are safe to determine automatically. It currently fixes `MDU006` by moving a section's only `README.md` to a same-named Markdown file beside the section folder. It updates links to the page and rebases relative links from the moved page, including links to local assets.
+`mdu fix` currently fixes `MDU006` by moving a section's only `README.md` to a same-named Markdown file beside the section folder. It updates links to the page and rebases relative links from the moved page, including links to local assets. See the [fix command documentation](../fix.md) for usage and details.
 
 ```bash
 mdu fix
