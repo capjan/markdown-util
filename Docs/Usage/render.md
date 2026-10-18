@@ -39,7 +39,7 @@ colors:
     primary: "#2997ff"
 ```
 
-Page front matter supports `title`, `description`, and `icon`. `title` sets the browser and navigation title, `description` becomes the page meta description, and `icon` adds an icon shortcode beside the first-level heading. `sidebar.title` overrides the page's navigation label; nested `sidebar.order`, `sidebar.visible`, and `sidebar.expanded` control its navigation position and visibility.
+Page front matter supports `title`, `description`, and `icon`. `title` sets the browser and navigation title, `description` becomes the page meta description, and `icon` adds an icon shortcode beside the first-level heading. `sidebar.title` overrides the page's navigation label; nested `sidebar.order`, `sidebar.visible`, and `sidebar.expanded` control its navigation position and visibility. When the source root contains a `README.md`, its visible child pages also form the [top navigation tabs](../Features/Sidebar.md#top-navigation).
 
 ## Examples
 

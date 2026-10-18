@@ -12,8 +12,8 @@
 - Client-side search with direct links to matching sections and highlighted occurrences.
 - Automatic copying of assets to the output directory.
 - Breadcrumb navigation generated from the Markdown file structure.
-- Optional top-level navigation tabs, site branding and theme colors from `mdu.yml`, and page metadata from YAML front matter.
-- Dependency-free image lightboxes and footnote previews.
+- Top-level navigation tabs derived from the root `README.md`, site branding and theme colors from `mdu.yml`, and page metadata from YAML front matter.
+- Dependency-free image lightboxes and hover/focus footnote previews.
  
 ## Technical details
 

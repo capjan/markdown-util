@@ -6,6 +6,21 @@ When you run `mdu serve`, MarkdownUtil creates a collapsible sidebar from the Ma
 
 By default, entries at the same level are sorted alphabetically by page title. Add a `sidebar.order` number to a page's YAML front matter to choose its position. Smaller numbers appear first. Pages with an order are listed before pages without one; unordered pages remain alphabetical. If two pages have the same order, they are sorted alphabetically by title.
 
+## Top navigation
+
+When the documentation root has a `README.md`, its visible child pages also appear as horizontal tabs at the top of each page. The root `README.md` itself is not a tab. A top-level section stays selected while you view one of its child pages. Tabs use the same labels and ordering as the sidebar: set `sidebar.title` to change a label, `sidebar.order` to change its position, and `sidebar.visible: false` to hide it. No separate top-navigation setting is needed.
+
+For example, this structure creates **Guides** and **Reference** tabs:
+
+```text
+Docs/
+├── README.md
+├── Guides/
+│   └── README.md
+└── Reference/
+    └── README.md
+```
+
 ## Setting the order
 
 Put the `sidebar` field at the top of the Markdown file, before its title. For example, this front matter in `Docs/Setup/README.md` places Setup before the other top-level sections:
