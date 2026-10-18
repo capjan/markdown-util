@@ -79,6 +79,14 @@ Write a link label between pipes directly after the link, for example `A -->|Tex
 
 Make a node clickable with a `click` statement. Its destination can be a relative Markdown page or an external URL:
 
+~~~markdown title="Markdown"
+```mermaid
+flowchart LR
+    Store[Online Store]
+    click Store href "store.md" "Open the store details"
+```
+~~~
+
 ```mermaid
 flowchart LR
     Store[Online Store]
@@ -211,6 +219,15 @@ A triangle end, as for realization or generalization, is written `..|>` or `<|--
 
 Link a node to another page with PlantUML's URL statement. `ID` is the element's alias when it has one:
 
+~~~markdown title="Markdown"
+```plantuml
+@startuml
+component [Order Service] as Orders
+url of Orders is [[order-service.md]]
+@enduml
+```
+~~~
+
 ```plantuml
 @startuml
 component [Order Service] as Orders
@@ -277,6 +294,14 @@ Warehouse -. Handles shipments .-> Store
 The system in the center is the one that every link connects to. If several systems qualify, for example with a single link, the first one in the source is used. All other systems and people are spread evenly around the center, clockwise from the top in the order they first appear, so you control the arrangement by reordering the lines. A context diagram needs no header line.
 
 Use a Mermaid-style `click` statement to link a system or person to its detail page:
+
+~~~markdown title="Markdown"
+```context
+Store[Online Store]
+Store --> Inventory[Inventory System]
+click Inventory href "inventory.md"
+```
+~~~
 
 ```context
 Store[Online Store]
