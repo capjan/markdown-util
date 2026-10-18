@@ -56,27 +56,20 @@ public class GraphBuilder
 
         if (usedParent == null) return markdownFilesInFolder;
 
-        var childPages = directoryInfo
+        var siblingPages = markdownFilesInFolder
+            .Where(file => file != usedParent)
+            .ToArray();
+        var directoryPages = directoryInfo
             .GetDirectories()
             .SelectMany(dirInfoOfChildren =>
                 GetMarkdownFilesAt(usedParent, dirInfoOfChildren, searchPattern, searchOptions)).ToArray();
-        usedParent.IsOnlyReadmeInSection = markdownFilesInFolder.Count == 1 && childPages.Length == 0;
-        
-        return markdownFilesInFolder
-            .Select(file =>
-            {
-                if (file == usedParent)
-                {
-                    file.Children = childPages;
-                }
-                else
-                {
-                    file.Parent = usedParent;
-                }
-              
-                return file;
-            })
-            .ToArray();
+        usedParent.IsOnlyReadmeInSection = siblingPages.Length == 0 && directoryPages.Length == 0;
+        usedParent.Children = siblingPages.Concat(directoryPages).ToArray();
+
+        foreach (var page in siblingPages)
+            page.Parent = usedParent;
+
+        return [usedParent];
     }
 
 }

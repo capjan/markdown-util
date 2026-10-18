@@ -303,8 +303,14 @@ public sealed class ServeCommand
             var page = _pages[pagePath];
             var depth = page.CountDepth();
             var previousTitle = page.Title;
+            var previousSidebarOrder = page.SidebarOrder;
+            var previousSidebarVisible = page.SidebarVisible;
+            var previousSidebarExpanded = page.SidebarExpanded;
             _dataPreparationVisitor.Process(page, depth);
-            if (!previousTitle.Equals(page.Title, StringComparison.Ordinal))
+            if (!previousTitle.Equals(page.Title, StringComparison.Ordinal) ||
+                previousSidebarOrder != page.SidebarOrder ||
+                previousSidebarVisible != page.SidebarVisible ||
+                previousSidebarExpanded != page.SidebarExpanded)
             {
                 RebuildSite();
                 server.Publish(reloadAll: true);
