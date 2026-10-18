@@ -18,7 +18,7 @@ See [Paths and file search](README.md#paths-and-file-search) for the default sou
 | --- | --- |
 | `--port <port>` | Choose the local preview server port. Default: `4173`. |
 | `--no-browser` | Start the server without opening a browser. |
-| `--editPageRoot <editPageRoot>` | Add an **Edit Page** link to each rendered page. |
+| `--editPageRoot <editPageRoot>` | Add an **Edit Page** link to each rendered page and a GitHub repository button in the top bar. |
 
 ## Examples
 

@@ -270,6 +270,7 @@ body {
 
 .navigation-toggle:focus-visible,
 .search-button:focus-visible,
+.repository-link:focus-visible,
 .site-nav-link:focus-visible,
 .theme-toggle:focus-visible,
 .media-settings-toggle:focus-visible,
@@ -305,6 +306,34 @@ body {
     display: none;
     width: 17px;
     height: 17px;
+    flex: none;
+    fill: currentColor;
+}
+
+.repository-link {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.55rem;
+    margin-left: 0.6rem;
+    padding: 0.4rem 0.75rem;
+    border: 1px solid var(--border);
+    border-radius: 999px;
+    background: var(--surface-current);
+    color: var(--text-primary);
+    font-size: 0.875rem;
+    font-weight: 500;
+    text-decoration: none;
+    white-space: nowrap;
+}
+
+.repository-link:hover {
+    background: var(--nav-hover);
+    color: var(--nav-hover-text);
+}
+
+.repository-link svg {
+    width: 18px;
+    height: 18px;
     flex: none;
     fill: currentColor;
 }
@@ -1698,6 +1727,10 @@ th, td {
     .search-button {
         min-width: 0;
         margin-left: auto;
+    }
+
+    .repository-link span {
+        display: none;
     }
 
     .search-button kbd {
