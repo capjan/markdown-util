@@ -1,3 +1,7 @@
+---
+sidebar.order: 4
+---
+
 # render
 
 `mdu render` converts the detected Markdown pages into a static HTML site. It writes the result and copied local assets to the output folder, which defaults to `./site`. The command exits after rendering.

@@ -1,3 +1,7 @@
+---
+sidebar.order: 5
+---
+
 # serve
 
 `mdu serve` renders the Markdown site, starts a local preview server, and watches the source folder for changes. Markdown pages and linked local assets are updated as you work. By default, the command opens the preview in a browser and listens on port `4173`. Press `Ctrl+C` to stop it.

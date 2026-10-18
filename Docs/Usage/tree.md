@@ -1,3 +1,7 @@
+---
+sidebar.order: 1
+---
+
 # tree
 
 `mdu tree` prints the titles of the detected Markdown pages as an indented tree. A folder's `README.md` acts as its parent page; pages in child folders are shown beneath it.
