@@ -19,7 +19,7 @@ public class LintCommand
         _graphBuilder = graphBuilder;
     }
 
-    public int Execute(VisitorSettings settings)
+    public int Execute(VisitorSettings settings, bool pretty = false, bool color = false)
     {
         string rootPath;
         try
@@ -41,6 +41,6 @@ public class LintCommand
         });
         _linterVisitor.Prepare(graph);
         graph.Visit(_linterVisitor);
-        return _lintResultRenderer.Render(_linterVisitor.OrphanedPages);
+        return _lintResultRenderer.Render(_linterVisitor.OrphanedPages, rootPath, pretty, color);
     }
 }

@@ -6,6 +6,6 @@ sidebar.order: 25
 
 Guides for publishing a rendered MarkdownUtil site.
 
-- [GitHub](./GitHub/README.md) - Publish your documentation with GitHub Pages.
-- [GitLab](./GitLab/README.md) - Publish your documentation with GitLab Pages.
+- [GitHub](./GitHub.md) - Publish your documentation with GitHub Pages.
+- [GitLab](./GitLab.md) - Publish your documentation with GitLab Pages.
 - [Custom](./Custom.md) - Render the site and choose any hosting provider.

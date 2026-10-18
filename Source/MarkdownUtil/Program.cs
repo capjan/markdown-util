@@ -35,9 +35,21 @@ var lintCommand = new Command("lint", "Runs the linter and prints the results.")
 lintCommand.Aliases.Add("l");
 var (lintPattern, lintHidden) = AddVisitorOptions(lintCommand);
 var lintPath = AddRootPathArgument(lintCommand, "Root folder containing Markdown files. Defaults to ./docs or ./Docs.");
+var lintPretty = new Option<bool>("--pretty")
+{
+    Description = "Group lint results by file and use relative paths."
+};
+var lintColor = new Option<bool>("--color")
+{
+    Description = "Colorize lint results."
+};
+lintCommand.Options.Add(lintPretty);
+lintCommand.Options.Add(lintColor);
 lintCommand.SetAction(parseResult =>
     services.GetRequiredService<LintCommand>().Execute(
-        GetVisitorSettings(parseResult, lintPath, lintPattern, lintHidden)));
+        GetVisitorSettings(parseResult, lintPath, lintPattern, lintHidden),
+        parseResult.GetValue(lintPretty),
+        parseResult.GetValue(lintColor)));
 rootCommand.Subcommands.Add(lintCommand);
 
 var treeCommand = new Command("tree", "Prints the detected Markdown files as a tree.");

@@ -5,7 +5,7 @@
 ## Usage
 
 ```bash
-mdu lint [PATH]
+mdu lint [PATH] [options]
 ```
 
 The alias `mdu l` runs the same command. For all arguments, options, and defaults, here is the output of `mdu lint --help`:
@@ -23,6 +23,8 @@ Arguments:
 Options:
   -p, --pattern <pattern>  Search pattern for Markdown files. [default: *.md]
   --hidden                 Include hidden files and folders.
+  --pretty                 Group lint results by file and use relative paths.
+  --color                  Colorize lint results.
   -?, -h, --help           Show help and usage information
 ```
 
@@ -40,7 +42,7 @@ Each diagnostic includes a stable code, a descriptive rule name, the source path
 /project/Docs/Overview.md:7: MDU004 LocalLinkExists: Local link target './intro.md' does not exist.
 ```
 
-The linter also lists completely orphaned pages: pages hidden from the sidebar with `sidebar.visible: false` that no visible page links to. This list is informational and does not affect the lint exit code.
+Use `--pretty` to group diagnostics by file and show paths relative to the lint root. Add `--color` to colorize errors and warnings. The linter also lists completely orphaned pages: pages hidden from the sidebar with `sidebar.visible: false` that no visible page links to. This list is informational and does not affect the lint exit code.
 
 ## Examples
 
@@ -55,6 +57,7 @@ Check a specific folder or only files matching a different pattern:
 ```bash
 mdu lint ./ProjectDocs
 mdu lint ./ProjectDocs --pattern "*.markdown"
+mdu lint --pretty --color
 ```
 
 An error includes the path, line, rule code, and message. For example:

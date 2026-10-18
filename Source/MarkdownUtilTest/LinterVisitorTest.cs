@@ -114,6 +114,10 @@ public class LinterVisitorTest
     {
         public List<ReceivedError> Errors { get; } = new();
         public List<ReceivedError> Warnings { get; } = new();
+        public IReadOnlyList<LintDiagnostic> Diagnostics => Errors
+            .Select(error => new LintDiagnostic(error.FilePath, error.LineNumber, error.Message, IsWarning: false))
+            .Concat(Warnings.Select(warning => new LintDiagnostic(warning.FilePath, warning.LineNumber, warning.Message, IsWarning: true)))
+            .ToArray();
         public int ErrorCount => Errors.Count;
         public int WarningCount => Warnings.Count;
 
