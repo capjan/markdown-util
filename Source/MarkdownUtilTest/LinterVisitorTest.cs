@@ -55,6 +55,17 @@ public class LinterVisitorTest
     }
 
     [Fact]
+    public void MissingPercentEncodedLocalLinkIsReported()
+    {
+        WithPage("Overview.md", "# Overview\n\n[Missing](missing%20file.v1.pdf)", "Overview", 0, errors =>
+        {
+            var error = Assert.Single(errors);
+            Assert.Equal(3, error.LineNumber);
+            Assert.Equal(RuleCodes.LocalLinkExists, CodeOf(error));
+        });
+    }
+
+    [Fact]
     public void ExistingImagePasses()
     {
         WithPage("Overview.md", "# Overview\n\n![Diagram](diagram.png)", "Overview", 0, errors => Assert.Empty(errors),

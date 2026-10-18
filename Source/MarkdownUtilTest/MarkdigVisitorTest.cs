@@ -8,6 +8,42 @@ namespace MarkdownUtilTest;
 public class MarkdigVisitorTest
 {
     [Fact]
+    public void RemovesIconShortcodesFromTitlesAndEscapesEditPagePaths()
+    {
+        var rootPath = Path.Combine(Path.GetTempPath(), $"mdu-render-test-{Guid.NewGuid():N}");
+        var docsPath = Path.Combine(rootPath, "Docs");
+        var outputPath = Path.Combine(rootPath, "site");
+        var pageDirectory = Path.Combine(docsPath, "A B");
+        Directory.CreateDirectory(pageDirectory);
+        var pagePath = Path.Combine(pageDirectory, "README.md");
+        File.WriteAllText(pagePath, "# :simple-rider: Rider\n");
+
+        try
+        {
+            var page = new MarkdownFile(new FileInfo(pagePath), null)
+            {
+                Title = ":simple-rider: Rider",
+                SidebarTitle = ":simple-rider: Rider"
+            };
+            var renderer = new HtmlRenderer();
+            renderer.PrepareBasePath(outputPath);
+            var visitor = new MarkdigVisitor(docsPath, outputPath, renderer,
+                "https://github.com/capjan/Wiki/edit/main/docs", new SearchIndexBuilder(), [page]);
+
+            visitor.Process(page, 0);
+
+            var html = File.ReadAllText(Path.Combine(outputPath, "A B", "index.html"));
+            Assert.Contains("<title>Rider</title>", html);
+            Assert.Contains("A%20B/README.md", html);
+            Assert.DoesNotContain(":simple-rider:", html);
+        }
+        finally
+        {
+            if (Directory.Exists(rootPath)) Directory.Delete(rootPath, recursive: true);
+        }
+    }
+
+    [Fact]
     public void UsesAssetPathsRelativeToEachOutputPageDirectory()
     {
         var rootPath = Path.Combine(Path.GetTempPath(), $"mdu-render-test-{Guid.NewGuid():N}");
@@ -19,8 +55,11 @@ public class MarkdigVisitorTest
         var guideFilePath = Path.Combine(docsPath, "Guide", "README.md");
         var setupImagePath = Path.Combine(docsPath, "Setup", "_assets", "photo.svg");
         var imagePath = Path.Combine(docsPath, "Guide", "photo.webp");
-        File.WriteAllText(setupFilePath, "# Setup\n\n![Photo](./Setup/_assets/photo.svg)");
+        File.WriteAllText(setupFilePath,
+            "# Setup\n\n![Photo](./Setup/_assets/photo.svg)\n\n[JSON](./Setup/_assets/output.json)\n\n[PDF](./Setup/_assets/Safety%20Data.pdf)");
         File.WriteAllText(setupImagePath, "<svg></svg>");
+        File.WriteAllText(Path.Combine(docsPath, "Setup", "_assets", "output.json"), "{}");
+        File.WriteAllText(Path.Combine(docsPath, "Setup", "_assets", "Safety Data.pdf"), "pdf");
         File.WriteAllText(guideFilePath, "# Guide\n\n![Photo](./photo.webp)");
         File.WriteAllBytes(imagePath, [0x52, 0x49, 0x46, 0x46]);
 
@@ -60,6 +99,8 @@ public class MarkdigVisitorTest
             Assert.Contains("class=\"icon\"", guideHtml);
             Assert.True(File.Exists(Path.Combine(outputPath, "Guide", "photo.webp")));
             Assert.True(File.Exists(Path.Combine(outputPath, "Setup", "_assets", "photo.svg")));
+            Assert.True(File.Exists(Path.Combine(outputPath, "Setup", "_assets", "output.json")));
+            Assert.True(File.Exists(Path.Combine(outputPath, "Setup", "_assets", "Safety Data.pdf")));
             Assert.Contains("../Setup.html", File.ReadAllText(Path.Combine(outputPath, "Setup", "index.html")));
         }
         finally

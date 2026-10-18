@@ -72,6 +72,21 @@ public class Rule4Test
         });
     }
 
+    [Fact]
+    public void FileNameWithMultipleDotsPasses()
+    {
+        WithSourceAndTarget((source, root) =>
+        {
+            var folder = Path.Combine(root, "ASP.NET");
+            Directory.CreateDirectory(folder);
+            File.WriteAllText(Path.Combine(folder, "README..md"), "# Page");
+
+            var result = Validate(source, "ASP.NET/README..md");
+
+            Assert.True(result.IsValid);
+        });
+    }
+
     private static FluentValidation.Results.ValidationResult Validate(string source, string destination) =>
         new Rule4Validator().Validate(new Rule4Input(source, destination));
 

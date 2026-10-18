@@ -47,7 +47,7 @@ public class MarkdigVisitor : BaseVisitor
         var markdown = RemoveFrontMatter(io.ReadAllText(), entity.FrontMatter);
         io.CreateOutputDirectory();    // ensures that the output directory exits
 
-        var editPageLink = string.IsNullOrEmpty(_editPageRoot) ? string.Empty : Path.Combine(_editPageRoot, io.InputRelativeFilePathToRootDirectory);
+        var editPageLink = string.IsNullOrEmpty(_editPageRoot) ? string.Empty : GetEditPageLink(io.InputRelativeFilePathToRootDirectory);
         var nestingDeep = Path.GetDirectoryName(io.OutputRelativeFilePathToRootDirectory)?
             .Split(Path.DirectorySeparatorChar, StringSplitOptions.RemoveEmptyEntries).Length ?? 0;
         
@@ -71,7 +71,7 @@ public class MarkdigVisitor : BaseVisitor
             using (var sw = new StreamWriter(fs))
                 _htmlFoundation.WriteHtml(
                     sw,
-                    entity.Title,
+                    RemoveIconShortcodes(entity.Title),
                     entity.Description,
                     nestingDeep,
                     markdown,
@@ -251,11 +251,21 @@ public class MarkdigVisitor : BaseVisitor
 
     private static string GetNavigationTitle(MarkdownFile page)
     {
-        if (!string.IsNullOrWhiteSpace(page.SidebarTitle)) return page.SidebarTitle.Trim();
-        if (!string.IsNullOrWhiteSpace(page.Title)) return page.Title.Trim();
+        if (!string.IsNullOrWhiteSpace(page.SidebarTitle)) return RemoveIconShortcodes(page.SidebarTitle).Trim();
+        if (!string.IsNullOrWhiteSpace(page.Title)) return RemoveIconShortcodes(page.Title).Trim();
 
         return page.FileInfo.Name.Equals("README.md", StringComparison.OrdinalIgnoreCase)
             ? page.FileInfo.Directory?.Name ?? "Documentation"
             : Path.GetFileNameWithoutExtension(page.FileInfo.Name);
     }
+
+    private string GetEditPageLink(string relativePath)
+    {
+        var segments = relativePath.Replace('\\', '/').Split('/').Select(Uri.EscapeDataString);
+        return $"{_editPageRoot.TrimEnd('/')}/{string.Join('/', segments)}";
+    }
+
+    private static string RemoveIconShortcodes(string title) =>
+        System.Text.RegularExpressions.Regex.Replace(title,
+            @"(?::(?:material|simple|octicons|fontawesome|dashboard)-[\w-]+:\s*)+", string.Empty);
 }
