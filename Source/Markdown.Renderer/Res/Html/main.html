@@ -61,7 +61,7 @@
     <main class="site-main%%TOC_LAYOUT_CLASS%%">
 %%PAGE_TOOLBAR%%
         <div class="markdown-content">
-%%MARKDOWN%%%%EDIT_PAGE_LINK%%
+%%MARKDOWN%%
         </div>
     </main>
 </div>
@@ -205,7 +205,6 @@
         .filter((item) => item.heading);
     const currentLabel = toc.querySelector(".toc-current-label");
     const currentButton = toc.querySelector(".toc-current");
-    const pageToolbar = toc.closest(".page-toolbar");
     const progressIndicators = toc.querySelectorAll(".toc-progress-value");
     const backToTop = toc.querySelector(".toc-back-to-top");
     let selectedHeading = null;
@@ -219,9 +218,14 @@
         for (const item of headings) {
             const bounds = item.heading.getBoundingClientRect();
             const isVisible = bounds.bottom > 56 && bounds.top < window.innerHeight;
-            item.link.classList.toggle("is-visible", isVisible);
-            item.link.removeAttribute("aria-current");
             if (isVisible) visibleHeadings.push(item);
+        }
+
+        const allHeadingsVisible = headings.length > 0 && visibleHeadings.length === headings.length;
+        const visibleHeadingSet = new Set(visibleHeadings);
+        for (const item of headings) {
+            item.link.classList.toggle("is-visible", !allHeadingsVisible && visibleHeadingSet.has(item));
+            item.link.removeAttribute("aria-current");
         }
 
         if (selectedHeading && visibleHeadings.includes(selectedHeading)) {
@@ -234,7 +238,7 @@
         const activeHeading = (selectedHeading && visibleHeadings.includes(selectedHeading) ? selectedHeading : null) ??
             (scrollDirection > 0 ? visibleHeadings.at(-1) : visibleHeadings[0]) ??
             [...headings].reverse().find((item) => item.heading.getBoundingClientRect().top <= 140) ?? headings[0];
-        activeHeading?.link.setAttribute("aria-current", "location");
+        if (!allHeadingsVisible) activeHeading?.link.setAttribute("aria-current", "location");
         if (currentLabel && activeHeading) {
             currentLabel.textContent = activeHeading.link.textContent;
             currentButton.setAttribute("aria-label", `On this Page: ${currentLabel.textContent}`);
@@ -250,13 +254,7 @@
         setVisibleHeadings();
 
         const scrollableHeight = document.documentElement.scrollHeight - window.innerHeight;
-        toc.hidden = scrollableHeight <= 0;
-        if (pageToolbar) {
-            pageToolbar.classList.toggle("is-toc-hidden", toc.hidden);
-            const hasVisibleBreadcrumbs = pageToolbar.querySelector(".breadcrumbs") &&
-                (!window.matchMedia("(max-width: 760px)").matches || toc.hidden);
-            pageToolbar.hidden = toc.hidden && !hasVisibleBreadcrumbs;
-        }
+        toc.classList.toggle("has-scroll-progress", scrollableHeight > 0);
         const pageProgress = scrollableHeight > 0 ? Math.min(1, Math.max(0, window.scrollY / scrollableHeight)) : 0;
         for (const indicator of progressIndicators) {
             indicator.style.setProperty("stroke-dashoffset", String(50.265 * (1 - pageProgress)));
