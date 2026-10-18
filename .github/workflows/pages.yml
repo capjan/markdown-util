@@ -5,8 +5,7 @@ on:
     branches: [main]
     paths:
       - 'Docs/**'
-      - 'Source/Markdown.Renderer/Res/Css/main.css'
-      - 'Source/StaticCode.Highlighter/Res/Css/Highlight.css'
+      - 'Source/**'
       - '.github/workflows/pages.yml'
   workflow_dispatch:
 
