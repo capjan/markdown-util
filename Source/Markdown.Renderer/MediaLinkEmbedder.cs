@@ -153,12 +153,12 @@ internal static class MediaLinkEmbedder
         """;
 
     public const string SettingsButtonHtml = """
-        <button class="media-settings-toggle" id="media-settings-open" type="button" aria-label="Media settings" aria-haspopup="dialog" aria-controls="media-settings-dialog">
+        <button class="media-settings-toggle" id="media-settings-open" type="button" aria-label="Media" aria-haspopup="dialog" aria-controls="media-settings-dialog">
             <svg viewBox="0 0 20 20" aria-hidden="true" focusable="false">
                 <path d="M8.2 2h3.6l.5 2a6.6 6.6 0 0 1 1.4.8l1.9-.7 1.8 3.1-1.5 1.4a6.8 6.8 0 0 1 0 1.7l1.5 1.4-1.8 3.1-1.9-.7a6.6 6.6 0 0 1-1.4.8l-.5 2H8.2l-.5-2a6.6 6.6 0 0 1-1.4-.8l-1.9.7-1.8-3.1 1.5-1.4a6.8 6.8 0 0 1 0-1.7L2.6 7.2l1.8-3.1 1.9.7a6.6 6.6 0 0 1 1.4-.8z"></path>
                 <circle cx="10" cy="9.5" r="2.4"></circle>
             </svg>
-            <span>Media settings</span>
+            <span>Media</span>
         </button>
         """;
 
