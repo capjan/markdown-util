@@ -150,11 +150,25 @@ public class MermaidRendererTest
     {
         const string source = "flowchart LR\nA --> B\nsubgraph group [\"Group\"]\nA --> C\nend";
 
+        var diagram = StaticCode.Diagrams.Flowchart.FlowchartParser.Parse(source);
         var root = XElement.Parse(MermaidRenderer.RenderSvg(source));
         var group = root.Descendants().Single(element => element.Attribute("class")?.Value == "diagram-subgraph-title");
 
+        Assert.Equal(new[] { "A", "C" }, Assert.Single(diagram.Groups).NodeIds);
         Assert.Equal("Group", group.Value);
         Assert.Contains("diagram-subgraph", root.ToString());
+    }
+
+    [Fact]
+    public void RendersSubgraphsContainingOnlyPreviouslyDeclaredNodes()
+    {
+        const string source = "flowchart LR\nA --> B\nsubgraph S\nA\nB\nend";
+
+        var diagram = StaticCode.Diagrams.Flowchart.FlowchartParser.Parse(source);
+        var root = XElement.Parse(MermaidRenderer.RenderSvg(source));
+
+        Assert.Equal(new[] { "A", "B" }, Assert.Single(diagram.Groups).NodeIds);
+        Assert.Contains(root.Descendants(), element => element.Attribute("class")?.Value == "diagram-subgraph");
     }
 
     [Fact]

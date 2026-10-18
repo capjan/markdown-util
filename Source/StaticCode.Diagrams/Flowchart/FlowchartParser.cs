@@ -260,10 +260,13 @@ public sealed class FlowchartParser
 
     private FlowchartNode GetNode(string id)
     {
-        if (_nodes.TryGetValue(id, out var node)) return node;
-        node = new FlowchartNode(id);
-        _nodes.Add(id, node);
-        _nodeOrder.Add(node);
+        if (!_nodes.TryGetValue(id, out var node))
+        {
+            node = new FlowchartNode(id);
+            _nodes.Add(id, node);
+            _nodeOrder.Add(node);
+        }
+
         foreach (var group in _groupStack)
             if (!group.NodeIds.Contains(id, StringComparer.Ordinal)) group.NodeIds.Add(id);
         return node;

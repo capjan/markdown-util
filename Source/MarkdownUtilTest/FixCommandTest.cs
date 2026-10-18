@@ -378,6 +378,28 @@ public class FixCommandTest
     }
 
     [Fact]
+    public void ReadsCompactSidebarTitleAlongsideNestedSidebarSettings()
+    {
+        var root = Path.Combine(Path.GetTempPath(), Guid.NewGuid().ToString("N"));
+        Directory.CreateDirectory(root);
+        var path = Path.Combine(root, "README.md");
+        File.WriteAllText(path, "---\nsidebar:\n  order: 1\nsidebar.title: .NET\n---\n# Overview\n");
+        try
+        {
+            var page = new MarkdownUtil.Model.MarkdownFile(new FileInfo(path), null);
+            var visitor = new DataPreparationVisitor(new MarkdownDocumentReader());
+
+            visitor.Process(page, 0);
+
+            Assert.Equal(".NET", page.SidebarTitle);
+        }
+        finally
+        {
+            Directory.Delete(root, recursive: true);
+        }
+    }
+
+    [Fact]
     public void ReportsMalformedSiteConfigurationWithoutCreatingOutput()
     {
         var root = Path.Combine(Path.GetTempPath(), Guid.NewGuid().ToString("N"));

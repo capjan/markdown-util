@@ -65,7 +65,7 @@ public class DataPreparationVisitor: IVisitor<MarkdownFile>
             if (metadata.Children.TryGetValue(new YamlScalarNode("sidebar"), out var sidebarNode) &&
                 sidebarNode is YamlMappingNode sidebar)
             {
-                sidebarTitle = ReadScalar(sidebar, "title");
+                sidebarTitle = ReadScalar(sidebar, "title") ?? sidebarTitle;
                 if (sidebar.Children.TryGetValue(new YamlScalarNode("order"), out var nestedOrderNode))
                     orderNode = nestedOrderNode;
                 if (sidebar.Children.TryGetValue(new YamlScalarNode("visible"), out var nestedVisibleNode))
