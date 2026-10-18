@@ -85,7 +85,7 @@ flowchart LR
     click Store href "store.md" "Open the store details"
 ```
 
-Relative `.md` destinations are changed to `.html` in the rendered site. The optional tooltip is ignored.
+Relative `.md` destinations are changed to `.html` in the rendered site. `mdu lint` checks these destinations for matching path casing and existing pages, just like Markdown links. The optional tooltip is ignored.
 
 Styling statements such as `style`, `classDef`, `class`, and `linkStyle` are ignored, because the page theme defines the colors. `accTitle: Text` sets the accessible name of the diagram.
 
@@ -218,7 +218,7 @@ url of Orders is [[order-service.md]]
 @enduml
 ```
 
-Relative `.md` destinations are changed to `.html` in the rendered site.
+Relative `.md` destinations are changed to `.html` in the rendered site. `mdu lint` checks these destinations for matching path casing and existing pages, just like Markdown links.
 
 `skinparam`, `hide`, `show`, and colors are ignored, because the page theme defines the look. Other PlantUML diagram types, such as sequence or class diagrams, stay code blocks.
 
@@ -284,4 +284,4 @@ Store --> Inventory[Inventory System]
 click Inventory href "inventory.md"
 ```
 
-Relative `.md` destinations are changed to `.html` in the rendered site.
+Relative `.md` destinations are changed to `.html` in the rendered site. `mdu lint` checks these destinations for matching path casing and existing pages, just like Markdown links.
