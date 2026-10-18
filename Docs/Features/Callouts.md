@@ -60,7 +60,7 @@ A callout can contain any Markdown, such as several paragraphs, lists, links, an
 > mdu serve
 > ```
 >
-> The [Usage](../../Usage/README.md) section describes all commands.
+> The [Usage](../Usage/README.md) section describes all commands.
 
 ## Rules
 

@@ -10,6 +10,8 @@ A Markdown page must have only one representation. A file such as `Setup.md` and
 
 A directory whose only Markdown page is its `README.md` is valid, but unnecessary. The linter reports a warning (`MDU006`) because a file such as `Setup.md` is sufficient. The warning does not make `mdu lint` fail.
 
+Run `mdu fix` to move this page to a same-named Markdown file beside its section folder. The command updates links to the page and relative links inside it.
+
 ## Examples
 
 Either of these layouts is valid:

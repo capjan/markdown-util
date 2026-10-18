@@ -41,4 +41,4 @@ Use a different file pattern when pages use another extension:
 mdu tree ./ProjectDocs --pattern "*.markdown"
 ```
 
-[Back to Usage](../README.md)
+[Back to Usage](README.md)
