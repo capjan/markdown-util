@@ -667,10 +667,6 @@ body {
     .site-sidebar > nav > .site-nav-list > .site-nav-item:first-child > .site-nav-row > .site-nav-link {
         padding-block: 0;
     }
-
-    .back-to-top {
-        top: 4rem;
-    }
 }
 
 @media (min-width: 1221px) {
@@ -2188,6 +2184,19 @@ th, td {
         margin-left: auto;
     }
 
+    .site-header .back-to-top {
+        width: 44px;
+        min-height: 44px;
+        flex-shrink: 0;
+        margin-left: 0.35rem;
+        padding: 0;
+        justify-content: center;
+    }
+
+    .back-to-top span {
+        display: none;
+    }
+
     .search-dialog {
         margin-top: 7vh;
     }
@@ -2356,10 +2365,7 @@ th, td {
 }
 
 .back-to-top {
-    position: fixed;
-    top: 6.75rem;
-    left: 50%;
-    z-index: 19;
+    position: static;
     display: inline-flex;
     align-items: center;
     gap: 0.5rem;
@@ -2374,9 +2380,9 @@ th, td {
     font-weight: 500;
     white-space: nowrap;
     opacity: 0;
-    visibility: hidden;
+    visibility: visible;
     pointer-events: none;
-    transform: translate(-50%, 0.5rem);
+    transform: translateY(0.5rem);
     transition: opacity 140ms ease, transform 140ms ease, visibility 140ms ease, background-color 120ms ease, color 120ms ease;
 }
 
@@ -2390,7 +2396,7 @@ th, td {
     opacity: 1;
     visibility: visible;
     pointer-events: auto;
-    transform: translate(-50%, 0);
+    transform: translateY(0);
 }
 
 .back-to-top svg {
@@ -2404,12 +2410,11 @@ th, td {
 }
 
 .back-to-top:focus-visible {
+    opacity: 1;
+    pointer-events: auto;
+    transform: translateY(0);
     outline: 2px solid var(--link);
     outline-offset: 3px;
-}
-
-.top-navigation.is-empty ~ .site-layout .back-to-top {
-    top: 4rem;
 }
 
 .markdown-content h1,
