@@ -35,19 +35,15 @@ internal static class ClassDiagramRenderer
             var from = swapEndpoints ? right.Id : left.Id;
             var to = swapEndpoints ? left.Id : right.Id;
             var lineStyle = kind.Contains('.') ? LineStyle.Dotted : LineStyle.Solid;
-            var leftMarker = kind.StartsWith("*", StringComparison.Ordinal) || kind.StartsWith("o", StringComparison.Ordinal) ? EdgeMarker.Circle
+            var leftMarker = kind.StartsWith("*", StringComparison.Ordinal) ? EdgeMarker.Diamond
+                : kind.StartsWith("o", StringComparison.Ordinal) ? EdgeMarker.HollowDiamond
                 : kind.StartsWith('<') ? EdgeMarker.Arrow
                 : EdgeMarker.None;
-            var rightMarker = kind.EndsWith("*", StringComparison.Ordinal) || kind.EndsWith("o", StringComparison.Ordinal) ? EdgeMarker.Circle
+            var rightMarker = kind.EndsWith("*", StringComparison.Ordinal) ? EdgeMarker.Diamond
+                : kind.EndsWith("o", StringComparison.Ordinal) ? EdgeMarker.HollowDiamond
                 : kind.EndsWith(">", StringComparison.Ordinal) ? EdgeMarker.Arrow
                 : EdgeMarker.None;
-            var label = relationship.Groups["label"].Success ? relationship.Groups["label"].Value.Trim() : kind switch
-            {
-                "*--" or "--*" => "composition",
-                "o--" or "--o" => "aggregation",
-                "<.." or "..>" => "dependency",
-                _ => null
-            };
+            var label = relationship.Groups["label"].Success ? relationship.Groups["label"].Value.Trim() : null;
             var startMarker = isGeneralization ? EdgeMarker.Triangle : swapEndpoints ? rightMarker : leftMarker;
             var endMarker = isGeneralization ? EdgeMarker.None : swapEndpoints ? leftMarker : rightMarker;
             edges.Add(new FlowchartEdge(from, to, label, lineStyle, startMarker, endMarker, 1));

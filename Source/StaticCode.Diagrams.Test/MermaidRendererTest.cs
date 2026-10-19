@@ -111,10 +111,88 @@ public class MermaidRendererTest
         Assert.Equal(animalBottom, tipY, 2);
     }
 
+    [Theory]
+    [InlineData("Duck *-- Wing")]
+    [InlineData("Wing --* Duck")]
+    public void RendersCompositionWithAFilledDiamondAtTheMarkedClass(string relationship)
+    {
+        var root = XElement.Parse(MermaidRenderer.RenderSvg($"classDiagram\n{relationship}"));
+
+        AssertDiamondAtNodeWithInsetEdge(root, "Duck", "diagram-marker");
+    }
+
+    [Theory]
+    [InlineData("Pond o-- Duck")]
+    [InlineData("Duck --o Pond")]
+    public void RendersAggregationWithAHollowDiamondAtTheMarkedClass(string relationship)
+    {
+        var root = XElement.Parse(MermaidRenderer.RenderSvg($"classDiagram\n{relationship}"));
+
+        AssertDiamondAtNodeWithInsetEdge(root, "Pond", "diagram-marker-hollow");
+    }
+
+    [Theory]
+    [InlineData("A *-- B")]
+    [InlineData("A o-- B")]
+    [InlineData("A <.. B")]
+    public void OmitsDefaultClassRelationshipLabels(string relationship)
+    {
+        var root = XElement.Parse(MermaidRenderer.RenderSvg($"classDiagram\n{relationship}"));
+
+        Assert.Empty(root.Descendants().Where(element => element.Attribute("class")?.Value == "diagram-edge-label-text"));
+    }
+
+    [Fact]
+    public void RendersExplicitClassRelationshipLabels()
+    {
+        var root = XElement.Parse(MermaidRenderer.RenderSvg("classDiagram\nA *-- B : has"));
+
+        Assert.Equal("has", Assert.Single(root.Descendants().Where(element => element.Attribute("class")?.Value == "diagram-edge-label-text")).Value);
+    }
+
+    [Fact]
+    public void KeepsFlowchartCircleMarkersAsCircles()
+    {
+        var root = XElement.Parse(MermaidRenderer.RenderSvg("flowchart LR\nA --o B"));
+
+        Assert.Single(root.Descendants().Where(element => element.Name.LocalName == "circle" && element.Attribute("class")?.Value == "diagram-marker"));
+    }
+
     private static XElement NodeShape(XElement root, string label) => root.Descendants()
         .Single(element => element.Attribute("class")?.Value.StartsWith("diagram-node ", StringComparison.Ordinal) == true
                            && element.Descendants().Any(text => text.Attribute("class")?.Value == "diagram-node-text" && text.Value == label))
         .Elements().Single(element => element.Attribute("class")?.Value == "diagram-node-shape");
+
+    private static void AssertDiamondAtNodeWithInsetEdge(XElement root, string nodeLabel, string markerClass)
+    {
+        var marker = Assert.Single(root.Descendants().Where(element => element.Name.LocalName == "path" && element.Attribute("class")?.Value == markerClass));
+        var markerPoints = SvgNumbers(marker.Attribute("d")!.Value);
+        var tipX = markerPoints[0];
+        var tipY = markerPoints[1];
+        var rearX = markerPoints[4];
+        var rearY = markerPoints[5];
+        var shape = NodeShape(root, nodeLabel);
+        var nodeX = double.Parse(shape.Attribute("x")!.Value, CultureInfo.InvariantCulture);
+        var nodeY = double.Parse(shape.Attribute("y")!.Value, CultureInfo.InvariantCulture);
+        var nodeWidth = double.Parse(shape.Attribute("width")!.Value, CultureInfo.InvariantCulture);
+        var nodeHeight = double.Parse(shape.Attribute("height")!.Value, CultureInfo.InvariantCulture);
+        const double tolerance = 0.01;
+        var onNodeBorder = tipX >= nodeX - tolerance && tipX <= nodeX + nodeWidth + tolerance
+                           && tipY >= nodeY - tolerance && tipY <= nodeY + nodeHeight + tolerance
+                           && (Math.Abs(tipX - nodeX) <= tolerance || Math.Abs(tipX - nodeX - nodeWidth) <= tolerance
+                               || Math.Abs(tipY - nodeY) <= tolerance || Math.Abs(tipY - nodeY - nodeHeight) <= tolerance);
+        Assert.True(onNodeBorder, $"The marker tip ({tipX}, {tipY}) should touch {nodeLabel}.");
+
+        var edge = Assert.Single(root.Descendants().Where(element => element.Attribute("class")?.Value == "diagram-edge"));
+        var edgePoints = SvgNumbers(edge.Attribute("d")!.Value);
+        var startsAtRear = Math.Abs(edgePoints[0] - rearX) <= tolerance && Math.Abs(edgePoints[1] - rearY) <= tolerance;
+        var endsAtRear = Math.Abs(edgePoints[^2] - rearX) <= tolerance && Math.Abs(edgePoints[^1] - rearY) <= tolerance;
+        Assert.True(startsAtRear || endsAtRear, "The edge should stop at the diamond's rear vertex.");
+    }
+
+    private static double[] SvgNumbers(string value) => Regex.Matches(value, @"-?\d+(?:\.\d+)?")
+        .Select(match => double.Parse(match.Value, CultureInfo.InvariantCulture))
+        .ToArray();
 
     [Fact]
     public void RendersClassDiagramSyntaxUsedByTheWiki()

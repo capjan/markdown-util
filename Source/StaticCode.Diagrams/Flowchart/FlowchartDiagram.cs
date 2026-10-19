@@ -35,7 +35,9 @@ public enum EdgeMarker
     Arrow,
     Circle,
     Cross,
-    Triangle
+    Triangle,
+    Diamond,
+    HollowDiamond
 }
 
 public sealed class FlowchartNode
