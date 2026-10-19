@@ -110,7 +110,7 @@ public class MarkdigVisitorTest
     }
 
     [Fact]
-    public void TopPlacementKeepsTheSidebarTreeAndBreadcrumbsRootedAtDocumentationRoot()
+    public void TopNavigationLimitsWideSidebarToActiveSectionAndKeepsFullTreeForCompactNavigation()
     {
         var rootPath = Path.Combine(Path.GetTempPath(), $"mdu-render-test-{Guid.NewGuid():N}");
         var docsPath = Path.Combine(rootPath, "Docs");
@@ -123,10 +123,12 @@ public class MarkdigVisitorTest
         var sectionIndexPath = Path.Combine(sectionPath, "README.md");
         var otherSectionIndexPath = Path.Combine(otherSectionPath, "README.md");
         var pagePath = Path.Combine(sectionPath, "Guide.md");
+        var otherPagePath = Path.Combine(otherSectionPath, "Runbook.md");
         File.WriteAllText(homePath, "# Dashboard\n");
         File.WriteAllText(sectionIndexPath, "# Development\n");
         File.WriteAllText(otherSectionIndexPath, "# Operations\n");
         File.WriteAllText(pagePath, "# Guide\n");
+        File.WriteAllText(otherPagePath, "# Runbook\n");
 
         try
         {
@@ -148,28 +150,44 @@ public class MarkdigVisitorTest
                 NavigationOrder = 20
             };
             var page = new MarkdownFile(new FileInfo(pagePath), section) { Title = "Guide" };
+            var otherPage = new MarkdownFile(new FileInfo(otherPagePath), otherSection) { Title = "Runbook" };
             home.Children = [section, otherSection];
             section.Children = [page];
+            otherSection.Children = [otherPage];
 
             var renderer = new HtmlRenderer();
             renderer.PrepareBasePath(outputPath);
             var visitor = new MarkdigVisitor(docsPath, outputPath, renderer, string.Empty,
                 new SearchIndexBuilder(), [home]);
 
+            visitor.Process(home, 0);
             visitor.Process(page, 2);
+
+            var homeHtml = File.ReadAllText(Path.Combine(outputPath, "index.html"));
+            Assert.Contains("has-top-navigation no-wide-sidebar", homeHtml);
+            var homeSidebar = homeHtml.Split("aria-label=\"Sitemap\"", 2)[1].Split("</aside>", 2)[0];
+            Assert.Contains(">Dashboard</a>", homeSidebar);
+            Assert.Contains(">Development</a>", homeSidebar);
+            Assert.Contains(">Operations</a>", homeSidebar);
+            Assert.Contains(">Guide</a>", homeSidebar);
+            Assert.Contains(">Runbook</a>", homeSidebar);
 
             var html = File.ReadAllText(Path.Combine(outputPath, "Development", "Guide.html"));
             Assert.Contains("top-nav-link is-current", html);
             Assert.Contains(">Development</a>", html);
             Assert.Contains(">Operations</a>", html);
             Assert.Contains(">Dashboard</a>", html);
+            Assert.Contains("has-current-top-section has-wide-sidebar", html);
             var sidebarNavigation = html.Split("aria-label=\"Sitemap\"", 2)[1].Split("</aside>", 2)[0];
             Assert.Contains(">Dashboard</a>", sidebarNavigation);
             Assert.Contains(">Development</a>", sidebarNavigation);
             Assert.Contains(">Operations</a>", sidebarNavigation);
             Assert.Contains(">Guide</a>", sidebarNavigation);
+            Assert.Contains(">Runbook</a>", sidebarNavigation);
             Assert.Contains("class=\"site-nav-item top-navigation-entry is-current-section is-in-current-top-section\"", sidebarNavigation);
-            Assert.DoesNotContain("hide-on-wide", sidebarNavigation);
+            Assert.Contains("<li class=\"site-nav-item top-navigation-entry\"", sidebarNavigation);
+            Assert.Contains("<li class=\"site-nav-item is-current-section is-in-current-top-section\" style=\"--indent-depth: 1; --wide-indent-depth: 0\">", sidebarNavigation);
+            Assert.Contains("<li class=\"site-nav-item\" style=\"--indent-depth: 1; --wide-indent-depth: 0\">", sidebarNavigation);
             var breadcrumbs = html.Split("<nav class=\"breadcrumbs\"", 2)[1];
             Assert.Contains(">Dashboard</a>", breadcrumbs);
             Assert.Contains(">Development</a>", breadcrumbs);

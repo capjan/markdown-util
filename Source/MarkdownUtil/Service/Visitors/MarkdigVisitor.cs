@@ -160,8 +160,7 @@ public class MarkdigVisitor : BaseVisitor
                 IsTopNavigationItem = entry.Page.NavigationPlacement == NavigationPlacement.Top &&
                                       IsTopLevelNavigationPage(entry.Page.FileInfo),
                 IsInCurrentTopSection = activeTopNavigationItem is not null &&
-                                        (ReferenceEquals(entry.Page, activeTopNavigationItem) ||
-                                         IsDescendant(entry.Page, activeTopNavigationItem)),
+                                        IsInCurrentTopSection(entry.Page, activeTopNavigationItem),
                 IsAncestorOfCurrentTopSection = activeTopNavigationItem is not null &&
                                                 IsDescendant(activeTopNavigationItem, entry.Page),
                 TopNavigationDepth = activeTopNavigationDepth < 0
@@ -254,6 +253,18 @@ public class MarkdigVisitor : BaseVisitor
         for (var current = page.Parent; current is not null; current = current.Parent)
         {
             if (ReferenceEquals(current, ancestor)) return true;
+        }
+
+        return false;
+    }
+
+    private bool IsInCurrentTopSection(MarkdownFile page, MarkdownFile topSection)
+    {
+        for (var current = page; current is not null; current = current.Parent)
+        {
+            if (ReferenceEquals(current, topSection)) return true;
+            if (current.NavigationPlacement == NavigationPlacement.Top && IsTopLevelNavigationPage(current.FileInfo))
+                return false;
         }
 
         return false;
