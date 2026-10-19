@@ -22,6 +22,9 @@ public class MarkdigVisitor : BaseVisitor
         _editPageRoot = editPageRoot;
         _searchIndexBuilder = searchIndexBuilder;
         _navigationRoots = navigationRoots ?? Array.Empty<MarkdownFile>();
+        _topNavigationItems = new Dictionary<MarkdownFile, MarkdownFile?>();
+        foreach (var page in Flatten(_navigationRoots))
+            _topNavigationItems.Add(page, FindTopNavigationItem(page));
         _siteMediaProviders = FindSiteMediaProviders();
     }
     
@@ -31,6 +34,7 @@ public class MarkdigVisitor : BaseVisitor
     private readonly string _rootPath;
     private readonly string _outPath;
     private readonly MarkdownFile[] _navigationRoots;
+    private readonly Dictionary<MarkdownFile, MarkdownFile?> _topNavigationItems;
     private readonly IReadOnlyCollection<string> _siteMediaProviders;
 
     public IReadOnlyCollection<string> SiteMediaProviders => _siteMediaProviders;
@@ -143,7 +147,7 @@ public class MarkdigVisitor : BaseVisitor
         var currentPath = Path.GetFullPath(currentOutputPath);
         var currentDirectorySegments = GetSiteRelativeSegments(Path.GetDirectoryName(currentPath)!);
         var entries = CreateNavigationEntries(_navigationRoots);
-        var activeTopNavigationItem = FindTopNavigationItem(page);
+        var activeTopNavigationItem = _topNavigationItems.GetValueOrDefault(page);
         var activeTopNavigationDepth = activeTopNavigationItem is null
             ? -1
             : entries.FirstOrDefault(entry => ReferenceEquals(entry.Page, activeTopNavigationItem))?.Depth ?? -1;
@@ -157,10 +161,9 @@ public class MarkdigVisitor : BaseVisitor
                 IsCurrent = string.Equals(entry.OutputPath, currentPath, PathComparison),
                 IsCurrentSection = ReferenceEquals(page, entry.Page) || IsDescendant(page, entry.Page),
                 IsExpandedByDefault = entry.IsExpandedByDefault,
-                IsTopNavigationItem = entry.Page.NavigationPlacement == NavigationPlacement.Top &&
-                                      IsTopLevelNavigationPage(entry.Page.FileInfo),
+                IsTopNavigationItem = IsTopNavigationPage(entry.Page),
                 IsInCurrentTopSection = activeTopNavigationItem is not null &&
-                                        IsInCurrentTopSection(entry.Page, activeTopNavigationItem),
+                                        ReferenceEquals(_topNavigationItems[entry.Page], activeTopNavigationItem),
                 IsAncestorOfCurrentTopSection = activeTopNavigationItem is not null &&
                                                 IsDescendant(activeTopNavigationItem, entry.Page),
                 TopNavigationDepth = activeTopNavigationDepth < 0
@@ -179,10 +182,9 @@ public class MarkdigVisitor : BaseVisitor
     {
         var currentPath = Path.GetFullPath(currentOutputPath);
         var currentDirectorySegments = GetSiteRelativeSegments(Path.GetDirectoryName(currentPath)!);
-        var activeTab = FindTopNavigationItem(page);
+        var activeTab = _topNavigationItems.GetValueOrDefault(page);
         return Flatten(_navigationRoots)
-            .Where(candidate => candidate.NavigationPlacement == NavigationPlacement.Top &&
-                                IsTopLevelNavigationPage(candidate.FileInfo) && candidate.NavigationVisible)
+            .Where(IsTopNavigationPage)
             .OrderBy(candidate => candidate.NavigationOrder.HasValue ? 0 : 1)
             .ThenBy(candidate => candidate.NavigationOrder)
             .ThenBy(GetNavigationTitle, StringComparer.OrdinalIgnoreCase)
@@ -258,28 +260,20 @@ public class MarkdigVisitor : BaseVisitor
         return false;
     }
 
-    private bool IsInCurrentTopSection(MarkdownFile page, MarkdownFile topSection)
-    {
-        for (var current = page; current is not null; current = current.Parent)
-        {
-            if (ReferenceEquals(current, topSection)) return true;
-            if (current.NavigationPlacement == NavigationPlacement.Top && IsTopLevelNavigationPage(current.FileInfo))
-                return false;
-        }
-
-        return false;
-    }
-
     private MarkdownFile? FindTopNavigationItem(MarkdownFile page)
     {
         for (var current = page; current is not null; current = current.Parent)
         {
-            if (current.NavigationPlacement == NavigationPlacement.Top && IsTopLevelNavigationPage(current.FileInfo))
-                return current;
+            if (IsTopNavigationPage(current)) return current;
         }
 
         return null;
     }
+
+    private bool IsTopNavigationPage(MarkdownFile page) =>
+        page.NavigationVisible &&
+        page.NavigationPlacement == NavigationPlacement.Top &&
+        IsTopLevelNavigationPage(page.FileInfo);
 
     private bool IsTopLevelNavigationPage(FileInfo file)
     {
