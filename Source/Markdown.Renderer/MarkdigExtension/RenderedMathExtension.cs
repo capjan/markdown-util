@@ -48,7 +48,18 @@ internal sealed class RenderedMathInlineRenderer : HtmlObjectRenderer<MathInline
 
 internal static class MathFormulaRenderer
 {
+    // CSharpMath and VectSharp share non-thread-safe caches, so formulas are rendered one at a time.
+    private static readonly Lock RenderLock = new();
+
     public static string Render(string latex, bool display)
+    {
+        lock (RenderLock)
+        {
+            return RenderUnsynchronized(latex, display);
+        }
+    }
+
+    private static string RenderUnsynchronized(string latex, bool display)
     {
         try
         {
