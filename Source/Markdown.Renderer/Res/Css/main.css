@@ -1712,6 +1712,24 @@ pre code {
     text-align: center;
 }
 
+.code-block-titled + .diagram {
+    padding: 0.75rem 1.25rem;
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    background: var(--surface-code-block);
+}
+
+.code-block-titled + .diagram::before {
+    display: block;
+    margin-bottom: 0.5rem;
+    color: var(--text-secondary);
+    content: "Result";
+    font-size: 0.75rem;
+    font-weight: 500;
+    line-height: 1.5;
+    text-align: left;
+}
+
 .diagram svg {
     width: auto;
     max-width: 100%;
