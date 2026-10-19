@@ -184,10 +184,11 @@ public class MarkdigVisitorTest
             Assert.Contains(">Operations</a>", sidebarNavigation);
             Assert.Contains(">Guide</a>", sidebarNavigation);
             Assert.Contains(">Runbook</a>", sidebarNavigation);
-            Assert.Contains("class=\"site-nav-item top-navigation-entry is-current-section is-in-current-top-section\"", sidebarNavigation);
-            Assert.Contains("<li class=\"site-nav-item top-navigation-entry\"", sidebarNavigation);
-            Assert.Contains("<li class=\"site-nav-item is-current-section is-in-current-top-section\" style=\"--indent-depth: 1; --wide-indent-depth: 0\">", sidebarNavigation);
-            Assert.Contains("<li class=\"site-nav-item\" style=\"--indent-depth: 1; --wide-indent-depth: 0\">", sidebarNavigation);
+            Assert.Contains("is-in-current-top-section", NavigationItemClass(sidebarNavigation, "Development"));
+            Assert.Contains("is-in-current-top-section", NavigationItemClass(sidebarNavigation, "Guide"));
+            Assert.DoesNotContain("is-in-current-top-section", NavigationItemClass(sidebarNavigation, "Dashboard"));
+            Assert.DoesNotContain("is-in-current-top-section", NavigationItemClass(sidebarNavigation, "Operations"));
+            Assert.DoesNotContain("is-in-current-top-section", NavigationItemClass(sidebarNavigation, "Runbook"));
             var breadcrumbs = html.Split("<nav class=\"breadcrumbs\"", 2)[1];
             Assert.Contains(">Dashboard</a>", breadcrumbs);
             Assert.Contains(">Development</a>", breadcrumbs);
@@ -197,5 +198,140 @@ public class MarkdigVisitorTest
         {
             if (Directory.Exists(rootPath)) Directory.Delete(rootPath, recursive: true);
         }
+    }
+
+    [Fact]
+    public void TopNavigationShowsRootPagesInTheDashboardSidebarWithoutSiblingSections()
+    {
+        var rootPath = Path.Combine(Path.GetTempPath(), $"mdu-render-test-{Guid.NewGuid():N}");
+        var docsPath = Path.Combine(rootPath, "Docs");
+        var outputPath = Path.Combine(rootPath, "site");
+        var sectionPath = Path.Combine(docsPath, "Development");
+        var otherSectionPath = Path.Combine(docsPath, "Operations");
+        Directory.CreateDirectory(sectionPath);
+        Directory.CreateDirectory(otherSectionPath);
+        var homePath = Path.Combine(docsPath, "README.md");
+        var sectionIndexPath = Path.Combine(sectionPath, "README.md");
+        var otherSectionIndexPath = Path.Combine(otherSectionPath, "README.md");
+        var pagePath = Path.Combine(sectionPath, "Guide.md");
+        var otherPagePath = Path.Combine(otherSectionPath, "Runbook.md");
+        var faqPath = Path.Combine(docsPath, "FAQ.md");
+        File.WriteAllText(homePath, "# Dashboard\n");
+        File.WriteAllText(sectionIndexPath, "# Development\n");
+        File.WriteAllText(otherSectionIndexPath, "# Operations\n");
+        File.WriteAllText(pagePath, "# Guide\n");
+        File.WriteAllText(otherPagePath, "# Runbook\n");
+        File.WriteAllText(faqPath, "# FAQ\n");
+
+        try
+        {
+            var home = new MarkdownFile(new FileInfo(homePath), null)
+            {
+                Title = "Dashboard",
+                NavigationPlacement = NavigationPlacement.Top
+            };
+            var section = new MarkdownFile(new FileInfo(sectionIndexPath), home)
+            {
+                Title = "Development",
+                NavigationPlacement = NavigationPlacement.Top
+            };
+            var otherSection = new MarkdownFile(new FileInfo(otherSectionIndexPath), home)
+            {
+                Title = "Operations",
+                NavigationPlacement = NavigationPlacement.Top
+            };
+            var page = new MarkdownFile(new FileInfo(pagePath), section) { Title = "Guide" };
+            var otherPage = new MarkdownFile(new FileInfo(otherPagePath), otherSection) { Title = "Runbook" };
+            var faq = new MarkdownFile(new FileInfo(faqPath), home) { Title = "FAQ" };
+            home.Children = [section, otherSection, faq];
+            section.Children = [page];
+            otherSection.Children = [otherPage];
+
+            var renderer = new HtmlRenderer();
+            renderer.PrepareBasePath(outputPath);
+            var visitor = new MarkdigVisitor(docsPath, outputPath, renderer, string.Empty,
+                new SearchIndexBuilder(), [home]);
+
+            visitor.Process(faq, 1);
+
+            var html = File.ReadAllText(Path.Combine(outputPath, "FAQ.html"));
+            Assert.Contains("has-current-top-section has-wide-sidebar", html);
+            var sidebarNavigation = html.Split("aria-label=\"Sitemap\"", 2)[1].Split("</aside>", 2)[0];
+            Assert.Contains("is-in-current-top-section", NavigationItemClass(sidebarNavigation, "FAQ"));
+            Assert.DoesNotContain("is-in-current-top-section", NavigationItemClass(sidebarNavigation, "Development"));
+            Assert.DoesNotContain("is-in-current-top-section", NavigationItemClass(sidebarNavigation, "Operations"));
+            Assert.DoesNotContain("is-in-current-top-section", NavigationItemClass(sidebarNavigation, "Guide"));
+            Assert.DoesNotContain("is-in-current-top-section", NavigationItemClass(sidebarNavigation, "Runbook"));
+        }
+        finally
+        {
+            if (Directory.Exists(rootPath)) Directory.Delete(rootPath, recursive: true);
+        }
+    }
+
+    [Fact]
+    public void HiddenTopNavigationSectionDoesNotHideItsChildrenFromTheDashboardSidebar()
+    {
+        var rootPath = Path.Combine(Path.GetTempPath(), $"mdu-render-test-{Guid.NewGuid():N}");
+        var docsPath = Path.Combine(rootPath, "Docs");
+        var outputPath = Path.Combine(rootPath, "site");
+        var sectionPath = Path.Combine(docsPath, "Development");
+        Directory.CreateDirectory(sectionPath);
+        var homePath = Path.Combine(docsPath, "README.md");
+        var sectionIndexPath = Path.Combine(sectionPath, "README.md");
+        var pagePath = Path.Combine(sectionPath, "Guide.md");
+        File.WriteAllText(homePath, "# Dashboard\n");
+        File.WriteAllText(sectionIndexPath, "# Development\n");
+        File.WriteAllText(pagePath, "# Guide\n");
+
+        try
+        {
+            var home = new MarkdownFile(new FileInfo(homePath), null)
+            {
+                Title = "Dashboard",
+                NavigationPlacement = NavigationPlacement.Top
+            };
+            var hiddenSection = new MarkdownFile(new FileInfo(sectionIndexPath), home)
+            {
+                Title = "Development",
+                NavigationPlacement = NavigationPlacement.Top,
+                NavigationVisible = false
+            };
+            var page = new MarkdownFile(new FileInfo(pagePath), hiddenSection) { Title = "Guide" };
+            home.Children = [hiddenSection];
+            hiddenSection.Children = [page];
+
+            var renderer = new HtmlRenderer();
+            renderer.PrepareBasePath(outputPath);
+            var visitor = new MarkdigVisitor(docsPath, outputPath, renderer, string.Empty,
+                new SearchIndexBuilder(), [home]);
+
+            visitor.Process(page, 2);
+
+            var html = File.ReadAllText(Path.Combine(outputPath, "Development", "Guide.html"));
+            Assert.Contains("top-nav-link is-current", html);
+            Assert.Contains("has-current-top-section has-wide-sidebar", html);
+            var topNavigation = html.Split("<nav class=\"top-navigation", 2)[1].Split("</nav>", 2)[0];
+            Assert.Contains(">Dashboard</a>", topNavigation);
+            Assert.DoesNotContain(">Development</a>", topNavigation);
+            var sidebarNavigation = html.Split("aria-label=\"Sitemap\"", 2)[1].Split("</aside>", 2)[0];
+            Assert.DoesNotContain(">Development</a>", sidebarNavigation);
+            Assert.Contains("is-in-current-top-section", NavigationItemClass(sidebarNavigation, "Guide"));
+        }
+        finally
+        {
+            if (Directory.Exists(rootPath)) Directory.Delete(rootPath, recursive: true);
+        }
+    }
+
+    private static string NavigationItemClass(string navigation, string title)
+    {
+        var linkIndex = navigation.IndexOf($">{title}</a>", StringComparison.Ordinal);
+        Assert.True(linkIndex >= 0, $"Could not find navigation link '{title}'.");
+        var itemIndex = navigation.LastIndexOf("<li class=\"", linkIndex, StringComparison.Ordinal);
+        Assert.True(itemIndex >= 0, $"Could not find navigation item for '{title}'.");
+        var classStart = itemIndex + "<li class=\"".Length;
+        var classEnd = navigation.IndexOf('"', classStart);
+        return navigation[classStart..classEnd];
     }
 }
