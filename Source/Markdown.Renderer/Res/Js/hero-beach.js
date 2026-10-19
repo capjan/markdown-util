@@ -419,6 +419,8 @@ void main() {
 
         const reducedMotion = window.matchMedia("(prefers-reduced-motion: reduce)");
         const speed = parseFloat(hero.dataset.heroSpeed) || 0;
+        // speed: 0 and reduced motion both show a single still frame, redrawn only when something changes.
+        const isStill = () => speed === 0 || reducedMotion.matches;
         const quality = hero.dataset.heroQuality;
         let scale = quality === "high" ? 1 : quality === "low" ? 0.5 : 0.75;
         let mood = resolveMood(hero);
@@ -453,7 +455,7 @@ void main() {
             const blend = blendStart ? Math.min(1, (now - blendStart) / 1400) : 1;
             current = blend < 1 ? mix(from, target, blend * blend * (3 - 2 * blend)) : target;
             for (const [name, value] of Object.entries(current)) set(name, value);
-            const intro = reducedMotion.matches || introStart === null ? 1 : Math.min(1, (now - introStart) / 3200);
+            const intro = isStill() || introStart === null ? 1 : Math.min(1, (now - introStart) / 3200);
             look = look.map((value, i) => value + (lookTarget[i] - value) * 0.04);
             set("uIntro", [intro]);
             set("uLook", look);
@@ -485,7 +487,7 @@ void main() {
 
         const schedule = () => {
             if (frame || !visible || document.hidden) return;
-            if (reducedMotion.matches) {
+            if (isStill()) {
                 lastFrame = null;
                 frame = requestAnimationFrame((now) => {
                     frame = 0;
@@ -514,7 +516,7 @@ void main() {
 
         new ResizeObserver(() => {
             resize();
-            if (reducedMotion.matches) schedule();
+            if (isStill()) schedule();
         }).observe(canvas);
         new IntersectionObserver((entries) => {
             visible = entries.some((entry) => entry.isIntersecting);
@@ -530,7 +532,7 @@ void main() {
             schedule();
         });
         hero.addEventListener("pointermove", (event) => {
-            if (event.pointerType !== "mouse") return;
+            if (event.pointerType !== "mouse" || isStill()) return;
             const bounds = hero.getBoundingClientRect();
             lookTarget = [
                 ((event.clientX - bounds.left) / bounds.width) * 2 - 1,

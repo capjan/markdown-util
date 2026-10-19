@@ -19,6 +19,9 @@ public static class Hero
     private static readonly string[] Times = ["auto", "day", "sunset", "night"];
     private static readonly string[] Qualities = ["auto", "low", "high"];
     private static readonly string[] ColorNames = ["water", "shallow", "sand"];
+    private static readonly string[] LinkSchemes = ["http", "https", "mailto"];
+    private static readonly char[] ControlCharactersAndSpace = Enumerable.Range(0, 33).Select(c => (char)c).ToArray();
+    private static readonly Regex SchemeRegex = new("^(?<scheme>[a-zA-Z][a-zA-Z0-9+.-]*):", RegexOptions.Compiled);
 
     public static string Script => Resources.HeroScriptContent();
 
@@ -115,14 +118,28 @@ public static class Hero
         foreach (var item in sequence.Children.OfType<YamlMappingNode>())
         {
             var text = ReadScalar(item, "text");
-            var link = ReadScalar(item, "link");
-            if (string.IsNullOrWhiteSpace(text) || string.IsNullOrWhiteSpace(link)) continue;
+            var link = SafeLink(ReadScalar(item, "link"));
+            if (string.IsNullOrWhiteSpace(text) || link is null) continue;
             var style = ReadScalar(item, "style");
             var primary = style is null ? actions.Count == 0 : style.Equals("primary", StringComparison.OrdinalIgnoreCase);
-            actions.Add(new HeroAction(text.Trim(), link.Trim(), primary));
+            actions.Add(new HeroAction(text.Trim(), link, primary));
         }
 
         return actions;
+    }
+
+    /// <summary>
+    /// Returns the link as a browser reads it, or <c>null</c> when it would run script or load data instead of
+    /// navigating. Browsers drop tabs and line breaks inside URLs and trim control characters around them, so
+    /// the scheme is checked after the same cleanup. Only relative links, http, https, and mailto are kept.
+    /// </summary>
+    private static string? SafeLink(string? link)
+    {
+        if (link is null) return null;
+        var cleaned = new string(link.Where(c => c is not ('\t' or '\n' or '\r')).ToArray()).Trim(ControlCharactersAndSpace);
+        if (cleaned.Length == 0) return null;
+        var scheme = SchemeRegex.Match(cleaned);
+        return !scheme.Success || LinkSchemes.Contains(scheme.Groups["scheme"].Value.ToLowerInvariant()) ? cleaned : null;
     }
 
     /// <summary>

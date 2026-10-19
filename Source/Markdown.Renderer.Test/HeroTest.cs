@@ -58,6 +58,33 @@ public class HeroTest
         Assert.DoesNotContain("hero-actions", html);
     }
 
+    [Theory]
+    [InlineData("javascript:alert(1)")]
+    [InlineData("JavaScript:alert(1)")]
+    [InlineData(" java\tscript:alert(1)")]
+    [InlineData("\u0001javascript:alert(1)")]
+    [InlineData("data:text/html,<script>alert(1)</script>")]
+    [InlineData("vbscript:msgbox(1)")]
+    public void DropsActionsWhoseLinksRunScript(string link)
+    {
+        var html = Hero.Render($"actions:\n  - text: Click\n    link: \"{link.Replace("\t", "\\t").Replace("\u0001", "\\x01")}\"\n");
+
+        Assert.DoesNotContain("hero-button", html);
+        Assert.DoesNotContain("script:", html, StringComparison.OrdinalIgnoreCase);
+    }
+
+    [Theory]
+    [InlineData("Setup.md", "Setup.html")]
+    [InlineData("#options", "#options")]
+    [InlineData("https://example.com/a?b=c", "https://example.com/a?b=c")]
+    [InlineData("mailto:docs@example.com", "mailto:docs@example.com")]
+    public void KeepsRelativeWebAndMailLinks(string link, string href)
+    {
+        var html = Hero.Render($"actions:\n  - text: Click\n    link: \"{link}\"\n");
+
+        Assert.Contains($"href=\"{href}\"", html);
+    }
+
     [Fact]
     public void ClampsTheHeight()
     {
