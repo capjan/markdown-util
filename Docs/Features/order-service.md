@@ -13,4 +13,4 @@ The Order Service turns a customer's checkout request into a durable order. It v
 3. It requests payment authorization and stores the resulting status with the order.
 4. It publishes an order-confirmed event after payment succeeds; fulfillment and notification services consume that event.
 
-If a reservation or payment fails, the order remains visible with a failure status and any successful reservation is released. The [component diagram example](Diagrams.md#plantuml-component-diagrams) links its Order Service node to this page.
+If a reservation or payment fails, the order remains visible with a failure status and any successful reservation is released. The [clickable component example](Diagrams.md#clickable-nodes) links its Order Service node to this page.

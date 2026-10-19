@@ -13,4 +13,4 @@ The online store is the customer-facing application for browsing the catalog and
 - Product availability is shown using data from the [Inventory System](inventory.md).
 - Identity, payment, shipping, and email are provided by external systems shown in the [context diagram](Diagrams.md#context-diagrams).
 
-The links in the [flowchart example](Diagrams.md#flowcharts) show how a diagram node can open this detail page.
+The [clickable flowchart example](Diagrams.md#clickable-nodes) links the Store node to this detail page.
