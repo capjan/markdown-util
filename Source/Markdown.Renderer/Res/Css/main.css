@@ -1959,26 +1959,123 @@ th, td {
 }
 
 .footnote-preview {
-    position: absolute;
+    position: fixed;
     z-index: 30;
-    bottom: 1.4em;
+    top: 0;
     left: 0;
     display: none;
-    width: min(340px, 80vw);
+    width: max-content;
+    max-width: 420px;
+    box-sizing: border-box;
     padding: 0.75rem 0.9rem;
     border: 1px solid var(--border);
     border-radius: 10px;
     background: var(--surface-header);
     color: var(--text-primary);
-    box-shadow: 0 8px 24px rgb(0 0 0 / 20%);
+    box-shadow: 0 12px 32px rgb(0 0 0 / 34%);
     font-size: 0.875rem;
     font-weight: 400;
     line-height: 1.45;
     white-space: normal;
+    overflow-wrap: anywhere;
+}
+
+.markdown-content a.footnote-ref:hover {
+    text-decoration: none;
+}
+
+.markdown-content a.footnote-ref > sup {
+    position: relative;
+    display: inline-block;
+    line-height: 1;
+}
+
+.markdown-content a.footnote-ref.is-highlighted > sup {
+    z-index: 1;
+}
+
+.markdown-content a.footnote-ref.is-highlighted > sup::after {
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    z-index: -1;
+    width: max(1.2em, calc(100% + 0.4em));
+    height: 1.2em;
+    box-sizing: border-box;
+    border: 1px solid var(--link);
+    border-radius: 0.2em;
+    background: var(--page-background);
+    content: "";
+    pointer-events: none;
+    transform: translate(-50%, -50%);
+}
+
+.markdown-content .footnote-reference {
+    position: relative;
 }
 
 .footnote-preview.is-visible {
     display: block;
+}
+
+.footnote-preview > :first-child {
+    margin-top: 0;
+}
+
+.footnote-preview > :last-child {
+    margin-bottom: 0;
+}
+
+.footnotes {
+    margin-top: 2rem;
+    font-size: 0.875rem;
+}
+
+.footnotes > hr {
+    margin: 1.5rem 0;
+}
+
+.footnotes > ol {
+    margin: 0;
+}
+
+.footnotes > ol > li {
+    color: var(--text-secondary);
+    opacity: 0.82;
+    transition: color 220ms ease, opacity 220ms ease;
+}
+
+.footnotes > ol > li.is-active {
+    color: var(--text-primary);
+    opacity: 1;
+}
+
+.footnotes > ol > li + li {
+    margin-top: 0.5rem;
+}
+
+.footnotes > ol > li > p {
+    margin: 0;
+}
+
+.footnotes .footnote-back-ref {
+    display: inline-block;
+    margin-left: 0.2em;
+    color: var(--text-secondary);
+    opacity: 0;
+    pointer-events: none;
+    text-decoration: none;
+    transition: opacity 120ms ease, color 120ms ease;
+}
+
+.footnotes li:hover .footnote-back-ref,
+.footnotes li:focus-within .footnote-back-ref {
+    opacity: 1;
+    pointer-events: auto;
+}
+
+.footnotes .footnote-back-ref:hover {
+    color: var(--link);
 }
 
 .image-lightbox {

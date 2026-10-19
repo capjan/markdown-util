@@ -9,6 +9,7 @@ navigation.placement: top
 
 - [Code Blocks](CodeBlocks.md) - Displays fenced code blocks with syntax highlighting
 - [Formatting](Formatting.md) - Shows common Markdown formatting supported by Markdig
+- [Footnotes](Footnotes.md) - Uses labeled references and definitions to create automatically numbered notes with hover previews
 - [Navigation](Navigation.md) - Describes top navigation tabs, the sidebar, and how to control their order
 - [Tables](Tables.md) - Examples of rendered Markdown tables
 - [Diagrams](Diagrams.md) - Renders Mermaid flowcharts, sequence and class diagrams, PlantUML component diagrams, and context diagrams to static SVG that follows the light and dark theme

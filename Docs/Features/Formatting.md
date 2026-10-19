@@ -120,22 +120,6 @@ Use a line containing three hyphens, asterisks, or underscores to add a horizont
 
 ---
 
-## Footnotes
-
-Markdig supports footnote references and definitions:
-
-~~~markdown title="Markdown"
-MDU uses Markdig.[^markdig]
-
-[^markdig]: Markdig is a Markdown processor for .NET.
-~~~
-
-MDU uses Markdig.[^markdig]
-
-[^markdig]: Markdig is a Markdown processor for .NET.
-
-In the rendered site, hover over a footnote reference or move keyboard focus to it to preview the footnote inline. The full footnote remains at the bottom of the page.
-
 ## Related features
 
-For GitHub-style callouts, see [Callouts](Callouts.md).
+For footnotes, see [Footnotes](Footnotes.md). For GitHub-style callouts, see [Callouts](Callouts.md).
