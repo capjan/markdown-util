@@ -34,7 +34,8 @@ public enum EdgeMarker
     None,
     Arrow,
     Circle,
-    Cross
+    Cross,
+    Triangle
 }
 
 public sealed class FlowchartNode

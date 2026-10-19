@@ -88,6 +88,33 @@ public class MermaidRendererTest
         Assert.Contains("diagram-edge-dotted", svg);
     }
 
+    [Theory]
+    [InlineData("Animal <|-- Duck")]
+    [InlineData("Duck --|> Animal")]
+    [InlineData("Animal <|.. Duck")]
+    [InlineData("Duck ..|> Animal")]
+    public void PlacesTheSuperclassAboveTheSubclassWithATriangleAtTheSuperclass(string relationship)
+    {
+        var root = XElement.Parse(MermaidRenderer.RenderSvg($"classDiagram\n{relationship}"));
+        var animal = NodeShape(root, "Animal");
+        var duck = NodeShape(root, "Duck");
+        var animalTop = double.Parse(animal.Attribute("y")!.Value, CultureInfo.InvariantCulture);
+        var animalBottom = animalTop + double.Parse(animal.Attribute("height")!.Value, CultureInfo.InvariantCulture);
+        var duckTop = double.Parse(duck.Attribute("y")!.Value, CultureInfo.InvariantCulture);
+        var triangle = Assert.Single(root.Descendants().Where(element => element.Attribute("class")?.Value == "diagram-marker-hollow"));
+        var tip = Regex.Match(triangle.Attribute("d")!.Value, @"^M(?<x>-?\d+(?:\.\d+)?) (?<y>-?\d+(?:\.\d+)?)");
+
+        Assert.True(animalTop < duckTop);
+        Assert.True(tip.Success);
+        var tipY = double.Parse(tip.Groups["y"].Value, CultureInfo.InvariantCulture);
+        Assert.Equal(animalBottom, tipY, 2);
+    }
+
+    private static XElement NodeShape(XElement root, string label) => root.Descendants()
+        .Single(element => element.Attribute("class")?.Value.StartsWith("diagram-node ", StringComparison.Ordinal) == true
+                           && element.Descendants().Any(text => text.Attribute("class")?.Value == "diagram-node-text" && text.Value == label))
+        .Elements().Single(element => element.Attribute("class")?.Value == "diagram-node-shape");
+
     [Fact]
     public void RendersClassDiagramSyntaxUsedByTheWiki()
     {
