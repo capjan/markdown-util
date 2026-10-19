@@ -1,4 +1,4 @@
-# Documentation
+# MDU
 
 ```hero
 title: Plain Markdown, beautifully published
