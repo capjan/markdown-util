@@ -31,7 +31,7 @@ internal static class ClassDiagramRenderer
             var right = GetNode(relationship.Groups["right"].Value);
             var kind = relationship.Groups["relation"].Value;
             var isGeneralization = kind is "<|--" or "--|>" or "<|.." or "..|>";
-            var swapEndpoints = kind is "<.." or "<--" or "--|>" or "..|>";
+            var swapEndpoints = kind is "<.." or "<--" or "--|>" or "..|>" or "--*" or "--o";
             var from = swapEndpoints ? right.Id : left.Id;
             var to = swapEndpoints ? left.Id : right.Id;
             var lineStyle = kind.Contains('.') ? LineStyle.Dotted : LineStyle.Solid;
