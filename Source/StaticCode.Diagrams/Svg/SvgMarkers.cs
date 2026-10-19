@@ -12,6 +12,8 @@ internal enum MarkerKind
 
     /// <summary>A hollow triangle, as for UML generalization and realization.</summary>
     Triangle,
+    Diamond,
+    HollowDiamond,
     Circle,
     Cross
 }
@@ -23,12 +25,15 @@ internal static class SvgMarkers
     private const double ArrowWidth = 8;
     private const double TriangleLength = 12;
     private const double TriangleWidth = 11;
+    private const double DiamondLength = 14;
+    private const double DiamondWidth = 10;
 
     /// <summary>How far a line stops before the marker tip so that it does not poke through the marker.</summary>
     public static double Inset(MarkerKind kind, double scale = 1) => kind switch
     {
         MarkerKind.Arrow => ArrowLength * scale * 0.7,
         MarkerKind.Triangle => TriangleLength * scale,
+        MarkerKind.Diamond or MarkerKind.HollowDiamond => DiamondLength * scale,
         MarkerKind.OpenArrow or MarkerKind.Cross => 1,
         MarkerKind.Circle => 8,
         _ => 0
@@ -55,6 +60,17 @@ internal static class SvgMarkers
                 var triangleLeft = triangleBack + normal * (TriangleWidth * scale / 2);
                 var triangleRight = triangleBack - normal * (TriangleWidth * scale / 2);
                 svg.Append($"<path class=\"diagram-marker-hollow\" d=\"M{F(tip.X)} {F(tip.Y)} L{F(triangleLeft.X)} {F(triangleLeft.Y)} L{F(triangleRight.X)} {F(triangleRight.Y)} Z\"/>");
+                break;
+            }
+            case MarkerKind.Diamond:
+            case MarkerKind.HollowDiamond:
+            {
+                var middle = tip - direction * (DiamondLength * scale / 2);
+                var diamondBack = tip - direction * (DiamondLength * scale);
+                var diamondLeft = middle + normal * (DiamondWidth * scale / 2);
+                var diamondRight = middle - normal * (DiamondWidth * scale / 2);
+                var cssClass = kind == MarkerKind.Diamond ? "diagram-marker" : "diagram-marker-hollow";
+                svg.Append($"<path class=\"{cssClass}\" d=\"M{F(tip.X)} {F(tip.Y)} L{F(diamondLeft.X)} {F(diamondLeft.Y)} L{F(diamondBack.X)} {F(diamondBack.Y)} L{F(diamondRight.X)} {F(diamondRight.Y)} Z\"/>");
                 break;
             }
             case MarkerKind.OpenArrow:

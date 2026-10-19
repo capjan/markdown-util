@@ -195,6 +195,8 @@ internal static class NodeShapes
         EdgeMarker.Triangle => MarkerKind.Triangle,
         EdgeMarker.Circle => MarkerKind.Circle,
         EdgeMarker.Cross => MarkerKind.Cross,
+        EdgeMarker.Diamond => MarkerKind.Diamond,
+        EdgeMarker.HollowDiamond => MarkerKind.HollowDiamond,
         _ => MarkerKind.None
     };
 
