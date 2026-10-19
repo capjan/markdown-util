@@ -2039,6 +2039,10 @@ th, td {
         box-shadow: var(--sidebar-shadow);
     }
 
+    .site-layout.no-wide-sidebar .site-sidebar {
+        display: none;
+    }
+
     .site-sidebar nav {
         flex: 1;
         min-height: 0;
