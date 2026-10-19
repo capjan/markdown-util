@@ -1735,6 +1735,41 @@ pre code {
     cursor: pointer;
 }
 
+.diagram-link text {
+    text-decoration: underline;
+    text-decoration-thickness: 1px;
+    text-underline-offset: 2px;
+}
+
+.diagram-link:is(:hover, :focus-visible) .diagram-node-shape,
+.diagram-link:is(:hover, :focus-visible) .diagram-node-detail,
+.diagram-link:is(:hover, :focus-visible) .diagram-note-shape,
+.diagram-link:is(:hover, :focus-visible) .diagram-container-shape,
+.diagram-link:is(:hover, :focus-visible) .diagram-container-tab,
+.diagram-link:is(:hover, :focus-visible) .diagram-actor-head,
+.diagram-link:is(:hover, :focus-visible) .diagram-actor-body {
+    stroke: var(--link);
+}
+
+.diagram-link:is(:hover, :focus-visible) text {
+    fill: var(--link);
+}
+
+.diagram-link:focus-visible {
+    outline: 2px solid var(--link);
+    outline-offset: 3px;
+}
+
+.diagram-link:focus-visible .diagram-node-shape,
+.diagram-link:focus-visible .diagram-node-detail,
+.diagram-link:focus-visible .diagram-note-shape,
+.diagram-link:focus-visible .diagram-container-shape,
+.diagram-link:focus-visible .diagram-container-tab,
+.diagram-link:focus-visible .diagram-actor-head,
+.diagram-link:focus-visible .diagram-actor-body {
+    stroke-width: 2.5;
+}
+
 .diagram-node-diamond .diagram-node-shape {
     fill: var(--diagram-decision-background);
     stroke: var(--diagram-decision-border);
