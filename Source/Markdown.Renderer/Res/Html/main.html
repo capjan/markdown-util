@@ -17,6 +17,7 @@
     </script>
     <link rel="stylesheet" href="%%CSS_LINK%%">
     %%SITE_THEME_STYLE%%
+    %%PAGE_STYLES%%
 </head>
 <body id="top" data-search-index="%%SEARCH_INDEX_LINK%%">
 <header class="site-header" id="site-header">
@@ -48,6 +49,7 @@
 <nav class="top-navigation%%TOP_NAVIGATION_CLASS%%" aria-label="Main sections">
 %%TOP_NAVIGATION_ITEMS%%
 </nav>
+%%PAGE_HERO%%
 <div class="site-layout%%SITE_LAYOUT_CLASS%%" id="site-layout">
     <aside class="site-sidebar" id="site-navigation" aria-label="Sitemap">
 %%SIDEBAR_SECTION_TITLE%%
@@ -239,6 +241,7 @@
         .filter((item) => item.heading);
     let lastScrollY = window.scrollY;
     let scrollDirection = 1;
+    let scrollTravel = 0;
     let scrollFrame = 0;
     let currentActiveHeading = null;
     let activePermalinkTimer;
@@ -267,9 +270,15 @@
 
     const updateOnScroll = () => {
         scrollFrame = 0;
+        const navigationShift = (topNavigation?.offsetHeight ?? 0) + 16;
         if (window.scrollY !== lastScrollY) {
-            scrollDirection = window.scrollY > lastScrollY ? 1 : -1;
+            const delta = window.scrollY - lastScrollY;
             lastScrollY = window.scrollY;
+            // Hiding or showing the top navigation moves the page by its height, and the browser
+            // answers with a scroll of the same size. Only scrolling further than that turns the
+            // direction around, so the navigation cannot keep toggling itself.
+            scrollTravel = Math.sign(delta) === Math.sign(scrollTravel) ? scrollTravel + delta : delta;
+            if (Math.abs(scrollTravel) > navigationShift) scrollDirection = Math.sign(scrollTravel);
         }
         if (headings.length > 0) {
             const atScrollablePageEnd = document.documentElement.scrollHeight > window.innerHeight + 1 &&
@@ -288,7 +297,11 @@
             backToTop.classList.toggle("is-visible", window.scrollY > 200 && scrollDirection < 0);
         }
         if (topNavigation) {
-            topNavigation.classList.toggle("is-hidden-on-scroll", window.scrollY > 80 && scrollDirection > 0);
+            // Once hidden, the navigation returns near the top only well below the point where it hid,
+            // because hiding it can pull the scroll position back by its own height.
+            const hidden = topNavigation.classList.contains("is-hidden-on-scroll");
+            const hideAfter = hidden ? 80 - navigationShift : 80;
+            topNavigation.classList.toggle("is-hidden-on-scroll", window.scrollY > hideAfter && scrollDirection > 0);
         }
         if (breadcrumbs) {
             const headerBottom = header.getBoundingClientRect().bottom;

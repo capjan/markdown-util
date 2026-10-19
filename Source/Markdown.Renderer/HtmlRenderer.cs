@@ -91,8 +91,11 @@ public class HtmlRenderer
         var hasIconSearch = document.Descendants<FencedCodeBlock>()
             .Any(block => block.Info == IconSearch.CodeBlockLanguage);
         if (hasIconSearch) EnsureIconSearchAssets();
+        var hasHero = document.Descendants<FencedCodeBlock>()
+            .Any(block => block.Info == Hero.CodeBlockLanguage);
         var renderedMarkdown = document.ToHtml(_pipeline);
         renderedMarkdown = MediaLinkEmbedder.ReplaceStandaloneLinks(renderedMarkdown, out var mediaProviders);
+        var pageHero = hasHero ? Hero.ExtractFullWidth(ref renderedMarkdown) : string.Empty;
         if (!string.IsNullOrWhiteSpace(pageIcon))
         {
             var iconName = pageIcon.Trim().Trim(':').Replace('/', '-');
@@ -159,6 +162,8 @@ public class HtmlRenderer
             ["MEDIA_SETTINGS_BUTTON"] = providersForSettings.Count > 0 ? MediaLinkEmbedder.SettingsButtonHtml : string.Empty,
             ["MEDIA_SETTINGS_DIALOG"] = MediaLinkEmbedder.RenderSettingsDialog(providersForSettings),
             ["MARKDOWN"] = model.RenderedMarkdown,
+            ["PAGE_HERO"] = pageHero,
+            ["PAGE_STYLES"] = hasHero ? $"<style>{Hero.Styles}</style>" : string.Empty,
             ["PAGE_BREADCRUMBS"] = breadcrumbMarkup,
             ["PAGE_TOC"] = RenderOnThisPage(tocHeadings),
             ["BACK_TO_TOP"] = "<a class=\"back-to-top\" id=\"back-to-top\" href=\"#top\" aria-label=\"Back to top\" title=\"Back to top\"><svg viewBox=\"0 0 20 20\" aria-hidden=\"true\"><path d=\"M10 16V4m-5 5 5-5 5 5\"></path></svg><span>Back to top</span></a>",
@@ -168,6 +173,7 @@ public class HtmlRenderer
                     ? $"<script defer src=\"{HtmlEncoder.Default.Encode(prefix + "js/" + IconSearch.ScriptFileName)}\"></script>{Environment.NewLine}"
                     : string.Empty)
                 + (providersForSettings.Count > 0 ? $"<script>{MediaLinkEmbedder.Script}</script>{Environment.NewLine}" : string.Empty)
+                + (hasHero ? $"<script>{Hero.Script}</script>{Environment.NewLine}" : string.Empty)
         };
         var renderedHtml = TemplateTokenRegex.Replace(Resources.HtmlTemplateContent(), match =>
             values.TryGetValue(match.Groups["name"].Value, out var value) ? value : match.Value);
