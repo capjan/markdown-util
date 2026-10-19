@@ -2010,10 +2010,6 @@ th, td {
     transform: translate(-50%, -50%);
 }
 
-.markdown-content .footnote-reference {
-    position: relative;
-}
-
 .footnote-preview.is-visible {
     display: block;
 }
@@ -2058,6 +2054,11 @@ th, td {
     margin: 0;
 }
 
+.markdown-content a.footnote-ref,
+.footnotes > ol > li {
+    scroll-margin-top: 7rem;
+}
+
 .footnotes .footnote-back-ref {
     display: inline-block;
     margin-left: 0.2em;
@@ -2076,6 +2077,13 @@ th, td {
 
 .footnotes .footnote-back-ref:hover {
     color: var(--link);
+}
+
+@media (hover: none) {
+    .footnotes .footnote-back-ref {
+        opacity: 1;
+        pointer-events: auto;
+    }
 }
 
 .image-lightbox {
