@@ -1,183 +1,196 @@
 # Diagrams
 
-## Overview
+Write diagrams as text; MDU turns supported code blocks into static SVG in the rendered page.
 
-MDU draws diagrams from fenced code blocks while it renders your Markdown. It understands a subset of the Mermaid and PlantUML syntax and turns each diagram into static SVG that is embedded directly in the generated HTML page.
+- Rendered as static SVG without JavaScript
+- Works offline
+- Follows the light or dark theme
+- Keeps diagram sources portable Markdown
 
-> [!IMPORTANT]
-> MDU does not contain Mermaid or PlantUML, and it does not call them. It only imitates part of their syntax and draws the diagrams with its own implementation. The result therefore looks different from the originals, and not every feature is available.
+> [!NOTE]
+> MDU uses its own renderers for subsets of Mermaid and PlantUML. The output can differ from those tools, and unsupported syntax is not rendered as a diagram.
 
-### Static rendering
-
-Every diagram is finished when `mdu render` or `mdu serve` writes the page:
-
-- The page contains plain SVG. No JavaScript runs in the browser, and no diagram service is contacted.
-- Diagrams appear immediately and also work offline.
-- The colors come from the page's stylesheet, so diagrams follow the light and dark theme automatically.
-- Diagram nodes can link to another page. The node's shape and label are clickable in HTML output.
-
-### Portability
-
-Your diagrams stay in the standard notation, so you can leave MDU at any time without rewriting them:
-
-- Mermaid diagrams stay ordinary ` ```mermaid ` code blocks. GitHub and other Mermaid-aware tools render the same files with the real Mermaid.
-- PlantUML diagrams stay ordinary ` ```plantuml ` code blocks that PlantUML itself and PlantUML-aware tools render.
-- Context diagrams are the exception: they are an MDU extension in ` ```context ` code blocks, which other tools show as plain code.
-
-Mermaid flowcharts support subgraphs, and MDU also renders the class diagram subset described below. Syntax outside the documented subsets remains a code block instead of being guessed; `mdu lint` reports unsupported Mermaid syntax.
+| Type | Use for | Code block | Also renders with |
+| --- | --- | --- | --- |
+| [Flowchart](#flowcharts) | Processes and decisions | `mermaid` | Mermaid, GitHub |
+| [Sequence](#sequence-diagrams) | Interactions over time | `mermaid` | Mermaid, GitHub |
+| [Class](#class-diagrams) | Types and relationships | `mermaid` | Mermaid, GitHub |
+| [Component](#component-diagrams) | Architecture building blocks | `plantuml` | PlantUML |
+| [Context](#context-diagrams) | A system in its environment | `context` | MDU only |
 
 ## Flowcharts
+
+Use a `mermaid` code block for processes and decisions.
 
 ~~~markdown title="Markdown"
 ```mermaid
 flowchart TD
-    Start([Open a Markdown file]) --> Lint{Lint passes?}
+    accTitle: Documentation workflow
+    Source[Markdown source] --> Lint{Lint passes?}
     Lint -->|Yes| Render[Render HTML]
-    Lint -->|No| Fix[Fix the reported issues]
-    Fix --> Lint
-    Render --> Publish((Publish))
+    Lint -->|No| Fix[Fix reported issues]
 ```
 ~~~
 
 ```mermaid
 flowchart TD
-    Start([Open a Markdown file]) --> Lint{Lint passes?}
+    accTitle: Documentation workflow
+    Source[Markdown source] --> Lint{Lint passes?}
     Lint -->|Yes| Render[Render HTML]
-    Lint -->|No| Fix[Fix the reported issues]
-    Fix --> Lint
-    Render --> Publish((Publish))
+    Lint -->|No| Fix[Fix reported issues]
 ```
 
 Use `LR` for a diagram that flows from left to right:
 
+~~~markdown title="Markdown"
 ```mermaid
 flowchart LR
+    accTitle: Rendered site
+    Docs[Docs folder] --> Render[mdu render] --> Site[Static site]
+    Render -.-> Search[Search index]
+```
+~~~
+
+```mermaid
+flowchart LR
+    accTitle: Rendered site
     Docs[Docs folder] --> Render[mdu render] --> Site[Static site]
     Render -.-> Search[Search index]
 ```
 
-### Supported flowchart syntax
+### Flowchart syntax
 
-| Element | Syntax |
-| --- | --- |
-| Header | `flowchart` or `graph`, optionally followed by `TD`, `TB`, `BT`, `LR`, or `RL` |
-| Rectangle | `A[Text]` |
-| Rounded rectangle | `A(Text)` |
-| Stadium | `A([Text])` |
-| Circle | `A((Text))` |
-| Decision | `A{Text}` |
-| Subroutine | `A[[Text]]` |
-| Hexagon | `A{{Text}}` |
-| Links | `-->`, `---`, `-.->`, `-.-`, `==>`, `===` |
-| Link ends | `<-->`, `--o`, `--x` |
-| Link labels | `A -- Text --> B`, or the text between two pipes after the link (see below) |
-| Node links | `click A href "details.md"` |
-| Longer links | Add dashes, dots, or equal signs, for example `--->` |
-| Chains and groups | `A --> B --> C`, `A & B --> C` |
-| Subgraphs | `subgraph Id ["Label"]` … `end` |
-| Namespaced node identifiers | `target:App`, `product:Library` |
-| Line breaks | `<br>` inside a label |
-| Comments | Lines starting with `%%` |
+| Element | Syntax | Meaning |
+| --- | --- | --- |
+| Header and direction | `flowchart TD`, `graph LR` | `TD`/`TB` top to bottom, `BT` bottom to top, `LR` left to right, `RL` right to left |
+| Node shapes | `A[Text]`, `A(Text)`, `A([Text])`, `A((Text))`, `A{Text}`, `A[[Text]]`, `A{{Text}}` | Rectangle, rounded rectangle, stadium, circle, diamond, subroutine, and hexagon |
+| Namespaced IDs | `target:App` | Adds one namespace prefix to a node ID |
+| Labels | `A["Text [with brackets]"]`, `A[First<br>Second]` | Double quotes allow brackets in labels; `<br>` starts a new line |
+| Solid links | `-->`, `---`, `<-->`, `--o`, `--x` | Arrow, plain line, arrows at both ends, circle end, cross end |
+| Dotted links | `-.->`, `-.-` | Dotted arrow or plain dotted line |
+| Thick links | `==>`, `===` | Thick arrow or plain thick line |
+| Link labels | `A -->|Yes| B` or `A -- Yes --> B` | Adds explicit text to a link |
+| Chains and groups | `A --> B --> C`, `A & B --> C` | Chains links or connects multiple source nodes to one target |
+| Subgraphs | `subgraph Services ["Services"]` … `end` | Groups nodes within the flowchart |
+| Accessible title | `accTitle: Text` | Sets the accessible title |
+| Comments | `%% comment` | Ignores the line |
 
-Write a link label between pipes directly after the link, for example `A -->|Text| B`. Quote labels that contain brackets: `A["Text (with brackets)"]`.
-
-Make a node clickable with a `click` statement. Its destination can be a relative Markdown page or an external URL:
-
-~~~markdown title="Markdown"
-```mermaid
-flowchart LR
-    Store[Online Store]
-    click Store href "store.md" "Open the store details"
-```
-~~~
-
-```mermaid
-flowchart LR
-    Store[Online Store]
-    click Store href "store.md" "Open the store details"
-```
-
-Relative `.md` destinations are changed to `.html` in the rendered site. `mdu lint` checks these destinations for matching path casing and existing pages, just like Markdown links. The optional tooltip is ignored.
-
-Styling statements such as `style`, `classDef`, `class`, and `linkStyle` are ignored, because the page theme defines the colors. `accTitle: Text` sets the accessible name of the diagram.
+Longer links made by adding dashes, dots, or equals signs span more layout ranks. MDU does not support every Mermaid flowchart shape or statement. Node links are covered under [Clickable nodes](#clickable-nodes).
 
 ## Sequence diagrams
 
+Use a `mermaid` code block to show messages between participants over time.
+
 ~~~markdown title="Markdown"
 ```mermaid
 sequenceDiagram
+    accTitle: Dashboard request
     actor User
     participant Web as Web app
     participant API
     User->>Web: Open dashboard
-    Web->>+API: GET /dashboard
-    alt Cached
-        API-->>Web: Cached widgets
-    else Not cached
+    Web->>API: GET /dashboard
+    alt Widgets cached
+        API-->>Web: Return cached widgets
+    else Cache miss
         API->>API: Load widgets
-        API-->>Web: Fresh widgets
+        API-->>Web: Return fresh widgets
     end
-    deactivate API
-    Note over Web,API: All calls use TLS
-    Web-->>User: Render page
+    Note over Web,API: Requests use TLS
+    Web-->>User: Show dashboard
 ```
 ~~~
 
 ```mermaid
 sequenceDiagram
+    accTitle: Dashboard request
     actor User
     participant Web as Web app
     participant API
     User->>Web: Open dashboard
-    Web->>+API: GET /dashboard
-    alt Cached
-        API-->>Web: Cached widgets
-    else Not cached
+    Web->>API: GET /dashboard
+    alt Widgets cached
+        API-->>Web: Return cached widgets
+    else Cache miss
         API->>API: Load widgets
-        API-->>Web: Fresh widgets
+        API-->>Web: Return fresh widgets
     end
-    deactivate API
-    Note over Web,API: All calls use TLS
-    Web-->>User: Render page
+    Note over Web,API: Requests use TLS
+    Web-->>User: Show dashboard
 ```
 
-### Supported sequence diagram syntax
+### Sequence syntax
 
-| Element | Syntax |
-| --- | --- |
-| Header | `sequenceDiagram` |
-| Participants | `participant A`, `participant A as Label`, `actor A as Label` |
-| Messages | `->`, `-->`, `->>`, `-->>`, `-x`, `--x`, `-)`, `--)`, `<<->>`, `<<-->>`, each followed by `: Text` |
-| Activations | `activate A`, `deactivate A`, or `+` and `-` after the arrow, for example `A->>+B: Text` |
-| Notes | `Note left of A: Text`, `Note right of A: Text`, `Note over A: Text`, `Note over A,B: Text` |
-| Blocks | `loop`, `alt` with `else`, `opt`, `par` with `and`, `critical` with `option`, `break`, each closed with `end` |
-| Highlighted areas | `rect` … `end`; the color argument is ignored |
-| Numbering | `autonumber`, `autonumber 10 5` (start and step), `autonumber off` |
-| Titles | `title Text`, `accTitle: Text` |
-| Line breaks | `<br>` inside a label, message, or note |
-| Comments | Lines starting with `%%` |
+| Element | Syntax | Meaning |
+| --- | --- | --- |
+| Participants | `participant A`, `participant A as Label`, `actor A`, `actor A as Label` | Declares a participant or stick-figure actor, optionally with a display label |
+| Messages | `->`, `-->`, `->>`, `-->>`, `-x`, `--x`, `-)`, `--)`, `<<->>`, `<<-->>` | `-` draws a solid line and `--` a dotted line; `>>` adds an arrowhead, `x` a cross end, `)` an open end, and `<<…>>` arrowheads at both ends |
+| Line breaks | `A->>B: First<br>second`, `Note over A: First<br>second` | Starts a new line in a message or note |
+| Activations | `activate A`, `deactivate A`; `A->>+B: Text`, `A->>-B: Text` | Starts or ends an activation; `+` activates the target and `-` deactivates the source |
+| Notes | `Note left of A: Text`, `Note right of A: Text`, `Note over A,B: Text` | Places a note beside one participant or over one or two |
+| Blocks | `loop`, `alt`/`else`, `opt`, `par`/`and`, `critical`/`option`, `break`, `rect` … `end` | Groups messages in a control block |
+| Numbering | `autonumber`, `autonumber 10 5`, `autonumber off` | Numbers messages, optionally setting the start and step, or turns numbering off |
+| Titles | `title Text`, `accTitle: Text` | Sets the visible title or accessible title |
+| Comments | `%% comment` | Ignores the line |
 
-Participants appear in the order they are declared or first used. `box`, `create`, `destroy`, and participant links are not supported yet.
+Blocks end with `end`. `rect` draws a highlighted area, but its color argument is ignored. `box`, `create`, `destroy`, and participant links are not supported.
 
 ## Class diagrams
 
-Use `classDiagram` or `classDiagram-v2` for a class diagram. Class names are shown as written. Add relationships between classes with an optional label:
+Use `classDiagram` or `classDiagram-v2` in a `mermaid` code block to show types and their relationships.
+
+~~~markdown title="Markdown"
+```mermaid
+classDiagram
+class Animal
+class Bird
+class Duck
+class Wing
+class Nest
+Animal <|-- Duck
+Bird <|.. Duck
+Duck *-- Wing : has
+Bird ..> Nest : uses
+```
+~~~
 
 ```mermaid
 classDiagram
 class Animal
+class Bird
+class Duck
+class Wing
+class Nest
 Animal <|-- Duck
+Bird <|.. Duck
 Duck *-- Wing : has
 Bird ..> Nest : uses
 ```
 
-The supported relationships are inheritance (`<|--`, `--|>`), composition (`*--`, `--*`), aggregation (`o--`, `--o`), dependency (`<..`, `..>`), and solid or dotted associations (`--`, `-->`, `<--`, `..`, `<|..`, `..|>`). Class declarations use `class Name`. Attributes, methods, aliases, and display labels are not supported.
+### Class syntax
 
-## PlantUML component diagrams
+| Element | Syntax | Meaning |
+| --- | --- | --- |
+| Header | `classDiagram`, `classDiagram-v2` | Starts a class diagram |
+| Class | `class Name` | Declares a class; a relationship also introduces referenced classes |
+| Generalization | `Base <|-- Child`, `Child --|> Base` | Hollow triangle at the superclass, which is placed above the subclass |
+| Realization | `Interface <|.. Implementation`, `Implementation ..|> Interface` | Dotted hollow triangle at the interface, which is placed above the implementing class |
+| Composition | `Whole *-- Part`, `Part --* Whole` | Filled diamond at the whole, which is placed above the part |
+| Aggregation | `Whole o-- Part`, `Part --o Whole` | Hollow diamond at the whole, which is placed above the part |
+| Dependency | `A ..> B`, `B <.. A` | Dotted arrow |
+| Association | `A -- B`, `A --> B`, `A <-- B`, `A .. B` | Solid or dotted association, with an optional arrow |
+| Relationship labels | `A *-- B : has` | Shows only explicit labels; MDU adds no default labels |
+
+Class declarations, relationships, and optional relationship labels are supported. Attributes, methods, aliases, and display labels are not. Class diagrams have no title syntax.
+
+## Component diagrams
+
+Use a `plantuml` code block for component diagrams. MDU renders a subset of PlantUML component syntax.
 
 ~~~markdown title="Markdown"
 ```plantuml
 @startuml
+title Shop architecture
 actor Customer
 package "Shop" {
   [Web Shop] <<frontend>> as Web
@@ -196,6 +209,7 @@ note right of DB : PostgreSQL
 
 ```plantuml
 @startuml
+title Shop architecture
 actor Customer
 package "Shop" {
   [Web Shop] <<frontend>> as Web
@@ -211,63 +225,37 @@ note right of DB : PostgreSQL
 @enduml
 ```
 
-### Supported PlantUML syntax
+### Component syntax
 
-MDU follows PlantUML's component diagram syntax, so the same source works with PlantUML itself:
+| Element | Syntax | Meaning |
+| --- | --- | --- |
+| Frame | `@startuml` … `@enduml` | Optional delimiters for the diagram source |
+| Elements | `[Name]`, `component Name`, `interface Name`, `actor Name`, `database Name`, `node Name`, `cloud Name`, `folder Name`, `frame Name`, `package Name`, `rectangle Name`, `card Name`, `artifact Name`, `file Name`, `queue Name`, `storage Name` | Declares components, interfaces, actors, or other supported elements |
+| Interfaces | `() "Name"` | Declares an interface with a display name |
+| Aliases | `[Name] as Alias`, `component "Name" as Alias` | Assigns an ID to an element with a display name |
+| Containers | `package "Shop" {` … `}`; also `node`, `folder`, `frame`, `cloud`, `database`, `rectangle`, and `component` | Groups elements; containers may be nested |
+| Stereotypes | `<<name>>` after an element | Adds a stereotype |
+| Link lines | `-`, `--`, `..`, `==`, optionally with `>` or `<` | Solid, dotted, or bold line, with an optional arrow end |
+| Link direction and length | `->`, `-->`, `-up->`, `-down->`, `-left->`, `-right->` | One dash defaults right, two or more default down; extra dashes lengthen the link and a direction word selects its direction |
+| Link labels | `A --> B : Text` | Adds explicit text to a link |
+| Link styles | `A -[hidden]-> B`, `A -[dashed]-> B`, `A -[bold]-> B` | Hides a link or draws it dotted or bold |
+| Triangle ends | `A ..|> B`, `A <|-- B` | Adds a triangle end to the link |
+| Node links | `url of ID is [[details.md]]` | Links an element; use its alias for `ID` when declared |
+| Notes | `note right of A : Text`; `note right of A` … `end note`; `note "Text" as N` … `end note` | Adds an attached or standalone note |
+| Line breaks | `\n` in labels or notes | Starts a new line |
+| Layout | `left to right direction`, `top to bottom direction` | Sets the overall layout direction |
+| Title | `title Text` | Adds a diagram title and accessible name |
+| Comments | `' comment`, `/' comment '/` | Ignores line comments and block comments |
 
-| Element | Syntax |
-| --- | --- |
-| Frame | `@startuml` and `@enduml` are optional |
-| Components | `[Name]`, `[Name] as Alias`, `component Name`, `component "Name" as Alias`, `component Alias as "Name"` |
-| Interfaces | `() "Name"`, `() "Name" as Alias`, `interface Name`; an unknown name in a link also becomes an interface |
-| Other elements | `actor`, `database`, `node`, `cloud`, `folder`, `frame`, `package`, `rectangle`, `card`, `artifact`, `file`, `queue`, `storage` |
-| Containers | Any of `package`, `node`, `folder`, `frame`, `cloud`, `database`, `rectangle`, or `component` followed by `{` … `}`, also nested and without a name |
-| Stereotypes | `<<name>>` after the element |
-| Links | `--` solid, `..` dotted, `==` bold, with `>` or `<` for arrow ends, for example `-->` or `<..`; triangle ends are described below |
-| Link direction | `->` keeps both elements in one row, `-->` puts the target below, more dashes make the link longer; `-up->`, `-down->`, `-left->`, `-right->` (also `-u->` and so on) |
-| Link styles | `-[hidden]->` only affects the layout, `-[dashed]->`, `-[bold]->` |
-| Link labels | `A --> B : Text` |
-| Node links | `url of ID is [[details.md]]` |
-| Notes | `note left of A : Text`, `note right of`, `note top of`, `note bottom of`, multi-line notes ending with `end note`, `note "Text" as N` |
-| Layout | `left to right direction`, `top to bottom direction` |
-| Text | `title Text`, `\n` for a line break |
-| Comments | Lines starting with `'` and `/'` … `'/` blocks |
-
-A triangle end, as for realization or generalization, is written `..|>` or `<|--`.
-
-Link a node to another page with PlantUML's URL statement. `ID` is the element's alias when it has one:
-
-~~~markdown title="Markdown"
-```plantuml
-@startuml
-component [Order Service] as Orders
-url of Orders is [[order-service.md]]
-@enduml
-```
-~~~
-
-```plantuml
-@startuml
-component [Order Service] as Orders
-url of Orders is [[order-service.md]]
-@enduml
-```
-
-Relative `.md` destinations are changed to `.html` in the rendered site. `mdu lint` checks these destinations for matching path casing and existing pages, just like Markdown links.
-
-`skinparam`, `hide`, `show`, and colors are ignored, because the page theme defines the look. Other PlantUML diagram types, such as sequence or class diagrams, stay code blocks.
+`hide`, `show`, `scale`, `!theme`, `!pragma`, `allowmixing`, and `allow_mixing` are ignored. Other PlantUML diagram types, including sequence and class diagrams, remain code blocks.
 
 ## Context diagrams
 
-A context diagram shows one system in the center and the people and systems it works with around it.
-
-> [!NOTE]
-> Context diagrams are an MDU extension. Neither Mermaid nor PlantUML has this diagram type, so only `mdu` renders them. GitHub and other tools show the ` ```context ` block as plain code.
-
-A context diagram uses the flowchart syntax for systems and links, and `actor` for people:
+Use an MDU `context` code block to show a system and the people and systems connected to it.
 
 ~~~markdown title="Markdown"
 ```context
+accTitle: Online store context
 Store[Online Store]
 Store <--> IdP[Identity Provider<br>OIDC]
 Store <--> Payment[Payment Provider]
@@ -284,6 +272,7 @@ Warehouse -. Handles shipments .-> Store
 ~~~
 
 ```context
+accTitle: Online store context
 Store[Online Store]
 Store <--> IdP[Identity Provider<br>OIDC]
 Store <--> Payment[Payment Provider]
@@ -298,33 +287,90 @@ Manager -. Manages catalog .-> Store
 Warehouse -. Handles shipments .-> Store
 ```
 
-### Supported context diagram syntax
+### Context syntax
 
-| Element | Syntax |
-| --- | --- |
-| Systems | The flowchart shapes, for example `A[Text]`, `A(Text)`, `A([Text])`, `A((Text))`, `A{Text}` |
-| People | `actor A` or `actor A as Label` |
-| Links | The flowchart links, link ends, and labels, for example `-->`, `<-->`, `-.->`, `==>`, and `A -- Text --> B` |
-| Node links | `click A href "details.md"` |
-| Titles | `accTitle: Text` |
-| Comments | Lines starting with `%%` |
+| Element | Syntax | Meaning |
+| --- | --- | --- |
+| Header | None | A context block has no header line |
+| Systems | Flowchart node shapes such as `A[Text]`, `A(Text)`, `A([Text])`, `A((Text))`, and `A{Text}` | Uses the same shapes as a flowchart |
+| People | `actor A` or `actor A as Label` | Adds a stick-figure actor |
+| Links | Flowchart links such as `-->`, `<-->`, `-.->`, `==>`, and `A -- Text --> B` | Uses the same lines, ends, and labels as a flowchart |
+| Titles | `accTitle: System context` | Sets the accessible title |
+| Comments | `%% comment` | Ignores the line |
 
-The system in the center is the one that every link connects to. If several systems qualify, for example with a single link, the first one in the source is used. All other systems and people are spread evenly around the center, clockwise from the top in the order they first appear, so you control the arrangement by reordering the lines. A context diagram needs no header line.
+The center is the system every link touches. If more than one system qualifies, the first one in the source is the center. Other systems and actors are evenly spaced clockwise from the top in the order they first appear. Reorder their source lines to change their positions. Subgraphs are not supported.
 
-Use a Mermaid-style `click` statement to link a system or person to its detail page:
+## Clickable nodes
+
+A Mermaid `click` statement links a flowchart or context node; PlantUML's `url of` statement links a component. The linked node is recognizable and can be opened from the rendered HTML.
+
+| Diagram | Syntax | Meaning |
+| --- | --- | --- |
+| Flowchart | `click A href "details.md"` | Links node `A` to a destination |
+| Context | `click A href "details.md"` | Links node `A` to a destination |
+| Component | `url of ID is [[details.md]]` | Links element `ID` to a destination |
+
+Relative `.md` destinations become `.html` in the rendered site. `mdu lint` checks destination casing and that the page exists. External URLs can also be used for node links; the optional Mermaid tooltip is ignored.
+
+**Flowchart**
+
+~~~markdown title="Markdown"
+```mermaid
+flowchart LR
+    accTitle: Store link
+    Store[Online Store]
+    click Store href "store.md"
+```
+~~~
+
+```mermaid
+flowchart LR
+    accTitle: Store link
+    Store[Online Store]
+    click Store href "store.md"
+```
+
+**Context**
 
 ~~~markdown title="Markdown"
 ```context
-Store[Online Store]
-Store --> Inventory[Inventory System]
+accTitle: Inventory link
+Store[Online Store] --> Inventory[Inventory]
 click Inventory href "inventory.md"
 ```
 ~~~
 
 ```context
-Store[Online Store]
-Store --> Inventory[Inventory System]
+accTitle: Inventory link
+Store[Online Store] --> Inventory[Inventory]
 click Inventory href "inventory.md"
 ```
 
-Relative `.md` destinations are changed to `.html` in the rendered site. `mdu lint` checks these destinations for matching path casing and existing pages, just like Markdown links.
+**Component**
+
+~~~markdown title="Markdown"
+```plantuml
+@startuml
+title Order service link
+component [Order Service] as Orders
+url of Orders is [[order-service.md]]
+@enduml
+```
+~~~
+
+```plantuml
+@startuml
+title Order service link
+component [Order Service] as Orders
+url of Orders is [[order-service.md]]
+@enduml
+```
+
+## Styling and themes
+
+Mermaid `style`, `classDef`, `class`, and `linkStyle` statements, PlantUML `skinparam` and explicit colors are ignored. The page stylesheet sets diagram colors so they follow the light or dark theme.
+
+## Unsupported syntax
+
+> [!TIP]
+> MDU supports only a subset of Mermaid and PlantUML. If a Mermaid block uses unsupported syntax, it stays a code block and `mdu lint` reports `MDU010`. Unsupported PlantUML and context blocks also remain code when rendered.
