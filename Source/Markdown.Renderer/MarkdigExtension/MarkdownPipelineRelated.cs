@@ -53,4 +53,14 @@ public static class MarkdownPipelineRelated
         pipeline.Extensions.AddIfNotAlready<KeysExtension>();
         return pipeline;
     }
+
+    /// <summary>
+    /// Wraps tables in horizontally scrollable containers.
+    /// </summary>
+    public static MarkdownPipelineBuilder UseScrollableTables(
+        this MarkdownPipelineBuilder pipeline)
+    {
+        pipeline.Extensions.AddIfNotAlready<ScrollableTableExtension>();
+        return pipeline;
+    }
 }
