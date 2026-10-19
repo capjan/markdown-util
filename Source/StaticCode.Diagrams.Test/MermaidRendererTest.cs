@@ -118,6 +118,7 @@ public class MermaidRendererTest
     {
         var root = XElement.Parse(MermaidRenderer.RenderSvg($"classDiagram\n{relationship}"));
 
+        AssertNodeAboveNode(root, "Duck", "Wing");
         AssertDiamondAtNodeWithInsetEdge(root, "Duck", "diagram-marker");
     }
 
@@ -128,6 +129,7 @@ public class MermaidRendererTest
     {
         var root = XElement.Parse(MermaidRenderer.RenderSvg($"classDiagram\n{relationship}"));
 
+        AssertNodeAboveNode(root, "Pond", "Duck");
         AssertDiamondAtNodeWithInsetEdge(root, "Pond", "diagram-marker-hollow");
     }
 
@@ -162,6 +164,14 @@ public class MermaidRendererTest
         .Single(element => element.Attribute("class")?.Value.StartsWith("diagram-node ", StringComparison.Ordinal) == true
                            && element.Descendants().Any(text => text.Attribute("class")?.Value == "diagram-node-text" && text.Value == label))
         .Elements().Single(element => element.Attribute("class")?.Value == "diagram-node-shape");
+
+    private static void AssertNodeAboveNode(XElement root, string upperLabel, string lowerLabel)
+    {
+        var upperY = double.Parse(NodeShape(root, upperLabel).Attribute("y")!.Value, CultureInfo.InvariantCulture);
+        var lowerY = double.Parse(NodeShape(root, lowerLabel).Attribute("y")!.Value, CultureInfo.InvariantCulture);
+
+        Assert.True(upperY < lowerY, $"{upperLabel} should be above {lowerLabel}.");
+    }
 
     private static void AssertDiamondAtNodeWithInsetEdge(XElement root, string nodeLabel, string markerClass)
     {
