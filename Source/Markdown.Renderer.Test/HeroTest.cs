@@ -103,6 +103,8 @@ public class HeroTest
         Assert.True(heroStart > page.IndexOf("<nav class=\"top-navigation", StringComparison.Ordinal));
         Assert.Contains("const fragmentSource", page);
         Assert.Contains("<h1 id=\"home\">", page);
+        var styles = page.IndexOf("<style>.hero {", StringComparison.Ordinal);
+        Assert.True(styles > 0 && styles < page.IndexOf("</head>", StringComparison.Ordinal));
     }
 
     [Fact]
@@ -122,6 +124,14 @@ public class HeroTest
 
         Assert.DoesNotContain("<section class=\"hero", page);
         Assert.DoesNotContain("const fragmentSource", page);
+        Assert.DoesNotContain(".hero-canvas", page);
+    }
+
+    [Fact]
+    public void KeepsHeroStylesOutOfTheSiteStylesheet()
+    {
+        Assert.DoesNotContain(".hero", Resources.CssContent());
+        Assert.Contains(".hero-canvas", Hero.Styles);
     }
 
     private static async Task<string> RenderPage(string markdown)

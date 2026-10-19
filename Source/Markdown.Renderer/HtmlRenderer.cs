@@ -163,6 +163,7 @@ public class HtmlRenderer
             ["MEDIA_SETTINGS_DIALOG"] = MediaLinkEmbedder.RenderSettingsDialog(providersForSettings),
             ["MARKDOWN"] = model.RenderedMarkdown,
             ["PAGE_HERO"] = pageHero,
+            ["PAGE_STYLES"] = hasHero ? $"<style>{Hero.Styles}</style>" : string.Empty,
             ["PAGE_BREADCRUMBS"] = breadcrumbMarkup,
             ["PAGE_TOC"] = RenderOnThisPage(tocHeadings),
             ["BACK_TO_TOP"] = "<a class=\"back-to-top\" id=\"back-to-top\" href=\"#top\" aria-label=\"Back to top\" title=\"Back to top\"><svg viewBox=\"0 0 20 20\" aria-hidden=\"true\"><path d=\"M10 16V4m-5 5 5-5 5 5\"></path></svg><span>Back to top</span></a>",

@@ -23,6 +23,7 @@ public static class Hero
     private static readonly char[] ControlCharactersAndSpace = Enumerable.Range(0, 33).Select(c => (char)c).ToArray();
     private static readonly Regex SchemeRegex = new("^(?<scheme>[a-zA-Z][a-zA-Z0-9+.-]*):", RegexOptions.Compiled);
 
+    public static string Styles => Resources.HeroCssContent();
     public static string Script => Resources.HeroScriptContent();
 
     public static string Render(string configuration)
