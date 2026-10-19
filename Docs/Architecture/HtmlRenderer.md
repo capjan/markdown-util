@@ -21,4 +21,4 @@
 - [Markdig](https://github.com/xoofx/markdig) renders Markdown (CommonMark) files as HTML.
 - Search creates a static JSON index at render time; the browser searches it locally without a search service.
 - Icons come from Iconify JSON packages that are embedded in `StaticCode.Icons` and rendered as inline SVG, so pages need no icon font or CDN.
-- `StaticCode.Diagrams` draws the supported Mermaid and PlantUML syntax as SVG during rendering. The build does not need Mermaid JavaScript or a PlantUML/Java installation; `context` diagrams are a MarkdownUtil extension.
+- `StaticCode.Diagrams` draws the supported Mermaid and PlantUML syntax as SVG during rendering. The build does not need Mermaid JavaScript or a PlantUML/Java installation; `context` diagrams are an MDU extension.

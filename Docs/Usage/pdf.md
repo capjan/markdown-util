@@ -4,7 +4,7 @@ navigation.order: 45
 
 # pdf
 
-`mdu pdf` combines the Markdown files under one source folder into a single local PDF. It uses the same Markdown pipeline as `mdu render`, including MarkdownUtil's code highlighting, icons, keyboard keys, math, alerts, and supported diagrams. PDF output is generated directly in MarkdownUtil without a PDF package or network service.
+`mdu pdf` combines the Markdown files under one source folder into a single local PDF. It uses the same Markdown pipeline as `mdu render`, including MDU's code highlighting, icons, keyboard keys, math, alerts, and supported diagrams. PDF output is generated directly in MDU without a PDF package or network service.
 
 ```text
 mdu pdf [PATH [OUTPATH]]

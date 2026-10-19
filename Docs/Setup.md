@@ -5,11 +5,11 @@ navigation.placement: top
 
 # Setup
 
-MarkdownUtil is distributed as a [.NET tool](https://learn.microsoft.com/en-us/dotnet/core/tools/global-tools) through [NuGet](https://www.nuget.org/packages/MarkdownUtil). It requires .NET 10.
+MDU is distributed on NuGet as the `MarkdownUtil` [.NET tool package](https://learn.microsoft.com/en-us/dotnet/core/tools/global-tools). It requires .NET 10.
 
 ## Requirements
 
-Install the [.NET 10 SDK](https://dotnet.microsoft.com/en-us/download/dotnet/10.0) for your operating system. The SDK includes the .NET runtime that MarkdownUtil needs.
+Install the [.NET 10 SDK](https://dotnet.microsoft.com/en-us/download/dotnet/10.0) for your operating system. The SDK includes the .NET runtime that MDU needs.
 
 ## Installation
 

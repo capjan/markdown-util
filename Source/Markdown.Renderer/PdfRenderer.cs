@@ -8,7 +8,7 @@ namespace Markdown.Renderer;
 
 public sealed record PdfSourceSection(string Title, string RelativeHtmlPath, string Markdown, int Depth = 0);
 
-/// <summary>Writes a paginated PDF from the HTML fragment produced by MarkdownUtil's Markdown pipeline.</summary>
+/// <summary>Writes a paginated PDF from the HTML fragment produced by MDU's Markdown pipeline.</summary>
 public sealed class PdfRenderer(HtmlRenderer htmlRenderer)
 {
     public void WritePdf(Stream output, string title, IReadOnlyList<PdfSourceSection> sections, bool includeFrontMatter = true)
@@ -903,7 +903,7 @@ internal static class PdfFileWriter
         }
         objects[pagesId] = Encoding.ASCII.GetBytes($"<< /Type /Pages /Kids [{string.Join(' ', pageIds.Select(id => $"{id} 0 R"))}] /Count {pageIds.Length} >>");
         objects[catalogId] = Encoding.ASCII.GetBytes($"<< /Type /Catalog /Pages {pagesId} 0 R >>");
-        var infoId = Add($"<< /Title ({PdfString(title)}) /Producer (MarkdownUtil) >>");
+        var infoId = Add($"<< /Title ({PdfString(title)}) /Producer (MDU) >>");
 
         using var writer = new BinaryWriter(output, Encoding.ASCII, leaveOpen: true);
         writer.Write(Encoding.Latin1.GetBytes("%PDF-1.7\n%\xE2\xE3\xCF\xD3\n"));

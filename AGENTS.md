@@ -2,7 +2,7 @@
 
 ## Project purpose
 
-MarkdownUtil is a .NET command-line tool distributed as a .NET tool with the `mdu` command. It helps documentation authors lint Markdown, inspect document structure, and render Markdown files to static HTML with breadcrumb navigation generated from the document structure. Source documents remain ordinary Markdown files.
+MDU (Markdown Documentation Utility) is a .NET command-line tool distributed as the `MarkdownUtil` .NET tool package with the `mdu` command. It helps documentation authors lint Markdown, inspect document structure, and render Markdown files to static HTML with breadcrumb navigation generated from the document structure. Source documents remain ordinary Markdown files.
 
 ## Architecture
 

@@ -2,7 +2,7 @@
 
 ## Overview
 
-MarkdownUtil renders images with standard Markdown syntax. Images keep their relative paths in the generated site, and local image files are copied to the output folder when you run `mdu render` or `mdu serve`.
+MDU renders images with standard Markdown syntax. Images keep their relative paths in the generated site, and local image files are copied to the output folder when you run `mdu render` or `mdu serve`.
 
 ## Syntax
 

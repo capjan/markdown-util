@@ -23,9 +23,9 @@ console.log('Hello World!')
 ```
 ~~~
 
-GitHub still displays this as a JavaScript code block, but does not render the title because GitHub Markdown has no code block title syntax. MarkdownUtil displays the title above the code.
+GitHub still displays this as a JavaScript code block, but does not render the title because GitHub Markdown has no code block title syntax. MDU displays the title above the code.
 
-MarkdownUtil renders the titled code block with a header and syntax highlighting:
+MDU renders the titled code block with a header and syntax highlighting:
 
 ```js title="index.js"
 console.log('Hello World!')

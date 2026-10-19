@@ -21,7 +21,7 @@ public class HeroTest
               - text: Overview
                 link: ../README.md
               - text: GitHub
-                link: https://github.com/capjan/markdown-util
+                link: https://github.com/capjan/mdu
                 style: primary
             colors:
               water: "#0a3d62"
@@ -38,7 +38,7 @@ public class HeroTest
         Assert.Contains("<p class=\"hero-text\">Plain Markdown &amp; static HTML</p>", html);
         Assert.Contains("<a class=\"hero-button hero-button-primary\" href=\"Guide/Setup.html#install\">Get started</a>", html);
         Assert.Contains("<a class=\"hero-button\" href=\"../index.html\">Overview</a>", html);
-        Assert.Contains("<a class=\"hero-button hero-button-primary\" href=\"https://github.com/capjan/markdown-util\" target=\"_blank\" rel=\"noopener noreferrer\">GitHub</a>", html);
+        Assert.Contains("<a class=\"hero-button hero-button-primary\" href=\"https://github.com/capjan/mdu\" target=\"_blank\" rel=\"noopener noreferrer\">GitHub</a>", html);
         Assert.EndsWith("</section>", html);
     }
 

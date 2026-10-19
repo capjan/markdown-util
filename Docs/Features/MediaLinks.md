@@ -1,6 +1,6 @@
 # Media Links
 
-Add a YouTube or Vimeo link on its own paragraph to show the video in a responsive player. Before loading it, MarkdownUtil explains that the page will connect to the provider and waits for the reader to allow it.
+Add a YouTube or Vimeo link on its own paragraph to show the video in a responsive player. Before loading it, MDU explains that the page will connect to the provider and waits for the reader to allow it.
 
 An embedded player contacts its provider as soon as it loads. That request can share technical information and the page visit with YouTube or Vimeo, even if playback never starts. We wait for the reader's choice so opening a page does not automatically contact a video provider. This avoids unwanted third-party requests and gives readers control over whether to load a video once or save a provider permission that they can later change in Media settings.
 

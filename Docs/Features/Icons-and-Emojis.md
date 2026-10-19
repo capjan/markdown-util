@@ -1,6 +1,6 @@
 # Icons and Emojis
 
-MarkdownUtil turns shortcodes such as `:rocket:` or `:material-account-circle:` into emojis and icons while it renders your Markdown. Seven open source icon sets and GitHub-compatible emoji shortcodes are built in. You do not need to configure anything, and the rendered pages load nothing from a CDN.
+MDU turns shortcodes such as `:rocket:` or `:material-account-circle:` into emojis and icons while it renders your Markdown. Seven open source icon sets and GitHub-compatible emoji shortcodes are built in. You do not need to configure anything, and the rendered pages load nothing from a CDN.
 
 :rocket: :tada: :white_check_mark: :material-account-circle: :fontawesome-brands-github: :octicons-heart-fill-24: :simple-dotnet: :fontawesome-solid-terminal: :dashboard-home-assistant: :dashboard-github:
 
@@ -18,7 +18,7 @@ Add the same search to your own documentation with an empty `icon-search` code b
 ```
 ````
 
-MarkdownUtil writes the search script and its index to the `js` folder of the site only when a page contains an icon search.
+MDU writes the search script and its index to the `js` folder of the site only when a page contains an icon search.
 
 ## Usage
 
@@ -40,7 +40,7 @@ Ship it :rocket:
 
 Ship it :rocket:
 
-MarkdownUtil writes the Unicode character into the page, so both ways produce the same result: emojis look like the emojis of the reader's operating system, and GitHub shows them too.
+MDU writes the Unicode character into the page, so both ways produce the same result: emojis look like the emojis of the reader's operating system, and GitHub shows them too.
 
 ### Using icons
 
@@ -69,11 +69,11 @@ Icons are embedded into the page as inline SVG. They scale with the font size an
 > [!TIP]
 > :octicons-light-bulb-16: Icons in callouts take the color of the text around them.
 
-Outside of MarkdownUtil, for example on GitHub, icon shortcodes are shown as plain text.
+Outside of MDU, for example on GitHub, icon shortcodes are shown as plain text.
 
 #### Logos in color
 
-Dashboard Icons are logos of apps and self-hosted services, such as :dashboard-home-assistant: Home Assistant, :dashboard-jellyfin: Jellyfin, or :dashboard-proxmox: Proxmox. Unlike the other sets, they keep their own colors. When a logo has a light and a dark variant, MarkdownUtil adds both and shows the one that fits the current theme. Switch the theme in the header to see :dashboard-github: GitHub and :dashboard-apple: Apple change:
+Dashboard Icons are logos of apps and self-hosted services, such as :dashboard-home-assistant: Home Assistant, :dashboard-jellyfin: Jellyfin, or :dashboard-proxmox: Proxmox. Unlike the other sets, they keep their own colors. When a logo has a light and a dark variant, MDU adds both and shows the one that fits the current theme. Switch the theme in the header to see :dashboard-github: GitHub and :dashboard-apple: Apple change:
 
 ```markdown title="Markdown"
 :dashboard-github: GitHub and :dashboard-apple: Apple
@@ -81,11 +81,11 @@ Dashboard Icons are logos of apps and self-hosted services, such as :dashboard-h
 
 The variants also have their own shortcodes, for example `:dashboard-github-light:`, if a page should always show the same one.
 
-MarkdownUtil includes the Dashboard Icons whose SVG files are at most 20 KB and contain no embedded images, scripts, or links, which are about nine out of ten.
+MDU includes the Dashboard Icons whose SVG files are at most 20 KB and contain no embedded images, scripts, or links, which are about nine out of ten.
 
 ### Where shortcodes work
 
-Shortcodes work anywhere in text, for example in paragraphs, lists, tables, links, and callouts. They are not replaced inside code spans and code blocks, so you can still write about them, as this page does. A shortcode that MarkdownUtil does not know stays as it is.
+Shortcodes work anywhere in text, for example in paragraphs, lists, tables, links, and callouts. They are not replaced inside code spans and code blocks, so you can still write about them, as this page does. A shortcode that MDU does not know stays as it is.
 
 ### Styling
 
@@ -116,6 +116,6 @@ The icon sets are published by their authors under these licenses:
 - Simple Icons: [CC0 1.0](https://github.com/simple-icons/simple-icons/blob/develop/LICENSE.md), by the Simple Icons contributors
 - Dashboard Icons: [Apache License 2.0](https://github.com/homarr-labs/dashboard-icons/blob/main/LICENSE), Copyright (c) 2024 Bjorn Lammers, Meier Lukas, Thomas Camlong and Homarr Labs
 
-MarkdownUtil converts the icons for inline use: it reduces the Iconify packages to their SVG content and optimizes the Dashboard Icons with [SVGO](https://svgo.dev/). The MarkdownUtil package contains the license texts and these notices in `THIRD-PARTY-NOTICES.md`.
+MDU converts the icons for inline use: it reduces the Iconify packages to their SVG content and optimizes the Dashboard Icons with [SVGO](https://svgo.dev/). The `MarkdownUtil` package contains the license texts and these notices in `THIRD-PARTY-NOTICES.md`.
 
 Simple Icons and Dashboard Icons contain logos of products and companies. The logos remain trademarks of their owners, and the icon licenses do not grant any trademark rights. Use a logo to refer to its product, as documentation usually does, and check the brand's guidelines for other uses.

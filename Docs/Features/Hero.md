@@ -67,7 +67,7 @@ actions:
   - text: Read the changelog
     link: Changelog.md
   - text: Source code
-    link: https://github.com/capjan/markdown-util
+    link: https://github.com/capjan/mdu
     style: secondary
 colors:
   water: "#0a3d62"

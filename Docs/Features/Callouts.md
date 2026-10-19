@@ -2,7 +2,7 @@
 
 ## Overview
 
-Callouts, also called admonitions or alerts, highlight information that readers should not miss. MarkdownUtil uses the same syntax as [GitHub alerts](https://docs.github.com/en/get-started/writing-on-github/getting-started-with-writing-and-formatting-syntax#alerts), so your files look right on GitHub and in the rendered site.
+Callouts, also called admonitions or alerts, highlight information that readers should not miss. MDU uses the same syntax as [GitHub alerts](https://docs.github.com/en/get-started/writing-on-github/getting-started-with-writing-and-formatting-syntax#alerts), so your files look right on GitHub and in the rendered site.
 
 ## Syntax
 
@@ -13,7 +13,7 @@ Start a block quote with the alert type on its own line, then write the content 
 > Useful information that users should know, even when skimming content.
 ```
 
-MarkdownUtil supports all five GitHub alert types:
+MDU supports all five GitHub alert types:
 
 ```markdown title="Markdown"
 > [!NOTE]
@@ -64,7 +64,7 @@ A callout can contain any Markdown, such as several paragraphs, lists, links, an
 
 ## Rules
 
-MarkdownUtil follows the same rules as GitHub:
+MDU follows the same rules as GitHub:
 
 - The marker must be the first line of a block quote and stand alone on that line. Text after the marker, such as `> [!NOTE] Text`, renders a regular block quote.
 - The type is not case-sensitive: `[!NOTE]`, `[!Note]`, and `[!note]` are equivalent.
@@ -74,4 +74,4 @@ MarkdownUtil follows the same rules as GitHub:
 
 ## Styling
 
-MarkdownUtil uses [Markdig's alert blocks](https://xoofx.github.io/markdig/docs/extensions/alert-blocks/) and renders the same HTML structure as GitHub: a `div` with the classes `markdown-alert` and `markdown-alert-<type>`, for example `markdown-alert-tip`, followed by a `markdown-alert-title` paragraph. The title is shown without an icon, and the colors adapt to the light and dark themes.
+MDU uses [Markdig's alert blocks](https://xoofx.github.io/markdig/docs/extensions/alert-blocks/) and renders the same HTML structure as GitHub: a `div` with the classes `markdown-alert` and `markdown-alert-<type>`, for example `markdown-alert-tip`, followed by a `markdown-alert-title` paragraph. The title is shown without an icon, and the colors adapt to the light and dark themes.

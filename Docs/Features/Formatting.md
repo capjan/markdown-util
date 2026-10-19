@@ -1,6 +1,6 @@
 # Formatting
 
-MarkdownUtil uses Markdig to render CommonMark syntax and its enabled extensions. Markdown remains readable as plain text in the source file. The examples below show the syntax and the rendered result.
+MDU uses Markdig to render CommonMark syntax and its enabled extensions. Markdown remains readable as plain text in the source file. The examples below show the syntax and the rendered result.
 
 ## Headings and paragraphs
 
@@ -125,12 +125,12 @@ Use a line containing three hyphens, asterisks, or underscores to add a horizont
 Markdig supports footnote references and definitions:
 
 ~~~markdown title="Markdown"
-MarkdownUtil uses Markdig.[^markdig]
+MDU uses Markdig.[^markdig]
 
 [^markdig]: Markdig is a Markdown processor for .NET.
 ~~~
 
-MarkdownUtil uses Markdig.[^markdig]
+MDU uses Markdig.[^markdig]
 
 [^markdig]: Markdig is a Markdown processor for .NET.
 

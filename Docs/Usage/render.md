@@ -39,7 +39,7 @@ colors:
     primary: "#2997ff"
 ```
 
-Page front matter supports `title`, `description`, and `icon`. `title` sets the browser and fallback navigation title, `description` becomes the page meta description, and `icon` adds an icon shortcode beside the first-level heading. `navigation.title` overrides the navigation label; `navigation.order`, `navigation.visible`, and `navigation.expanded` control ordering, visibility, and initial sidebar expansion. Set `navigation.placement: top` on a first-level page or section `README.md` to create a [top navigation tab](../Features/Sidebar.md#top-navigation). The placement chooses the preferred position for that entry; it does not change the navigation or breadcrumb root.
+Page front matter supports `title`, `description`, and `icon`. `title` sets the browser and fallback navigation title, `description` becomes the page meta description, and `icon` adds an icon shortcode beside the first-level heading. `navigation.title` overrides the navigation label; `navigation.order`, `navigation.visible`, and `navigation.expanded` control ordering, visibility, and initial sidebar expansion. Set `navigation.placement: top` on a first-level page or section `README.md` to create a [top navigation tab](../Features/Navigation.md#top-navigation). The placement chooses the preferred position for that entry; it does not change the navigation or breadcrumb root.
 
 ## Examples
 

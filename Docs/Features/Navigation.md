@@ -1,6 +1,6 @@
 # Navigation
 
-MarkdownUtil builds its navigation from the Markdown file structure. A `README.md` represents its folder, and child pages appear beneath it. The sidebar is a collapsible view of that tree. `navigation.title` sets the navigation label, `navigation.order` sorts entries, `navigation.visible` controls whether an entry appears, and `navigation.expanded` sets the initial state of collapsible sidebar sections.
+MDU builds its navigation from the Markdown file structure. A `README.md` represents its folder, and child pages appear beneath it. The sidebar is a collapsible view of that tree. `navigation.title` sets the navigation label, `navigation.order` sorts entries, `navigation.visible` controls whether an entry appears, and `navigation.expanded` sets the initial state of collapsible sidebar sections.
 
 ## Top navigation
 
