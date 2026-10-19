@@ -406,23 +406,166 @@
         openLightbox(image);
     });
 
-    content.querySelectorAll("a.footnote-ref").forEach((link) => {
+    const clearFootnoteHighlights = () => {
+        content.querySelectorAll("a.footnote-ref.is-highlighted, .footnotes > ol > li.is-active").forEach((item) => {
+            item.classList.remove("is-highlighted", "is-active");
+        });
+    };
+
+    const footnotePreviewClosers = [];
+    const referencesByFootnote = new Map();
+    const footnoteReferences = [...content.querySelectorAll("a.footnote-ref")];
+    footnoteReferences.forEach((link) => {
         const target = document.getElementById(decodeURIComponent(link.hash.slice(1)));
-        const reference = link.closest("sup") || link.parentElement;
-        if (!target || !reference) return;
+        if (!target) return;
+        const references = referencesByFootnote.get(target) ?? [];
+        references.push(link);
+        referencesByFootnote.set(target, references);
+
+        const reference = document.createElement("span");
+        reference.className = "footnote-reference";
+        link.before(reference);
+        reference.append(link);
         const preview = document.createElement("span");
         preview.className = "footnote-preview";
         const contentCopy = target.cloneNode(true);
-        contentCopy.querySelectorAll(".footnote-backref").forEach((backlink) => backlink.remove());
+        contentCopy.querySelectorAll("[id]").forEach((element) => element.removeAttribute("id"));
+        contentCopy.querySelectorAll(".footnote-back-ref").forEach((backlink) => backlink.remove());
         preview.innerHTML = contentCopy.innerHTML;
         preview.setAttribute("role", "tooltip");
         reference.append(preview);
-        const show = () => preview.classList.add("is-visible");
-        const hide = () => preview.classList.remove("is-visible");
-        link.addEventListener("pointerenter", show);
-        link.addEventListener("pointerleave", hide);
-        link.addEventListener("focus", show);
-        link.addEventListener("blur", hide);
+        let isHovered = false;
+        let isFocused = false;
+        let hideTimer;
+        let positionFrame;
+        const cancelHide = () => {
+            if (hideTimer !== undefined) {
+                window.clearTimeout(hideTimer);
+                hideTimer = undefined;
+            }
+        };
+        const positionPreview = () => {
+            const referenceBounds = reference.getBoundingClientRect();
+            const contentBounds = content.getBoundingClientRect();
+            const gap = 12;
+            const viewportWidth = document.documentElement.clientWidth;
+            const viewportHeight = document.documentElement.clientHeight;
+            if (referenceBounds.bottom <= 0 || referenceBounds.top >= viewportHeight
+                || referenceBounds.right <= 0 || referenceBounds.left >= viewportWidth) {
+                hide();
+                return;
+            }
+
+            preview.style.maxWidth = "";
+            preview.style.maxHeight = "";
+            preview.style.overflow = "";
+            const contentLeft = Math.max(gap, contentBounds.left);
+            const contentRight = Math.min(viewportWidth - gap, contentBounds.right);
+            const availableWidth = Math.max(1, contentRight - contentLeft);
+            preview.style.maxWidth = `${Math.min(420, availableWidth)}px`;
+
+            const previewBounds = preview.getBoundingClientRect();
+            const spaceAbove = Math.max(0, referenceBounds.top - gap);
+            const spaceBelow = Math.max(0, viewportHeight - referenceBounds.bottom - gap);
+            const showAbove = previewBounds.height <= spaceAbove || spaceAbove >= spaceBelow;
+            const availableHeight = showAbove ? spaceAbove : spaceBelow;
+            if (previewBounds.height > availableHeight) {
+                preview.style.maxHeight = `${availableHeight}px`;
+                preview.style.overflow = "auto";
+            }
+
+            const positionedBounds = preview.getBoundingClientRect();
+            const top = showAbove
+                ? referenceBounds.top - positionedBounds.height - gap
+                : referenceBounds.bottom + gap;
+            const maxLeft = contentRight - positionedBounds.width;
+            let left = referenceBounds.left;
+            if (left > maxLeft) left = referenceBounds.right - positionedBounds.width;
+            left = Math.max(contentLeft, Math.min(left, maxLeft));
+            preview.style.top = `${Math.max(gap, Math.min(top, viewportHeight - positionedBounds.height - gap))}px`;
+            preview.style.left = `${left}px`;
+        };
+        const schedulePositionPreview = () => {
+            if (positionFrame !== undefined) return;
+            positionFrame = window.requestAnimationFrame(() => {
+                positionFrame = undefined;
+                if (preview.classList.contains("is-visible")) positionPreview();
+            });
+        };
+        const show = () => {
+            cancelHide();
+            preview.classList.add("is-visible");
+            positionPreview();
+            if (!preview.classList.contains("is-visible")) return;
+            window.addEventListener("resize", schedulePositionPreview);
+            window.addEventListener("scroll", schedulePositionPreview, true);
+        };
+        const hide = () => {
+            cancelHide();
+            if (positionFrame !== undefined) {
+                window.cancelAnimationFrame(positionFrame);
+                positionFrame = undefined;
+            }
+            preview.classList.remove("is-visible");
+            window.removeEventListener("resize", schedulePositionPreview);
+            window.removeEventListener("scroll", schedulePositionPreview, true);
+            preview.style.maxWidth = "";
+            preview.style.maxHeight = "";
+            preview.style.overflow = "";
+            preview.style.top = "";
+            preview.style.left = "";
+        };
+        const scheduleHide = () => {
+            cancelHide();
+            hideTimer = window.setTimeout(() => {
+                hideTimer = undefined;
+                if (!isHovered && !isFocused) hide();
+            }, 125);
+        };
+        reference.addEventListener("pointerenter", () => {
+            isHovered = true;
+            show();
+        });
+        reference.addEventListener("pointerleave", () => {
+            isHovered = false;
+            scheduleHide();
+        });
+        reference.addEventListener("focusin", () => {
+            isFocused = true;
+            show();
+        });
+        reference.addEventListener("focusout", (event) => {
+            isFocused = reference.contains(event.relatedTarget);
+            if (!isFocused) scheduleHide();
+        });
+        link.addEventListener("click", () => {
+            clearFootnoteHighlights();
+            target.classList.add("is-active");
+            hide();
+        });
+        footnotePreviewClosers.push(hide);
+    });
+
+    content.querySelectorAll("a.footnote-back-ref").forEach((backlink) => {
+        backlink.textContent = "\u21A9\uFE0E";
+        backlink.addEventListener("click", () => {
+            const footnote = backlink.closest("li[id]");
+            if (!footnote) return;
+            clearFootnoteHighlights();
+            (referencesByFootnote.get(footnote) ?? []).forEach((reference) => {
+                reference.classList.add("is-highlighted");
+            });
+        });
+    });
+
+    document.addEventListener("click", (event) => {
+        if (!event.target.closest("a.footnote-back-ref, a.footnote-ref")) clearFootnoteHighlights();
+    });
+    document.addEventListener("keydown", (event) => {
+        if (event.key === "Escape") {
+            clearFootnoteHighlights();
+            footnotePreviewClosers.forEach((close) => close());
+        }
     });
 })();
 </script>
