@@ -5,6 +5,21 @@ namespace Markdown.Renderer.Test;
 public class PdfRendererTest
 {
     [Fact]
+    public void RendersTablesInsideScrollableContainersToPdf()
+    {
+        using var output = new MemoryStream();
+
+        new PdfRenderer(new HtmlRenderer()).WritePdf(output, "Tables",
+        [
+            new PdfSourceSection("Tables", "tables/index.html", "| Header | Value |\n| --- | --- |\n| Wrapped table | preserved |\n")
+        ], includeFrontMatter: false);
+
+        var pdf = Encoding.Latin1.GetString(output.ToArray());
+        Assert.Contains("<57726170706564207461626C65> Tj", pdf);
+        Assert.Contains("<707265736572766564> Tj", pdf);
+    }
+
+    [Fact]
     public void WritesMduContentToPdf17WithLinksAndVectors()
     {
         const string markdown = """

@@ -1995,10 +1995,26 @@ img {
     height: auto;
 }
 
+.table-wrapper {
+    min-width: 0;
+    max-width: 100%;
+    overflow-x: auto;
+    margin: 1.5rem 0;
+}
+
+.table-wrapper:focus-visible {
+    outline: 2px solid var(--link);
+    outline-offset: 3px;
+}
+
 table {
     width: 100%;
     border-collapse: collapse;
     margin: 1.5rem 0;
+}
+
+.table-wrapper > table {
+    margin: 0;
 }
 
 th, td {
