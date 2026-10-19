@@ -240,6 +240,7 @@
         .filter((item) => item.heading);
     let lastScrollY = window.scrollY;
     let scrollDirection = 1;
+    let scrollTravel = 0;
     let scrollFrame = 0;
     let currentActiveHeading = null;
     let activePermalinkTimer;
@@ -269,8 +270,14 @@
     const updateOnScroll = () => {
         scrollFrame = 0;
         if (window.scrollY !== lastScrollY) {
-            scrollDirection = window.scrollY > lastScrollY ? 1 : -1;
+            const delta = window.scrollY - lastScrollY;
             lastScrollY = window.scrollY;
+            // Hiding or showing the top navigation moves the page by its height, and the browser
+            // answers with a scroll of the same size. Only scrolling further than that turns the
+            // direction around, so the navigation cannot keep toggling itself.
+            scrollTravel = Math.sign(delta) === Math.sign(scrollTravel) ? scrollTravel + delta : delta;
+            const threshold = (topNavigation?.offsetHeight ?? 0) + 16;
+            if (Math.abs(scrollTravel) > threshold) scrollDirection = Math.sign(scrollTravel);
         }
         if (headings.length > 0) {
             const atScrollablePageEnd = document.documentElement.scrollHeight > window.innerHeight + 1 &&
