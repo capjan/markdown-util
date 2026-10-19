@@ -1189,6 +1189,11 @@ ul, ol {
     padding-left: 1.5rem;
 }
 
+.site-main ul,
+.site-main ol {
+    line-height: 1.6;
+}
+
 .site-main ul.contains-task-list {
     padding-left: 0;
     list-style: none;
@@ -1243,7 +1248,7 @@ ul, ol {
 }
 
 .site-main li + li {
-    margin-top: 0.25rem;
+    margin-top: 0.625rem;
 }
 
 blockquote {
@@ -1555,7 +1560,11 @@ code {
 }
 
 :not(pre) > code {
-    color: var(--text-secondary);
+    padding: 0.2em 0.45em;
+    border-radius: 6px;
+    color: var(--text-primary);
+    font-family: ui-monospace, SFMono-Regular, "SF Mono", Menlo, Consolas, monospace;
+    font-size: 0.875em;
 }
 
 pre {
