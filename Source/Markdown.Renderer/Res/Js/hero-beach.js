@@ -54,6 +54,11 @@ float fbm3(vec2 p) {
     return s;
 }
 
+// World size of one pixel at the point being sampled. Detail finer than that is faded out
+// so that it cannot shimmer while the scene moves.
+float gFoot = 0.0;
+float lod(float k) { return 1.0 - smoothstep(0.8, 2.5, gFoot * k); }
+
 // Phase offset along the shore: bends the wave crests and staggers the swash.
 float crestOffset(float x, float t) {
     return 0.42 * noise(vec2(x * 0.045, t * 0.012)) + 0.16 * noise(vec2(x * 0.13 + 7.0, t * 0.025));
@@ -68,7 +73,7 @@ float surf(vec2 p, float t, out float u, out float d, out float n) {
     float psi = d / WAVELEN + t / PERIOD + crestOffset(p.x, t);
     n = floor(psi);
     u = psi - n;
-    float face = smoothstep(0.9, 1.0, u);
+    float face = smoothstep(0.9 - clamp(gFoot / WAVELEN * 1.5, 0.0, 0.3), 1.0, u);
     float h = waveSize(n) * exp(-u * 3.5) * (1.0 - face) + waveSize(n + 1.0) * face * face;
     float envelope = smoothstep(80.0, 14.0, d) * mix(0.3, 1.0, smoothstep(0.0, 9.0, d)) * smoothstep(-4.0, 0.0, d);
     return h * envelope * 0.26 * uWave;
@@ -93,10 +98,10 @@ float sandHeight(vec2 p) {
 }
 
 float chop(vec2 p, float t) {
-    float r = 0.020 * sin(dot(p, vec2(0.15, 0.99)) * 1.3 + t * 1.15);
-    r += 0.012 * sin(dot(p, vec2(-0.6, 0.8)) * 2.1 + t * 1.5);
-    r += 0.008 * sin(dot(p, vec2(0.8, 0.6)) * 3.3 + t * 1.9);
-    r += 0.005 * sin(dot(p, vec2(-0.25, 0.97)) * 5.1 + t * 2.3);
+    float r = 0.020 * lod(1.3) * sin(dot(p, vec2(0.15, 0.99)) * 1.3 + t * 1.15);
+    r += 0.012 * lod(2.1) * sin(dot(p, vec2(-0.6, 0.8)) * 2.1 + t * 1.5);
+    r += 0.008 * lod(3.3) * sin(dot(p, vec2(0.8, 0.6)) * 3.3 + t * 1.9);
+    r += 0.005 * lod(5.1) * sin(dot(p, vec2(-0.25, 0.97)) * 5.1 + t * 2.3);
     return r * (0.4 + 0.6 * uWave);
 }
 
@@ -119,8 +124,10 @@ float march(vec3 ro, vec3 rd, float t) {
     float dist = 0.2;
     float prevDist = dist;
     float prevF = ro.y - heightAt(ro.xz, t);
+    float pixel = 1.0 / (1.75 * uRes.y * max(-rd.y, 0.03));
     for (int i = 0; i < 110; i++) {
         vec3 pos = ro + rd * dist;
+        gFoot = dist * pixel;
         float f = pos.y - heightAt(pos.xz, t);
         if (f < 0.0) {
             float a = prevDist, b = dist;
@@ -140,7 +147,7 @@ float march(vec3 ro, vec3 rd, float t) {
     return -1.0;
 }
 
-vec3 sky(vec3 rd, bool withSun) {
+vec3 sky(vec3 rd, bool direct) {
     float y = max(rd.y, 0.0);
     vec3 col = mix(uSkyHor, uSkyTop, 1.0 - exp(-y * 7.5));
     float sd = max(dot(rd, uSun), 0.0);
@@ -152,17 +159,20 @@ vec3 sky(vec3 rd, bool withSun) {
         vec3 cloud = uSkyHor * mix(1.15, 0.9, smoothstep(0.0, 0.5, rd.y)) + uSkyTop * 0.15;
         cloud += uSunCol * (0.08 + 0.55 * pow(sd, 8.0)) * (0.4 + 0.6 * uSun.y);
         col = mix(col, cloud, c * 0.7);
-        if (uStars > 0.0) {
+        // Reflected stars would sparkle on the moving water, so only the open sky has them.
+        if (direct && uStars > 0.0) {
             vec2 q = rd.xz / (rd.y + 0.35) * 70.0;
             vec2 cell = floor(q);
             float s = hash2(cell);
             vec2 jitter = vec2(hash2(cell + 3.1), hash2(cell + 7.7)) - 0.5;
-            float star = smoothstep(0.09, 0.0, length(fract(q) - 0.5 - jitter * 0.6)) * step(0.985, s);
+            // Stars cover at least two pixels so they do not twinkle against the pixel grid.
+            float radius = max(0.18, 2.0 * 70.0 / ((rd.y + 0.35) * 1.75 * uRes.y));
+            float star = smoothstep(radius, 0.0, length(fract(q) - 0.5 - jitter * 0.3)) * step(0.985, s) * min(1.0, 0.18 / radius);
             star *= 0.6 + 0.4 * sin(uTime * (1.5 + 3.0 * s) + s * 40.0);
             col += vec3(0.9, 0.95, 1.0) * star * uStars * (1.0 - c) * smoothstep(0.03, 0.25, rd.y) * 1.6;
         }
     }
-    if (withSun && uSunSize > 0.0) {
+    if (direct && uSunSize > 0.0) {
         float disk = smoothstep(uSunSize, uSunSize + 0.00004, sd);
         col += uSunCol * disk * 1.4;
     }
@@ -174,10 +184,14 @@ vec3 fogColor(vec3 rd) {
     return uSkyHor * 0.95 + uSunCol * (0.06 * pow(sd, 3.0) + 0.18 * pow(sd, 16.0));
 }
 
-float lace(vec2 p) {
-    float a = 1.0 - abs(noise(p) * 2.0 - 1.0);
-    float b = 1.0 - abs(noise(p * 2.3 + 11.0) * 2.0 - 1.0);
-    return pow(a, 7.0) + 0.6 * pow(b, 9.0);
+// Thin foam threads along the zero line of a noise field. A thread is never drawn thinner than
+// the pixel it falls into; wider threads get dimmer, so the foam keeps its brightness without flickering.
+float thread(float n, float width) {
+    return (1.0 - smoothstep(0.0, width, abs(n * 2.0 - 1.0))) * min(1.0, 0.14 / width);
+}
+float lace(vec2 p, float scale) {
+    float f = gFoot * scale * 3.0;
+    return thread(noise(p), 0.14 + f) + 0.6 * thread(noise(p * 2.3 + 11.0), 0.1 + f * 2.3);
 }
 
 void main() {
@@ -201,18 +215,25 @@ void main() {
         col = sky(rd, true);
     } else {
         vec3 p = ro + rd * hit;
-        float detail = exp(-hit * 0.045);
+        gFoot = hit / (1.75 * uRes.y * max(-rd.y, 0.03));
+        float detail = 1.0 - smoothstep(0.015, 0.2, gFoot);
         float sand = sandHeight(p.xz);
         float water = waterHeight(p.xz, t, detail);
         float depth = water - sand;
         float u, d, n, phase, sn;
         float wave = surf(p.xz, t, u, d, n);
         float level = swash(p.x, t, phase, sn);
-        float e = 0.03 + hit * 0.004;
+        float e = max(0.03, gFoot);
         vec3 amb = uSkyTop * 0.32 + uSkyHor * 0.28;
         vec3 foamCol = vec3(0.94, 0.97, 1.0);
+        // Water turns into sand over about one pixel, so the waterline does not crawl.
+        float edge = max(0.004, gFoot * SLOPE * 1.5);
+        float waterAmount = smoothstep(-edge, edge, depth);
+        vec3 waterCol = vec3(0.0);
+        vec3 sandCol = vec3(0.0);
 
-        if (depth > 0.0) {
+        if (waterAmount > 0.0) {
+            float wd = max(depth, 0.0);
             vec3 nor = normalize(vec3(
                 waterHeight(p.xz - vec2(e, 0.0), t, detail) - waterHeight(p.xz + vec2(e, 0.0), t, detail),
                 2.0 * e,
@@ -220,19 +241,23 @@ void main() {
             nor = normalize(mix(vec3(0.0, 1.0, 0.0), nor, 0.35 + 0.65 * detail));
 
             // Foam: whitewater behind breaking crests, lace on the surf, bubbles on the swash sheet.
+            // Every term continues smoothly from one wave into the next.
             vec2 drift = vec2(p.x * 0.8, p.z * 1.5 + t * (WAVELEN / PERIOD) * 1.5);
             float tex = fbm3(drift * 1.1);
+            float face = smoothstep(0.86, 1.0, u);
             float broken = smoothstep(12.0, 6.5, d) * smoothstep(-6.0, 0.0, d);
-            float white = (exp(-u * 6.5) + 0.85 * smoothstep(0.86, 1.0, u)) * broken * waveSize(n);
+            float white = (waveSize(n) * exp(-u * 6.5) * (1.0 - face) + waveSize(n + 1.0) * face) * broken;
             float foam = clamp(white * smoothstep(0.32, 0.72, tex + white * 0.3), 0.0, 1.0);
-            float cap = smoothstep(0.975, 1.0, u) * smoothstep(20.0, 12.0, d) * smoothstep(6.0, 12.0, d);
+            float cap = (smoothstep(0.95, 1.0, u) + exp(-u * 25.0)) * smoothstep(20.0, 12.0, d) * smoothstep(6.0, 12.0, d);
             foam = max(foam, cap * smoothstep(0.4, 0.7, tex) * 0.8);
-            float mesh = lace(drift * 1.6) * broken * (0.35 + 0.65 * exp(-u * 1.8));
+            float trail = exp(-u * 1.8) * (1.0 - face) + face;
+            float mesh = lace(drift * 1.6, 2.4) * broken * (0.35 + 0.65 * trail);
             foam = max(foam, mesh * 0.6 * detail);
-            float sheet = smoothstep(0.1, 0.0, depth) * smoothstep(1.0, -4.0, d);
-            float bubbles = lace(vec2(p.x * 1.4, p.z * 2.2) + vec2(0.0, t * 0.5)) + smoothstep(0.55, 0.8, tex);
-            foam = max(foam, sheet * bubbles * mix(0.9, 0.35, smoothstep(0.0, 0.5, phase)));
-            foam = max(foam, smoothstep(0.025, 0.0, depth) * smoothstep(0.35, 0.7, tex + 0.25) * 0.9);
+            float sheet = smoothstep(0.1, 0.0, wd) * smoothstep(1.0, -4.0, d);
+            float bubbles = lace(vec2(p.x * 1.4, p.z * 2.2) + vec2(0.0, t * 0.5), 2.2) + smoothstep(0.55, 0.8, tex);
+            float uprush = 0.35 + 0.55 * (1.0 - smoothstep(0.0, 0.5, phase)) * smoothstep(0.0, 0.04, phase);
+            foam = max(foam, sheet * bubbles * uprush);
+            foam = max(foam, smoothstep(0.025, 0.0, wd) * smoothstep(0.35, 0.7, tex + 0.25) * 0.9);
             foam = clamp(foam, 0.0, 1.0);
 
             float ndv = max(dot(nor, -rd), 0.0);
@@ -242,17 +267,22 @@ void main() {
             vec3 refl = sky(r, false);
             float diffuse = 0.55 + 0.45 * max(dot(nor, uSun), 0.0);
             vec3 sandLit = uSand * (amb + uSunCol * max(uSun.y, 0.08) * 0.85);
-            vec3 body = mix(sandLit * 0.75, uShallow * (amb + uSunCol * 0.35 * diffuse), smoothstep(0.0, 0.3, depth));
-            body = mix(body, uDeep * (amb + uSunCol * 0.2 * diffuse), smoothstep(0.25, 3.0, depth));
-            float crest = clamp(wave / (0.26 * max(uWave, 0.2)), 0.0, 1.0) * smoothstep(0.7, 0.99, u);
+            vec3 body = mix(sandLit * 0.75, uShallow * (amb + uSunCol * 0.35 * diffuse), smoothstep(0.0, 0.3, wd));
+            body = mix(body, uDeep * (amb + uSunCol * 0.2 * diffuse), smoothstep(0.25, 3.0, wd));
+            float crest = clamp(wave / (0.26 * max(uWave, 0.2)), 0.0, 1.0) * smoothstep(0.7, 0.93, u) * (1.0 - smoothstep(0.96, 1.0, u));
             float backlight = pow(max(dot(rd, uSun), 0.0), 2.0);
             body += uShallow * uSunCol * crest * (0.12 + 0.7 * backlight);
-            col = mix(body, refl, fresnel);
+            waterCol = mix(body, refl, fresnel);
+            // Glints widen with distance instead of turning into single sparkling pixels.
             float glint = max(dot(r, uSun), 0.0);
-            col += uSunCol * (pow(glint, 700.0) * 14.0 + pow(glint, 70.0) * 0.2) * (1.0 - foam);
+            float shine = mix(60.0, 600.0, detail);
+            float spec = min(pow(glint, shine) * shine * 0.02, 6.0) + pow(glint, 40.0) * 0.15;
+            waterCol += uSunCol * spec * (1.0 - foam);
             vec3 foamLit = foamCol * (amb * 1.25 + uSunCol * (0.3 + 0.45 * max(dot(nor, uSun), 0.0)));
-            col = mix(col, foamLit, foam);
-        } else {
+            waterCol = mix(waterCol, foamLit, foam);
+        }
+
+        if (waterAmount < 1.0) {
             vec3 nor = normalize(vec3(
                 sandHeight(p.xz - vec2(e, 0.0)) - sandHeight(p.xz + vec2(e, 0.0)),
                 2.0 * e,
@@ -262,18 +292,21 @@ void main() {
             float wetLine = max(reached, swashHigh(sn - 1.0) * (1.0 - smoothstep(0.3, 1.0, phase) * 0.6));
             float wet = smoothstep(wetLine + 0.03, wetLine - 0.025, sand);
             wet *= mix(0.6, 1.0, smoothstep(wetLine, level, sand));
-            vec3 albedo = uSand * (0.82 + 0.22 * noise(p.xz * 2.6) + 0.12 * noise(p.xz * 0.35));
+            float grain = mix(noise(p.xz * 2.6), 0.5, smoothstep(0.1, 0.35, gFoot * 2.6));
+            vec3 albedo = uSand * (0.82 + 0.22 * grain + 0.12 * noise(p.xz * 0.35));
             albedo *= mix(1.0, 0.52, wet);
-            col = albedo * (amb + uSunCol * max(dot(nor, uSun), 0.0) * 0.95);
+            sandCol = albedo * (amb + uSunCol * max(dot(nor, uSun), 0.0) * 0.95);
             vec3 r = reflect(rd, nor);
             float fresnel = 0.04 + 0.96 * pow(1.0 - max(dot(nor, -rd), 0.0), 5.0);
-            col = mix(col, sky(vec3(r.x, abs(r.y), r.z), false), fresnel * wet * 0.7);
-            col += uSunCol * pow(max(dot(r, uSun), 0.0), 220.0) * wet * wet * 2.0;
-            float residue = smoothstep(0.02, 0.0, abs(sand - wetLine + 0.006)) * lace(p.xz * vec2(1.3, 2.4));
+            sandCol = mix(sandCol, sky(vec3(r.x, abs(r.y), r.z), false), fresnel * wet * 0.7);
+            sandCol += uSunCol * pow(max(dot(r, uSun), 0.0), 220.0) * wet * wet * 2.0;
+            float residue = smoothstep(0.02, 0.0, abs(sand - wetLine + 0.006)) * lace(p.xz * vec2(1.3, 2.4), 2.4);
+            float fading = (1.0 - smoothstep(0.4, 1.0, phase)) * smoothstep(0.24, 0.3, phase);
             vec3 foamLit = foamCol * (amb * 1.2 + uSunCol * 0.5 * max(uSun.y, 0.1));
-            col = mix(col, foamLit, clamp(residue, 0.0, 1.0) * 0.55 * (1.0 - smoothstep(0.4, 1.0, phase)) * detail);
+            sandCol = mix(sandCol, foamLit, clamp(residue, 0.0, 1.0) * 0.55 * fading * detail);
         }
 
+        col = mix(sandCol, waterCol, waterAmount);
         float fog = 1.0 - exp(-hit * 0.0028 - max(hit - 110.0, 0.0) * 0.012);
         col = mix(col, fogColor(rd), fog);
     }
@@ -283,7 +316,8 @@ void main() {
     col = pow(col, vec3(1.0 / 2.2));
     vec2 q = gl_FragCoord.xy / uRes;
     col *= 0.78 + 0.22 * pow(16.0 * q.x * q.y * (1.0 - q.x) * (1.0 - q.y), 0.18);
-    col += (hash2(gl_FragCoord.xy + fract(uTime * 7.31) * 113.0) - 0.5) * 0.018;
+    // Static dither against banding in the dark gradients.
+    col += (hash2(gl_FragCoord.xy) - 0.5) / 255.0;
     gl_FragColor = vec4(col, 1.0);
 }`;
 
