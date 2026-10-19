@@ -5,7 +5,7 @@ namespace Markdown.Renderer.Test;
 public class PdfRendererTest
 {
     [Fact]
-    public void WritesMarkdownUtilContentToPdf17WithLinksAndVectors()
+    public void WritesMduContentToPdf17WithLinksAndVectors()
     {
         const string markdown = """
             # Guide

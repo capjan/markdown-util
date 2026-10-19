@@ -13,9 +13,9 @@
         <DockerDefaultTargetOS>Linux</DockerDefaultTargetOS>
         <AssemblyName>mdu</AssemblyName>
         <Authors>Jan Ruhlaender</Authors>
-        <Description>Commandline Tool to lint and render a Markdown based documentation</Description>
+        <Description>MDU (Markdown Documentation Utility) for linting and rendering Markdown documentation</Description>
         <PackageReadmeFile>README.md</PackageReadmeFile>
-        <RepositoryUrl>https://github.com/capjan/markdown-util</RepositoryUrl>
+        <RepositoryUrl>https://github.com/capjan/mdu</RepositoryUrl>
         <RepositoryType>git</RepositoryType>
         <PackageTags>Markdown Static-Website-Generator</PackageTags>
     </PropertyGroup>

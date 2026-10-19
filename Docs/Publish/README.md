@@ -5,7 +5,7 @@ navigation.placement: top
 
 # Publish
 
-Guides for publishing a rendered MarkdownUtil site.
+Guides for publishing a rendered MDU site.
 
 - [GitHub](./GitHub.md) - Publish your documentation with GitHub Pages.
 - [GitLab](./GitLab.md) - Publish your documentation with GitLab Pages.

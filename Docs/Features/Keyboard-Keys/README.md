@@ -1,6 +1,6 @@
 # Keyboard Keys
 
-Add shortcuts right in a sentence. MarkdownUtil turns them into keycaps.
+Add shortcuts right in a sentence. MDU turns them into keycaps.
 
 Write `++cmd+s++` to show ++cmd+s++. Wrap the whole shortcut in `++` and join keys with `+`.
 

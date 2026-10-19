@@ -37,7 +37,7 @@ jobs:
         uses: actions/configure-pages@v6
 
       - name: Render documentation
-        run: dotnet run --project Source/MarkdownUtil/MarkdownUtil.csproj --configuration Release -- render Docs site --editPageRoot https://github.com/capjan/markdown-util/edit/main/Docs
+        run: dotnet run --project Source/MarkdownUtil/MarkdownUtil.csproj --configuration Release -- render Docs site --editPageRoot https://github.com/capjan/mdu/edit/main/Docs
 
       - name: Upload Pages artifact
         uses: actions/upload-pages-artifact@v5

@@ -20,7 +20,7 @@ navigation:
 | `MDU007` | `MaterialAdmonition` | Error | Material admonitions must be converted to GitHub Alerts. | [fix](../fix.md#migrating-mkdocs-material-markdown) |
 | `MDU008` | `MaterialTabs` | Error | Material tabs must be converted to headings. | [fix](../fix.md#migrating-mkdocs-material-markdown) |
 | `MDU009` | `MaterialCards` | Error | Material card grids must be converted to Markdown link lists. | [fix](../fix.md#migrating-mkdocs-material-markdown) |
-| `MDU010` | `UnsupportedMermaid` | Error | A Mermaid diagram uses syntax MarkdownUtil cannot render. | — |
+| `MDU010` | `UnsupportedMermaid` | Error | A Mermaid diagram uses syntax MDU cannot render. | — |
 | `MDU011` | `CodeAnnotations` | Error | Material code-annotation markers are unsupported. | [fix](../fix.md#migrating-mkdocs-material-markdown) |
 | `MDU012` | `MkDocsIndexPage` | Warning | Rename the MkDocs `index.md` page to `README.md`. | [fix](../fix.md#migrating-mkdocs-material-markdown) |
 | `MDU013` | `MissingSectionReadme` | Warning | A section with child pages needs a `README.md` page. | [fix](../fix.md#migrating-mkdocs-material-markdown) |
@@ -60,7 +60,7 @@ This warning appears when a section directory's `README.md` is its only Markdown
 
 ## MkDocs Material compatibility
 
-Rules `MDU007`–`MDU014` identify MkDocs-specific syntax and structure that needs migration. Run `mdu fix` to convert the supported constructs. An `MDU010` error means a Mermaid diagram uses syntax not currently implemented by MarkdownUtil; update the renderer before migrating that source.
+Rules `MDU007`–`MDU014` identify MkDocs-specific syntax and structure that needs migration. Run `mdu fix` to convert the supported constructs. An `MDU010` error means a Mermaid diagram uses syntax not currently implemented by MDU; update the renderer before migrating that source.
 
 ## Navigation front matter
 

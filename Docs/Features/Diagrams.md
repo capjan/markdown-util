@@ -2,10 +2,10 @@
 
 ## Overview
 
-MarkdownUtil draws diagrams from fenced code blocks while it renders your Markdown. It understands a subset of the Mermaid and PlantUML syntax and turns each diagram into static SVG that is embedded directly in the generated HTML page.
+MDU draws diagrams from fenced code blocks while it renders your Markdown. It understands a subset of the Mermaid and PlantUML syntax and turns each diagram into static SVG that is embedded directly in the generated HTML page.
 
 > [!IMPORTANT]
-> MarkdownUtil does not contain Mermaid or PlantUML, and it does not call them. It only imitates part of their syntax and draws the diagrams with its own implementation. The result therefore looks different from the originals, and not every feature is available.
+> MDU does not contain Mermaid or PlantUML, and it does not call them. It only imitates part of their syntax and draws the diagrams with its own implementation. The result therefore looks different from the originals, and not every feature is available.
 
 ### Static rendering
 
@@ -18,13 +18,13 @@ Every diagram is finished when `mdu render` or `mdu serve` writes the page:
 
 ### Portability
 
-Your diagrams stay in the standard notation, so you can leave MarkdownUtil at any time without rewriting them:
+Your diagrams stay in the standard notation, so you can leave MDU at any time without rewriting them:
 
 - Mermaid diagrams stay ordinary ` ```mermaid ` code blocks. GitHub and other Mermaid-aware tools render the same files with the real Mermaid.
 - PlantUML diagrams stay ordinary ` ```plantuml ` code blocks that PlantUML itself and PlantUML-aware tools render.
-- Context diagrams are the exception: they are a MarkdownUtil extension in ` ```context ` code blocks, which other tools show as plain code.
+- Context diagrams are the exception: they are an MDU extension in ` ```context ` code blocks, which other tools show as plain code.
 
-Mermaid flowcharts support subgraphs, and MarkdownUtil also renders the class diagram subset described below. Syntax outside the documented subsets remains a code block instead of being guessed; `mdu lint` reports unsupported Mermaid syntax.
+Mermaid flowcharts support subgraphs, and MDU also renders the class diagram subset described below. Syntax outside the documented subsets remains a code block instead of being guessed; `mdu lint` reports unsupported Mermaid syntax.
 
 ## Flowcharts
 
@@ -213,7 +213,7 @@ note right of DB : PostgreSQL
 
 ### Supported PlantUML syntax
 
-MarkdownUtil follows PlantUML's component diagram syntax, so the same source works with PlantUML itself:
+MDU follows PlantUML's component diagram syntax, so the same source works with PlantUML itself:
 
 | Element | Syntax |
 | --- | --- |
@@ -262,7 +262,7 @@ Relative `.md` destinations are changed to `.html` in the rendered site. `mdu li
 A context diagram shows one system in the center and the people and systems it works with around it.
 
 > [!NOTE]
-> Context diagrams are a MarkdownUtil extension. Neither Mermaid nor PlantUML has this diagram type, so only `mdu` renders them. GitHub and other tools show the ` ```context ` block as plain code.
+> Context diagrams are an MDU extension. Neither Mermaid nor PlantUML has this diagram type, so only `mdu` renders them. GitHub and other tools show the ` ```context ` block as plain code.
 
 A context diagram uses the flowchart syntax for systems and links, and `actor` for people:
 

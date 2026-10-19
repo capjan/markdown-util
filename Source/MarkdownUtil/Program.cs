@@ -32,7 +32,7 @@ registrations.AddScoped<ServeCommand>();
 
 using var services = registrations.BuildServiceProvider();
 
-var rootCommand = new RootCommand("Lint, render, and manage Markdown documentation.");
+var rootCommand = new RootCommand("MDU — Markdown Documentation Utility for linting, rendering, and managing Markdown documentation.");
 
 var lintCommand = new Command("lint", "Runs the linter and prints the results.");
 lintCommand.Aliases.Add("l");

@@ -1,6 +1,6 @@
 # Third-party notices for bundled assets and math rendering
 
-MarkdownUtil bundles the icon sets below in `StaticCode.Icons/Res`. The files are converted from their original
+MDU bundles the icon sets below in `StaticCode.Icons/Res`. The files are converted from their original
 formats: the Iconify JSON packages are reduced to the SVG content, and the Dashboard Icons SVG files are optimized with
 SVGO, which also prefixes their IDs and class names and turns their styles into attributes.
 

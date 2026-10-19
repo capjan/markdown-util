@@ -44,4 +44,4 @@ The linter reports Material admonitions, tabs, card grids, code annotations, `in
 
 `mdu fix` only adds `navigation.title` when it migrates a title from a `.pages` file. A normal `MDU002` title mismatch remains for you to resolve or to preserve with an explicit `navigation.title`. YAML is validated before files are moved or `.pages` files are removed. Existing `sidebar.*` metadata must be changed to `navigation.*` directly; `mdu fix` does not migrate it.
 
-Mermaid blocks are checked against the syntax supported by MarkdownUtil. Unsupported syntax remains unchanged and is reported as an error so it can be reviewed. `mdu fix` does not generate diagram replacements.
+Mermaid blocks are checked against the syntax supported by MDU. Unsupported syntax remains unchanged and is reported as an error so it can be reviewed. `mdu fix` does not generate diagram replacements.

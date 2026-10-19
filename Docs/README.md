@@ -11,7 +11,7 @@ actions:
     link: ./Features/README.md
 ```
 
-Use these guides to install MarkdownUtil, preview and publish a site, and write Markdown that renders the way you expect.
+Use these guides to install MDU, preview and publish a site, and write Markdown that renders the way you expect.
 
 ## Get started
 
@@ -32,7 +32,7 @@ Use these guides to install MarkdownUtil, preview and publish a site, and write 
 
 - [Features](./Features/README.md) - Browse supported Markdown syntax and rendering features.
 
-## About MarkdownUtil
+## About MDU
 
-- [Architecture](./Architecture/README.md) - Learn how MarkdownUtil renders a site.
+- [Architecture](./Architecture/README.md) - Learn how MDU renders a site.
 - [Other tools](OtherTools.md) - Compare a few documentation site generators by their typical use case.

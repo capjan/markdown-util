@@ -31,7 +31,7 @@ internal static class PdfFrontMatter
         var page = new PdfPageContent(PageWidth, PageHeight);
         FillRect(page, 0, 0, PageWidth, 9, Navy);
         FillRect(page, 48, 136, 4, 160, Accent);
-        Text(page, "MARKDOWNUTIL  /  DOCUMENTATION", Left + 18, 158, 9, PdfFont.HelveticaBold, Accent);
+        Text(page, "MDU  /  DOCUMENTATION", Left + 18, 158, 9, PdfFont.HelveticaBold, Accent);
 
         var titleLines = PdfLayout.WrapText(title, 32, PageWidth - Left - Right - 50, PdfFont.HelveticaBold).ToArray();
         var titleTop = 206.0;

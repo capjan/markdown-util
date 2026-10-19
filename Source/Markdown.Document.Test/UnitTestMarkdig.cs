@@ -30,7 +30,7 @@ public class UnitTestMarkdig
         var literals = link.Descendants<LiteralInline>().ToArray();
         var text = literals[0].ToString();
         Assert.Equal("Project Website", text);
-        Assert.Equal("https://github.com/capjan/markdown-util", url);
+        Assert.Equal("https://github.com/capjan/mdu", url);
 
         
 
