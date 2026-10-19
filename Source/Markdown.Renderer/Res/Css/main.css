@@ -2,6 +2,7 @@
     color-scheme: light;
     --site-header-height: 56px;
     --top-navigation-height: 43px;
+    --font-mono: ui-monospace, SFMono-Regular, "SF Mono", Menlo, Consolas, "Liberation Mono", monospace;
     --page-background: #fff;
     --text-primary: #1d1d1f;
     --text-secondary: #6e6e73;
@@ -11,6 +12,7 @@
     --surface-code: #f5f5f7;
     --surface-code-block: #f5f5f7;
     --surface-code-block-body: #fff;
+    --code-block-border: #e5e5ea;
     --border: #d2d2d7;
     --border-subtle: #e5e5ea;
     --link: #06c;
@@ -61,9 +63,10 @@
     --surface-header: rgb(22 22 24);
     --surface-current: #1d1d1f;
     --surface-key: #1d1d1f;
-    --surface-code: #252831;
-    --surface-code-block: #161617;
-    --surface-code-block-body: #0b0b0c;
+    --surface-code: #2a2a2d;
+    --surface-code-block: #232325;
+    --surface-code-block-body: #1d1d1f;
+    --code-block-border: #303033;
     --border: #303033;
     --border-subtle: #424245;
     --link: #2997ff;
@@ -111,9 +114,10 @@
         --surface-header: rgb(22 22 24);
         --surface-current: #1d1d1f;
         --surface-key: #1d1d1f;
-        --surface-code: #252831;
-        --surface-code-block: #161617;
-        --surface-code-block-body: #0b0b0c;
+        --surface-code: #2a2a2d;
+        --surface-code-block: #232325;
+        --surface-code-block-body: #1d1d1f;
+        --code-block-border: #303033;
         --border: #303033;
         --border-subtle: #424245;
         --link: #2997ff;
@@ -1556,6 +1560,7 @@ code {
     border-radius: 0.35em;
     background: var(--surface-code);
     color: var(--text-primary);
+    font-family: var(--font-mono);
     font-size: 0.9em;
 }
 
@@ -1563,10 +1568,10 @@ code {
     padding: 0.2em 0.45em;
     border-radius: 6px;
     color: var(--text-primary);
-    font-family: ui-monospace, SFMono-Regular, "SF Mono", Menlo, Consolas, monospace;
     font-size: 0.875em;
 }
 
+/* Code blocks match the 14px diagram labels so the source does not outweigh the prose or the rendered result. */
 pre {
     overflow: auto;
     margin: 1.25rem 0;
@@ -1574,12 +1579,16 @@ pre {
     border: 1px solid var(--border);
     border-radius: 8px;
     background: var(--surface-code-block-body);
+    font-family: var(--font-mono);
+    font-size: 0.875rem;
+    line-height: 1.6;
 }
 
 pre code {
     padding: 0;
     border: 0;
     background: transparent;
+    font-family: inherit;
     font-size: inherit;
 }
 
@@ -1587,20 +1596,18 @@ pre code {
     position: relative;
     overflow: hidden;
     margin: 1.25rem 0;
-    border: 0;
+    border: 1px solid var(--code-block-border);
     border-radius: 8px;
     background: var(--surface-code-block);
 }
 
-:root[data-theme="light"] .code-block {
-    border: 1px solid var(--border-subtle);
-}
-
 .code-block-title {
-    padding: 1rem 1.25rem;
-    border-bottom: 1px solid var(--border);
-    color: var(--text-primary);
-    font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", monospace;
+    padding: 0.5rem 1.25rem;
+    border-bottom: 1px solid var(--code-block-border);
+    color: var(--text-secondary);
+    font-size: 0.75rem;
+    font-weight: 500;
+    line-height: 1.5;
 }
 
 .code-block-body {
