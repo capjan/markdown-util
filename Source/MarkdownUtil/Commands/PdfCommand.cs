@@ -82,8 +82,8 @@ public sealed class PdfCommand(GraphBuilder graphBuilder, PdfRenderer pdfRendere
 
     private static IEnumerable<(MarkdownFile File, int Depth)> Flatten(IEnumerable<MarkdownFile> files, int depth = 0)
     {
-        foreach (var file in files.OrderBy(file => file.SidebarOrder.HasValue ? 0 : 1)
-                     .ThenBy(file => file.SidebarOrder)
+        foreach (var file in files.OrderBy(file => file.NavigationOrder.HasValue ? 0 : 1)
+                     .ThenBy(file => file.NavigationOrder)
                      .ThenBy(GetTitle, StringComparer.OrdinalIgnoreCase))
         {
             yield return (file, depth);

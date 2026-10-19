@@ -23,8 +23,8 @@ public class GraphBuilder
         var searchOptions = new EnumerationOptions
         {
             AttributesToSkip = settings.IncludeHidden
-                ? FileAttributes.Hidden | FileAttributes.System
-                : FileAttributes.System,
+                ? FileAttributes.System
+                : FileAttributes.Hidden | FileAttributes.System,
             RecurseSubdirectories = false
         };
 
@@ -49,12 +49,17 @@ public class GraphBuilder
             .GetFiles(searchPattern, searchOptions)
             .Select(fileInfo => new MarkdownFile(fileInfo, parent))
             .ToList();
-        if (markdownFilesInFolder.Count == 0) return markdownFilesInFolder;
-
         var usedParent = markdownFilesInFolder
-            .SingleOrDefault(itm => itm.FileInfo.Name.Equals("README.md", StringComparison.OrdinalIgnoreCase));
+            .FirstOrDefault(itm => itm.FileInfo.Name.Equals("README.md", StringComparison.OrdinalIgnoreCase)) ??
+            markdownFilesInFolder.FirstOrDefault(itm => itm.FileInfo.Name.Equals("index.md", StringComparison.OrdinalIgnoreCase));
 
-        if (usedParent == null) return markdownFilesInFolder;
+        if (usedParent == null)
+        {
+            foreach (var page in markdownFilesInFolder) page.Parent = parent;
+            return markdownFilesInFolder
+                .Concat(directoryInfo.GetDirectories().SelectMany(child => GetMarkdownFilesAt(parent, child, searchPattern, searchOptions)))
+                .ToArray();
+        }
 
         var siblingPages = markdownFilesInFolder
             .Where(file => file != usedParent)

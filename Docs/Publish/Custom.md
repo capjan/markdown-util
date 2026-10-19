@@ -1,5 +1,5 @@
 ---
-sidebar.order: 3
+navigation.order: 3
 ---
 
 # Custom

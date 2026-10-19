@@ -12,6 +12,8 @@
 - Client-side search with direct links to matching sections and highlighted occurrences.
 - Automatic copying of assets to the output directory.
 - Breadcrumb navigation generated from the Markdown file structure.
+- Top-level navigation tabs selected with `navigation.placement: top`; the setting controls a section's preferred navigation position. Wide layouts show only the active tab's descendants in the sidebar and hide the sidebar when that tab has no children. Narrow viewports fold the tabs into the full sidebar tree while preserving its documentation root and breadcrumb path. A full-width page bar holds the menu control, breadcrumbs, and page contents menu. Site branding and theme colors come from `mdu.yml`, and page metadata comes from YAML front matter.
+- Dependency-free image lightboxes and hover/focus footnote previews.
  
 ## Technical details
 

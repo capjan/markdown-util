@@ -25,19 +25,24 @@ public class DataPreparationVisitor: IVisitor<MarkdownFile>
         using var reader = new StreamReader(entity.FileInfo.FullName, Encoding.UTF8);
         var input = new ParserInput(reader);
         var header = _markdownReader.ReadHeader(input);
-        entity.Title = header.Title;
+        entity.HeadingTitle = header.Title;
         entity.FrontMatter = header.FrontMatter;
-        var sidebarSettings = ReadSidebarSettings(header.FrontMatter);
-        entity.SidebarOrder = sidebarSettings.Order;
-        entity.SidebarVisible = sidebarSettings.Visible;
-        entity.SidebarExpanded = sidebarSettings.Expanded;
+        var navigationSettings = ReadFrontMatterSettings(header.FrontMatter);
+        entity.Title = navigationSettings.Title ?? header.Title;
+        entity.Description = navigationSettings.Description ?? string.Empty;
+        entity.Icon = navigationSettings.Icon ?? string.Empty;
+        entity.NavigationTitle = navigationSettings.NavigationTitle ?? string.Empty;
+        entity.NavigationOrder = navigationSettings.Order;
+        entity.NavigationVisible = navigationSettings.Visible;
+        entity.NavigationExpanded = navigationSettings.Expanded;
+        entity.NavigationPlacement = navigationSettings.Placement;
+        entity.InvalidNavigationPlacement = navigationSettings.InvalidPlacement;
         return true;
     }
 
-    private static (int? Order, bool Visible, bool Expanded) ReadSidebarSettings(string frontMatter)
+    private static FrontMatterSettings ReadFrontMatterSettings(string frontMatter)
     {
-        if (string.IsNullOrWhiteSpace(frontMatter) || !frontMatter.Contains("sidebar", StringComparison.Ordinal))
-            return (null, true, false);
+        if (string.IsNullOrWhiteSpace(frontMatter)) return new FrontMatterSettings();
 
         var lines = frontMatter.Split('\n').Select(line => line.TrimEnd('\r')).ToList();
         if (lines.Count > 0 && lines[0].Trim() == "---") lines.RemoveAt(0);
@@ -49,33 +54,49 @@ public class DataPreparationVisitor: IVisitor<MarkdownFile>
             yaml.Load(new StringReader(string.Join(Environment.NewLine, lines)));
 
             if (yaml.Documents.Count == 0 || yaml.Documents[0].RootNode is not YamlMappingNode metadata)
-                return (null, true, false);
+                return new FrontMatterSettings();
+
+            var title = ReadScalar(metadata, "title");
+            var description = ReadScalar(metadata, "description");
+            var icon = ReadScalar(metadata, "icon");
+            YamlMappingNode? navigation = null;
+            if (metadata.Children.TryGetValue(new YamlScalarNode("navigation"), out var navigationNode))
+                navigation = navigationNode as YamlMappingNode;
+
+            var navigationTitle = ReadScalar(metadata, "navigation.title");
 
             YamlNode? orderNode = null;
             YamlNode? visibleNode = null;
             YamlNode? expandedNode = null;
-            if (metadata.Children.TryGetValue(new YamlScalarNode("sidebar"), out var sidebarNode) &&
-                sidebarNode is YamlMappingNode sidebar)
+            YamlNode? placementNode = null;
+            if (navigation is not null)
             {
-                if (sidebar.Children.TryGetValue(new YamlScalarNode("order"), out var nestedOrderNode))
+                navigationTitle = ReadScalar(navigation, "title") ?? navigationTitle;
+                if (navigation.Children.TryGetValue(new YamlScalarNode("order"), out var nestedOrderNode))
                     orderNode = nestedOrderNode;
-                if (sidebar.Children.TryGetValue(new YamlScalarNode("visible"), out var nestedVisibleNode))
+                if (navigation.Children.TryGetValue(new YamlScalarNode("visible"), out var nestedVisibleNode))
                     visibleNode = nestedVisibleNode;
-                if (sidebar.Children.TryGetValue(new YamlScalarNode("expanded"), out var nestedExpandedNode))
+                if (navigation.Children.TryGetValue(new YamlScalarNode("expanded"), out var nestedExpandedNode))
                     expandedNode = nestedExpandedNode;
+                if (navigation.Children.TryGetValue(new YamlScalarNode("placement"), out var nestedPlacementNode))
+                    placementNode = nestedPlacementNode;
             }
 
-            if (orderNode is null && metadata.Children.TryGetValue(new YamlScalarNode("sidebar.order"), out var compactOrderNode))
+            if (orderNode is null && metadata.Children.TryGetValue(new YamlScalarNode("navigation.order"), out var compactOrderNode))
             {
                 orderNode = compactOrderNode;
             }
-            if (visibleNode is null && metadata.Children.TryGetValue(new YamlScalarNode("sidebar.visible"), out var compactVisibleNode))
+            if (visibleNode is null && metadata.Children.TryGetValue(new YamlScalarNode("navigation.visible"), out var compactVisibleNode))
             {
                 visibleNode = compactVisibleNode;
             }
-            if (expandedNode is null && metadata.Children.TryGetValue(new YamlScalarNode("sidebar.expanded"), out var compactExpandedNode))
+            if (expandedNode is null && metadata.Children.TryGetValue(new YamlScalarNode("navigation.expanded"), out var compactExpandedNode))
             {
                 expandedNode = compactExpandedNode;
+            }
+            if (placementNode is null && metadata.Children.TryGetValue(new YamlScalarNode("navigation.placement"), out var compactPlacementNode))
+            {
+                placementNode = compactPlacementNode;
             }
 
             int? order = null;
@@ -89,14 +110,45 @@ public class DataPreparationVisitor: IVisitor<MarkdownFile>
                           bool.TryParse(visibleValue.Value, out var parsedVisible)
                 ? parsedVisible
                 : true;
-            var expanded = expandedNode is YamlScalarNode expandedValue &&
-                           bool.TryParse(expandedValue.Value, out var parsedExpanded) && parsedExpanded;
+            bool? expanded = expandedNode is YamlScalarNode expandedValue &&
+                             bool.TryParse(expandedValue.Value, out var parsedExpanded)
+                ? parsedExpanded
+                : null;
 
-            return (order, visible, expanded);
+            var placementSpecified = placementNode is not null;
+            var placementValue = placementNode is YamlScalarNode placementScalar ? placementScalar.Value : null;
+            var placement = placementValue?.ToLowerInvariant() switch
+            {
+                "sidebar" => NavigationPlacement.Sidebar,
+                "top" => NavigationPlacement.Top,
+                _ => NavigationPlacement.Sidebar
+            };
+            var invalidPlacement = placementSpecified && placementValue?.ToLowerInvariant() is not ("sidebar" or "top")
+                ? placementValue ?? "(must be a string)"
+                : null;
+
+            return new FrontMatterSettings(title, description, icon, navigationTitle, order, visible, expanded,
+                placement, invalidPlacement);
         }
         catch (YamlException)
         {
-            return (null, true, false);
+            return new FrontMatterSettings();
         }
     }
+
+    private static string? ReadScalar(YamlMappingNode mapping, string key) =>
+        mapping.Children.TryGetValue(new YamlScalarNode(key), out var value) && value is YamlScalarNode scalar
+            ? scalar.Value
+            : null;
+
+    private sealed record FrontMatterSettings(
+        string? Title = null,
+        string? Description = null,
+        string? Icon = null,
+        string? NavigationTitle = null,
+        int? Order = null,
+        bool Visible = true,
+        bool? Expanded = null,
+        NavigationPlacement Placement = NavigationPlacement.Sidebar,
+        string? InvalidPlacement = null);
 }

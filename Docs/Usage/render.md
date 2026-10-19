@@ -1,5 +1,5 @@
 ---
-sidebar.order: 4
+navigation.order: 4
 ---
 
 # render
@@ -15,6 +15,31 @@ mdu render [PATH [OUTPATH]]
 The alias `mdu r` runs the same command. See [Paths and file search](README.md#paths-and-file-search) for the default source and output paths, and [common options](README.md#common-options) for `--pattern` and `--hidden`. Run `mdu render --help` for the current command help.
 
 `--editPageRoot` adds an **Edit Page** link to each rendered page and a GitHub repository button in the top bar. The button links to the repository root and shows its `owner/repository` name.
+
+## Site configuration
+
+An optional `mdu.yml` file in the Markdown root configures the site name, light and dark logos and favicons, and theme colors. Referenced assets are copied into the output folder.
+
+```yaml
+site_name: Documentation
+logo:
+  light: assets/logo-light.svg
+  dark: assets/logo-dark.svg
+favicon:
+  light: assets/favicon-light.svg
+  dark: assets/favicon-dark.svg
+colors:
+  light:
+    background: "#ffffff"
+    text: "#1d1d1f"
+    primary: "#0066cc"
+  dark:
+    background: "#1d1d1f"
+    text: "#f5f5f7"
+    primary: "#2997ff"
+```
+
+Page front matter supports `title`, `description`, and `icon`. `title` sets the browser and fallback navigation title, `description` becomes the page meta description, and `icon` adds an icon shortcode beside the first-level heading. `navigation.title` overrides the navigation label; `navigation.order`, `navigation.visible`, and `navigation.expanded` control ordering, visibility, and initial sidebar expansion. Set `navigation.placement: top` on a first-level page or section `README.md` to create a [top navigation tab](../Features/Sidebar.md#top-navigation). The placement chooses the preferred position for that entry; it does not change the navigation or breadcrumb root.
 
 ## Examples
 

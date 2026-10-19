@@ -24,7 +24,7 @@ Your diagrams stay in the standard notation, so you can leave MarkdownUtil at an
 - PlantUML diagrams stay ordinary ` ```plantuml ` code blocks that PlantUML itself and PlantUML-aware tools render.
 - Context diagrams are the exception: they are a MarkdownUtil extension in ` ```context ` code blocks, which other tools show as plain code.
 
-If a diagram uses syntax outside the supported subset, such as `subgraph` or other diagram types, MarkdownUtil shows its source as a code block instead of guessing.
+Mermaid flowcharts support subgraphs, and MarkdownUtil also renders the class diagram subset described below. Syntax outside the documented subsets remains a code block instead of being guessed; `mdu lint` reports unsupported Mermaid syntax.
 
 ## Flowcharts
 
@@ -66,12 +66,16 @@ flowchart LR
 | Stadium | `A([Text])` |
 | Circle | `A((Text))` |
 | Decision | `A{Text}` |
+| Subroutine | `A[[Text]]` |
+| Hexagon | `A{{Text}}` |
 | Links | `-->`, `---`, `-.->`, `-.-`, `==>`, `===` |
 | Link ends | `<-->`, `--o`, `--x` |
 | Link labels | `A -- Text --> B`, or the text between two pipes after the link (see below) |
 | Node links | `click A href "details.md"` |
 | Longer links | Add dashes, dots, or equal signs, for example `--->` |
 | Chains and groups | `A --> B --> C`, `A & B --> C` |
+| Subgraphs | `subgraph Id ["Label"]` … `end` |
+| Namespaced node identifiers | `target:App`, `product:Library` |
 | Line breaks | `<br>` inside a label |
 | Comments | Lines starting with `%%` |
 
@@ -154,6 +158,20 @@ sequenceDiagram
 | Comments | Lines starting with `%%` |
 
 Participants appear in the order they are declared or first used. `box`, `create`, `destroy`, and participant links are not supported yet.
+
+## Class diagrams
+
+Use `classDiagram` or `classDiagram-v2` for a class diagram. Class names are shown as written. Add relationships between classes with an optional label:
+
+```mermaid
+classDiagram
+class Animal
+Animal <|-- Duck
+Duck *-- Wing : has
+Bird ..> Nest : uses
+```
+
+The supported relationships are inheritance (`<|--`, `--|>`), composition (`*--`, `--*`), aggregation (`o--`, `--o`), dependency (`<..`, `..>`), and solid or dotted associations (`--`, `-->`, `<--`, `..`, `<|..`, `..|>`). Class declarations use `class Name`. Attributes, methods, aliases, and display labels are not supported.
 
 ## PlantUML component diagrams
 

@@ -12,9 +12,11 @@ public static class MermaidRenderer
     /// <exception cref="DiagramSyntaxException">The source is not a supported diagram.</exception>
     public static string RenderSvg(string source)
     {
+        source = PrepareSource(source);
+        if (source.TrimStart().StartsWith("classDiagram", StringComparison.Ordinal)) return ClassDiagramRenderer.Render(source);
         if (FlowchartParser.CanParse(source)) return FlowchartSvgWriter.Write(FlowchartParser.Parse(source));
         if (SequenceParser.CanParse(source)) return SequenceSvgWriter.Write(SequenceParser.Parse(source));
-        throw new DiagramSyntaxException("Only flowcharts and sequence diagrams are supported.", 1);
+        throw new DiagramSyntaxException("Unsupported Mermaid diagram syntax.", 1);
     }
 
     public static bool TryRenderSvg(string source, [NotNullWhen(true)] out string? svg)
@@ -29,5 +31,18 @@ public static class MermaidRenderer
             svg = null;
             return false;
         }
+    }
+
+    private static string PrepareSource(string source)
+    {
+        source = source.ReplaceLineEndings("\n");
+        if (source.TrimStart().StartsWith("---\n", StringComparison.Ordinal))
+        {
+            var start = source.IndexOf("---\n", StringComparison.Ordinal);
+            var end = source.IndexOf("\n---", start + 4, StringComparison.Ordinal);
+            if (end >= 0) source = source.Remove(start, end + 4 - start).TrimStart('\n');
+        }
+
+        return source;
     }
 }

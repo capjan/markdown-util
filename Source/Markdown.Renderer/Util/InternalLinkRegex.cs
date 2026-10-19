@@ -5,7 +5,7 @@ namespace Markdown.Renderer.Util;
 public class InternalLinkRegex
 {
     private const string Pattern =
-        @"(?<prefix>\[\s*(?<LinkName>[^\[]+?)\s*\]\(\s*)(?<Path>((\.{1,2}/)|([\w-]+/))+)?(?<FileName>(?<FilenameWithoutExtension>[\w-]+)(?<FileExtension>\.md))(?<Suffix>[?#][^\s)]*)?(?<postfix>\s*\))";
+        @"(?<prefix>\[\s*(?<LinkName>[^\[]+?)\s*\]\(\s*)(?<Path>(?!/|[A-Za-z][A-Za-z0-9+.-]*:)(?:\.{1,2}/|[^/?#()\s]+/)*)?(?<FileName>(?<FilenameWithoutExtension>[^/?#()\s]+?)(?<FileExtension>\.md))(?<Suffix>[?#][^\s)]*)?(?<postfix>\s*\))";
 
     public InternalLinkRegexMatch Match(string input)
     {

@@ -1,3 +1,4 @@
+using System.Text.Encodings.Web;
 using Markdown.Renderer;
 using Markdown.Renderer.Res.Model;
 using Markdown.Search;
@@ -31,7 +32,6 @@ public class MarkdigVisitor : BaseVisitor
     private readonly string _outPath;
     private readonly MarkdownFile[] _navigationRoots;
     private readonly IReadOnlyCollection<string> _siteMediaProviders;
-    private IReadOnlyList<NavigationEntry>? _navigationEntries;
 
     public IReadOnlyCollection<string> SiteMediaProviders => _siteMediaProviders;
 
@@ -46,7 +46,7 @@ public class MarkdigVisitor : BaseVisitor
         var markdown = RemoveFrontMatter(io.ReadAllText(), entity.FrontMatter);
         io.CreateOutputDirectory();    // ensures that the output directory exits
 
-        var editPageLink = string.IsNullOrEmpty(_editPageRoot) ? string.Empty : Path.Combine(_editPageRoot, io.InputRelativeFilePathToRootDirectory);
+        var editPageLink = string.IsNullOrEmpty(_editPageRoot) ? string.Empty : GetEditPageLink(io.InputRelativeFilePathToRootDirectory);
         var nestingDeep = Path.GetDirectoryName(io.OutputRelativeFilePathToRootDirectory)?
             .Split(Path.DirectorySeparatorChar, StringSplitOptions.RemoveEmptyEntries).Length ?? 0;
         
@@ -70,16 +70,19 @@ public class MarkdigVisitor : BaseVisitor
             using (var sw = new StreamWriter(fs))
                 _htmlFoundation.WriteHtml(
                     sw,
-                    entity.Title,
-                    "",
+                    RemoveIconShortcodes(entity.Title),
+                    entity.Description,
                     nestingDeep,
                     markdown,
                     editPageLink,
-                    BuildNavigation(outputFileName),
+                    BuildNavigation(entity, outputFileName),
                     BuildBreadcrumbs(entity, outputFileName),
-                    _siteMediaProviders).GetAwaiter().GetResult();
+                    _siteMediaProviders,
+                    entity.Icon,
+                    BuildTopNavigation(entity, outputFileName)).GetAwaiter().GetResult();
 
             File.Move(temporaryPath, outputFileName, true);
+            WriteAliasPage(entity, outputFileName);
         }
         finally
         {
@@ -87,6 +90,22 @@ public class MarkdigVisitor : BaseVisitor
         }
 
         return true;
+    }
+
+    private void WriteAliasPage(MarkdownFile page, string outputFileName)
+    {
+        if (page.FileInfo.Name.Equals("README.md", StringComparison.OrdinalIgnoreCase)) return;
+        var aliasDirectory = Path.Combine(page.FileInfo.DirectoryName!, Path.GetFileNameWithoutExtension(page.FileInfo.Name));
+        if (Directory.Exists(aliasDirectory) && Directory.EnumerateFiles(aliasDirectory).Any(filePath =>
+                Path.GetFileName(filePath).Equals("README.md", StringComparison.OrdinalIgnoreCase) ||
+                Path.GetFileName(filePath).Equals("index.md", StringComparison.OrdinalIgnoreCase))) return;
+
+        var aliasPath = Path.Combine(Path.GetDirectoryName(outputFileName)!, Path.GetFileNameWithoutExtension(outputFileName), "index.html");
+        Directory.CreateDirectory(Path.GetDirectoryName(aliasPath)!);
+        var relativeTarget = "../" + Uri.EscapeDataString(Path.GetFileName(outputFileName));
+        var encodedTarget = HtmlEncoder.Default.Encode(relativeTarget);
+        File.WriteAllText(aliasPath,
+            $"<!doctype html><html><head><meta charset=\"utf-8\"><meta http-equiv=\"refresh\" content=\"0; url={encodedTarget}\"><link rel=\"canonical\" href=\"{encodedTarget}\"><title>Moved</title></head><body><a href=\"{encodedTarget}\">Continue to the page</a></body></html>");
     }
 
     private IReadOnlyCollection<string> FindSiteMediaProviders()
@@ -119,47 +138,90 @@ public class MarkdigVisitor : BaseVisitor
         }
     }
 
-    private IReadOnlyList<NavigationItem> BuildNavigation(string currentOutputPath)
+    private IReadOnlyList<NavigationItem> BuildNavigation(MarkdownFile page, string currentOutputPath)
     {
         var currentPath = Path.GetFullPath(currentOutputPath);
         var currentDirectorySegments = GetSiteRelativeSegments(Path.GetDirectoryName(currentPath)!);
-
-        return NavigationEntries
+        var entries = CreateNavigationEntries(_navigationRoots);
+        var activeTopNavigationItem = FindTopNavigationItem(page);
+        var activeTopNavigationDepth = activeTopNavigationItem is null
+            ? -1
+            : entries.FirstOrDefault(entry => ReferenceEquals(entry.Page, activeTopNavigationItem))?.Depth ?? -1;
+        if (activeTopNavigationDepth < 0) activeTopNavigationItem = null;
+        return entries
             .Select(entry => new NavigationItem
             {
                 Title = entry.Title,
                 Url = GetRelativeUrl(currentDirectorySegments, entry.UrlSegments),
                 Depth = entry.Depth,
                 IsCurrent = string.Equals(entry.OutputPath, currentPath, PathComparison),
-                IsExpandedByDefault = entry.IsExpandedByDefault
+                IsCurrentSection = ReferenceEquals(page, entry.Page) || IsDescendant(page, entry.Page),
+                IsExpandedByDefault = entry.IsExpandedByDefault,
+                IsTopNavigationItem = entry.Page.NavigationPlacement == NavigationPlacement.Top &&
+                                      IsTopLevelNavigationPage(entry.Page.FileInfo),
+                IsInCurrentTopSection = activeTopNavigationItem is not null &&
+                                        (ReferenceEquals(entry.Page, activeTopNavigationItem) ||
+                                         IsDescendant(entry.Page, activeTopNavigationItem)),
+                IsAncestorOfCurrentTopSection = activeTopNavigationItem is not null &&
+                                                IsDescendant(activeTopNavigationItem, entry.Page),
+                TopNavigationDepth = activeTopNavigationDepth < 0
+                    ? 0
+                    : entry.Depth - activeTopNavigationDepth - 1
             })
             .ToArray();
     }
 
-    // The sidebar lists every page, so its entries are collected once per visitor instead of once per page.
-    private IReadOnlyList<NavigationEntry> NavigationEntries => _navigationEntries ??= CreateNavigationEntries();
+    private static IEnumerable<MarkdownFile> OrderPages(IEnumerable<MarkdownFile> pages) => pages
+        .OrderBy(page => page.NavigationOrder.HasValue ? 0 : 1)
+        .ThenBy(page => page.NavigationOrder)
+        .ThenBy(GetNavigationTitle, StringComparer.OrdinalIgnoreCase);
 
-    private IReadOnlyList<NavigationEntry> CreateNavigationEntries()
+    private IReadOnlyList<NavigationItem> BuildTopNavigation(MarkdownFile page, string currentOutputPath)
+    {
+        var currentPath = Path.GetFullPath(currentOutputPath);
+        var currentDirectorySegments = GetSiteRelativeSegments(Path.GetDirectoryName(currentPath)!);
+        var activeTab = FindTopNavigationItem(page);
+        return Flatten(_navigationRoots)
+            .Where(candidate => candidate.NavigationPlacement == NavigationPlacement.Top &&
+                                IsTopLevelNavigationPage(candidate.FileInfo) && candidate.NavigationVisible)
+            .OrderBy(candidate => candidate.NavigationOrder.HasValue ? 0 : 1)
+            .ThenBy(candidate => candidate.NavigationOrder)
+            .ThenBy(GetNavigationTitle, StringComparer.OrdinalIgnoreCase)
+            .Select(candidate =>
+            {
+                var candidatePath = GetOutputPagePath(FilePathInfo.CreateRenderFileInfo(_rootPath, _outPath,
+                    candidate.FileInfo, ".html").OutputFullFilePath);
+                var isCurrentPage = string.Equals(candidatePath, currentPath, PathComparison);
+                return new NavigationItem
+                {
+                    Title = GetNavigationTitle(candidate),
+                    Url = GetRelativeUrl(currentDirectorySegments, GetSiteRelativeSegments(candidatePath)),
+                    IsCurrent = isCurrentPage,
+                    IsCurrentSection = ReferenceEquals(candidate, activeTab)
+                };
+            })
+            .ToArray();
+    }
+
+    private IReadOnlyList<NavigationEntry> CreateNavigationEntries(IEnumerable<MarkdownFile> roots)
     {
         var entries = new List<NavigationEntry>();
-        AddPages(_navigationRoots, 0);
+        AddPages(roots, 0);
         return entries;
 
         void AddPages(IEnumerable<MarkdownFile> pages, int depth)
         {
-            foreach (var page in pages
-                         .OrderBy(page => page.SidebarOrder.HasValue ? 0 : 1)
-                         .ThenBy(page => page.SidebarOrder)
-                         .ThenBy(GetNavigationTitle, StringComparer.OrdinalIgnoreCase))
+            foreach (var page in OrderPages(pages))
             {
-                if (page.SidebarVisible)
+                if (page.NavigationVisible)
                 {
                     var pagePath = GetOutputPagePath(FilePathInfo.CreateRenderFileInfo(_rootPath, _outPath, page.FileInfo, ".html")
                         .OutputFullFilePath);
-                    entries.Add(new NavigationEntry(GetNavigationTitle(page), pagePath, GetSiteRelativeSegments(pagePath), depth, page.SidebarExpanded));
+                    entries.Add(new NavigationEntry(page, GetNavigationTitle(page), pagePath, GetSiteRelativeSegments(pagePath), depth,
+                        page.NavigationExpanded == true));
                 }
 
-                AddPages(page.Children, page.SidebarVisible ? depth + 1 : depth);
+                AddPages(page.Children, page.NavigationVisible ? depth + 1 : depth);
             }
         }
     }
@@ -185,17 +247,52 @@ public class MarkdigVisitor : BaseVisitor
             .Concat(toFile.Skip(common).Select(Uri.EscapeDataString)));
     }
 
-    private sealed record NavigationEntry(string Title, string OutputPath, string[] UrlSegments, int Depth, bool IsExpandedByDefault);
+    private sealed record NavigationEntry(MarkdownFile Page, string Title, string OutputPath, string[] UrlSegments, int Depth, bool IsExpandedByDefault);
+
+    private static bool IsDescendant(MarkdownFile page, MarkdownFile ancestor)
+    {
+        for (var current = page.Parent; current is not null; current = current.Parent)
+        {
+            if (ReferenceEquals(current, ancestor)) return true;
+        }
+
+        return false;
+    }
+
+    private MarkdownFile? FindTopNavigationItem(MarkdownFile page)
+    {
+        for (var current = page; current is not null; current = current.Parent)
+        {
+            if (current.NavigationPlacement == NavigationPlacement.Top && IsTopLevelNavigationPage(current.FileInfo))
+                return current;
+        }
+
+        return null;
+    }
+
+    private bool IsTopLevelNavigationPage(FileInfo file)
+    {
+        var relativePath = Path.GetRelativePath(_rootPath, file.FullName);
+        if (Path.IsPathRooted(relativePath) || relativePath == ".." ||
+            relativePath.StartsWith(".." + Path.DirectorySeparatorChar, StringComparison.Ordinal)) return false;
+
+        var segments = relativePath.Split(Path.DirectorySeparatorChar, Path.AltDirectorySeparatorChar);
+        if (segments.Length == 1) return true;
+        return segments.Length == 2 &&
+               (file.Name.Equals("README.md", StringComparison.OrdinalIgnoreCase) ||
+                file.Name.Equals("index.md", StringComparison.OrdinalIgnoreCase));
+    }
 
     private IReadOnlyList<BreadcrumbItem> BuildBreadcrumbs(MarkdownFile page, string currentOutputPath)
     {
         var breadcrumbs = new List<BreadcrumbItem>();
-        var ancestors = new Stack<MarkdownFile>();
+        var ancestors = new List<MarkdownFile>();
         for (var parent = page.Parent; parent is not null; parent = parent.Parent)
-            ancestors.Push(parent);
+            ancestors.Add(parent);
+        ancestors.Reverse();
 
         var currentDirectory = Path.GetDirectoryName(Path.GetFullPath(currentOutputPath))!;
-        while (ancestors.TryPop(out var ancestor))
+        foreach (var ancestor in ancestors.Where(ancestor => ancestor.NavigationVisible))
         {
             var ancestorPath = FilePathInfo.CreateRenderFileInfo(_rootPath, _outPath, ancestor.FileInfo, ".html")
                 .OutputFullFilePath;
@@ -204,7 +301,8 @@ public class MarkdigVisitor : BaseVisitor
                 GetRelativeUrl(currentDirectory, GetOutputPagePath(ancestorPath))));
         }
 
-        breadcrumbs.Add(new BreadcrumbItem(GetNavigationTitle(page), null));
+        if (page.NavigationVisible)
+            breadcrumbs.Add(new BreadcrumbItem(GetNavigationTitle(page), null));
         return breadcrumbs;
     }
 
@@ -232,10 +330,21 @@ public class MarkdigVisitor : BaseVisitor
 
     private static string GetNavigationTitle(MarkdownFile page)
     {
-        if (!string.IsNullOrWhiteSpace(page.Title)) return page.Title.Trim();
+        if (!string.IsNullOrWhiteSpace(page.NavigationTitle)) return RemoveIconShortcodes(page.NavigationTitle).Trim();
+        if (!string.IsNullOrWhiteSpace(page.Title)) return RemoveIconShortcodes(page.Title).Trim();
 
         return page.FileInfo.Name.Equals("README.md", StringComparison.OrdinalIgnoreCase)
             ? page.FileInfo.Directory?.Name ?? "Documentation"
             : Path.GetFileNameWithoutExtension(page.FileInfo.Name);
     }
+
+    private string GetEditPageLink(string relativePath)
+    {
+        var segments = relativePath.Replace('\\', '/').Split('/').Select(Uri.EscapeDataString);
+        return $"{_editPageRoot.TrimEnd('/')}/{string.Join('/', segments)}";
+    }
+
+    private static string RemoveIconShortcodes(string title) =>
+        System.Text.RegularExpressions.Regex.Replace(title,
+            @"(?::(?:material|simple|octicons|fontawesome|dashboard)-[\w-]+:\s*)+", string.Empty);
 }

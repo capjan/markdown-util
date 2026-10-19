@@ -33,6 +33,8 @@ public class Rule3Validator : AbstractValidator<Rule3Input>
         var relativePath = suffixStart < 0 ? linkDestination : linkDestination[..suffixStart];
         if (string.IsNullOrEmpty(relativePath)) return true;
 
+        relativePath = Uri.UnescapeDataString(relativePath);
+
         var markdownPath = SuperiorPath.Create(context.DocumentFilePath);
         var linkPath = SuperiorPath.Create(relativePath);
         if (linkPath.IsRooted) return true;

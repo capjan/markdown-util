@@ -28,6 +28,7 @@ public sealed class ServeCommand
     private readonly Dictionary<string, HashSet<string>> _assetsByPage = new(PathComparer);
     private readonly Dictionary<string, HashSet<string>> _pagesByAsset = new(PathComparer);
     private readonly HashSet<string> _generatedFiles = new(PathComparer);
+    private readonly HashSet<string> _configurationAssets = new(PathComparer);
 
     private MarkdownFile[] _navigationRoots = Array.Empty<MarkdownFile>();
     private IReadOnlyCollection<string> _siteMediaProviders = Array.Empty<string>();
@@ -93,7 +94,7 @@ public sealed class ServeCommand
         {
             RebuildSite();
         }
-        catch (Exception exception) when (exception is IOException or UnauthorizedAccessException or ArgumentException or InvalidOperationException)
+        catch (Exception exception) when (exception is IOException or UnauthorizedAccessException or ArgumentException or InvalidOperationException or YamlDotNet.Core.YamlException)
         {
             Console.Error.WriteLine($"Could not render the site: {exception.Message}");
             return 1;
@@ -161,7 +162,16 @@ public sealed class ServeCommand
         var graph = _graphBuilder.CreateGraph(_settings);
         _navigationRoots = graph;
 
-        _renderer.PrepareBasePath(_outputPath);
+        var siteConfiguration = SiteConfigurationReader.Read(_rootPath);
+        _renderer.PrepareBasePath(_outputPath, siteConfiguration);
+        SiteConfigurationReader.CopyAssets(_rootPath, _outputPath, siteConfiguration);
+        _configurationAssets.Clear();
+        foreach (var asset in new[] { siteConfiguration.LogoLight, siteConfiguration.LogoDark, siteConfiguration.FaviconLight, siteConfiguration.FaviconDark }
+                     .Where(asset => !string.IsNullOrWhiteSpace(asset)))
+        {
+            if (Uri.TryCreate(asset, UriKind.Absolute, out var uri) && uri.Scheme is "http" or "https") continue;
+            _configurationAssets.Add(Path.GetFullPath(asset!, _rootPath));
+        }
         SearchClientAsset.WriteTo(_outputPath);
         _searchIndexBuilder.Clear();
         graph.Visit(new LocalAssetsCopy(_rootPath, _outputPath));
@@ -255,7 +265,7 @@ public sealed class ServeCommand
             {
                 ProcessChangeBatch(batch, server);
             }
-            catch (Exception exception) when (exception is IOException or UnauthorizedAccessException or ArgumentException or InvalidOperationException)
+            catch (Exception exception) when (exception is IOException or UnauthorizedAccessException or ArgumentException or InvalidOperationException or YamlDotNet.Core.YamlException)
             {
                 Console.Error.WriteLine($"Could not update the site: {exception.Message}");
             }
@@ -270,6 +280,16 @@ public sealed class ServeCommand
                              (change.OldPath is null || !IsGeneratedOutputPath(change.OldPath)))
             .ToArray();
         if (relevantChanges.Length == 0) return;
+
+        var siteConfigurationPath = Path.Combine(_rootPath, "mdu.yml");
+        if (relevantChanges.Any(change => PathComparer.Equals(change.Path, siteConfigurationPath) ||
+                                          _configurationAssets.Contains(change.Path) ||
+                                          change.OldPath is not null && _configurationAssets.Contains(change.OldPath)))
+        {
+            RebuildSite();
+            server.Publish(reloadAll: true);
+            return;
+        }
 
         // Editors that save through a temporary file report creations, renames, and deletions for a page whose
         // content only changed. Only the state after the batch decides whether pages were added or removed.
@@ -303,14 +323,20 @@ public sealed class ServeCommand
             var page = _pages[pagePath];
             var depth = page.CountDepth();
             var previousTitle = page.Title;
-            var previousSidebarOrder = page.SidebarOrder;
-            var previousSidebarVisible = page.SidebarVisible;
-            var previousSidebarExpanded = page.SidebarExpanded;
+            var previousNavigationTitle = page.NavigationTitle;
+            var previousNavigationOrder = page.NavigationOrder;
+            var previousNavigationVisible = page.NavigationVisible;
+            var previousNavigationExpanded = page.NavigationExpanded;
+            var previousNavigationPlacement = page.NavigationPlacement;
+            var previousInvalidNavigationPlacement = page.InvalidNavigationPlacement;
             _dataPreparationVisitor.Process(page, depth);
             if (!previousTitle.Equals(page.Title, StringComparison.Ordinal) ||
-                previousSidebarOrder != page.SidebarOrder ||
-                previousSidebarVisible != page.SidebarVisible ||
-                previousSidebarExpanded != page.SidebarExpanded)
+                !previousNavigationTitle.Equals(page.NavigationTitle, StringComparison.Ordinal) ||
+                previousNavigationOrder != page.NavigationOrder ||
+                previousNavigationVisible != page.NavigationVisible ||
+                previousNavigationExpanded != page.NavigationExpanded ||
+                previousNavigationPlacement != page.NavigationPlacement ||
+                previousInvalidNavigationPlacement != page.InvalidNavigationPlacement)
             {
                 RebuildSite();
                 server.Publish(reloadAll: true);
@@ -422,7 +448,14 @@ public sealed class ServeCommand
         currentFiles.UnionWith(_renderer.IconSearchAssets);
 
         foreach (var page in _pages.Values)
+        {
             currentFiles.Add(GetPageOutputPath(page));
+            var aliasPath = GetAliasOutputPath(page);
+            if (aliasPath is not null) currentFiles.Add(aliasPath);
+        }
+
+        foreach (var assetPath in _configurationAssets)
+            if (File.Exists(assetPath)) currentFiles.Add(GetAssetOutputPath(assetPath));
 
         foreach (var assetPath in _pagesByAsset.Keys)
         {
@@ -446,6 +479,16 @@ public sealed class ServeCommand
         if (outputPath.EndsWith("readme.html", StringComparison.OrdinalIgnoreCase))
             outputPath = outputPath[..^"readme.html".Length] + "index.html";
         return Path.GetFullPath(outputPath);
+    }
+
+    private string? GetAliasOutputPath(MarkdownFile page)
+    {
+        if (page.FileInfo.Name.Equals("README.md", StringComparison.OrdinalIgnoreCase)) return null;
+        var aliasDirectory = Path.Combine(page.FileInfo.DirectoryName!, Path.GetFileNameWithoutExtension(page.FileInfo.Name));
+        if (Directory.Exists(aliasDirectory) && Directory.EnumerateFiles(aliasDirectory).Any(filePath =>
+                Path.GetFileName(filePath).Equals("README.md", StringComparison.OrdinalIgnoreCase) ||
+                Path.GetFileName(filePath).Equals("index.md", StringComparison.OrdinalIgnoreCase))) return null;
+        return Path.GetFullPath(Path.Combine(_outputPath, Path.GetRelativePath(_rootPath, aliasDirectory), "index.html"));
     }
 
     private string GetAssetOutputPath(string assetPath)

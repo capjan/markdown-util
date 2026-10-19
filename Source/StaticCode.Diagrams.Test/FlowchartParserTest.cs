@@ -121,10 +121,7 @@ public class FlowchartParserTest
     }
 
     [Theory]
-    [InlineData("subgraph One\nA --> B\nend")]
-    [InlineData("A[[Subroutine]]")]
     [InlineData("A[(Database)]")]
-    [InlineData("A{{Hexagon}}")]
     [InlineData("A>Flag]")]
     [InlineData("A --> ")]
     [InlineData("A -- missing end B")]

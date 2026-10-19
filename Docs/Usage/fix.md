@@ -1,10 +1,10 @@
 ---
-sidebar.order: 3
+navigation.order: 3
 ---
 
 # fix
 
-`mdu fix` applies supported automatic fixes to Markdown files. It currently fixes the `MDU006` warning for a section that contains only a `README.md` page.
+`mdu fix` migrates supported MkDocs Material syntax to portable Markdown, normalizes MkDocs page structure, and applies supported linter fixes. Review its changes before publishing.
 
 ## Usage
 
@@ -27,4 +27,21 @@ mdu fix ./ProjectDocs
 mdu lint ./ProjectDocs
 ```
 
-If there are no supported warnings, the command reports that there are no fixable warnings and makes no changes.
+If there are no supported fixes, the command reports `No fixable issues found.` and makes no changes.
+
+## Migrating MkDocs Material Markdown
+
+The linter reports Material admonitions, tabs, card grids, code annotations, `index.md` pages, missing section `README.md` pages, and `.pages` files as migration issues. `mdu fix` converts these where possible:
+
+- Admonitions and collapsible details become GitHub Alerts. Their contents remain visible; unknown admonition types become `NOTE`.
+- Tabs become headings, and card grids become Markdown link lists with their descriptions.
+- `{ .annotate }` markers are removed while code comments and numbered explanations stay in the document.
+- `index.md` becomes `README.md`; missing section `README.md` pages are created from their directory names.
+- `.pages` titles and ordering become `navigation.title` and `navigation.order` front matter, then `.pages` files are removed.
+- Blog and tag indexes become static Markdown link lists.
+
+`MDU012` (`index.md`) and `MDU013` (missing section `README.md`) are warnings so ordinary Markdown projects do not start failing lint solely due to these naming conventions. The unsupported Material syntax rules and `.pages` configuration remain errors.
+
+`mdu fix` only adds `navigation.title` when it migrates a title from a `.pages` file. A normal `MDU002` title mismatch remains for you to resolve or to preserve with an explicit `navigation.title`. YAML is validated before files are moved or `.pages` files are removed. Existing `sidebar.*` metadata must be changed to `navigation.*` directly; `mdu fix` does not migrate it.
+
+Mermaid blocks are checked against the syntax supported by MarkdownUtil. Unsupported syntax remains unchanged and is reported as an error so it can be reviewed. `mdu fix` does not generate diagram replacements.

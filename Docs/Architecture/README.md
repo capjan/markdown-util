@@ -1,5 +1,6 @@
 ---
-sidebar.order: 35
+navigation.order: 35
+navigation.placement: top
 ---
 
 # Architecture

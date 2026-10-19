@@ -134,6 +134,8 @@ MarkdownUtil uses Markdig.[^markdig]
 
 [^markdig]: Markdig is a Markdown processor for .NET.
 
+In the rendered site, hover over a footnote reference or move keyboard focus to it to preview the footnote inline. The full footnote remains at the bottom of the page.
+
 ## Related features
 
 For GitHub-style callouts, see [Callouts](Callouts.md).

@@ -8,6 +8,51 @@ namespace MarkdownUtilTest;
 public class ServeCommandIntegrationTest
 {
     [Fact]
+    public async Task KeepsAliasPageWhenItsFolderContainsOnlyAssets()
+    {
+        var root = Path.Combine(Path.GetTempPath(), Guid.NewGuid().ToString("N"));
+        var docs = Path.Combine(root, "Docs");
+        var site = Path.Combine(root, "site");
+        Directory.CreateDirectory(docs);
+        File.WriteAllText(Path.Combine(docs, "README.md"), "# Home\n\n[Guide](Guide.md)");
+        File.WriteAllText(Path.Combine(docs, "Guide.md"), "# Guide\n");
+
+        var port = FindAvailablePort();
+        using var process = StartServer(docs, site, port);
+        using var client = new HttpClient { Timeout = TimeSpan.FromSeconds(2) };
+        var aliasUrl = $"http://127.0.0.1:{port}/Guide/index.html";
+
+        try
+        {
+            await WaitUntilAsync(async () =>
+            {
+                using var response = await client.GetAsync(aliasUrl);
+                return response.IsSuccessStatusCode;
+            }, process);
+
+            Directory.CreateDirectory(Path.Combine(docs, "Guide"));
+            File.WriteAllText(Path.Combine(docs, "Guide", "asset.svg"), "<svg />");
+            File.WriteAllText(Path.Combine(docs, "Another.md"), "# Another\n");
+
+            await WaitUntilAsync(async () =>
+            {
+                using var response = await client.GetAsync($"http://127.0.0.1:{port}/Another.html");
+                return response.IsSuccessStatusCode &&
+                       (await response.Content.ReadAsStringAsync()).Contains("Another", StringComparison.Ordinal);
+            }, process);
+
+            using var aliasResponse = await client.GetAsync(aliasUrl);
+            Assert.True(aliasResponse.IsSuccessStatusCode);
+            Assert.Contains("Guide.html", await aliasResponse.Content.ReadAsStringAsync());
+        }
+        finally
+        {
+            StopServer(process);
+            Directory.Delete(root, recursive: true);
+        }
+    }
+
+    [Fact]
     public async Task UpdatesMarkdownAssetsAndRemovesGeneratedFiles()
     {
         var root = Path.Combine(Path.GetTempPath(), Guid.NewGuid().ToString("N"));

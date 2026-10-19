@@ -53,6 +53,8 @@ internal static class NodeShapes
                 var c = Math.Clamp(p / q / 2, 1, 2.5);
                 return new NodeBox(node.Shape, lines, 2 * (p + q * c), 2 * (q + p / c), 0);
             }
+            case NodeShape.Subroutine:
+            case NodeShape.Hexagon:
             default:
             {
                 var height = textHeight + 2 * NodePaddingY;
@@ -151,6 +153,14 @@ internal static class NodeShapes
                 break;
             case NodeShape.Diamond:
                 svg.Append($"<polygon class=\"diagram-node-shape\" points=\"{F(center.X)},{F(top)} {F(left + box.Width)},{F(center.Y)} {F(center.X)},{F(top + box.Height)} {F(left)},{F(center.Y)}\"/>");
+                break;
+            case NodeShape.Hexagon:
+                var inset = Math.Min(box.Width * 0.16, box.Height / 2);
+                svg.Append($"<polygon class=\"diagram-node-shape\" points=\"{F(left + inset)},{F(top)} {F(left + box.Width - inset)},{F(top)} {F(left + box.Width)},{F(center.Y)} {F(left + box.Width - inset)},{F(top + box.Height)} {F(left + inset)},{F(top + box.Height)} {F(left)},{F(center.Y)}\"/>");
+                break;
+            case NodeShape.Subroutine:
+                svg.Append($"<rect class=\"diagram-node-shape\" x=\"{F(left)}\" y=\"{F(top)}\" width=\"{F(box.Width)}\" height=\"{F(box.Height)}\" rx=\"0\"/>")
+                    .Append($"<path class=\"diagram-node-subroutine-line\" d=\"M{F(left + 7)} {F(top)}v{F(box.Height)} M{F(left + box.Width - 7)} {F(top)}v{F(box.Height)}\"/>");
                 break;
             default:
                 svg.Append($"<rect class=\"diagram-node-shape\" x=\"{F(left)}\" y=\"{F(top)}\" width=\"{F(box.Width)}\" height=\"{F(box.Height)}\" rx=\"{F(box.CornerRadius)}\"/>");

@@ -55,10 +55,99 @@ public class LinterVisitorTest
     }
 
     [Fact]
+    public void MissingPercentEncodedLocalLinkIsReported()
+    {
+        WithPage("Overview.md", "# Overview\n\n[Missing](missing%20file.v1.pdf)", "Overview", 0, errors =>
+        {
+            var error = Assert.Single(errors);
+            Assert.Equal(3, error.LineNumber);
+            Assert.Equal(RuleCodes.LocalLinkExists, CodeOf(error));
+        });
+    }
+
+    [Fact]
     public void ExistingImagePasses()
     {
         WithPage("Overview.md", "# Overview\n\n![Diagram](diagram.png)", "Overview", 0, errors => Assert.Empty(errors),
             setup: root => File.WriteAllText(Path.Combine(root, "diagram.png"), "image"));
+    }
+
+    [Fact]
+    public void OldSidebarFrontMatterIsRejected()
+    {
+        const string frontMatter = "---\nsidebar:\n  order: 1\n---";
+        WithPage("Overview.md", $"{frontMatter}\n\n# Overview", "Overview", 0, errors =>
+        {
+            var error = Assert.Single(errors);
+            Assert.Equal(RuleCodes.LegacySidebarMetadata, CodeOf(error));
+        }, frontMatter: frontMatter);
+    }
+
+    [Fact]
+    public void TopPlacementMustBeOnTheFirstLevel()
+    {
+        var root = Path.Combine(Path.GetTempPath(), Guid.NewGuid().ToString("N"));
+        var path = Path.Combine(root, "Area", "Nested", "README.md");
+        Directory.CreateDirectory(Path.GetDirectoryName(path)!);
+        File.WriteAllText(path, "# Nested\n");
+        try
+        {
+            var page = new MarkdownFile(new FileInfo(path), null)
+            {
+                Title = "Nested",
+                HeadingTitle = "Nested",
+                NavigationPlacement = NavigationPlacement.Top
+            };
+            var receiver = new RecordingLintErrorReceiver();
+            var linter = new LinterVisitor(receiver);
+            linter.Prepare(Array.Empty<MarkdownFile>(), root);
+            linter.Process(page, 0);
+
+            Assert.Contains(receiver.Errors, error => CodeOf(error) == RuleCodes.NavigationPlacementLevel);
+        }
+        finally
+        {
+            Directory.Delete(root, recursive: true);
+        }
+    }
+
+    [Fact]
+    public void UnknownNavigationPlacementIsRejected()
+    {
+        WithPage("Overview.md", "# Overview", "Overview", 0, errors =>
+        {
+            var error = Assert.Single(errors);
+            Assert.Equal(RuleCodes.InvalidNavigationPlacement, CodeOf(error));
+        }, frontMatter: "---\nnavigation:\n  placement: unknown\n---", invalidNavigationPlacement: "unknown");
+    }
+
+    [Fact]
+    public void ExpandedIsRejectedOnTopNavigationRoot()
+    {
+        var root = Path.Combine(Path.GetTempPath(), Guid.NewGuid().ToString("N"));
+        var path = Path.Combine(root, "Area", "README.md");
+        Directory.CreateDirectory(Path.GetDirectoryName(path)!);
+        File.WriteAllText(path, "# Area\n");
+        try
+        {
+            var page = new MarkdownFile(new FileInfo(path), null)
+            {
+                Title = "Area",
+                HeadingTitle = "Area",
+                NavigationPlacement = NavigationPlacement.Top,
+                NavigationExpanded = false
+            };
+            var receiver = new RecordingLintErrorReceiver();
+            var linter = new LinterVisitor(receiver);
+            linter.Prepare(Array.Empty<MarkdownFile>(), root);
+            linter.Process(page, 0);
+
+            Assert.Contains(receiver.Errors, error => CodeOf(error) == RuleCodes.ExpandedTopNavigationRoot);
+        }
+        finally
+        {
+            Directory.Delete(root, recursive: true);
+        }
     }
 
     [Fact]
@@ -85,7 +174,9 @@ public class LinterVisitorTest
         string title,
         int depth,
         Action<List<ReceivedError>> assert,
-        Action<string>? setup = null)
+        Action<string>? setup = null,
+        string frontMatter = "",
+        string? invalidNavigationPlacement = null)
     {
         var root = Path.Combine(Path.GetTempPath(), Guid.NewGuid().ToString("N"));
         Directory.CreateDirectory(root);
@@ -95,7 +186,12 @@ public class LinterVisitorTest
             var path = Path.Combine(root, relativePath);
             Directory.CreateDirectory(Path.GetDirectoryName(path)!);
             File.WriteAllText(path, contents);
-            var page = new MarkdownFile(new FileInfo(path), null) { Title = title };
+            var page = new MarkdownFile(new FileInfo(path), null)
+            {
+                Title = title,
+                FrontMatter = frontMatter,
+                InvalidNavigationPlacement = invalidNavigationPlacement
+            };
             var receiver = new RecordingLintErrorReceiver();
 
             new LinterVisitor(receiver).Process(page, depth);

@@ -53,10 +53,10 @@ public class DiagramTest
     [Fact]
     public void KeepsUnsupportedMermaidDiagramsAsCodeBlocks()
     {
-        var html = Render("```mermaid\nclassDiagram\n    Animal <|-- Duck\n```\n");
+        var html = Render("```mermaid\npie\n    \\\"Dogs\\\" : 1\n```\n");
 
         Assert.Contains("<pre", html);
-        Assert.Contains("classDiagram", html);
+        Assert.Contains("pie", html);
         Assert.DoesNotContain("<figure class=\"diagram\"", html);
     }
 }

@@ -1,5 +1,6 @@
 ---
-sidebar.order: 10
+navigation.order: 10
+navigation.placement: top
 ---
 
 # Setup

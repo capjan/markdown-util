@@ -1,5 +1,6 @@
 ---
-sidebar.order: 25
+navigation.order: 25
+navigation.placement: top
 ---
 
 # Publish

@@ -1,5 +1,5 @@
 ---
-sidebar:
+navigation:
   visible: false
 ---
 # Keyboard Key Reference
