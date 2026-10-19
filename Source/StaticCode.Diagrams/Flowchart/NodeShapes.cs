@@ -192,6 +192,7 @@ internal static class NodeShapes
     public static MarkerKind Marker(EdgeMarker marker) => marker switch
     {
         EdgeMarker.Arrow => MarkerKind.Arrow,
+        EdgeMarker.Triangle => MarkerKind.Triangle,
         EdgeMarker.Circle => MarkerKind.Circle,
         EdgeMarker.Cross => MarkerKind.Cross,
         _ => MarkerKind.None

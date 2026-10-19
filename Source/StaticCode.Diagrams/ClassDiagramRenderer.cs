@@ -30,9 +30,16 @@ internal static class ClassDiagramRenderer
             var left = GetNode(relationship.Groups["left"].Value);
             var right = GetNode(relationship.Groups["right"].Value);
             var kind = relationship.Groups["relation"].Value;
-            var reverse = kind is "<|--" or "<.." or "<--" or "<|..";
+            var isGeneralization = kind is "<|--" or "--|>" or "<|.." or "..|>";
+            var superclassOnRight = kind is "--|>" or "..|>";
+            var reverse = kind is "<.." or "<--";
             var from = reverse ? right.Id : left.Id;
             var to = reverse ? left.Id : right.Id;
+            if (isGeneralization)
+            {
+                from = superclassOnRight ? right.Id : left.Id;
+                to = superclassOnRight ? left.Id : right.Id;
+            }
             var lineStyle = kind.Contains('.') ? LineStyle.Dotted : LineStyle.Solid;
             var leftMarker = kind.StartsWith("*", StringComparison.Ordinal) || kind.StartsWith("o", StringComparison.Ordinal) ? EdgeMarker.Circle
                 : kind.StartsWith('<') ? EdgeMarker.Arrow
@@ -48,7 +55,9 @@ internal static class ClassDiagramRenderer
                 "<.." or "..>" => "dependency",
                 _ => null
             };
-            edges.Add(new FlowchartEdge(from, to, label, lineStyle, reverse ? rightMarker : leftMarker, reverse ? leftMarker : rightMarker, 1));
+            var startMarker = isGeneralization ? EdgeMarker.Triangle : reverse ? rightMarker : leftMarker;
+            var endMarker = isGeneralization ? EdgeMarker.None : reverse ? leftMarker : rightMarker;
+            edges.Add(new FlowchartEdge(from, to, label, lineStyle, startMarker, endMarker, 1));
         }
 
         if (nodes.Count == 0) throw new DiagramSyntaxException("The class diagram has no classes.", 1);
