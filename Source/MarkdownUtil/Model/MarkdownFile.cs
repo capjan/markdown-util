@@ -20,9 +20,11 @@ public class MarkdownFile: INode<MarkdownFile>
     public string Description { get; set; } = string.Empty;
     public string Icon { get; set; } = string.Empty;
     public string FrontMatter { get; set; } = string.Empty;
-    public int? SidebarOrder { get; set; }
-    public string SidebarTitle { get; set; } = string.Empty;
-    public bool SidebarVisible { get; set; } = true;
-    public bool SidebarExpanded { get; set; }
+    public int? NavigationOrder { get; set; }
+    public string NavigationTitle { get; set; } = string.Empty;
+    public bool NavigationVisible { get; set; } = true;
+    public bool? NavigationExpanded { get; set; }
+    public NavigationPlacement NavigationPlacement { get; set; }
+    public string? InvalidNavigationPlacement { get; set; }
     public bool IsOnlyReadmeInSection { get; set; }
 }

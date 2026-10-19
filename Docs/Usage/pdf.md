@@ -1,5 +1,5 @@
 ---
-sidebar.order: 45
+navigation.order: 45
 ---
 
 # pdf

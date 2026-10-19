@@ -1,5 +1,6 @@
 ---
-sidebar.order: 30
+navigation.order: 30
+navigation.placement: top
 ---
 
 # Features
@@ -8,7 +9,7 @@ sidebar.order: 30
 
 - [Code Blocks](CodeBlocks.md) - Displays fenced code blocks with syntax highlighting
 - [Formatting](Formatting.md) - Shows common Markdown formatting supported by Markdig
-- [Sidebar](Sidebar.md) - Describes the generated sidebar and how to control its order
+- [Navigation](Sidebar.md) - Describes top navigation tabs, the sidebar, and how to control their order
 - [Tables](Tables.md) - Examples of rendered Markdown tables
 - [Diagrams](Diagrams.md) - Renders Mermaid flowcharts, sequence and class diagrams, PlantUML component diagrams, and context diagrams to static SVG that follows the light and dark theme
 - [Callouts](Callouts.md) - Highlights notes, tips, and warnings with GitHub-compatible alert syntax

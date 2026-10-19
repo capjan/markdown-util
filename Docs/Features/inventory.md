@@ -1,5 +1,5 @@
 ---
-sidebar.visible: false
+navigation.visible: false
 ---
 
 # Inventory System

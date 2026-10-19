@@ -6,6 +6,7 @@ public class MainModel
     public string Description { get; set; } = string.Empty;
     public string RenderedMarkdown { get; set; } = string.Empty;
     public IReadOnlyList<NavigationItem> NavigationItems { get; set; } = Array.Empty<NavigationItem>();
+    public IReadOnlyList<NavigationItem> TopNavigationItems { get; set; } = Array.Empty<NavigationItem>();
     
     /// <summary>
     /// Hyperlink to the website that allows editing the current site

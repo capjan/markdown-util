@@ -1,5 +1,5 @@
 ---
-sidebar.order: 3
+navigation.order: 3
 ---
 
 # fix
@@ -37,11 +37,11 @@ The linter reports Material admonitions, tabs, card grids, code annotations, `in
 - Tabs become headings, and card grids become Markdown link lists with their descriptions.
 - `{ .annotate }` markers are removed while code comments and numbered explanations stay in the document.
 - `index.md` becomes `README.md`; missing section `README.md` pages are created from their directory names.
-- `.pages` titles and ordering become `sidebar.title` and `sidebar.order` front matter, then `.pages` files are removed.
+- `.pages` titles and ordering become `navigation.title` and `navigation.order` front matter, then `.pages` files are removed.
 - Blog and tag indexes become static Markdown link lists.
 
 `MDU012` (`index.md`) and `MDU013` (missing section `README.md`) are warnings so ordinary Markdown projects do not start failing lint solely due to these naming conventions. The unsupported Material syntax rules and `.pages` configuration remain errors.
 
-`mdu fix` only adds `sidebar.title` when it migrates a title from a `.pages` file. A normal `MDU002` title mismatch remains for you to resolve or to preserve with an explicit sidebar override. YAML is validated before files are moved or `.pages` files are removed.
+`mdu fix` only adds `navigation.title` when it migrates a title from a `.pages` file. A normal `MDU002` title mismatch remains for you to resolve or to preserve with an explicit `navigation.title`. YAML is validated before files are moved or `.pages` files are removed. Existing `sidebar.*` metadata must be changed to `navigation.*` directly; `mdu fix` does not migrate it.
 
 Mermaid blocks are checked against the syntax supported by MarkdownUtil. Unsupported syntax remains unchanged and is reported as an error so it can be reviewed. `mdu fix` does not generate diagram replacements.

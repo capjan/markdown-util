@@ -323,16 +323,20 @@ public sealed class ServeCommand
             var page = _pages[pagePath];
             var depth = page.CountDepth();
             var previousTitle = page.Title;
-            var previousSidebarTitle = page.SidebarTitle;
-            var previousSidebarOrder = page.SidebarOrder;
-            var previousSidebarVisible = page.SidebarVisible;
-            var previousSidebarExpanded = page.SidebarExpanded;
+            var previousNavigationTitle = page.NavigationTitle;
+            var previousNavigationOrder = page.NavigationOrder;
+            var previousNavigationVisible = page.NavigationVisible;
+            var previousNavigationExpanded = page.NavigationExpanded;
+            var previousNavigationPlacement = page.NavigationPlacement;
+            var previousInvalidNavigationPlacement = page.InvalidNavigationPlacement;
             _dataPreparationVisitor.Process(page, depth);
             if (!previousTitle.Equals(page.Title, StringComparison.Ordinal) ||
-                !previousSidebarTitle.Equals(page.SidebarTitle, StringComparison.Ordinal) ||
-                previousSidebarOrder != page.SidebarOrder ||
-                previousSidebarVisible != page.SidebarVisible ||
-                previousSidebarExpanded != page.SidebarExpanded)
+                !previousNavigationTitle.Equals(page.NavigationTitle, StringComparison.Ordinal) ||
+                previousNavigationOrder != page.NavigationOrder ||
+                previousNavigationVisible != page.NavigationVisible ||
+                previousNavigationExpanded != page.NavigationExpanded ||
+                previousNavigationPlacement != page.NavigationPlacement ||
+                previousInvalidNavigationPlacement != page.InvalidNavigationPlacement)
             {
                 RebuildSite();
                 server.Publish(reloadAll: true);

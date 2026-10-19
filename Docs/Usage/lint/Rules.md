@@ -1,5 +1,5 @@
 ---
-sidebar:
+navigation:
   visible: false
 ---
 
@@ -25,6 +25,10 @@ sidebar:
 | `MDU012` | `MkDocsIndexPage` | Warning | Rename the MkDocs `index.md` page to `README.md`. | [fix](../fix.md#migrating-mkdocs-material-markdown) |
 | `MDU013` | `MissingSectionReadme` | Warning | A section with child pages needs a `README.md` page. | [fix](../fix.md#migrating-mkdocs-material-markdown) |
 | `MDU014` | `MkDocsPagesFile` | Error | Migrate MkDocs `.pages` settings to Markdown front matter. | [fix](../fix.md#migrating-mkdocs-material-markdown) |
+| `MDU015` | `LegacySidebarMetadata` | Error | Replace retired `sidebar.*` front matter with `navigation.*`. | — |
+| `MDU016` | `InvalidNavigationPlacement` | Error | `navigation` must be a mapping and `placement` must be `sidebar` or `top`. | — |
+| `MDU017` | `NavigationPlacementLevel` | Error | `placement: top` is only valid on first-level pages or section indexes. | — |
+| `MDU018` | `ExpandedTopNavigationRoot` | Error | A top navigation root is always expanded; remove its ineffective `navigation.expanded`. | — |
 
 ## MDU001: HeadingRequired
 
@@ -32,7 +36,7 @@ Every Markdown page needs a level-one heading (`# Page title`) after any YAML fr
 
 ## MDU002: DirectoryTitleMatch
 
-For a section index named `README.md`, the directory name must match the heading title. The comparison ignores case, punctuation, spaces, hyphens, and underscores. If the title contains a colon, only the text before the first colon is compared. Set `sidebar.title` when a section intentionally uses a different navigation label. `mdu fix` migrates this field only when it is explicitly present in a `.pages` file.
+For a section index named `README.md`, the directory name must match the heading title. The comparison ignores case, punctuation, spaces, hyphens, and underscores. If the title contains a colon, only the text before the first colon is compared. Set `navigation.title` when a section intentionally uses a different navigation label. `mdu fix` migrates this field only when it is explicitly present in a `.pages` file.
 
 For example, `# Keyboard Keys` matches the directory `Keyboard-Keys`. See [Rule 2](Rule2.md) for examples and guidance.
 
@@ -58,8 +62,12 @@ This warning appears when a section directory's `README.md` is its only Markdown
 
 Rules `MDU007`–`MDU014` identify MkDocs-specific syntax and structure that needs migration. Run `mdu fix` to convert the supported constructs. An `MDU010` error means a Mermaid diagram uses syntax not currently implemented by MarkdownUtil; update the renderer before migrating that source.
 
+## Navigation front matter
+
+`MDU015` rejects the retired `sidebar.*` fields. Rename them to `navigation.*` directly; `mdu fix` does not convert these fields. `MDU016` reports malformed navigation metadata or a `placement` value other than `sidebar` or `top`. `MDU017` requires `placement: top` to be set on a first-level Markdown page or the `README.md`/`index.md` of a first-level folder. `MDU018` rejects `navigation.expanded` on a top navigation root because that root is always open.
+
 ## Informational output
 
-The linter also lists pages marked `sidebar.visible: false` that no visible page links to. These orphaned pages are informational; they do not have a rule code and do not affect the exit code.
+The linter also lists pages marked `navigation.visible: false` that no visible page links to. These orphaned pages are informational; they do not have a rule code and do not affect the exit code.
 
 [Back to lint](README.md)

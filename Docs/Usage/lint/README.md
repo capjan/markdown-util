@@ -1,5 +1,5 @@
 ---
-sidebar.order: 2
+navigation.order: 2
 ---
 
 # lint
@@ -25,7 +25,7 @@ Each diagnostic includes a stable code, a descriptive rule name, the source path
 /project/Docs/Overview.md:7: MDU004 LocalLinkExists: Local link target './intro.md' does not exist.
 ```
 
-The linter also lists completely orphaned pages: pages hidden from the sidebar with `sidebar.visible: false` that no visible page links to. This list is informational and does not affect the lint exit code.
+The linter also lists completely orphaned pages: pages hidden from navigation with `navigation.visible: false` that no visible page links to. This list is informational and does not affect the lint exit code.
 
 ## Options
 

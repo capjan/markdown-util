@@ -1,5 +1,6 @@
 ---
-sidebar.order: 20
+navigation.order: 20
+navigation.placement: top
 ---
 
 # Usage

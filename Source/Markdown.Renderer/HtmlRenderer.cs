@@ -77,7 +77,8 @@ public class HtmlRenderer
         IReadOnlyList<NavigationItem>? navigationItems = null,
         IReadOnlyList<BreadcrumbItem>? breadcrumbs = null,
         IReadOnlyCollection<string>? siteMediaProviders = null,
-        string pageIcon = "")
+        string pageIcon = "",
+        IReadOnlyList<NavigationItem>? topNavigationItems = null)
     {
         var prefix = string.Concat(Enumerable.Repeat("../", nestingDeep));
         var cssFileLink = prefix + "css/main.css";
@@ -108,7 +109,9 @@ public class HtmlRenderer
         }
         var providersForSettings = siteMediaProviders is { Count: > 0 } ? siteMediaProviders : mediaProviders;
         var tocHeadings = GetTableOfContentsHeadings(renderedMarkdown);
+        var pageHeading = GetPageHeadingTitle(renderedMarkdown);
         renderedMarkdown = InsertHeadingPermalinks(renderedMarkdown);
+        renderedMarkdown = InsertEditPageLink(renderedMarkdown, editPageLink);
         var breadcrumbMarkup = RenderBreadcrumbs(renderedMarkdown, breadcrumbs ?? Array.Empty<BreadcrumbItem>());
         var model = new MainModel
         {
@@ -116,9 +119,17 @@ public class HtmlRenderer
             Description = description,
             RenderedMarkdown = renderedMarkdown,
             NavigationItems = navigationItems ?? Array.Empty<NavigationItem>(),
+            TopNavigationItems = topNavigationItems ?? Array.Empty<NavigationItem>(),
             CssLink = cssFileLink,
             EditPageLink = editPageLink
         };
+        var hasTopNavigation = model.TopNavigationItems.Count > 0;
+        var hasCurrentTopSection = model.NavigationItems.Any(item =>
+            item.IsTopNavigationItem && item.IsInCurrentTopSection);
+        var currentTopNavigationItem = model.TopNavigationItems.FirstOrDefault(item => item.IsCurrent || item.IsCurrentSection);
+        var hasWideSidebar = !hasTopNavigation || (hasCurrentTopSection
+            ? model.NavigationItems.Any(item => item.IsInCurrentTopSection && !item.IsTopNavigationItem)
+            : model.NavigationItems.Any(item => item.IsCurrent && item.Depth > 0));
 
         var values = new Dictionary<string, string>
         {
@@ -126,18 +137,31 @@ public class HtmlRenderer
             ["DESCRIPTION"] = HtmlEncoder.Default.Encode(model.Description),
             ["CSS_LINK"] = HtmlEncoder.Default.Encode(model.CssLink),
             ["SITE_NAME"] = HtmlEncoder.Default.Encode(_siteConfiguration.SiteName),
-            ["SITE_BRAND"] = RenderSiteBrand(prefix, _siteConfiguration),
+            ["SITE_BRAND"] = RenderSiteBrand(prefix, _siteConfiguration, pageHeading),
             ["FAVICON_LINK"] = RenderFavicon(prefix, _siteConfiguration),
             ["SITE_THEME_STYLE"] = RenderThemeStyles(_siteConfiguration),
             ["SEARCH_SCRIPT_LINK"] = HtmlEncoder.Default.Encode(searchScriptLink),
             ["SEARCH_INDEX_LINK"] = HtmlEncoder.Default.Encode(searchIndexLink),
             ["TOC_LAYOUT_CLASS"] = " has-on-this-page",
             ["NAVIGATION_ITEMS"] = RenderNavigationItems(model.NavigationItems),
-            ["TOP_NAVIGATION_ITEMS"] = RenderTopNavigationItems(model.NavigationItems),
+            ["TOP_NAVIGATION_ITEMS"] = RenderTopNavigationItems(model.TopNavigationItems),
+            ["SIDEBAR_SECTION_TITLE"] = currentTopNavigationItem is not null && hasWideSidebar
+                ? $"<div class=\"site-nav-section-title\">{HtmlEncoder.Default.Encode(currentTopNavigationItem.Title)}</div>"
+                : string.Empty,
+            ["TOP_NAVIGATION_CLASS"] = hasTopNavigation ? string.Empty : " is-empty",
+            ["SITE_LAYOUT_CLASS"] = hasTopNavigation
+                ? hasWideSidebar
+                    ? hasCurrentTopSection
+                        ? " has-top-navigation has-current-top-section has-wide-sidebar"
+                        : " has-top-navigation has-wide-sidebar"
+                    : " has-top-navigation no-wide-sidebar"
+                : " has-wide-sidebar",
             ["MEDIA_SETTINGS_BUTTON"] = providersForSettings.Count > 0 ? MediaLinkEmbedder.SettingsButtonHtml : string.Empty,
             ["MEDIA_SETTINGS_DIALOG"] = MediaLinkEmbedder.RenderSettingsDialog(providersForSettings),
             ["MARKDOWN"] = model.RenderedMarkdown,
-            ["PAGE_TOOLBAR"] = RenderPageToolbar(breadcrumbMarkup, tocHeadings, model.EditPageLink, model.Title),
+            ["PAGE_BREADCRUMBS"] = breadcrumbMarkup,
+            ["PAGE_TOC"] = RenderOnThisPage(tocHeadings),
+            ["BACK_TO_TOP"] = "<a class=\"back-to-top\" id=\"back-to-top\" href=\"#top\" aria-label=\"Back to top\" title=\"Back to top\"><svg viewBox=\"0 0 20 20\" aria-hidden=\"true\"><path d=\"M10 16V4m-5 5 5-5 5 5\"></path></svg><span>Back to top</span></a>",
             ["GITHUB_REPOSITORY_LINK"] = RenderGitHubRepositoryLink(editPageLink),
             ["PAGE_SCRIPTS"] =
                 (hasIconSearch
@@ -157,14 +181,15 @@ public class HtmlRenderer
         _iconSearchAssets = IconSearch.WriteAssetsTo(_basePath);
     }
 
-    private static string RenderSiteBrand(string prefix, SiteConfiguration configuration)
+    private static string RenderSiteBrand(string prefix, SiteConfiguration configuration, string pageHeading)
     {
         var name = HtmlEncoder.Default.Encode(configuration.SiteName);
+        var heading = HtmlEncoder.Default.Encode(pageHeading.Length > 0 ? pageHeading : configuration.SiteName);
         var light = ResolveAssetUrl(prefix, configuration.LogoLight);
         var dark = ResolveAssetUrl(prefix, configuration.LogoDark);
         var logo = light.Length == 0 ? string.Empty :
             $"<img class=\"site-brand-logo\" src=\"{HtmlEncoder.Default.Encode(light)}\" data-light-src=\"{HtmlEncoder.Default.Encode(light)}\" data-dark-src=\"{HtmlEncoder.Default.Encode(dark)}\" alt=\"\">";
-        return $"<a class=\"site-brand\" href=\"{HtmlEncoder.Default.Encode(prefix + "index.html")}\">{logo}<span>{name}</span></a>";
+        return $"<div class=\"site-header-leading\"><div class=\"site-header-icon-slot{(light.Length > 0 ? " has-logo" : string.Empty)}\">{logo}<button class=\"navigation-toggle\" id=\"navigation-toggle\" type=\"button\" aria-expanded=\"true\" aria-controls=\"site-navigation\" aria-label=\"Collapse navigation\" title=\"Collapse navigation\"><svg viewBox=\"0 0 20 20\" aria-hidden=\"true\" focusable=\"false\"><rect x=\"2.5\" y=\"3.5\" width=\"15\" height=\"13\" rx=\"2\"></rect><path d=\"M8 4v12M5 7h1M5 10h1M5 13h1\"></path></svg></button></div><a class=\"site-brand\" href=\"{HtmlEncoder.Default.Encode(prefix + "index.html")}\"><span id=\"site-brand-title\" data-site-title=\"{name}\" data-page-title=\"{heading}\">{name}</span></a></div>";
     }
 
     private static string RenderFavicon(string prefix, SiteConfiguration configuration)
@@ -254,8 +279,14 @@ public class HtmlRenderer
                 var rowIndent = itemIndent + "    ";
                 var contentIndent = rowIndent + "    ";
 
-                output.Append(itemIndent).AppendLine($"<li class=\"site-nav-item\" style=\"--indent-depth: {indentDepth}\">");
-                output.Append(rowIndent).AppendLine($"<div class=\"site-nav-row{(item.IsCurrent ? " is-current" : string.Empty)}\">");
+                var itemClass = item.IsTopNavigationItem ? "site-nav-item top-navigation-entry" : "site-nav-item";
+                if (item.IsCurrentSection) itemClass += " is-current-section";
+                if (item.IsInCurrentTopSection) itemClass += " is-in-current-top-section";
+                if (item.IsAncestorOfCurrentTopSection) itemClass += " is-top-navigation-ancestor";
+                output.Append(itemIndent).AppendLine($"<li class=\"{itemClass}\" style=\"--indent-depth: {indentDepth}; --wide-indent-depth: {Math.Max(0, item.TopNavigationDepth)}\">");
+                var rowClass = item.IsCurrent ? " is-current" : item.IsCurrentSection ? " is-current-section" : string.Empty;
+                var currentValue = item.IsCurrent ? "page" : item.IsCurrentSection ? "location" : "false";
+                output.Append(rowIndent).AppendLine($"<div class=\"site-nav-row{rowClass}\">");
                 if (hasToggle)
                 {
                     var label = expanded ? "Collapse" : "Expand";
@@ -267,12 +298,13 @@ public class HtmlRenderer
                     output.Append(contentIndent).AppendLine("<span class=\"site-nav-toggle-spacer\" aria-hidden=\"true\"></span>");
                 }
 
-                output.Append(contentIndent).AppendLine($"<a class=\"site-nav-link{(item.IsCurrent ? " is-current" : string.Empty)}\" href=\"{encodedUrl}\" aria-current=\"{(item.IsCurrent ? "page" : "false")}\">{encodedTitle}</a>");
+                output.Append(contentIndent).AppendLine($"<a class=\"site-nav-link{(item.IsCurrent ? " is-current" : item.IsCurrentSection ? " is-current-section" : string.Empty)}\" href=\"{encodedUrl}\" aria-current=\"{currentValue}\">{encodedTitle}</a>");
                 output.Append(rowIndent).AppendLine("</div>");
 
                 if (hasChildren)
                 {
-                    output.Append(rowIndent).AppendLine($"<ul class=\"site-nav-list site-nav-children\" id=\"{childrenId}\"{(expanded ? string.Empty : " hidden")}>");
+                    var childClass = item.IsTopNavigationItem ? "site-nav-list site-nav-children top-navigation-children" : "site-nav-list site-nav-children";
+                    output.Append(rowIndent).AppendLine($"<ul class=\"{childClass}\" id=\"{childrenId}\"{(expanded ? string.Empty : " hidden")}>");
                     RenderItems(depth + 1);
                     output.Append(rowIndent).AppendLine("</ul>");
                 }
@@ -285,16 +317,11 @@ public class HtmlRenderer
     private static string RenderTopNavigationItems(IReadOnlyList<NavigationItem> navigationItems)
     {
         var output = new StringBuilder();
-        for (var index = 0; index < navigationItems.Count; index++)
+        foreach (var item in navigationItems)
         {
-            var item = navigationItems[index];
-            if (item.Depth != 1) continue;
-            var isCurrentSection = item.IsCurrent;
-            for (var child = index + 1; child < navigationItems.Count && navigationItems[child].Depth > 1; child++)
-                isCurrentSection |= navigationItems[child].IsCurrent;
-
             var title = HtmlEncoder.Default.Encode(item.Title);
             var url = HtmlEncoder.Default.Encode(item.Url);
+            var isCurrentSection = item.IsCurrent || item.IsCurrentSection;
             output.AppendLine($"            <a class=\"top-nav-link{(isCurrentSection ? " is-current" : string.Empty)}\" href=\"{url}\" aria-current=\"{(item.IsCurrent ? "page" : isCurrentSection ? "location" : "false")}\">{title}</a>");
         }
 
@@ -322,50 +349,25 @@ public class HtmlRenderer
         return headings;
     }
 
-    private static string RenderOnThisPage(IReadOnlyList<TocHeading> headings, string editPageLink, string pageTitle)
+    private static string RenderOnThisPage(IReadOnlyList<TocHeading> headings)
     {
+        if (headings.Count == 0) return string.Empty;
         var output = new StringBuilder();
-        var firstHeading = HtmlEncoder.Default.Encode(headings.Count > 0 ? headings[0].Title : pageTitle);
         output.AppendLine("        <aside class=\"on-this-page\" id=\"on-this-page\" aria-label=\"On this Page\">");
-        output.AppendLine("            <h2 class=\"toc-heading\"><span>On this Page</span><svg class=\"toc-progress\" viewBox=\"0 0 20 20\" aria-hidden=\"true\"><circle class=\"toc-progress-track\" cx=\"10\" cy=\"10\" r=\"8\"></circle><circle class=\"toc-progress-value\" cx=\"10\" cy=\"10\" r=\"8\" stroke-dasharray=\"50.265\" stroke-dashoffset=\"50.265\"></circle></svg></h2>");
-        output.AppendLine($"            <button class=\"toc-current\" id=\"toc-current\" type=\"button\" aria-expanded=\"false\" aria-controls=\"toc-nav\" aria-label=\"On this Page: {firstHeading}\"><span class=\"toc-current-label\">{firstHeading}</span><svg class=\"toc-progress\" viewBox=\"0 0 20 20\" aria-hidden=\"true\"><circle class=\"toc-progress-track\" cx=\"10\" cy=\"10\" r=\"8\"></circle><circle class=\"toc-progress-value\" cx=\"10\" cy=\"10\" r=\"8\" stroke-dasharray=\"50.265\" stroke-dashoffset=\"50.265\"></circle></svg><svg class=\"toc-chevron\" viewBox=\"0 0 16 16\" aria-hidden=\"true\"><path d=\"m4 6 4 4 4-4\"></path></svg></button>");
+        output.AppendLine("            <h2 class=\"toc-heading\">On this Page</h2>");
         output.AppendLine("            <nav class=\"toc-nav\" id=\"toc-nav\" aria-label=\"On this Page\">");
-        if (headings.Count > 0)
+        output.AppendLine("                <ul class=\"toc-list\">");
+        for (var index = 0; index < headings.Count; index++)
         {
-            output.AppendLine("                <ul class=\"toc-list\">");
-            for (var index = 0; index < headings.Count; index++)
-            {
-                var heading = headings[index];
-                var id = HtmlEncoder.Default.Encode(heading.Id);
-                var title = HtmlEncoder.Default.Encode(heading.Title);
-                var depth = heading.Level - 2;
-                output.AppendLine($"                    <li style=\"--toc-depth: {depth}\"><a class=\"toc-link\" href=\"#{id}\">{title}</a></li>");
-            }
-            output.AppendLine("                </ul>");
+            var heading = headings[index];
+            var id = HtmlEncoder.Default.Encode(heading.Id);
+            var title = HtmlEncoder.Default.Encode(heading.Title);
+            var depth = heading.Level - 2;
+            output.AppendLine($"                    <li style=\"--toc-depth: {depth}\"><a class=\"toc-link\" href=\"#{id}\">{title}</a></li>");
         }
-        output.AppendLine("                <div class=\"toc-actions\">");
-        if (!string.IsNullOrEmpty(editPageLink))
-        {
-            output.AppendLine($"                    <a class=\"toc-action\" href=\"{HtmlEncoder.Default.Encode(editPageLink)}\"><svg viewBox=\"0 0 20 20\" aria-hidden=\"true\"><path d=\"m3 14.5-.8 3.3 3.3-.8L16.8 5.7a1.8 1.8 0 0 0-2.5-2.5L3 14.5Z\"></path><path d=\"m11.8 5.7 2.5 2.5\"></path></svg><span>Edit this page</span></a>");
-        }
-        output.AppendLine("                    <a class=\"toc-action toc-back-to-top\" href=\"#top\" hidden><svg viewBox=\"0 0 20 20\" aria-hidden=\"true\"><circle cx=\"10\" cy=\"10\" r=\"8\"></circle><path d=\"m6.5 11 3.5-3.5 3.5 3.5\"></path></svg><span>Back to top</span></a>");
-        output.AppendLine("                </div>");
+        output.AppendLine("                </ul>");
         output.AppendLine("            </nav>");
         output.AppendLine("        </aside>");
-        return output.ToString();
-    }
-
-    private static string RenderPageToolbar(
-        string breadcrumbMarkup,
-        IReadOnlyList<TocHeading> headings,
-        string editPageLink,
-        string pageTitle)
-    {
-        var output = new StringBuilder();
-        output.AppendLine("        <div class=\"page-toolbar\">");
-        if (breadcrumbMarkup.Length > 0) output.AppendLine($"            {breadcrumbMarkup}");
-        output.Append(RenderOnThisPage(headings, editPageLink, pageTitle));
-        output.AppendLine("        </div>");
         return output.ToString();
     }
 
@@ -387,6 +389,14 @@ public class HtmlRenderer
         return $"<nav class=\"breadcrumbs\" aria-label=\"Breadcrumb\">{string.Join(separator, breadcrumbItems)}</nav>";
     }
 
+    private static string GetPageHeadingTitle(string renderedMarkdown)
+    {
+        var heading = HeadingRegex.Match(renderedMarkdown);
+        if (!heading.Success || heading.Groups["level"].Value != "1") return string.Empty;
+        var text = Regex.Replace(heading.Groups["content"].Value, "<[^>]+>", string.Empty);
+        return WebUtility.HtmlDecode(text).Trim();
+    }
+
     private static string InsertHeadingPermalinks(string renderedMarkdown) =>
         HeadingRegex.Replace(renderedMarkdown, match =>
         {
@@ -398,6 +408,20 @@ public class HtmlRenderer
             var contentEnd = match.Groups["content"].Index + match.Groups["content"].Length - match.Index;
             return match.Value.Insert(contentEnd, permalink);
         });
+
+    private static string InsertEditPageLink(string renderedMarkdown, string editPageLink)
+    {
+        if (string.IsNullOrWhiteSpace(editPageLink)) return renderedMarkdown;
+        var inserted = false;
+        return HeadingRegex.Replace(renderedMarkdown, match =>
+        {
+            if (inserted || match.Groups["level"].Value != "1") return match.Value;
+            inserted = true;
+            var editLink = $"<a class=\"page-edit-link\" href=\"{HtmlEncoder.Default.Encode(editPageLink)}\" target=\"_blank\" rel=\"noopener noreferrer\" aria-label=\"Edit this page\" title=\"Edit this page\"><svg viewBox=\"0 0 20 20\" aria-hidden=\"true\"><path d=\"m3 14.5-.8 3.3 3.3-.8L16.8 5.7a1.8 1.8 0 0 0-2.5-2.5L3 14.5Z\"></path><path d=\"m11.8 5.7 2.5 2.5\"></path></svg></a>";
+            var contentEnd = match.Groups["content"].Index + match.Groups["content"].Length - match.Index;
+            return match.Value.Insert(contentEnd, editLink);
+        }, 1);
+    }
     
     private string GetEnsuredCssFolderPath(string basePath)
     {

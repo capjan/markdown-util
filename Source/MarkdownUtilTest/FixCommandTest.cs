@@ -2,6 +2,7 @@ using Core.Collections.NodeGraph.Extensions;
 using Markdown.Document.Impl;
 using MarkdownUtil.Commands;
 using MarkdownUtil.Commands.Settings;
+using MarkdownUtil.Model;
 using MarkdownUtil.Service;
 using MarkdownUtil.Service.Visitors;
 using Markdown.Renderer;
@@ -89,7 +90,7 @@ public class FixCommandTest
             Assert.False(File.Exists(Path.Combine(root, ".pages")));
             Assert.True(File.Exists(Path.Combine(section, "README.md")));
             Assert.False(File.Exists(Path.Combine(section, "index.md")));
-            Assert.Contains("sidebar:", File.ReadAllText(Path.Combine(section, "README.md")));
+            Assert.Contains("navigation:", File.ReadAllText(Path.Combine(section, "README.md")));
             Assert.Contains("order: 1", File.ReadAllText(Path.Combine(section, "README.md")));
             Assert.Contains("[!NOTE]", File.ReadAllText(Path.Combine(section, "README.md")));
             Assert.Contains("**Details**", File.ReadAllText(Path.Combine(section, "README.md")));
@@ -223,7 +224,7 @@ public class FixCommandTest
             var result = command.Execute(new VisitorSettings { RootPath = root, SearchPattern = "*.md", IncludeHidden = true });
 
             Assert.Equal(0, result);
-            Assert.Contains("sidebar:", File.ReadAllText(Path.Combine(section, "reindex.md")));
+            Assert.Contains("navigation:", File.ReadAllText(Path.Combine(section, "reindex.md")));
             Assert.Contains("order: 0", File.ReadAllText(Path.Combine(section, "reindex.md")));
             Assert.DoesNotContain("order:", File.ReadAllText(Path.Combine(section, "README.md")));
         }
@@ -308,7 +309,7 @@ public class FixCommandTest
 
             Assert.Equal(0, result);
             var blogIndex = File.ReadAllText(Path.Combine(root, "blog", "README.md"));
-            Assert.Contains("sidebar:", blogIndex);
+            Assert.Contains("navigation:", blogIndex);
             Assert.Contains("title: Wiki Blog", blogIndex);
             Assert.Contains("title: Blog", blogIndex);
             Assert.Contains("order: 0", blogIndex);
@@ -340,7 +341,7 @@ public class FixCommandTest
             var result = command.Execute(new VisitorSettings { RootPath = root, SearchPattern = "*.md", IncludeHidden = true });
 
             Assert.Equal(0, result);
-            Assert.DoesNotContain("sidebar:", File.ReadAllText(Path.Combine(section, "README.md")));
+            Assert.DoesNotContain("navigation:", File.ReadAllText(Path.Combine(section, "README.md")));
 
             var receiver = new ConsoleLintErrorReceiver();
             var graph = CreateGraphBuilder().CreateGraph(new VisitorSettings { RootPath = root, SearchPattern = "*.md", IncludeHidden = true });
@@ -356,12 +357,12 @@ public class FixCommandTest
     }
 
     [Fact]
-    public void ReadsCompactSidebarTitleFrontMatter()
+    public void ReadsCompactNavigationTitleFrontMatter()
     {
         var root = Path.Combine(Path.GetTempPath(), Guid.NewGuid().ToString("N"));
         Directory.CreateDirectory(root);
         var path = Path.Combine(root, "README.md");
-        File.WriteAllText(path, "---\nsidebar.title: .NET\n---\n# Overview\n");
+        File.WriteAllText(path, "---\nnavigation.title: .NET\n---\n# Overview\n");
         try
         {
             var page = new MarkdownUtil.Model.MarkdownFile(new FileInfo(path), null);
@@ -369,7 +370,7 @@ public class FixCommandTest
 
             visitor.Process(page, 0);
 
-            Assert.Equal(".NET", page.SidebarTitle);
+            Assert.Equal(".NET", page.NavigationTitle);
         }
         finally
         {
@@ -378,12 +379,12 @@ public class FixCommandTest
     }
 
     [Fact]
-    public void ReadsCompactSidebarTitleAlongsideNestedSidebarSettings()
+    public void ReadsCompactNavigationTitleAlongsideNestedSettings()
     {
         var root = Path.Combine(Path.GetTempPath(), Guid.NewGuid().ToString("N"));
         Directory.CreateDirectory(root);
         var path = Path.Combine(root, "README.md");
-        File.WriteAllText(path, "---\nsidebar:\n  order: 1\nsidebar.title: .NET\n---\n# Overview\n");
+        File.WriteAllText(path, "---\nnavigation:\n  order: 1\nnavigation.title: .NET\n---\n# Overview\n");
         try
         {
             var page = new MarkdownUtil.Model.MarkdownFile(new FileInfo(path), null);
@@ -391,7 +392,31 @@ public class FixCommandTest
 
             visitor.Process(page, 0);
 
-            Assert.Equal(".NET", page.SidebarTitle);
+            Assert.Equal(".NET", page.NavigationTitle);
+        }
+        finally
+        {
+            Directory.Delete(root, recursive: true);
+        }
+    }
+
+    [Fact]
+    public void ReadsNavigationPlacementAndExpandedFrontMatter()
+    {
+        var root = Path.Combine(Path.GetTempPath(), Guid.NewGuid().ToString("N"));
+        Directory.CreateDirectory(root);
+        var path = Path.Combine(root, "README.md");
+        File.WriteAllText(path, "---\nnavigation:\n  placement: top\n  expanded: false\n---\n# Overview\n");
+        try
+        {
+            var page = new MarkdownUtil.Model.MarkdownFile(new FileInfo(path), null);
+            var visitor = new DataPreparationVisitor(new MarkdownDocumentReader());
+
+            visitor.Process(page, 0);
+
+            Assert.Equal(NavigationPlacement.Top, page.NavigationPlacement);
+            Assert.Equal(false, page.NavigationExpanded);
+            Assert.Null(page.InvalidNavigationPlacement);
         }
         finally
         {

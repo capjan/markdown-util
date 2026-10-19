@@ -1,5 +1,5 @@
 ---
-sidebar.order: 2
+navigation.order: 2
 ---
 
 # GitLab

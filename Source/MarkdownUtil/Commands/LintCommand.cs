@@ -39,7 +39,7 @@ public class LintCommand
             SearchPattern = settings.SearchPattern,
             IncludeHidden = settings.IncludeHidden
         });
-        _linterVisitor.Prepare(graph);
+        _linterVisitor.Prepare(graph, rootPath);
         graph.Visit(_linterVisitor);
         return _lintResultRenderer.Render(_linterVisitor.OrphanedPages, rootPath, pretty, color);
     }

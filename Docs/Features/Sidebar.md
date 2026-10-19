@@ -1,79 +1,72 @@
-# Sidebar
+# Navigation
 
-## Overview
-
-When you run `mdu serve`, MarkdownUtil creates a collapsible sidebar from the Markdown files in the documentation folder. A `README.md` represents its folder in the navigation, and child folders appear nested below it. The root documentation page stays expanded; other pages with child pages have a disclosure button to expand or collapse them. These sections are collapsed by default when the site is first opened. Set `sidebar.expanded` to `true` in a page's front matter to expand its section by default. Selecting a nested page still expands its section and the sections leading to it automatically. The current page stays highlighted in gray until hovered, when it uses the hover color. Expanded sections stay open while you navigate during the current session.
-
-By default, entries at the same level are sorted alphabetically by page title. Add a `sidebar.order` number to a page's YAML front matter to choose its position. Smaller numbers appear first. Pages with an order are listed before pages without one; unordered pages remain alphabetical. If two pages have the same order, they are sorted alphabetically by title.
+MarkdownUtil builds its navigation from the Markdown file structure. A `README.md` represents its folder, and child pages appear beneath it. The sidebar is a collapsible view of that tree. `navigation.title` sets the navigation label, `navigation.order` sorts entries, `navigation.visible` controls whether an entry appears, and `navigation.expanded` sets the initial state of collapsible sidebar sections.
 
 ## Top navigation
 
-When the documentation root has a `README.md`, its visible child pages also appear as horizontal tabs at the top of each page. The root `README.md` itself is not a tab. A top-level section stays selected while you view one of its child pages. Tabs use the same labels and ordering as the sidebar: set `sidebar.title` to change a label, `sidebar.order` to change its position, and `sidebar.visible: false` to hide it. No separate top-navigation setting is needed.
+Set `navigation.placement: top` on a page at the documentation root, or on the `README.md` or `index.md` of a first-level folder, to make it a top navigation tab. The root `README.md` remains the landing page by default; mark it `top` if it should also appear as a tab such as Dashboard.
 
-For example, this structure creates **Guides** and **Reference** tabs:
+`navigation.placement` controls the preferred position of a first-level entry. On wide screens, `top` entries appear in the tab bar and only the active tab's descendants appear in the sidebar; the tab itself and the documentation root are not repeated there. If the active tab has no child pages, the sidebar is hidden. On compact screens, the tab bar is folded into the full sidebar tree at each entry's original place. Selecting a tab does not change the tree root, and breadcrumbs keep the full path from the documentation root. A top-level Markdown file can also be a tab, but its sidebar section has no child pages.
+
+On wide screens, the tabs appear below the site header. A full-width page bar follows them; its menu button sits above the sidebar. At viewport widths up to 1220 px, mdu hides the tab bar and shows the full documentation tree in the sidebar. The selected section opens in place. On narrow screens, the sidebar opens as a drawer.
 
 ```text
 Docs/
 ├── README.md
-├── Guides/
-│   └── README.md
-└── Reference/
-    └── README.md
+├── Development/
+│   ├── README.md  # navigation.placement: top
+│   └── Setup.md
+└── Operations.md  # navigation.placement: top
 ```
 
-## Setting the order
-
-Put the `sidebar` field at the top of the Markdown file, before its title. For example, this front matter in `Docs/Setup/README.md` places Setup before the other top-level sections:
+For example, this front matter opts the Development section into the top navigation:
 
 ```yaml
 ---
-sidebar:
+navigation:
+  placement: top
+  title: Development
   order: 10
 ---
 ```
 
-The MarkdownUtil documentation uses this ordering for its top-level sections:
+The order of tabs uses the same `navigation.order` setting as other entries. If no order is set, entries sort alphabetically by their navigation title. `navigation.title` overrides the title used in the sidebar, tabs, and breadcrumbs; it does not change the page's `title` or heading.
 
-| Page | `sidebar.order` |
-| --- | ---: |
-| `Docs/Setup/README.md` | 10 |
-| `Docs/Usage/README.md` | 20 |
-| `Docs/Features/README.md` | 30 |
-| `Docs/Architecture/README.md` | 35 |
-| `Docs/OtherTools.md` | 40 |
+## Ordering entries
 
-For a single setting, you can also use the compact form:
+Put navigation settings in the Markdown file's YAML front matter. Smaller `navigation.order` values appear first among siblings. Entries without an order follow ordered entries and sort alphabetically by title.
 
 ```yaml
 ---
-sidebar.order: 10
+navigation:
+  order: 10
 ---
 ```
 
-MarkdownUtil recognizes `sidebar.order` as a compact alternative to the nested form. If both `sidebar: { order: ... }` and `sidebar.order: ...` are present, the nested form takes precedence.
+The compact form `navigation.order: 10` is also supported. When both forms are present, the nested `navigation` value takes precedence.
 
-The numbers only order siblings at the same level. For example, the value in `Docs/Features/README.md` positions the Features section among the other top-level sections. Values in files beneath `Docs/Features/` control their positions inside that section.
+## Expanding a section
 
-## Expanding a section by default
-
-Set `sidebar.expanded` to `true` on a page with child pages to have its section open by default:
+Set `navigation.expanded: true` on a page with child pages to have its sidebar section open by default:
 
 ```yaml
 ---
-sidebar:
+navigation:
   expanded: true
 ---
 ```
 
-The compact form `sidebar.expanded: true` is also supported. Sections are collapsed by default when this setting is omitted. The setting provides the initial state; a section leading to the current page still expands automatically, and manual changes remain in effect while navigating during the current session.
+This setting applies to collapsible sidebar sections. A selected top navigation root is always expanded, so setting `navigation.expanded` on it has no effect and is a lint error. A section leading to the current page still expands automatically, and manual changes remain in effect while navigating during the current session.
 
-## Hiding a page
+## Hiding an entry
 
-Set `sidebar.visible` to `false` to omit a page from the sidebar. Pages are visible by default. If the page represents a folder, its child pages remain visible at the next higher level:
+Set `navigation.visible: false` to omit an entry from the sidebar and top navigation. The page remains available by its URL. If the page represents a folder, its child pages remain visible at the next higher level:
 
 ```yaml
 ---
-sidebar:
+navigation:
   visible: false
 ---
 ```
+
+`mdu lint` rejects the retired `sidebar.*` front matter. Replace it with `navigation.*` in the Markdown files; `mdu fix` does not migrate this field.

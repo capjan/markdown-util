@@ -52,7 +52,7 @@ public class FixCommand
             SearchPattern = settings.SearchPattern,
             IncludeHidden = settings.IncludeHidden
         });
-        _linterVisitor.Prepare(graph);
+        _linterVisitor.Prepare(graph, rootPath);
         graph.Visit(_linterVisitor);
 
         var moves = _linterVisitor.ErrorReceiver.Diagnostics
@@ -284,7 +284,7 @@ public class FixCommand
             {
                 if (titleNode is not YamlScalarNode title)
                     throw new InvalidOperationException($"Cannot migrate {pagesFile}: 'title' must be a string.");
-                Add(Path.Combine(directory, "README.md"), "sidebar.title", title.Value ?? string.Empty);
+                Add(Path.Combine(directory, "README.md"), "navigation.title", title.Value ?? string.Empty);
             }
 
             if (mapping.Children.TryGetValue(new YamlScalarNode("arrange"), out var arrangeNode))
@@ -309,7 +309,7 @@ public class FixCommand
 
                     if (Path.GetFileName(target).Equals("index.md", StringComparison.OrdinalIgnoreCase))
                         target = Path.Combine(Path.GetDirectoryName(target)!, "README.md");
-                    Add(target, "sidebar.order", index.ToString(System.Globalization.CultureInfo.InvariantCulture));
+                    Add(target, "navigation.order", index.ToString(System.Globalization.CultureInfo.InvariantCulture));
                 }
             }
         }
