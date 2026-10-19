@@ -42,6 +42,12 @@ public class HighlightedCodeBlockRenderer : HtmlObjectRenderer<CodeBlock>
                 return;
             }
 
+            if (languageName == Hero.CodeBlockLanguage)
+            {
+                renderer.WriteLine(Hero.Render(code));
+                return;
+            }
+
             if (languageName.Equals("math", StringComparison.OrdinalIgnoreCase))
             {
                 renderer.WriteLine(MathFormulaRenderer.Render(code, display: true));

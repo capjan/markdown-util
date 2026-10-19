@@ -17,6 +17,7 @@ navigation.placement: top
 - [Math](Math.md) - Renders GitHub-compatible math syntax as static SVG
 - [Media Links](MediaLinks.md) - Embeds standalone YouTube and Vimeo links as video players
 - [Icons and Emojis](Icons-and-Emojis.md) - Adds icons, colored logos, and GitHub-compatible emoji shortcodes, with a search that copies them to the clipboard
+- [Hero Banner](Hero.md) - Opens a landing page with an animated WebGL beach scene, configured with YAML in a `hero` code block
 - [Images](Images.md) - Renders Markdown images, copies linked local image files including WebP, and provides a dependency-free lightbox
 - Breadcrumb navigation is generated from the Markdown file structure during rendering; source files remain unchanged.
 

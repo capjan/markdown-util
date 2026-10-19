@@ -1,5 +1,16 @@
 # Documentation
 
+```hero
+title: Plain Markdown, beautifully published
+text: Lint, inspect, and render your Markdown files into a fast static documentation site – no lock-in, no build plugins.
+time: auto
+actions:
+  - text: Get started
+    link: Setup.md
+  - text: Browse features
+    link: ./Features/README.md
+```
+
 Use these guides to install MarkdownUtil, preview and publish a site, and write Markdown that renders the way you expect.
 
 ## Get started
