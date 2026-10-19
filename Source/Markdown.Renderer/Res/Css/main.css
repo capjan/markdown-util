@@ -2426,7 +2426,7 @@ th, td {
     scroll-margin-top: 7rem;
 }
 
-@container (min-width: 1160px) {
+@container (min-width: 1080px) {
     .content-layout {
         grid-template-columns: minmax(0, 1fr) 210px;
     }
