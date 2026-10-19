@@ -31,15 +31,9 @@ internal static class ClassDiagramRenderer
             var right = GetNode(relationship.Groups["right"].Value);
             var kind = relationship.Groups["relation"].Value;
             var isGeneralization = kind is "<|--" or "--|>" or "<|.." or "..|>";
-            var superclassOnRight = kind is "--|>" or "..|>";
-            var reverse = kind is "<.." or "<--";
-            var from = reverse ? right.Id : left.Id;
-            var to = reverse ? left.Id : right.Id;
-            if (isGeneralization)
-            {
-                from = superclassOnRight ? right.Id : left.Id;
-                to = superclassOnRight ? left.Id : right.Id;
-            }
+            var swapEndpoints = kind is "<.." or "<--" or "--|>" or "..|>";
+            var from = swapEndpoints ? right.Id : left.Id;
+            var to = swapEndpoints ? left.Id : right.Id;
             var lineStyle = kind.Contains('.') ? LineStyle.Dotted : LineStyle.Solid;
             var leftMarker = kind.StartsWith("*", StringComparison.Ordinal) || kind.StartsWith("o", StringComparison.Ordinal) ? EdgeMarker.Circle
                 : kind.StartsWith('<') ? EdgeMarker.Arrow
@@ -49,14 +43,13 @@ internal static class ClassDiagramRenderer
                 : EdgeMarker.None;
             var label = relationship.Groups["label"].Success ? relationship.Groups["label"].Value.Trim() : kind switch
             {
-                "<|--" or "--|>" or "<|.." or "..|>" => "inherits",
                 "*--" or "--*" => "composition",
                 "o--" or "--o" => "aggregation",
                 "<.." or "..>" => "dependency",
                 _ => null
             };
-            var startMarker = isGeneralization ? EdgeMarker.Triangle : reverse ? rightMarker : leftMarker;
-            var endMarker = isGeneralization ? EdgeMarker.None : reverse ? leftMarker : rightMarker;
+            var startMarker = isGeneralization ? EdgeMarker.Triangle : swapEndpoints ? rightMarker : leftMarker;
+            var endMarker = isGeneralization ? EdgeMarker.None : swapEndpoints ? leftMarker : rightMarker;
             edges.Add(new FlowchartEdge(from, to, label, lineStyle, startMarker, endMarker, 1));
         }
 

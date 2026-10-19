@@ -104,6 +104,7 @@ public class MermaidRendererTest
         var triangle = Assert.Single(root.Descendants().Where(element => element.Attribute("class")?.Value == "diagram-marker-hollow"));
         var tip = Regex.Match(triangle.Attribute("d")!.Value, @"^M(?<x>-?\d+(?:\.\d+)?) (?<y>-?\d+(?:\.\d+)?)");
 
+        Assert.DoesNotContain("inherits", root.Value);
         Assert.True(animalTop < duckTop);
         Assert.True(tip.Success);
         var tipY = double.Parse(tip.Groups["y"].Value, CultureInfo.InvariantCulture);
