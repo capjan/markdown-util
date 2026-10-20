@@ -79,4 +79,48 @@ public class RendererTest
         Assert.Contains("<nav class=\"breadcrumbs\" aria-label=\"Breadcrumb\"><a href=\"../index.html\">Dashboard</a>", sb.ToString());
     }
 
+    [Fact]
+    public async Task RendersFooterWithNeighborPagesDateAndEditLink()
+    {
+        var sb = new StringBuilder();
+        using var sw = new StringWriter(sb);
+        await new HtmlRenderer().WriteHtml(sw, "test", "", 0, "# Guide", "https://example.com/edit/Guide.md",
+            navigationItems:
+            [
+                new NavigationItem { Title = "Home", Url = "index.html" },
+                new NavigationItem { Title = "Guide", Url = "Guide.html", IsCurrent = true },
+                new NavigationItem { Title = "Tips & Tricks", Url = "Tips.html" }
+            ],
+            lastModified: new DateTimeOffset(2026, 10, 3, 14, 0, 0, TimeSpan.FromHours(2)));
+
+        var footer = sb.ToString().Split("<footer class=\"page-footer\">", 2)[1].Split("</footer>", 2)[0];
+        Assert.Contains("Last updated on <time datetime=\"2026-10-03\">October 3, 2026</time>", footer);
+        Assert.Contains("<a href=\"https://example.com/edit/Guide.md\" target=\"_blank\" rel=\"noopener noreferrer\">Edit this page</a>", footer);
+        Assert.Contains("<a class=\"page-pagination-link is-previous\" href=\"index.html\" rel=\"prev\"><span class=\"page-pagination-label\">Previous</span><span class=\"page-pagination-title\">Home</span></a>", footer);
+        Assert.Contains("<a class=\"page-pagination-link is-next\" href=\"Tips.html\" rel=\"next\"><span class=\"page-pagination-label\">Next</span><span class=\"page-pagination-title\">Tips &amp; Tricks</span></a>", footer);
+    }
+
+    [Fact]
+    public async Task OmitsFooterWithoutNeighborPagesDateOrEditLink()
+    {
+        var sb = new StringBuilder();
+        using var sw = new StringWriter(sb);
+        await new HtmlRenderer().WriteHtml(sw, "test", "", 0, "# Only page", "",
+            navigationItems: [new NavigationItem { Title = "Only page", Url = "index.html", IsCurrent = true }]);
+
+        Assert.DoesNotContain("page-footer", sb.ToString());
+    }
+
+    [Fact]
+    public async Task AddsUnlistedTitleToFootnotes()
+    {
+        var sb = new StringBuilder();
+        using var sw = new StringWriter(sb);
+        await new HtmlRenderer().WriteHtml(sw, "test", "", 0, "# Page\n\nText[^1]\n\n[^1]: Note", "");
+
+        var html = sb.ToString();
+        Assert.Contains("<div class=\"footnotes\">\n<hr />\n<h2 class=\"footnotes-title\">Footnotes</h2>", html);
+        Assert.DoesNotContain(">Footnotes</a>", html.Split("class=\"toc-list\"", 2).ElementAtOrDefault(1) ?? string.Empty);
+    }
+
 }

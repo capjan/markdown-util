@@ -20,6 +20,7 @@
     --border: #d2d2d7;
     --border-subtle: #e5e5ea;
     --header-divider: #e5e5ea;
+    --hover-background: rgb(0 0 0 / 4%);
     --link: #06c;
     --nav-hover: #eef5fc;
     --nav-hover-text: #1d1d1f;
@@ -75,6 +76,7 @@
     --border: #303033;
     --border-subtle: #424245;
     --header-divider: #303033;
+    --hover-background: rgb(255 255 255 / 5%);
     --link: #2997ff;
     --nav-hover: #325173;
     --nav-hover-text: #fff;
@@ -127,6 +129,7 @@
         --border: #303033;
         --border-subtle: #424245;
         --header-divider: #303033;
+        --hover-background: rgb(255 255 255 / 5%);
         --link: #2997ff;
         --nav-hover: #325173;
         --nav-hover-text: #fff;
@@ -575,6 +578,8 @@ body {
     gap: 0;
     margin-left: 0;
     padding-left: calc(1.125rem + var(--indent-depth) * 0.75rem);
+    border-radius: 6px;
+    transition: background-color 120ms ease;
 }
 
 .site-nav-row.is-current {
@@ -583,6 +588,7 @@ body {
 
 .site-nav-row:hover {
     color: var(--text-primary);
+    background: var(--hover-background);
 }
 
 .site-nav-row.is-current .site-nav-toggle,
@@ -1569,6 +1575,27 @@ blockquote {
     fill: currentColor;
 }
 
+/* A leading icon, such as an arrow before a link, moves a little toward the hovered link. */
+.markdown-content .icon:has(+ a) svg {
+    transition: transform 120ms ease;
+}
+
+.markdown-content .icon:has(+ a:hover) svg {
+    transform: translateX(0.15em);
+}
+
+@media (prefers-reduced-motion: reduce) {
+    .markdown-content .icon:has(+ a:hover) svg {
+        transform: none;
+    }
+}
+
+.markdown-content a:focus-visible {
+    outline: 2px solid var(--link);
+    outline-offset: 2px;
+    border-radius: 2px;
+}
+
 /* Icons with light and dark variants contain one SVG per theme. */
 .icon .icon-dark,
 :root[data-theme="dark"] .icon .icon-light {
@@ -2256,12 +2283,119 @@ th, td {
 }
 
 .footnotes {
-    margin-top: 2rem;
+    margin-top: 3rem;
     font-size: 0.875rem;
 }
 
 .footnotes > hr {
     margin: 1.5rem 0;
+}
+
+.markdown-content .footnotes-title {
+    margin: 0 0 0.75rem;
+    color: var(--text-secondary);
+    font-size: 0.76rem;
+    font-weight: 700;
+    letter-spacing: 0.06em;
+    line-height: 1.4;
+    text-transform: uppercase;
+}
+
+.page-footer {
+    margin-top: 3rem;
+    padding-top: 1.5rem;
+    border-top: 1px solid var(--border-subtle);
+}
+
+.page-meta {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.25rem 1.5rem;
+    color: var(--text-secondary);
+    font-size: 0.875rem;
+}
+
+.page-meta a {
+    color: inherit;
+    text-decoration: underline;
+    text-decoration-color: var(--border);
+    text-underline-offset: 0.2em;
+    transition: color 120ms ease, text-decoration-color 120ms ease;
+}
+
+.page-meta a:hover {
+    color: var(--link);
+    text-decoration-color: currentColor;
+}
+
+.page-pagination {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 1rem;
+}
+
+.page-meta + .page-pagination {
+    margin-top: 1.5rem;
+}
+
+.page-pagination-link {
+    display: flex;
+    flex-direction: column;
+    gap: 0.2rem;
+    min-width: 0;
+    padding: 0.85rem 1.1rem;
+    border: 1px solid var(--border);
+    border-radius: 15px;
+    text-decoration: none;
+    transition: border-color 120ms ease, background-color 120ms ease;
+}
+
+.page-pagination-link:hover {
+    border-color: var(--link);
+    background: var(--surface-current);
+    text-decoration: none;
+}
+
+.page-pagination-link:focus-visible {
+    outline: 2px solid var(--link);
+    outline-offset: 2px;
+}
+
+.page-pagination-link.is-next {
+    grid-column: 2;
+    align-items: flex-end;
+    text-align: right;
+}
+
+.page-pagination-label {
+    color: var(--text-secondary);
+    font-size: 0.8125rem;
+}
+
+.page-pagination-link.is-previous .page-pagination-label::before {
+    content: "← ";
+    content: "← " / "";
+}
+
+.page-pagination-link.is-next .page-pagination-label::after {
+    content: " →";
+    content: " →" / "";
+}
+
+.page-pagination-title {
+    max-width: 100%;
+    overflow-wrap: anywhere;
+    font-weight: 600;
+}
+
+@media (max-width: 760px) {
+    .page-pagination {
+        grid-template-columns: minmax(0, 1fr);
+    }
+
+    .page-pagination-link.is-next {
+        grid-column: 1;
+    }
 }
 
 .footnotes > ol {
@@ -2583,11 +2717,13 @@ th, td {
     font-size: 0.95rem;
     line-height: 1.45;
     overflow-wrap: anywhere;
-    transition: color 120ms ease, border-color 120ms ease;
+    border-radius: 0 6px 6px 0;
+    transition: color 120ms ease, border-color 120ms ease, background-color 120ms ease;
 }
 
 .toc-link:hover {
     color: var(--text-primary);
+    background: var(--hover-background);
     text-decoration: none;
 }
 
