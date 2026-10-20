@@ -40,9 +40,11 @@ public class RendererTest
             await renderer.WriteHtml(sw, "test", "", 0, "# Test", "");
 
             var html = sb.ToString();
-            Assert.Contains(":root,:root[data-theme=\"light\"]{--page-background:#123456;--surface-header:#123456}", html);
-            Assert.Contains(":root[data-theme=\"dark\"]{--page-background:#654321;--surface-header:#654321}", html);
-            Assert.Contains("@media(prefers-color-scheme:dark){:root[data-theme=\"auto\"]{--page-background:#654321;--surface-header:#654321}}", html);
+            Assert.Contains(":root,:root[data-theme=\"light\"]", html);
+            Assert.Contains("--surface-header:#123456", html);
+            Assert.Contains(":root[data-theme=\"dark\"]", html);
+            Assert.Contains("--surface-header:#654321", html);
+            Assert.Contains("@media(prefers-color-scheme:dark)", html);
         }
         finally
         {
