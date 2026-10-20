@@ -17,6 +17,9 @@ public class HtmlRenderer
         @"<h(?<level>[1-6])(?<attributes>\s[^>]*)?>(?<content>.*?)</h\k<level>>",
         RegexOptions.Compiled | RegexOptions.Singleline);
     private static readonly Regex HeadingIdRegex = new(@"\bid=""(?<id>[^""]+)""", RegexOptions.Compiled);
+    private static readonly Regex FootnoteReferenceRegex = new(
+        @"<a\b[^>]*\bclass=""footnote-ref""[^>]*>.*?</a>",
+        RegexOptions.Compiled | RegexOptions.Singleline);
     private readonly MarkdownPipeline _pipeline;
     private readonly LinkReplacer _linkReplacer = new LinkReplacer();
     private string? _basePath;
@@ -346,8 +349,7 @@ public class HtmlRenderer
             var idMatch = HeadingIdRegex.Match(match.Groups["attributes"].Value);
             if (!idMatch.Success) continue;
 
-            var text = Regex.Replace(match.Groups["content"].Value, "<[^>]+>", string.Empty);
-            var title = WebUtility.HtmlDecode(text).Trim();
+            var title = GetHeadingText(match.Groups["content"].Value);
             if (title.Length == 0) continue;
 
             headings.Add(new TocHeading(level, idMatch.Groups["id"].Value, title));
@@ -384,7 +386,8 @@ public class HtmlRenderer
         string renderedMarkdown,
         IReadOnlyList<BreadcrumbItem> breadcrumbs)
     {
-        if (breadcrumbs.Count == 0) return string.Empty;
+        // A trail that only names the current page repeats the page heading below it.
+        if (breadcrumbs.Count == 0 || breadcrumbs is [{ Url: null }]) return string.Empty;
         var headingStart = renderedMarkdown.IndexOf("<h1", StringComparison.Ordinal);
         if (headingStart < 0) return string.Empty;
 
@@ -400,7 +403,13 @@ public class HtmlRenderer
     {
         var heading = HeadingRegex.Match(renderedMarkdown);
         if (!heading.Success || heading.Groups["level"].Value != "1") return string.Empty;
-        var text = Regex.Replace(heading.Groups["content"].Value, "<[^>]+>", string.Empty);
+        return GetHeadingText(heading.Groups["content"].Value);
+    }
+
+    private static string GetHeadingText(string headingContent)
+    {
+        var text = FootnoteReferenceRegex.Replace(headingContent, string.Empty);
+        text = Regex.Replace(text, "<[^>]+>", string.Empty);
         return WebUtility.HtmlDecode(text).Trim();
     }
 

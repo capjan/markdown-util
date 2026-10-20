@@ -2,6 +2,10 @@
     color-scheme: light;
     --site-header-height: 56px;
     --top-navigation-height: 43px;
+    --page-max-width: 1400px;
+    /* Space beside the centered page on screens wider than --page-max-width. */
+    --page-inset: max(0px, (100% - var(--page-max-width)) / 2);
+    --content-max-width: 50rem;
     --font-mono: ui-monospace, SFMono-Regular, "SF Mono", Menlo, Consolas, "Liberation Mono", monospace;
     --page-background: #fff;
     --text-primary: #1d1d1f;
@@ -178,7 +182,7 @@ body {
     display: flex;
     align-items: center;
     height: var(--site-header-height);
-    padding: 0 0.75rem 0 1.5rem;
+    padding: 0 calc(var(--page-inset) + 0.75rem) 0 calc(var(--page-inset) + 1.5rem);
     border-bottom: 0;
     background: var(--surface-header);
 }
@@ -424,6 +428,7 @@ body {
     display: grid;
     grid-template-columns: 260px minmax(0, 1fr);
     min-height: calc(100vh - var(--site-header-height) - var(--top-navigation-height));
+    padding-inline: var(--page-inset);
     transition: min-height 220ms cubic-bezier(0.2, 0.7, 0.2, 1);
 }
 
@@ -435,7 +440,7 @@ body {
     gap: 0.25rem;
     overflow-x: auto;
     min-height: var(--top-navigation-height);
-    padding: 0 1rem;
+    padding: 0 calc(var(--page-inset) + 0.75rem);
     border-bottom: 0;
     background: var(--surface-header);
     scrollbar-width: thin;
@@ -629,7 +634,6 @@ body {
 
 .site-main {
     width: 100%;
-    max-width: 1400px;
     min-width: 0;
     padding: 1rem 2rem 3rem;
 }
@@ -698,6 +702,20 @@ body {
 
     .site-layout.no-wide-sidebar .site-sidebar {
         display: none;
+    }
+
+    /* Keep the sidebar column so the content starts at the same place on every page. */
+    .site-layout.no-wide-sidebar:not(.sidebar-collapsed) {
+        grid-template-columns: 260px minmax(0, 1fr);
+    }
+
+    .site-layout.no-wide-sidebar:not(.sidebar-collapsed) .site-main {
+        grid-column: 2;
+    }
+
+    /* Aligns the sidebar section title with the brand and the first tab. */
+    .site-sidebar {
+        padding-left: 0.375rem;
     }
 
     .site-layout.has-current-top-section.has-wide-sidebar .site-sidebar .site-nav-item {
@@ -1324,6 +1342,71 @@ blockquote {
 
 .markdown-alert > :last-child {
     margin-bottom: 0;
+}
+
+.markdown-content details {
+    margin: 1.5rem 0;
+    border: 1px solid var(--border);
+    border-radius: 15px;
+    background: var(--surface-code-block-body);
+}
+
+.markdown-content details > summary {
+    position: relative;
+    display: block;
+    padding: 0.75rem 2.75rem 0.75rem 1.1rem;
+    border-radius: 14px;
+    font-weight: 600;
+    list-style: none;
+    cursor: pointer;
+    transition: background-color 120ms ease;
+}
+
+.markdown-content details > summary::-webkit-details-marker {
+    display: none;
+}
+
+.markdown-content details > summary::after {
+    content: "";
+    position: absolute;
+    top: 50%;
+    right: 1.25rem;
+    width: 0.45rem;
+    height: 0.45rem;
+    border-right: 1.5px solid var(--text-secondary);
+    border-bottom: 1.5px solid var(--text-secondary);
+    transform: translateY(-50%) rotate(-45deg);
+    transition: transform 120ms ease;
+}
+
+.markdown-content details[open] > summary {
+    border-bottom: 1px solid var(--border);
+    border-radius: 14px 14px 0 0;
+}
+
+.markdown-content details[open] > summary::after {
+    transform: translateY(-75%) rotate(45deg);
+}
+
+.markdown-content details > summary:hover {
+    background: var(--surface-current);
+}
+
+.markdown-content details > summary:focus-visible {
+    outline: 2px solid var(--link);
+    outline-offset: -2px;
+}
+
+.markdown-content details > :not(summary) {
+    margin-inline: 1.1rem;
+}
+
+.markdown-content details > summary + * {
+    margin-top: 0.85rem;
+}
+
+.markdown-content details > :last-child:not(summary) {
+    margin-bottom: 0.85rem;
 }
 
 .markdown-alert pre {
@@ -2298,10 +2381,10 @@ th, td {
 
 .content-layout {
     display: grid;
-    grid-template-columns: minmax(0, 1fr);
+    grid-template-columns: minmax(0, var(--content-max-width));
+    justify-content: space-between;
     align-items: start;
     gap: 3rem;
-    max-width: 1600px;
 }
 
 .markdown-content {
@@ -2495,9 +2578,9 @@ th, td {
     scroll-margin-top: 7rem;
 }
 
-@container (min-width: 1080px) {
+@container (min-width: 960px) {
     .content-layout {
-        grid-template-columns: minmax(0, 1fr) 210px;
+        grid-template-columns: minmax(0, var(--content-max-width)) 210px;
     }
 
     .on-this-page {

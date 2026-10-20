@@ -20,5 +20,5 @@ navigation.placement: top
 - [Icons and Emojis](Icons-and-Emojis.md) - Adds icons, colored logos, and GitHub-compatible emoji shortcodes, with a search that copies them to the clipboard
 - [Hero Banner](Hero.md) - Opens a landing page with an animated WebGL beach scene, configured with YAML in a `hero` code block
 - [Images](Images.md) - Renders Markdown images, copies linked local image files including WebP, and provides a dependency-free lightbox
-- Breadcrumb navigation is generated from the Markdown file structure during rendering; source files remain unchanged.
+- Breadcrumb navigation is generated from the Markdown file structure during rendering; source files remain unchanged. Pages whose trail would only name the page itself, such as the landing page, show no breadcrumb.
 

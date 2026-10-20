@@ -120,6 +120,28 @@ Use a line containing three hyphens, asterisks, or underscores to add a horizont
 
 ---
 
+## Collapsible sections
+
+Wrap content in an HTML `<details>` element to show it only on demand; the `<summary>` is the visible title. Leave blank lines around the Markdown inside so it is rendered as Markdown. Add the `open` attribute to expand the section initially:
+
+~~~markdown title="Markdown"
+<details>
+<summary>Completed projects</summary>
+
+- Project A
+- Project B
+
+</details>
+~~~
+
+<details>
+<summary>Completed projects</summary>
+
+- Project A
+- Project B
+
+</details>
+
 ## Related features
 
 For footnotes, see [Footnotes](Footnotes.md). For GitHub-style callouts, see [Callouts](Callouts.md).
