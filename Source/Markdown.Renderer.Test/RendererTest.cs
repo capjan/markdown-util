@@ -54,7 +54,7 @@ public class RendererTest
 
         var html = sb.ToString();
         Assert.Matches("<h1[^>]*>Dashboard</h1>", html);
-        Assert.Contains("Produkte<a class=\"headerlink\" href=\"#produkte\" title=\"Permanent link\" aria-label=\"Permanent link\">#</a></h2>", html);
+        Assert.Contains("Produkte<a class=\"headerlink\" href=\"#produkte\" title=\"Permanent link\" aria-label=\"Permanent link\"><svg viewBox=\"0 0 20 20\" aria-hidden=\"true\"", html);
     }
 
     [Fact]
