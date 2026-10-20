@@ -191,10 +191,10 @@ public class MarkdigVisitorTest
             Assert.DoesNotContain("is-in-current-top-section", NavigationItemClass(sidebarNavigation, "Dashboard"));
             Assert.DoesNotContain("is-in-current-top-section", NavigationItemClass(sidebarNavigation, "Operations"));
             Assert.DoesNotContain("is-in-current-top-section", NavigationItemClass(sidebarNavigation, "Runbook"));
-            var breadcrumbs = html.Split("<nav class=\"breadcrumbs\"", 2)[1];
+            var breadcrumbs = html.Split("<nav class=\"breadcrumbs\"", 2)[1].Split("</nav>", 2)[0];
             Assert.Contains(">Dashboard</a>", breadcrumbs);
             Assert.Contains(">Development</a>", breadcrumbs);
-            Assert.Contains(">Guide</span>", breadcrumbs);
+            Assert.DoesNotContain("Guide", breadcrumbs);
         }
         finally
         {
