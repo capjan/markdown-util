@@ -46,6 +46,18 @@ public class RendererTest
     }
 
     [Fact]
+    public async Task AddsPermalinksToSectionHeadingsOnly()
+    {
+        var sb = new StringBuilder();
+        using var sw = new StringWriter(sb);
+        await new HtmlRenderer().WriteHtml(sw, "test", "", 0, "# Dashboard\n\n## Produkte", "");
+
+        var html = sb.ToString();
+        Assert.Matches("<h1[^>]*>Dashboard</h1>", html);
+        Assert.Contains("Produkte<a class=\"headerlink\" href=\"#produkte\" title=\"Permanent link\" aria-label=\"Permanent link\">#</a></h2>", html);
+    }
+
+    [Fact]
     public async Task OmitsBreadcrumbsThatOnlyNameTheCurrentPage()
     {
         var sb = new StringBuilder();
