@@ -80,7 +80,7 @@ public class RendererTest
     }
 
     [Fact]
-    public async Task RendersFooterWithNeighborPagesDateAndEditLink()
+    public async Task RendersFooterWithNeighborPagesAndDateWithoutEditLink()
     {
         var sb = new StringBuilder();
         using var sw = new StringWriter(sb);
@@ -95,7 +95,7 @@ public class RendererTest
 
         var footer = sb.ToString().Split("<footer class=\"page-footer\">", 2)[1].Split("</footer>", 2)[0];
         Assert.Contains("Last updated on <time datetime=\"2026-10-03\">October 3, 2026</time>", footer);
-        Assert.Contains("<a href=\"https://example.com/edit/Guide.md\" target=\"_blank\" rel=\"noopener noreferrer\">Edit this page</a>", footer);
+        Assert.DoesNotContain("Edit this page", footer);
         Assert.Contains("<a class=\"page-pagination-link is-previous\" href=\"index.html\" rel=\"prev\"><span class=\"page-pagination-label\">Previous</span><span class=\"page-pagination-title\">Home</span></a>", footer);
         Assert.Contains("<a class=\"page-pagination-link is-next\" href=\"Tips.html\" rel=\"next\"><span class=\"page-pagination-label\">Next</span><span class=\"page-pagination-title\">Tips &amp; Tricks</span></a>", footer);
     }

@@ -178,7 +178,7 @@ public class HtmlRenderer
             ["PAGE_STYLES"] = hasHero ? $"<style>{Hero.Styles}</style>" : string.Empty,
             ["PAGE_BREADCRUMBS"] = breadcrumbMarkup,
             ["PAGE_TOC"] = RenderOnThisPage(tocHeadings),
-            ["PAGE_FOOTER"] = RenderPageFooter(model.NavigationItems, editPageLink, lastModified),
+            ["PAGE_FOOTER"] = RenderPageFooter(model.NavigationItems, lastModified),
             ["BACK_TO_TOP"] = "<a class=\"back-to-top\" id=\"back-to-top\" href=\"#top\" aria-label=\"Back to top\" title=\"Back to top\"><svg viewBox=\"0 0 20 20\" aria-hidden=\"true\"><path d=\"M10 16V4m-5 5 5-5 5 5\"></path></svg><span>Back to top</span></a>",
             ["GITHUB_REPOSITORY_LINK"] = RenderGitHubRepositoryLink(editPageLink),
             ["PAGE_SCRIPTS"] =
@@ -399,7 +399,6 @@ public class HtmlRenderer
 
     private static string RenderPageFooter(
         IReadOnlyList<NavigationItem> navigationItems,
-        string editPageLink,
         DateTimeOffset? lastModified)
     {
         var meta = new List<string>();
@@ -409,9 +408,6 @@ public class HtmlRenderer
             var displayDate = date.ToString("MMMM d, yyyy", CultureInfo.InvariantCulture);
             meta.Add($"<span>Last updated on <time datetime=\"{isoDate}\">{displayDate}</time></span>");
         }
-        if (!string.IsNullOrWhiteSpace(editPageLink))
-            meta.Add($"<a href=\"{HtmlEncoder.Default.Encode(editPageLink)}\" target=\"_blank\" rel=\"noopener noreferrer\">Edit this page</a>");
-
         // The sidebar order is the reading order, so its neighbors are the previous and next pages.
         var currentIndex = -1;
         for (var index = 0; index < navigationItems.Count; index++)
