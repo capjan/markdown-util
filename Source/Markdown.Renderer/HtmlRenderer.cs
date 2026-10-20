@@ -57,9 +57,16 @@ public class HtmlRenderer
         WriteCssFileTo(cssFilePath);
     }
 
+    private MarkdownDocument ParseMarkdown(string markdown)
+    {
+        var document = Markdig.Markdown.Parse(markdown, _pipeline);
+        _linkReplacer.ReplaceAll(document);
+        return document;
+    }
+
     public IReadOnlyCollection<string> FindMediaProviders(string markdown)
     {
-        var document = Markdig.Markdown.Parse(_linkReplacer.ReplaceAll(markdown), _pipeline);
+        var document = ParseMarkdown(markdown);
         var html = document.ToHtml(_pipeline);
         MediaLinkEmbedder.ReplaceStandaloneLinks(html, out var providers);
         return providers;
@@ -67,7 +74,7 @@ public class HtmlRenderer
 
     public string RenderMarkdownFragment(string markdown)
     {
-        var document = Markdig.Markdown.Parse(_linkReplacer.ReplaceAll(markdown), _pipeline);
+        var document = ParseMarkdown(markdown);
         var html = document.ToHtml(_pipeline);
         return MediaLinkEmbedder.ReplaceStandaloneLinks(html, out _);
     }
@@ -91,9 +98,7 @@ public class HtmlRenderer
         var searchScriptLink = prefix + "js/search.js";
         var searchIndexLink = prefix + "search-index.json";
         
-        var replacedMarkdown = _linkReplacer.ReplaceAll(markdown);
-        
-        var document = Markdig.Markdown.Parse(replacedMarkdown, _pipeline);
+        var document = ParseMarkdown(markdown);
         var hasIconSearch = document.Descendants<FencedCodeBlock>()
             .Any(block => block.Info == IconSearch.CodeBlockLanguage);
         if (hasIconSearch) EnsureIconSearchAssets();
