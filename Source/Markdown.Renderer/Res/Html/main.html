@@ -124,8 +124,8 @@
     const updateThemeLabel = () => {
         const currentTheme = root.dataset.theme;
         const nextTheme = themes[(themes.indexOf(currentTheme) + 1) % themes.length];
-        themeToggle.title = `Darstellung: ${themeNames[currentTheme]} (klicken für ${themeNames[nextTheme]})`;
-        themeToggle.setAttribute("aria-label", `Darstellung: ${themeNames[currentTheme]}. Klicken, um auf ${themeNames[nextTheme]} zu wechseln.`);
+        themeToggle.title = `Theme: ${themeNames[currentTheme]} (click for ${themeNames[nextTheme]})`;
+        themeToggle.setAttribute("aria-label", `Theme: ${themeNames[currentTheme]}. Click to switch to ${themeNames[nextTheme]}.`);
     };
 
     const brandLogo = document.querySelector(".site-brand-logo");
@@ -302,6 +302,7 @@
 
     const updateOnScroll = () => {
         scrollFrame = 0;
+        document.documentElement.classList.toggle("is-scrolled", window.scrollY > 0);
         const navigationShift = (topNavigation?.offsetHeight ?? 0) + 16;
         if (window.scrollY !== lastScrollY) {
             const delta = window.scrollY - lastScrollY;

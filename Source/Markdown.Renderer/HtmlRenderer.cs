@@ -332,7 +332,7 @@ public class HtmlRenderer
             var title = HtmlEncoder.Default.Encode(item.Title);
             var url = HtmlEncoder.Default.Encode(item.Url);
             var isCurrentSection = item.IsCurrent || item.IsCurrentSection;
-            output.AppendLine($"            <a class=\"top-nav-link{(isCurrentSection ? " is-current" : string.Empty)}\" href=\"{url}\" aria-current=\"{(item.IsCurrent ? "page" : isCurrentSection ? "location" : "false")}\">{title}</a>");
+            output.AppendLine($"            <a class=\"top-nav-link{(isCurrentSection ? " is-current" : string.Empty)}\" href=\"{url}\" aria-current=\"{(item.IsCurrent ? "page" : isCurrentSection ? "location" : "false")}\" data-label=\"{title}\">{title}</a>");
         }
 
         return output.ToString();

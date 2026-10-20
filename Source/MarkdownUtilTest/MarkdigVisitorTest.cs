@@ -175,6 +175,7 @@ public class MarkdigVisitorTest
 
             var html = File.ReadAllText(Path.Combine(outputPath, "Development", "Guide.html"));
             Assert.Contains("top-nav-link is-current", html);
+            Assert.Contains("data-label=\"Development\">Development</a>", html);
             Assert.Contains(">Development</a>", html);
             Assert.Contains(">Operations</a>", html);
             Assert.Contains(">Dashboard</a>", html);

@@ -231,7 +231,7 @@ internal sealed class PdfLayout
             case "div":
                 if (HasClass(element, "icon-search"))
                 {
-                    WriteParagraph([new PdfRun("[Die interaktive Icon-Suche ist in der HTML-Version verfügbar.]", PdfTextStyle.Muted)], 9, indent + 8, 4, 8);
+                    WriteParagraph([new PdfRun("[The interactive icon search is available in the HTML version.]", PdfTextStyle.Muted)], 9, indent + 8, 4, 8);
                     return;
                 }
                 if (HasClass(element, "markdown-alert"))
