@@ -283,8 +283,11 @@
         }
 
         if (currentActiveHeading !== activeHeading || revealPermalink) {
+            // Loading the page only marks the first active heading; its permalink stays hidden.
+            const isInitialHeading = currentActiveHeading === null;
             currentActiveHeading?.heading.classList.remove("is-toc-active");
             currentActiveHeading = activeHeading;
+            if (isInitialHeading && !revealPermalink) return;
             currentActiveHeading.heading.classList.add("is-toc-active");
             window.clearTimeout(activePermalinkTimer);
             activePermalinkTimer = window.setTimeout(() => {
