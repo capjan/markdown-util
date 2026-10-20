@@ -422,7 +422,7 @@ public class HtmlRenderer
             if (!idMatch.Success) return match.Value;
 
             var encodedId = HtmlEncoder.Default.Encode(idMatch.Groups["id"].Value);
-            var permalink = $"<a class=\"headerlink\" href=\"#{encodedId}\" title=\"Permanent link\" aria-label=\"Permanent link\"><svg viewBox=\"0 0 20 20\" aria-hidden=\"true\" focusable=\"false\"><path d=\"M8.3 10.8a4.2 4.2 0 0 0 6.3.5l2.5-2.5a4.2 4.2 0 0 0-5.9-5.9l-1.4 1.4\"></path><path d=\"M11.7 9.2a4.2 4.2 0 0 0-6.3-.5l-2.5 2.5a4.2 4.2 0 0 0 5.9 5.9l1.4-1.4\"></path></svg></a>";
+            var permalink = $"<a class=\"headerlink\" href=\"#{encodedId}\" title=\"Permanent link\" aria-label=\"Permanent link\"><svg viewBox=\"0 0 20 20\" aria-hidden=\"true\" focusable=\"false\"><path d=\"M8.5 6H6a4 4 0 0 0 0 8h2.5M11.5 6H14a4 4 0 0 1 0 8h-2.5M7 10h6\" transform=\"rotate(-45 10 10)\"></path></svg></a>";
             var contentEnd = match.Groups["content"].Index + match.Groups["content"].Length - match.Index;
             return match.Value.Insert(contentEnd, permalink);
         });
