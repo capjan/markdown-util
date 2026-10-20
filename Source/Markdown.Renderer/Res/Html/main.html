@@ -350,9 +350,8 @@
         if (window.scrollY !== lastScrollY) {
             const delta = window.scrollY - lastScrollY;
             lastScrollY = window.scrollY;
-            // Hiding or showing the top navigation moves the page by its height, and the browser
-            // answers with a scroll of the same size. Only scrolling further than that turns the
-            // direction around, so the navigation cannot keep toggling itself.
+            // Only scrolling further than the top navigation is tall turns the direction around,
+            // so small movements of the hand do not keep toggling the navigation.
             scrollTravel = Math.sign(delta) === Math.sign(scrollTravel) ? scrollTravel + delta : delta;
             if (Math.abs(scrollTravel) > navigationShift) scrollDirection = Math.sign(scrollTravel);
         }
@@ -374,7 +373,7 @@
         }
         if (topNavigation) {
             // Once hidden, the navigation returns near the top only well below the point where it hid,
-            // because hiding it can pull the scroll position back by its own height.
+            // so it does not flicker around that point.
             const hidden = topNavigation.classList.contains("is-hidden-on-scroll");
             const hideAfter = hidden ? 80 - navigationShift : 80;
             // Over a hero the navigation stays, so the edge where the hero content is cut off does not move.
