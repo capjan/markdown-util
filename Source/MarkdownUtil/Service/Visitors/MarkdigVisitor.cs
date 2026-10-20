@@ -26,6 +26,7 @@ public class MarkdigVisitor : BaseVisitor
         foreach (var page in Flatten(_navigationRoots))
             _topNavigationItems.Add(page, FindTopNavigationItem(page));
         _siteMediaProviders = FindSiteMediaProviders();
+        _lastModifiedDates = GitLastModified.Read(rootPath);
     }
     
     private readonly HtmlRenderer _htmlFoundation;
@@ -36,6 +37,7 @@ public class MarkdigVisitor : BaseVisitor
     private readonly MarkdownFile[] _navigationRoots;
     private readonly Dictionary<MarkdownFile, MarkdownFile?> _topNavigationItems;
     private readonly IReadOnlyCollection<string> _siteMediaProviders;
+    private readonly IReadOnlyDictionary<string, DateTimeOffset> _lastModifiedDates;
 
     public IReadOnlyCollection<string> SiteMediaProviders => _siteMediaProviders;
 
@@ -83,7 +85,8 @@ public class MarkdigVisitor : BaseVisitor
                     BuildBreadcrumbs(entity, outputFileName),
                     _siteMediaProviders,
                     entity.Icon,
-                    BuildTopNavigation(entity, outputFileName)).GetAwaiter().GetResult();
+                    BuildTopNavigation(entity, outputFileName),
+                    GetLastModified(entity)).GetAwaiter().GetResult();
 
             File.Move(temporaryPath, outputFileName, true);
             WriteAliasPage(entity, outputFileName);
@@ -110,6 +113,12 @@ public class MarkdigVisitor : BaseVisitor
         var encodedTarget = HtmlEncoder.Default.Encode(relativeTarget);
         File.WriteAllText(aliasPath,
             $"<!doctype html><html><head><meta charset=\"utf-8\"><meta http-equiv=\"refresh\" content=\"0; url={encodedTarget}\"><link rel=\"canonical\" href=\"{encodedTarget}\"><title>Moved</title></head><body><a href=\"{encodedTarget}\">Continue to the page</a></body></html>");
+    }
+
+    private DateTimeOffset? GetLastModified(MarkdownFile page)
+    {
+        var relativePath = Path.GetRelativePath(_rootPath, page.FileInfo.FullName).Replace(Path.DirectorySeparatorChar, '/');
+        return _lastModifiedDates.TryGetValue(relativePath, out var date) ? date : null;
     }
 
     private IReadOnlyCollection<string> FindSiteMediaProviders()

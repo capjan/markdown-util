@@ -70,3 +70,19 @@ navigation:
 ```
 
 `mdu lint` rejects the retired `sidebar.*` front matter. Replace it with `navigation.*` in the Markdown files; `mdu fix` does not migrate this field.
+
+## Page footer
+
+Each page ends with links to the previous and next page in the sidebar order, so readers can work through the documentation from start to finish. Hidden pages have no such links and are skipped by their neighbors.
+
+The footer also shows when the page was last changed, taken from the date of the last git commit that changed its Markdown file, and an **Edit this page** link when you render with `--editPageRoot`. Uncommitted changes are not reflected in the date, and files that were never committed show no date.
+
+The date needs the full git history. In a shallow clone, which CI services create by default, MDU leaves the date out instead of showing a wrong one. Fetch the full history to show it, for example with `fetch-depth: 0` in `actions/checkout`:
+
+```yaml
+- uses: actions/checkout@v7
+  with:
+    fetch-depth: 0
+```
+
+In GitLab CI, set the `GIT_DEPTH` variable to `0` for the job that renders the site.

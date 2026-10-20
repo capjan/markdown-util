@@ -27,6 +27,9 @@ jobs:
     steps:
       - name: Check out repository
         uses: actions/checkout@v7
+        with:
+          # The full history dates each page's "Last updated" line.
+          fetch-depth: 0
 
       - name: Set up .NET
         uses: actions/setup-dotnet@v6

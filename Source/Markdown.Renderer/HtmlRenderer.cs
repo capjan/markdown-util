@@ -1,3 +1,4 @@
+using System.Globalization;
 using System.Text;
 using System.Text.Encodings.Web;
 using System.Net;
@@ -82,7 +83,8 @@ public class HtmlRenderer
         IReadOnlyList<BreadcrumbItem>? breadcrumbs = null,
         IReadOnlyCollection<string>? siteMediaProviders = null,
         string pageIcon = "",
-        IReadOnlyList<NavigationItem>? topNavigationItems = null)
+        IReadOnlyList<NavigationItem>? topNavigationItems = null,
+        DateTimeOffset? lastModified = null)
     {
         var prefix = string.Concat(Enumerable.Repeat("../", nestingDeep));
         var cssFileLink = prefix + "css/main.css";
@@ -100,6 +102,7 @@ public class HtmlRenderer
         var renderedMarkdown = document.ToHtml(_pipeline);
         renderedMarkdown = MediaLinkEmbedder.ReplaceStandaloneLinks(renderedMarkdown, out var mediaProviders);
         var pageHero = hasHero ? Hero.ExtractFullWidth(ref renderedMarkdown) : string.Empty;
+        renderedMarkdown = InsertFootnotesTitle(renderedMarkdown);
         if (!string.IsNullOrWhiteSpace(pageIcon))
         {
             var iconName = pageIcon.Trim().Trim(':').Replace('/', '-');
@@ -170,6 +173,7 @@ public class HtmlRenderer
             ["PAGE_STYLES"] = hasHero ? $"<style>{Hero.Styles}</style>" : string.Empty,
             ["PAGE_BREADCRUMBS"] = breadcrumbMarkup,
             ["PAGE_TOC"] = RenderOnThisPage(tocHeadings),
+            ["PAGE_FOOTER"] = RenderPageFooter(model.NavigationItems, editPageLink, lastModified),
             ["BACK_TO_TOP"] = "<a class=\"back-to-top\" id=\"back-to-top\" href=\"#top\" aria-label=\"Back to top\" title=\"Back to top\"><svg viewBox=\"0 0 20 20\" aria-hidden=\"true\"><path d=\"M10 16V4m-5 5 5-5 5 5\"></path></svg><span>Back to top</span></a>",
             ["GITHUB_REPOSITORY_LINK"] = RenderGitHubRepositoryLink(editPageLink),
             ["PAGE_SCRIPTS"] =
@@ -381,6 +385,61 @@ public class HtmlRenderer
     }
 
     private sealed record TocHeading(int Level, string Id, string Title);
+
+    // The heading has no id, so it stays out of the page contents and gets no permalink.
+    private static string InsertFootnotesTitle(string renderedMarkdown) => renderedMarkdown.Replace(
+        "<div class=\"footnotes\">\n<hr />\n",
+        "<div class=\"footnotes\">\n<hr />\n<h2 class=\"footnotes-title\">Footnotes</h2>\n",
+        StringComparison.Ordinal);
+
+    private static string RenderPageFooter(
+        IReadOnlyList<NavigationItem> navigationItems,
+        string editPageLink,
+        DateTimeOffset? lastModified)
+    {
+        var meta = new List<string>();
+        if (lastModified is { } date)
+        {
+            var isoDate = date.ToString("yyyy-MM-dd", CultureInfo.InvariantCulture);
+            var displayDate = date.ToString("MMMM d, yyyy", CultureInfo.InvariantCulture);
+            meta.Add($"<span>Last updated on <time datetime=\"{isoDate}\">{displayDate}</time></span>");
+        }
+        if (!string.IsNullOrWhiteSpace(editPageLink))
+            meta.Add($"<a href=\"{HtmlEncoder.Default.Encode(editPageLink)}\" target=\"_blank\" rel=\"noopener noreferrer\">Edit this page</a>");
+
+        // The sidebar order is the reading order, so its neighbors are the previous and next pages.
+        var currentIndex = -1;
+        for (var index = 0; index < navigationItems.Count; index++)
+        {
+            if (!navigationItems[index].IsCurrent) continue;
+            currentIndex = index;
+            break;
+        }
+        var previous = currentIndex > 0 ? navigationItems[currentIndex - 1] : null;
+        var next = currentIndex >= 0 && currentIndex < navigationItems.Count - 1 ? navigationItems[currentIndex + 1] : null;
+        if (meta.Count == 0 && previous is null && next is null) return string.Empty;
+
+        var output = new StringBuilder();
+        output.AppendLine("<footer class=\"page-footer\">");
+        if (meta.Count > 0)
+            output.AppendLine($"    <div class=\"page-meta\">{string.Join(string.Empty, meta)}</div>");
+        if (previous is not null || next is not null)
+        {
+            output.AppendLine("    <nav class=\"page-pagination\" aria-label=\"Previous and next page\">");
+            if (previous is not null)
+                output.AppendLine(RenderPaginationLink(previous, "is-previous", "prev", "Previous"));
+            if (next is not null)
+                output.AppendLine(RenderPaginationLink(next, "is-next", "next", "Next"));
+            output.AppendLine("    </nav>");
+        }
+        output.AppendLine("</footer>");
+        return output.ToString();
+
+        static string RenderPaginationLink(NavigationItem item, string className, string rel, string label) =>
+            $"        <a class=\"page-pagination-link {className}\" href=\"{HtmlEncoder.Default.Encode(item.Url)}\" rel=\"{rel}\">" +
+            $"<span class=\"page-pagination-label\">{label}</span>" +
+            $"<span class=\"page-pagination-title\">{HtmlEncoder.Default.Encode(item.Title)}</span></a>";
+    }
 
     private static string RenderBreadcrumbs(
         string renderedMarkdown,
