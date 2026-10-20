@@ -1094,10 +1094,12 @@ h1, h2, h3, h4, h5, h6 {
 
 .headerlink {
     display: inline-block;
-    margin-left: 0.45em;
+    margin-left: 0.5rem;
     color: var(--text-secondary);
-    font-size: 0.8em;
-    font-weight: 400;
+    font-size: 1rem;
+    font-weight: 500;
+    line-height: 1;
+    vertical-align: middle;
     opacity: 0;
     text-decoration: none;
     transition: opacity 0.15s ease-in-out;
@@ -1108,8 +1110,6 @@ h1, h2, h3, h4, h5, h6 {
     text-decoration: none;
 }
 
-h1:hover .headerlink,
-h1:focus-within .headerlink,
 h2:hover .headerlink,
 h2:focus-within .headerlink,
 h3:hover .headerlink,
@@ -1124,7 +1124,8 @@ h6:focus-within .headerlink,
     opacity: 1;
 }
 
-.markdown-content :is(h1, h2, h3, h4, h5, h6).is-toc-active .headerlink {
+.markdown-content :is(h2, h3, h4, h5, h6).is-toc-active .headerlink,
+.markdown-content :is(h2, h3, h4, h5, h6):target .headerlink {
     opacity: 1;
 }
 
@@ -1132,12 +1133,6 @@ h6:focus-within .headerlink,
     outline: 2px solid var(--link);
     outline-offset: 2px;
     border-radius: 2px;
-}
-
-@media (hover: none) {
-    .headerlink {
-        opacity: 1;
-    }
 }
 
 h1 {

@@ -4,7 +4,7 @@ MDU uses Markdig to render CommonMark syntax and its enabled extensions. Markdow
 
 ## Headings and paragraphs
 
-Use one to six `#` characters for heading levels one through six. The rendered headings receive an automatic ID and a permalink. Separate paragraphs with a blank line.
+Use one to six `#` characters for heading levels one through six. The rendered headings receive an automatic ID; headings from level two on also get a `#` permalink that appears on hover or focus, and on touch screens for the section you jumped to. Separate paragraphs with a blank line.
 
 ~~~markdown title="Markdown"
 ## A section heading

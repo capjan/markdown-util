@@ -416,11 +416,13 @@ public class HtmlRenderer
     private static string InsertHeadingPermalinks(string renderedMarkdown) =>
         HeadingRegex.Replace(renderedMarkdown, match =>
         {
+            // The page URL already links to the page heading.
+            if (match.Groups["level"].Value == "1") return match.Value;
             var idMatch = HeadingIdRegex.Match(match.Groups["attributes"].Value);
             if (!idMatch.Success) return match.Value;
 
             var encodedId = HtmlEncoder.Default.Encode(idMatch.Groups["id"].Value);
-            var permalink = $"<a class=\"headerlink\" href=\"#{encodedId}\" title=\"Permanent link\" aria-label=\"Permanent link\">¶</a>";
+            var permalink = $"<a class=\"headerlink\" href=\"#{encodedId}\" title=\"Permanent link\" aria-label=\"Permanent link\">#</a>";
             var contentEnd = match.Groups["content"].Index + match.Groups["content"].Length - match.Index;
             return match.Value.Insert(contentEnd, permalink);
         });
