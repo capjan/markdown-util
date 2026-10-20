@@ -23,6 +23,36 @@ public class RendererTest
     }
 
     [Fact]
+    public async Task UsesConfiguredBackgroundForSiteHeaderAndTopNavigation()
+    {
+        var outputPath = Path.Combine(Path.GetTempPath(), Guid.NewGuid().ToString("N"));
+        var renderer = new HtmlRenderer();
+        var sb = new StringBuilder();
+        using var sw = new StringWriter(sb);
+
+        try
+        {
+            renderer.PrepareBasePath(outputPath, new SiteConfiguration
+            {
+                Light = new SitePalette { Background = "#123456" }
+            });
+            await renderer.WriteHtml(sw, "test", "", 0, "# Test", "");
+
+            var html = sb.ToString();
+            var css = File.ReadAllText(Path.Combine(outputPath, "css", "main.css"));
+            var siteHeaderStyle = css.Split(".site-header {", 2)[1].Split('}', 2)[0];
+            var topNavigationStyle = css.Split(".top-navigation {", 2)[1].Split('}', 2)[0];
+            Assert.Contains("--page-background:#123456", html);
+            Assert.Contains("background: var(--page-background);", siteHeaderStyle);
+            Assert.Contains("background: var(--page-background);", topNavigationStyle);
+        }
+        finally
+        {
+            if (Directory.Exists(outputPath)) Directory.Delete(outputPath, recursive: true);
+        }
+    }
+
+    [Fact]
     public async Task RendersTwoTrailingSpacesAsHardLineBreak()
     {
         var sb = new StringBuilder();
