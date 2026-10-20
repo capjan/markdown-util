@@ -2535,4 +2535,17 @@ th, td {
     .content-layout {
         display: block;
     }
+
+    /* Pages without a wide sidebar, such as the landing page, also need the button that opens the drawer. */
+    .site-header:not(.has-wide-sidebar) .site-header-icon-slot:not(.has-logo) {
+        display: block;
+    }
+
+    .site-header:not(.has-wide-sidebar) .site-header-icon-slot.has-logo .navigation-toggle {
+        display: inline-flex;
+    }
+
+    .site-header:not(.has-wide-sidebar) .site-header-icon-slot.has-logo .site-brand-logo {
+        opacity: 0;
+    }
 }
