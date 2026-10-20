@@ -94,14 +94,29 @@ public class RendererTest
             lastModified: new DateTimeOffset(2026, 10, 3, 14, 0, 0, TimeSpan.FromHours(2)));
 
         var footer = sb.ToString().Split("<footer class=\"page-footer\">", 2)[1].Split("</footer>", 2)[0];
+        var heading = sb.ToString().Split("<h1", 2)[1].Split("</h1>", 2)[0];
         Assert.Contains("Last updated on <time datetime=\"2026-10-03\">October 3, 2026</time>", footer);
         Assert.DoesNotContain("Edit this page", footer);
+        Assert.Contains("class=\"page-edit-link\"", heading);
         Assert.Contains("<a class=\"page-pagination-link is-previous\" href=\"index.html\" rel=\"prev\"><span class=\"page-pagination-label\">Previous</span><span class=\"page-pagination-title\">Home</span></a>", footer);
         Assert.Contains("<a class=\"page-pagination-link is-next\" href=\"Tips.html\" rel=\"next\"><span class=\"page-pagination-label\">Next</span><span class=\"page-pagination-title\">Tips &amp; Tricks</span></a>", footer);
     }
 
     [Fact]
-    public async Task OmitsFooterWithoutNeighborPagesDateOrEditLink()
+    public async Task RendersFooterEditLinkWhenPageHasNoH1()
+    {
+        var sb = new StringBuilder();
+        using var sw = new StringWriter(sb);
+        await new HtmlRenderer().WriteHtml(sw, "test", "", 0, "## Details", "https://example.com/edit/Guide.md");
+
+        var html = sb.ToString();
+        var footer = html.Split("<footer class=\"page-footer\">", 2)[1].Split("</footer>", 2)[0];
+        Assert.Contains("<a href=\"https://example.com/edit/Guide.md\" target=\"_blank\" rel=\"noopener noreferrer\">Edit this page</a>", footer);
+        Assert.DoesNotContain("class=\"page-edit-link\"", html);
+    }
+
+    [Fact]
+    public async Task OmitsFooterWithoutNeighborPagesOrDate()
     {
         var sb = new StringBuilder();
         using var sw = new StringWriter(sb);

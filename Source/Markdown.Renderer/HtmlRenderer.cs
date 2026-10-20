@@ -126,7 +126,7 @@ public class HtmlRenderer
         var tocHeadings = GetTableOfContentsHeadings(renderedMarkdown);
         var pageHeading = GetPageHeadingTitle(renderedMarkdown);
         renderedMarkdown = InsertHeadingPermalinks(renderedMarkdown);
-        renderedMarkdown = InsertEditPageLink(renderedMarkdown, editPageLink);
+        renderedMarkdown = InsertEditPageLink(renderedMarkdown, editPageLink, out var editLinkInserted);
         var breadcrumbMarkup = RenderBreadcrumbs(renderedMarkdown, breadcrumbs ?? Array.Empty<BreadcrumbItem>());
         var model = new MainModel
         {
@@ -178,7 +178,7 @@ public class HtmlRenderer
             ["PAGE_STYLES"] = hasHero ? $"<style>{Hero.Styles}</style>" : string.Empty,
             ["PAGE_BREADCRUMBS"] = breadcrumbMarkup,
             ["PAGE_TOC"] = RenderOnThisPage(tocHeadings),
-            ["PAGE_FOOTER"] = RenderPageFooter(model.NavigationItems, lastModified),
+            ["PAGE_FOOTER"] = RenderPageFooter(model.NavigationItems, editPageLink, !editLinkInserted, lastModified),
             ["BACK_TO_TOP"] = "<a class=\"back-to-top\" id=\"back-to-top\" href=\"#top\" aria-label=\"Back to top\" title=\"Back to top\"><svg viewBox=\"0 0 20 20\" aria-hidden=\"true\"><path d=\"M10 16V4m-5 5 5-5 5 5\"></path></svg><span>Back to top</span></a>",
             ["GITHUB_REPOSITORY_LINK"] = RenderGitHubRepositoryLink(editPageLink),
             ["PAGE_SCRIPTS"] =
@@ -399,6 +399,8 @@ public class HtmlRenderer
 
     private static string RenderPageFooter(
         IReadOnlyList<NavigationItem> navigationItems,
+        string editPageLink,
+        bool showEditPageLink,
         DateTimeOffset? lastModified)
     {
         var meta = new List<string>();
@@ -408,6 +410,9 @@ public class HtmlRenderer
             var displayDate = date.ToString("MMMM d, yyyy", CultureInfo.InvariantCulture);
             meta.Add($"<span>Last updated on <time datetime=\"{isoDate}\">{displayDate}</time></span>");
         }
+        if (showEditPageLink && !string.IsNullOrWhiteSpace(editPageLink))
+            meta.Add($"<a href=\"{HtmlEncoder.Default.Encode(editPageLink)}\" target=\"_blank\" rel=\"noopener noreferrer\">Edit this page</a>");
+
         // The sidebar order is the reading order, so its neighbors are the previous and next pages.
         var currentIndex = -1;
         for (var index = 0; index < navigationItems.Count; index++)
@@ -487,18 +492,21 @@ public class HtmlRenderer
             return match.Value.Insert(contentEnd, permalink);
         });
 
-    private static string InsertEditPageLink(string renderedMarkdown, string editPageLink)
+    private static string InsertEditPageLink(string renderedMarkdown, string editPageLink, out bool inserted)
     {
+        inserted = false;
         if (string.IsNullOrWhiteSpace(editPageLink)) return renderedMarkdown;
-        var inserted = false;
-        return HeadingRegex.Replace(renderedMarkdown, match =>
+        var editLinkInserted = false;
+        var result = HeadingRegex.Replace(renderedMarkdown, match =>
         {
-            if (inserted || match.Groups["level"].Value != "1") return match.Value;
-            inserted = true;
+            if (editLinkInserted || match.Groups["level"].Value != "1") return match.Value;
+            editLinkInserted = true;
             var editLink = $"<a class=\"page-edit-link\" href=\"{HtmlEncoder.Default.Encode(editPageLink)}\" target=\"_blank\" rel=\"noopener noreferrer\" aria-label=\"Edit this page\" title=\"Edit this page\"><svg viewBox=\"0 0 20 20\" aria-hidden=\"true\"><path d=\"m3 14.5-.8 3.3 3.3-.8L16.8 5.7a1.8 1.8 0 0 0-2.5-2.5L3 14.5Z\"></path><path d=\"m11.8 5.7 2.5 2.5\"></path></svg></a>";
             var contentEnd = match.Groups["content"].Index + match.Groups["content"].Length - match.Index;
             return match.Value.Insert(contentEnd, editLink);
-        }, 1);
+        });
+        inserted = editLinkInserted;
+        return result;
     }
     
     private string GetEnsuredCssFolderPath(string basePath)
