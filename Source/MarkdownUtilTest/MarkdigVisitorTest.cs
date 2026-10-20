@@ -165,6 +165,7 @@ public class MarkdigVisitorTest
 
             var homeHtml = File.ReadAllText(Path.Combine(outputPath, "index.html"));
             Assert.Contains("has-top-navigation no-wide-sidebar", homeHtml);
+            Assert.DoesNotContain("<nav class=\"breadcrumbs\"", homeHtml);
             var homeSidebar = homeHtml.Split("aria-label=\"Sitemap\"", 2)[1].Split("</aside>", 2)[0];
             Assert.Contains(">Dashboard</a>", homeSidebar);
             Assert.Contains(">Development</a>", homeSidebar);
