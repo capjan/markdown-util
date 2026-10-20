@@ -87,6 +87,22 @@ MDU includes the Dashboard Icons whose SVG files are at most 20 KB and contain n
 
 Shortcodes work anywhere in text, for example in paragraphs, lists, tables, links, and callouts. They are not replaced inside code spans and code blocks, so you can still write about them, as this page does. A shortcode that MDU does not know stays as it is.
 
+### Icons before links
+
+Put an icon directly before a link to lead the reader to it. When the pointer is over the link, the icon moves a little toward it. Hover over the links below to see it:
+
+```markdown title="Markdown"
+:material-arrow-right: [Search](#search) - Find an icon and copy its shortcode  
+:material-arrow-right: [Logos in color](#logos-in-color) - Show app logos in their own colors  
+:material-arrow-right: [Styling](#styling) - Give an icon a color or a class
+```
+
+:material-arrow-right: [Search](#search) - Find an icon and copy its shortcode  
+:material-arrow-right: [Logos in color](#logos-in-color) - Show app logos in their own colors  
+:material-arrow-right: [Styling](#styling) - Give an icon a color or a class
+
+Two spaces at the end of a line start a new line, so each entry gets its own line; a list works as well. Any icon works, not only arrows, for example `:octicons-arrow-right-24:` or `:material-chevron-right:`. The link must be the next element after the icon: text or spaces in between are fine, but a link inside emphasis, such as `**[Styling](#styling)**`, does not move the icon. When the reader's system asks for reduced motion, the icon stays in place.
+
 ### Styling
 
 Add an attribute list directly after a shortcode, without a space, to give the icon or emoji an ID, classes, or HTML attributes. For example, set a color with the `style` attribute:
