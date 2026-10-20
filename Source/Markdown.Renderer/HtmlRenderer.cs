@@ -249,7 +249,24 @@ public class HtmlRenderer
         Add("--surface-header", palette.Background);
         Add("--text-primary", palette.Text);
         Add("--link", palette.Primary);
+        // Secondary text, lines and surfaces follow a custom palette instead of staying on the default neutrals.
+        if (palette.Background is not null || palette.Text is not null)
+        {
+            values.Add($"--text-secondary:{MixText(63)}");
+            values.Add($"--border:{MixText(16)}");
+            values.Add($"--border-subtle:{MixText(11)}");
+            values.Add($"--header-divider:{MixText(11)}");
+            values.Add($"--code-block-border:{MixText(11)}");
+            values.Add($"--surface-current:{MixText(5)}");
+            values.Add($"--surface-code:{MixText(8)}");
+            values.Add($"--surface-code-block:{MixText(5)}");
+            values.Add($"--surface-code-block-body:{MixText(2)}");
+        }
+        if (palette.Primary is not null) values.Add("--nav-hover:color-mix(in oklab,var(--link) 16%,var(--page-background))");
         return string.Join(';', values);
+
+        static string MixText(int percent) =>
+            $"color-mix(in oklab,var(--text-primary) {percent}%,var(--page-background))";
 
         void Add(string name, string? value)
         {
@@ -452,16 +469,16 @@ public class HtmlRenderer
         string renderedMarkdown,
         IReadOnlyList<BreadcrumbItem> breadcrumbs)
     {
-        // A trail that only names the current page repeats the page heading below it.
-        if (breadcrumbs.Count == 0 || breadcrumbs is [{ Url: null }]) return string.Empty;
+        // The current page is left out because the page heading below the trail already names it.
+        var ancestors = breadcrumbs.Where(item => item.Url is not null).ToList();
+        if (ancestors.Count == 0) return string.Empty;
         var headingStart = renderedMarkdown.IndexOf("<h1", StringComparison.Ordinal);
         if (headingStart < 0) return string.Empty;
 
         const string separator =
             """<span class="breadcrumb-separator" aria-hidden="true">/</span>""";
-        var breadcrumbItems = breadcrumbs.Select(item => item.Url is null
-            ? $"<span aria-current=\"page\">{HtmlEncoder.Default.Encode(item.Title)}</span>"
-            : $"<a href=\"{HtmlEncoder.Default.Encode(item.Url)}\">{HtmlEncoder.Default.Encode(item.Title)}</a>");
+        var breadcrumbItems = ancestors.Select(item =>
+            $"<a href=\"{HtmlEncoder.Default.Encode(item.Url!)}\">{HtmlEncoder.Default.Encode(item.Title)}</a>");
         return $"<nav class=\"breadcrumbs\" aria-label=\"Breadcrumb\">{string.Join(separator, breadcrumbItems)}</nav>";
     }
 

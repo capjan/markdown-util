@@ -40,9 +40,36 @@ public class RendererTest
             await renderer.WriteHtml(sw, "test", "", 0, "# Test", "");
 
             var html = sb.ToString();
-            Assert.Contains(":root,:root[data-theme=\"light\"]{--page-background:#123456;--surface-header:#123456}", html);
-            Assert.Contains(":root[data-theme=\"dark\"]{--page-background:#654321;--surface-header:#654321}", html);
-            Assert.Contains("@media(prefers-color-scheme:dark){:root[data-theme=\"auto\"]{--page-background:#654321;--surface-header:#654321}}", html);
+            Assert.Contains(":root,:root[data-theme=\"light\"]{--page-background:#123456;--surface-header:#123456;", html);
+            Assert.Contains(":root[data-theme=\"dark\"]{--page-background:#654321;--surface-header:#654321;", html);
+            Assert.Contains("@media(prefers-color-scheme:dark){:root[data-theme=\"auto\"]{--page-background:#654321;--surface-header:#654321;", html);
+        }
+        finally
+        {
+            if (Directory.Exists(outputPath)) Directory.Delete(outputPath, recursive: true);
+        }
+    }
+
+    [Fact]
+    public async Task DerivesSecondaryColorsFromConfiguredPalette()
+    {
+        var outputPath = Path.Combine(Path.GetTempPath(), Guid.NewGuid().ToString("N"));
+        var renderer = new HtmlRenderer();
+        var sb = new StringBuilder();
+        using var sw = new StringWriter(sb);
+
+        try
+        {
+            renderer.PrepareBasePath(outputPath, new SiteConfiguration
+            {
+                Dark = new SitePalette { Background = "#1b1b1d", Text = "#d4d4d8", Primary = "#5b9bf0" }
+            });
+            await renderer.WriteHtml(sw, "test", "", 0, "# Test", "");
+
+            var html = sb.ToString();
+            Assert.Contains("--text-secondary:color-mix(in oklab,var(--text-primary) 63%,var(--page-background))", html);
+            Assert.Contains("--border:color-mix(in oklab,var(--text-primary) 16%,var(--page-background))", html);
+            Assert.Contains("--nav-hover:color-mix(in oklab,var(--link) 16%,var(--page-background))", html);
         }
         finally
         {
@@ -104,7 +131,7 @@ public class RendererTest
         await new HtmlRenderer().WriteHtml(sw, "test", "", 1, "# Guide", "",
             breadcrumbs: [new BreadcrumbItem("Dashboard", "../index.html"), new BreadcrumbItem("Guide", null)]);
 
-        Assert.Contains("<nav class=\"breadcrumbs\" aria-label=\"Breadcrumb\"><a href=\"../index.html\">Dashboard</a>", sb.ToString());
+        Assert.Contains("<nav class=\"breadcrumbs\" aria-label=\"Breadcrumb\"><a href=\"../index.html\">Dashboard</a></nav>", sb.ToString());
     }
 
     [Fact]
