@@ -448,7 +448,9 @@ void main() {
                 canvas.width = width;
                 canvas.height = height;
                 gl.viewport(0, 0, width, height);
+                return true;
             }
+            return false;
         };
 
         const draw = (now) => {
@@ -514,9 +516,10 @@ void main() {
             schedule();
         };
 
+        // Changing the canvas size clears its drawing buffer, and resize observers run after this
+        // frame's animation callbacks: redraw right away so the browser never paints an empty canvas.
         new ResizeObserver(() => {
-            resize();
-            if (isStill()) schedule();
+            if (resize() && draw(performance.now())) schedule();
         }).observe(canvas);
         new IntersectionObserver((entries) => {
             visible = entries.some((entry) => entry.isIntersecting);
