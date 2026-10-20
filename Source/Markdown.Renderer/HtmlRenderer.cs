@@ -246,6 +246,7 @@ public class HtmlRenderer
         if (palette is null) return string.Empty;
         var values = new List<string>();
         Add("--page-background", palette.Background);
+        Add("--surface-header", palette.Background);
         Add("--text-primary", palette.Text);
         Add("--link", palette.Primary);
         return string.Join(';', values);
