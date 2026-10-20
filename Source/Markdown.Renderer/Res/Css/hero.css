@@ -54,6 +54,46 @@
     pointer-events: none;
 }
 
+/* A full-width hero reaches up behind the header bars; while it is under them, they turn into glass. */
+.hero-full {
+    --hero-overlap: calc(var(--site-header-height) + var(--top-navigation-height));
+    height: calc(min(var(--hero-height), 85vh) + var(--hero-overlap));
+    margin-top: calc(0px - var(--hero-overlap));
+}
+
+.top-navigation.is-empty ~ .hero-full {
+    --hero-overlap: var(--site-header-height);
+}
+
+.hero-full .hero-content {
+    padding-top: calc(2.5rem + var(--hero-overlap));
+}
+
+:root.is-over-hero:not(:has(.site-layout.sidebar-open)) .site-header,
+:root.is-over-hero:not(:has(.site-layout.sidebar-open)) .top-navigation {
+    --text-primary: #fff;
+    --text-secondary: rgb(255 255 255 / 80%);
+    --link: #fff;
+    --border: rgb(255 255 255 / 30%);
+    --surface-current: rgb(255 255 255 / 12%);
+    background: rgb(3 14 28 / 22%);
+    box-shadow: none;
+    backdrop-filter: blur(16px) saturate(140%);
+    -webkit-backdrop-filter: blur(16px) saturate(140%);
+}
+
+:root.is-over-hero .site-header .back-to-top {
+    background: rgb(3 14 28 / 30%);
+}
+
+.site-header {
+    transition: box-shadow 160ms ease, background-color 200ms ease;
+}
+
+.top-navigation {
+    transition: transform 220ms cubic-bezier(0.2, 0.7, 0.2, 1), margin-bottom 220ms cubic-bezier(0.2, 0.7, 0.2, 1), box-shadow 160ms ease, background-color 200ms ease;
+}
+
 .hero-content {
     display: flex;
     flex-direction: column;
@@ -163,6 +203,12 @@
 @media (prefers-color-scheme: dark) {
     :root[data-theme="auto"] .hero {
         --hero-fallback: linear-gradient(180deg, #02050f 0%, #0b1730 40%, #1b2d52 52%, #0f4c5a 53%, #03101f 70%, #2a3a48 76%, #45434f 100%);
+    }
+}
+
+@media (max-width: 1220px) {
+    .hero-full {
+        --hero-overlap: var(--site-header-height);
     }
 }
 

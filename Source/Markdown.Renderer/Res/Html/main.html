@@ -260,6 +260,9 @@
     const topNavigation = document.querySelector(".top-navigation");
     const breadcrumbs = document.querySelector(".breadcrumbs");
     const pageHeading = document.querySelector(".markdown-content h1");
+    const hero = document.querySelector(".hero-full");
+    // The bars stay glass only above the hero's scene, not above its fade into the page.
+    const heroFadeHeight = hero ? parseFloat(getComputedStyle(hero, "::after").height) || 0 : 0;
     const initialHeaderBottom = header?.getBoundingClientRect().bottom ?? 0;
     const initialNavigationBottom = topNavigation?.getBoundingClientRect().bottom ?? initialHeaderBottom;
     const breadcrumbFadeDistance = breadcrumbs
@@ -301,9 +304,17 @@
         item.link.addEventListener("click", () => setActiveHeading(item, true));
     }
 
+    // The header bars turn into glass while a full-width hero lies under them.
+    const updateHeroUnderHeader = () => {
+        if (!hero) return;
+        const topBarBottom = Math.max(header.getBoundingClientRect().bottom, topNavigation?.getBoundingClientRect().bottom ?? 0);
+        document.documentElement.classList.toggle("is-over-hero", hero.getBoundingClientRect().bottom - heroFadeHeight > topBarBottom);
+    };
+
     const updateOnScroll = () => {
         scrollFrame = 0;
         document.documentElement.classList.toggle("is-scrolled", window.scrollY > 0);
+        updateHeroUnderHeader();
         const navigationShift = (topNavigation?.offsetHeight ?? 0) + 16;
         if (window.scrollY !== lastScrollY) {
             const delta = window.scrollY - lastScrollY;
@@ -355,6 +366,7 @@
     window.addEventListener("scroll", scheduleScrollUpdate, { passive: true });
     window.addEventListener("resize", scheduleScrollUpdate);
     window.addEventListener("load", scheduleScrollUpdate);
+    updateHeroUnderHeader();
     scheduleScrollUpdate();
 })();
 </script>
