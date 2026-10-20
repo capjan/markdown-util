@@ -23,7 +23,7 @@ public class RendererTest
     }
 
     [Fact]
-    public async Task UsesConfiguredBackgroundForSiteHeaderAndTopNavigation()
+    public async Task AppliesConfiguredBackgroundToHeaderSurfacesForLightAndDarkThemes()
     {
         var outputPath = Path.Combine(Path.GetTempPath(), Guid.NewGuid().ToString("N"));
         var renderer = new HtmlRenderer();
@@ -34,17 +34,15 @@ public class RendererTest
         {
             renderer.PrepareBasePath(outputPath, new SiteConfiguration
             {
-                Light = new SitePalette { Background = "#123456" }
+                Light = new SitePalette { Background = "#123456" },
+                Dark = new SitePalette { Background = "#654321" }
             });
             await renderer.WriteHtml(sw, "test", "", 0, "# Test", "");
 
             var html = sb.ToString();
-            var css = File.ReadAllText(Path.Combine(outputPath, "css", "main.css"));
-            var siteHeaderStyle = css.Split(".site-header {", 2)[1].Split('}', 2)[0];
-            var topNavigationStyle = css.Split(".top-navigation {", 2)[1].Split('}', 2)[0];
-            Assert.Contains("--page-background:#123456", html);
-            Assert.Contains("background: var(--page-background);", siteHeaderStyle);
-            Assert.Contains("background: var(--page-background);", topNavigationStyle);
+            Assert.Contains(":root,:root[data-theme=\"light\"]{--page-background:#123456;--surface-header:#123456}", html);
+            Assert.Contains(":root[data-theme=\"dark\"]{--page-background:#654321;--surface-header:#654321}", html);
+            Assert.Contains("@media(prefers-color-scheme:dark){:root[data-theme=\"auto\"]{--page-background:#654321;--surface-header:#654321}}", html);
         }
         finally
         {

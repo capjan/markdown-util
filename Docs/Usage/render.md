@@ -18,7 +18,7 @@ The alias `mdu r` runs the same command. See [Paths and file search](README.md#p
 
 ## Site configuration
 
-An optional `mdu.yml` file in the Markdown root configures the site name, light and dark logos and favicons, and theme colors. Referenced assets are copied into the output folder.
+An optional `mdu.yml` file in the Markdown root configures the site name, light and dark logos and favicons, and theme colors. The configured background color also applies to the header, navigation, sidebar, and dialogs. Referenced assets are copied into the output folder.
 
 ```yaml
 site_name: Documentation
