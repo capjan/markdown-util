@@ -1,4 +1,5 @@
 :root {
+    scrollbar-gutter: stable;
     color-scheme: light;
     --site-header-height: 56px;
     --top-navigation-height: 43px;
