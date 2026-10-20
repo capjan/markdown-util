@@ -54,7 +54,7 @@
     pointer-events: none;
 }
 
-/* A full-width hero reaches up behind the header bars; while it is under them, they turn into glass. */
+/* A full-width hero reaches up behind the header bars; while it is under them, the bars are transparent. */
 .hero-full {
     --hero-overlap: calc(var(--site-header-height) + var(--top-navigation-height));
     height: calc(min(var(--hero-height), 85vh) + var(--hero-overlap));
@@ -76,10 +76,70 @@
     --link: #fff;
     --border: rgb(255 255 255 / 30%);
     --surface-current: rgb(255 255 255 / 12%);
-    background: rgb(3 14 28 / 22%);
+    background: transparent;
     box-shadow: none;
-    backdrop-filter: blur(16px) saturate(140%);
-    -webkit-backdrop-filter: blur(16px) saturate(140%);
+}
+
+/* A soft shade behind both bars keeps their text readable on a light scene. It fades out without an edge, so it
+   never reads as a second horizon, and it stays at the top while the hero scrolls under it. It lies below both bars
+   (z-index 18 and 20) and above the hero. */
+body::after {
+    position: fixed;
+    top: 0;
+    right: 0;
+    left: 0;
+    z-index: 17;
+    height: calc(var(--site-header-height) + var(--top-navigation-height) + 4rem);
+    background: linear-gradient(180deg, rgb(3 14 28 / 38%) 0%, rgb(3 14 28 / 22%) 45%, rgb(3 14 28 / 8%) 75%, rgb(3 14 28 / 0%) 100%);
+    content: "";
+    opacity: 0;
+    pointer-events: none;
+    transition: opacity 300ms ease;
+}
+
+body:has(.top-navigation.is-empty)::after {
+    height: calc(var(--site-header-height) + 4rem);
+}
+
+:root.is-over-hero:not(:has(.site-layout.sidebar-open)) body::after {
+    opacity: 1;
+}
+
+/* The hero content fades out right at the lower edge of the bars, so it is never drawn under them. --hero-cut is the
+   part of the content that lies under the bars: the bars' height plus how far the hero has scrolled up. */
+@property --hero-cut {
+    syntax: "<length>";
+    inherits: false;
+    initial-value: 0px;
+}
+
+.hero-full .hero-content {
+    -webkit-mask-image: linear-gradient(180deg, transparent var(--hero-cut), #000 calc(var(--hero-cut) + 2.5rem));
+    mask-image: linear-gradient(180deg, transparent var(--hero-cut), #000 calc(var(--hero-cut) + 2.5rem));
+}
+
+/* A scroll-driven animation moves the cut in the same frame as the scroll; other browsers get it from the scroll script. */
+@keyframes hero-cut {
+    from {
+        --hero-cut: var(--hero-overlap);
+    }
+
+    to {
+        --hero-cut: calc(min(var(--hero-height), 85vh) + 2 * var(--hero-overlap));
+    }
+}
+
+/* The timeline follows the hero in the page; the content's own view() would follow the hero, which clips its overflow. */
+@supports (animation-timeline: view()) {
+    .hero-full {
+        view-timeline-name: --hero-view;
+    }
+
+    .hero-full .hero-content {
+        animation: hero-cut linear both;
+        animation-timeline: --hero-view;
+        animation-range: exit-crossing 0% exit-crossing 100%;
+    }
 }
 
 :root.is-over-hero .site-header .back-to-top {
@@ -87,11 +147,32 @@
 }
 
 .site-header {
-    transition: box-shadow 160ms ease, background-color 200ms ease;
+    transition: box-shadow 160ms ease, background-color 300ms ease;
 }
 
 .top-navigation {
-    transition: transform 220ms cubic-bezier(0.2, 0.7, 0.2, 1), margin-bottom 220ms cubic-bezier(0.2, 0.7, 0.2, 1), box-shadow 160ms ease, background-color 200ms ease;
+    transition: transform 220ms cubic-bezier(0.2, 0.7, 0.2, 1), margin-bottom 220ms cubic-bezier(0.2, 0.7, 0.2, 1), box-shadow 160ms ease, background-color 300ms ease;
+}
+
+/* The scroll script shows both logo variants on hero pages and fades between them. */
+.site-brand-logo.is-hidden-variant {
+    filter: opacity(0);
+}
+
+/* While the bars switch between transparent and solid, their text, icons, borders, and logo fade together with the
+   background. Otherwise the colors would switch at once and show dark text on the scene or light text on a half
+   solid bar. Hover transitions keep their own timing at other times. */
+:root.is-hero-switching .site-header *,
+:root.is-hero-switching .top-navigation * {
+    transition: color 300ms ease, background-color 300ms ease, border-color 300ms ease, filter 300ms ease, opacity 140ms ease, transform 140ms ease, visibility 140ms ease;
+}
+
+:root.is-hero-settling .site-header,
+:root.is-hero-settling .site-header *,
+:root.is-hero-settling .top-navigation,
+:root.is-hero-settling .top-navigation *,
+:root.is-hero-settling body::after {
+    transition: none;
 }
 
 .hero-content {
@@ -209,6 +290,10 @@
 @media (max-width: 1220px) {
     .hero-full {
         --hero-overlap: var(--site-header-height);
+    }
+
+    body::after {
+        height: calc(var(--site-header-height) + 4rem);
     }
 }
 
