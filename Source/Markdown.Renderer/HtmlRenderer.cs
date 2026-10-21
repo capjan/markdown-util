@@ -20,7 +20,9 @@ public class HtmlRenderer
         RegexOptions.Compiled | RegexOptions.Singleline);
     private static readonly Regex HeadingIdRegex = new(@"\bid=""(?<id>[^""]+)""", RegexOptions.Compiled);
     private static readonly Regex ClassAttributeRegex = new(@"\bclass=""(?<class>[^""]*)""", RegexOptions.Compiled);
-    private static readonly Regex OpenApiResponseCodeRegex = new(@"^Response\s*<code>(?<status>[^<]+)</code>", RegexOptions.Compiled);
+    private static readonly Regex OpenApiResponseCodeRegex = new(
+        @"^Response\s*<code>(?<status>[^<]+)</code>(?<suffix>.*?)$",
+        RegexOptions.Compiled | RegexOptions.Singleline);
     private static readonly Regex OpenApiPermalinkRegex = new(
         @"<a\b[^>]*\bclass=""headerlink""[^>]*>.*?</a>",
         RegexOptions.Compiled | RegexOptions.Singleline);
@@ -386,6 +388,7 @@ public class HtmlRenderer
         var headings = new List<TocHeading>();
         foreach (Match match in HeadingRegex.Matches(renderedMarkdown))
         {
+            if (HasClass(match, "openapi-response")) continue;
             var level = match.Groups["level"].Value[0] - '0';
             if (level < 2) continue;
 
@@ -579,7 +582,7 @@ public class HtmlRenderer
     {
         var responses = HeadingRegex.Matches(content)
             .Cast<Match>()
-            .Where(match => match.Groups["level"].Value == "5")
+            .Where(match => match.Groups["level"].Value == "5" && HasClass(match, "openapi-response"))
             .Select(match => new
             {
                 Heading = match,
@@ -589,7 +592,9 @@ public class HtmlRenderer
             .Select(response => new
             {
                 response.Heading,
-                Status = WebUtility.HtmlDecode(response.Code.Groups["status"].Value)
+                Status = WebUtility.HtmlDecode(response.Code.Groups["status"].Value),
+                Label = WebUtility.HtmlDecode(response.Code.Groups["status"].Value +
+                    OpenApiPermalinkRegex.Replace(response.Code.Groups["suffix"].Value, string.Empty)).Trim()
             })
             .ToArray();
         if (responses.Length == 0) return content;
@@ -598,8 +603,7 @@ public class HtmlRenderer
         var firstResponseStart = responses[0].Heading.Index;
         output.Append(content, 0, firstResponseStart);
         output.AppendLine("<div class=\"openapi-responses\">");
-        output.AppendLine("<label class=\"openapi-response-control\">");
-        output.AppendLine("<span>Response</span>");
+        output.AppendLine("<div class=\"openapi-response-control\">");
         output.Append("<select class=\"openapi-response-select ")
             .Append(GetOpenApiResponseStatusClass(responses[0].Status))
             .AppendLine("\" aria-label=\"Response status\">");
@@ -613,10 +617,10 @@ public class HtmlRenderer
                 .Append(GetOpenApiResponseStatusClass(response.Status))
                 .Append("\"");
             if (index == 0) output.Append(" selected");
-            output.Append(">").Append(encodedStatus).AppendLine("</option>");
+            output.Append(">").Append(HtmlEncoder.Default.Encode(response.Label)).AppendLine("</option>");
         }
         output.AppendLine("</select>");
-        output.AppendLine("</label>");
+        output.AppendLine("</div>");
 
         for (var index = 0; index < responses.Length; index++)
         {
@@ -631,7 +635,8 @@ public class HtmlRenderer
                 .Append('"');
             if (index > 0) output.Append(" hidden");
             output.AppendLine(">");
-            output.Append(content, response.Heading.Index, responseEnd - response.Heading.Index);
+            var responseContentStart = response.Heading.Index + response.Heading.Length;
+            output.Append(content, responseContentStart, responseEnd - responseContentStart);
             output.AppendLine("</section>");
         }
 

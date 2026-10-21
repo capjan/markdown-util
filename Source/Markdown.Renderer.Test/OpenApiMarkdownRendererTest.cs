@@ -6,7 +6,7 @@ namespace Markdown.Renderer.Test;
 public class OpenApiMarkdownRendererTest
 {
     [Fact]
-    public async Task CollapsesEndpointsAndRendersPathParametersAndNestedResponseMediaHeadings()
+    public async Task CollapsesEndpointsAndRendersPathParametersAndSelectableResponses()
     {
         var html = await RenderHtml("""
             {
@@ -20,7 +20,8 @@ public class OpenApiMarkdownRendererTest
                       "200": {
                         "description": "Found",
                         "content": { "application/json": { "schema": { "type": "string" } } }
-                      }
+                      },
+                      "404": { "description": "Not found" }
                     }
                   }
                 }
@@ -41,11 +42,16 @@ public class OpenApiMarkdownRendererTest
         Assert.DoesNotContain("<details class=\"openapi-endpoint openapi-method-get\" open", html);
         var detailsStart = html.IndexOf("<details class=\"openapi-endpoint openapi-method-get\">", StringComparison.Ordinal);
         var detailsEnd = html.IndexOf("</details>", detailsStart, StringComparison.Ordinal);
-        var responseHeading = html.IndexOf("<h5 id=\"response-200\">", detailsStart, StringComparison.Ordinal);
-        Assert.True(detailsEnd > responseHeading, html);
+        var responsePanel = html.IndexOf("<section class=\"openapi-response-panel openapi-status-2xx\" data-response-status=\"200\">", detailsStart, StringComparison.Ordinal);
+        Assert.True(detailsEnd > responsePanel, html);
         Assert.DoesNotContain("id=\"get-orders\" id=\"\"", html);
-        Assert.Contains("<h5 id=\"response-200\">Response <code>200</code>", html);
+        Assert.Contains("2 Responses", html);
+        Assert.Contains("<option value=\"200\" class=\"openapi-status-2xx\" selected>200 - OK</option>", html);
+        Assert.Contains("<option value=\"404\" class=\"openapi-status-4xx\">404 - Not Found</option>", html);
+        Assert.DoesNotContain("Response <code>200</code>", html);
         Assert.Contains("<h6 id=\"media-type-applicationjson\">Media type <code>application/json</code>", html);
+        Assert.Contains("&quot;type&quot;", html);
+        Assert.Contains("&quot;string&quot;", html);
     }
 
     [Fact]
@@ -72,6 +78,7 @@ public class OpenApiMarkdownRendererTest
         Assert.Contains("<p>Version: <code>1.0</code></p>", html);
         Assert.Contains("<p><strong>Get `order` &lt;details&gt;</strong></p>", html);
         Assert.Contains("<p>Operation ID: <code>getOrder</code></p>", html);
+        Assert.Contains("1 Response", html);
         Assert.DoesNotContain("<p><strong>Orders <script>", html);
     }
 

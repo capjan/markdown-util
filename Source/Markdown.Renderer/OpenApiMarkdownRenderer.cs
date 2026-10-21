@@ -1,4 +1,6 @@
 using System.Collections.Concurrent;
+using System.Net;
+using System.Net.Http;
 using System.Security.Cryptography;
 using System.Text;
 using System.Text.Encodings.Web;
@@ -174,11 +176,14 @@ public static class OpenApiMarkdownRenderer
     private static void AppendResponses(StringBuilder output, OpenApiOperation operation)
     {
         if (operation.Responses is not { Count: > 0 }) return;
-        output.AppendLine("#### Responses");
+        var responseCount = operation.Responses.Count;
+        output.AppendLine(responseCount == 1 ? "#### 1 Response" : $"#### {responseCount} Responses");
         foreach (var response in operation.Responses)
         {
             var responseObject = ResolveReference(response.Value);
-            output.AppendLine($"##### Response {CodeSpan(response.Key)}");
+            var statusName = ResponseStatusName(response.Key);
+            var statusSuffix = string.IsNullOrWhiteSpace(statusName) ? string.Empty : $" - {EscapeMarkdown(statusName)}";
+            output.AppendLine($"##### Response {CodeSpan(response.Key)}{statusSuffix} {{.openapi-response}}");
             AppendMarkdown(output, responseObject.Description);
             AppendContent(output, responseObject.Content ?? new Dictionary<string, IOpenApiMediaType>(), mediaHeadingLevel: 6);
         }
@@ -192,15 +197,65 @@ public static class OpenApiMarkdownRenderer
         foreach (var media in content)
         {
             output.AppendLine($"{new string('#', mediaHeadingLevel)} Media type {CodeSpan(media.Key)}");
-            if (media.Value.Schema is not null)
-                output.AppendLine($"Schema: {CodeSpan(SchemaType(media.Value.Schema))}");
-
             var example = media.Value.Example ?? (media.Value.Examples ?? new Dictionary<string, IOpenApiExample>()).Values
                 .Select(ResolveReference)
                 .Select(value => value.Value)
                 .FirstOrDefault(value => value is not null);
-            if (example is not null) AppendExample(output, example.ToJsonString(new JsonSerializerOptions { WriteIndented = true }));
+            if (IsJsonMediaType(media.Key))
+            {
+                if (media.Value.Schema is not null)
+                    AppendExample(output, SerializeSchema(media.Value.Schema));
+                else if (example is not null)
+                    AppendExample(output, example.ToJsonString(new JsonSerializerOptions { WriteIndented = true }));
+            }
+            else
+            {
+                if (media.Value.Schema is not null)
+                    output.AppendLine($"Schema: {CodeSpan(SchemaType(media.Value.Schema))}");
+                if (example is not null)
+                    AppendExample(output, example.ToJsonString(new JsonSerializerOptions { WriteIndented = true }));
+            }
         }
+    }
+
+    private static bool IsJsonMediaType(string mediaType)
+    {
+        var type = mediaType.Split(';', 2)[0].Trim();
+        return type.Equals("application/json", StringComparison.OrdinalIgnoreCase) ||
+               type.EndsWith("+json", StringComparison.OrdinalIgnoreCase);
+    }
+
+    private static string SerializeSchema(IOpenApiSchema schema)
+    {
+        using var text = new StringWriter();
+        var writer = new OpenApiJsonWriter(text, new OpenApiJsonWriterSettings { Terse = false });
+        ((OpenApiSchema)ResolveReference(schema)).SerializeAsV31(writer);
+        text.Flush();
+        return text.ToString();
+    }
+
+    private static string? ResponseStatusName(string status)
+    {
+        var normalizedStatus = status.ToUpperInvariant();
+        var name = normalizedStatus switch
+        {
+            "1XX" => "Informational",
+            "2XX" => "Successful",
+            "3XX" => "Redirection",
+            "4XX" => "Client Error",
+            "5XX" => "Server Error",
+            "DEFAULT" => "Default",
+            _ => null
+        };
+
+        if (name is not null) return name;
+        if (int.TryParse(status, out var code) && code is >= 100 and <= 599)
+        {
+            using var response = new HttpResponseMessage((HttpStatusCode)code);
+            return response.ReasonPhrase;
+        }
+
+        return null;
     }
 
     private static void AppendExample(StringBuilder output, string json)
