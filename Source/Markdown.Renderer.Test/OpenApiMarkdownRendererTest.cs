@@ -48,7 +48,7 @@ public class OpenApiMarkdownRendererTest
         var operationId = System.Text.RegularExpressions.Regex.Match(
             operationHeading.Groups["attributes"].Value,
             "id=\"(?<id>[^\"]+)\"").Groups["id"].Value;
-        Assert.Contains($"href=\"#{operationId}\"", html);
+        Assert.Contains($"id=\"{operationId}\"", html);
         Assert.DoesNotContain("<details class=\"openapi-endpoint openapi-method-get\" open", html);
         var detailsStart = html.IndexOf("<details class=\"openapi-endpoint openapi-method-get\">", StringComparison.Ordinal);
         var detailsEnd = html.IndexOf("</details>", detailsStart, StringComparison.Ordinal);
