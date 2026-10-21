@@ -46,18 +46,19 @@ public struct FilePathInfo
         string rootDirectoryPath,
         string outputDirectoryPath,
         FileInfo fileInfo,
-        string? outputFileExtension = default)
+        string? outputFileExtension = default,
+        string? siteRelativePath = null)
     {
         var fullFilePath = fileInfo.FullName;
         var fullDirectoryPath = fileInfo.DirectoryName ?? throw new InvalidOperationException();
 
-        if (!fullFilePath.StartsWith(rootDirectoryPath))
-            throw new InvalidOperationException(
-                $"Every file must be rooted by {rootDirectoryPath}. Current: {fullFilePath} is missing that.");
+        var relativeFilePathToRoot = siteRelativePath ?? Path.GetRelativePath(rootDirectoryPath, fullFilePath);
+        if (Path.IsPathRooted(relativeFilePathToRoot) || relativeFilePathToRoot == ".." ||
+            relativeFilePathToRoot.StartsWith(".." + Path.DirectorySeparatorChar, StringComparison.Ordinal) ||
+            relativeFilePathToRoot.StartsWith(".." + Path.AltDirectorySeparatorChar, StringComparison.Ordinal))
+            throw new InvalidOperationException($"File path '{relativeFilePathToRoot}' must stay inside the documentation root.");
 
-        var trimChars = new[] {'/'};
-        var relativeFilePathToRoot = fullFilePath[rootDirectoryPath.Length..].TrimStart(trimChars);
-        var relativeFolderPathToRoot = fullDirectoryPath[rootDirectoryPath.Length..].TrimStart(trimChars);
+        var relativeFolderPathToRoot = Path.GetDirectoryName(relativeFilePathToRoot) ?? string.Empty;
 
         var outputFullFilePath = Path.Combine(outputDirectoryPath, relativeFilePathToRoot);
         
@@ -66,8 +67,7 @@ public struct FilePathInfo
             outputFullFilePath = Path.ChangeExtension(outputFullFilePath, outputFileExtension);
         }
         var outputFullDirectoryPath = Path.Combine(outputDirectoryPath, relativeFolderPathToRoot);
-        var outputRelativeFilePathToRootDirectory =
-            outputFullFilePath[outputDirectoryPath.Length..].TrimStart(trimChars);
+        var outputRelativeFilePathToRootDirectory = Path.GetRelativePath(outputDirectoryPath, outputFullFilePath);
         
         return new FilePathInfo
         {

@@ -19,6 +19,8 @@ registrations.AddScoped<DataPreparationVisitor>();
 registrations.AddScoped<PrintTreeVisitor>();
 registrations.AddScoped<LintResultRenderer>();
 registrations.AddScoped<GraphBuilder>();
+registrations.AddScoped<GitHubTreeSourceResolver>();
+registrations.AddScoped<IGitHubTreeSourceResolver>(provider => provider.GetRequiredService<GitHubTreeSourceResolver>());
 registrations.AddScoped<FixCommand>();
 registrations.AddScoped<CountNodesVisitor<MarkdownFile>>();
 registrations.AddScoped<HtmlRenderer>();

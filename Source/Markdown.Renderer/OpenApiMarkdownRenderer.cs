@@ -25,12 +25,25 @@ public static class OpenApiMarkdownRenderer
             ? StringComparer.OrdinalIgnoreCase
             : StringComparer.Ordinal);
 
-    public static string ResolveSpecPath(string markdownPath, string specPath) =>
-        Path.GetFullPath(Path.Combine(Path.GetDirectoryName(markdownPath)!, specPath));
-
-    public static string AppendFromFile(string markdown, string markdownPath, string specPath)
+    public static string ResolveSpecPath(string markdownPath, string specPath, string? allowedRootPath = null)
     {
-        var fullSpecPath = ResolveSpecPath(markdownPath, specPath);
+        var fullSpecPath = Path.GetFullPath(Path.Combine(Path.GetDirectoryName(markdownPath)!, specPath));
+        if (allowedRootPath is not null)
+        {
+            var relativePath = Path.GetRelativePath(Path.GetFullPath(allowedRootPath), fullSpecPath);
+            if (Path.IsPathRooted(relativePath) || relativePath == ".." ||
+                relativePath.StartsWith(".." + Path.DirectorySeparatorChar, StringComparison.Ordinal) ||
+                relativePath.StartsWith(".." + Path.AltDirectorySeparatorChar, StringComparison.Ordinal))
+                throw new InvalidOperationException(
+                    $"OpenAPI document '{specPath}' must stay inside the imported repository.");
+        }
+
+        return fullSpecPath;
+    }
+
+    public static string AppendFromFile(string markdown, string markdownPath, string specPath, string? allowedRootPath = null)
+    {
+        var fullSpecPath = ResolveSpecPath(markdownPath, specPath, allowedRootPath);
         var generatedMarkdown = RenderFile(fullSpecPath);
         var overviewTitle = Regex.Match(generatedMarkdown,
             @"\A## API overview \{\.openapi-overview\}\r?\n(?<title><p class=""openapi-api-title""><strong>(?<name>[^\r\n]+)</strong></p>\r?\n\r?\n)");

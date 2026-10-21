@@ -95,7 +95,7 @@ public class LinterVisitor: IVisitor<MarkdownFile>
     {
         _pages.Add(entity);
         var markdownFilePath = entity.FileInfo.FullName;
-        var markdownContent = File.ReadAllText(entity.FileInfo.FullName);
+        var markdownContent = entity.ReadMarkdown();
         ReportLegacySidebarMetadata(entity);
         ReportInvalidNavigationMetadata(entity);
         foreach (var issue in MarkdownCompatibility.FindIssues(markdownContent))
@@ -108,7 +108,7 @@ public class LinterVisitor: IVisitor<MarkdownFile>
         }
         else if (entity.NavigationPlacement == NavigationPlacement.Top)
         {
-            if (!IsTopLevelNavigationPage(entity.FileInfo))
+            if (!IsTopLevelNavigationPage(entity))
                 ErrorReceiver.Add(markdownFilePath, 1,
                     $"{RuleCodes.NavigationPlacementLevel}: navigation.placement: top is only valid on a top-level page or a top-level section README.md/index.md.");
             if (entity.NavigationExpanded.HasValue)
@@ -224,9 +224,10 @@ public class LinterVisitor: IVisitor<MarkdownFile>
         return string.Join(Environment.NewLine, lines);
     }
 
-    private bool IsTopLevelNavigationPage(FileInfo file)
+    private bool IsTopLevelNavigationPage(MarkdownFile page)
     {
-        var relativePath = Path.GetRelativePath(_rootPath, file.FullName);
+        var file = page.FileInfo;
+        var relativePath = page.SiteRelativePath ?? Path.GetRelativePath(_rootPath, file.FullName);
         if (Path.IsPathRooted(relativePath) || relativePath == ".." ||
             relativePath.StartsWith(".." + Path.DirectorySeparatorChar, StringComparison.Ordinal)) return false;
 

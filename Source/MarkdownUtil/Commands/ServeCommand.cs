@@ -211,7 +211,7 @@ public sealed class ServeCommand
 
         foreach (var page in Flatten(graph))
         {
-            var pagePath = Path.GetFullPath(page.FileInfo.FullName);
+            var pagePath = GetPageKey(page);
             _pages[pagePath] = page;
             UpdatePageAssets(pagePath, page);
         }
@@ -234,11 +234,14 @@ public sealed class ServeCommand
         RemovePageAssets(pagePath);
 
         var pageAssets = new HashSet<string>(PathComparer);
-        var markdown = File.ReadAllText(pagePath);
+        var markdown = page.ReadMarkdown();
+        var assetRoot = page.SourceRootPath ?? _rootPath;
         foreach (var assetPath in LocalAssetsCopy.GetLinkedAssetPaths(
                      markdown,
-                     page.FileInfo.DirectoryName ?? _rootPath))
+                     page.FileInfo.DirectoryName ?? _rootPath)
+                 .Where(assetPath => IsInsideDirectory(assetRoot, assetPath)))
         {
+            if (GetAssetOutputPath(page, assetPath) is null) continue;
             pageAssets.Add(assetPath);
             if (!_pagesByAsset.TryGetValue(assetPath, out var dependentPages))
             {
@@ -299,6 +302,18 @@ public sealed class ServeCommand
         if (relevantChanges.Any(change => PathComparer.Equals(change.Path, siteConfigurationPath) ||
                                           _configurationAssets.Contains(change.Path) ||
                                           change.OldPath is not null && _configurationAssets.Contains(change.OldPath)))
+        {
+            RebuildSite();
+            server.Publish(reloadAll: true);
+            return;
+        }
+
+        var importMarkers = _pages.Values
+            .Where(page => page.ImportMarkerPath is not null)
+            .Select(page => Path.GetFullPath(page.ImportMarkerPath!))
+            .ToHashSet(PathComparer);
+        if (relevantChanges.Any(change => importMarkers.Contains(change.Path) ||
+                                          change.OldPath is not null && importMarkers.Contains(change.OldPath)))
         {
             RebuildSite();
             server.Publish(reloadAll: true);
@@ -407,10 +422,11 @@ public sealed class ServeCommand
             foreach (var pagePath in dependentPages)
             {
                 if (_pages.TryGetValue(pagePath, out var page))
+                {
+                    CopyOrRemoveAsset(page, assetPath);
                     affectedPageUrls.Add(PreviewServer.ToUrlPath(_outputPath, GetPageOutputPath(page)));
+                }
             }
-
-            CopyOrRemoveAsset(assetPath);
         }
 
         ReconcileGeneratedFiles(new HashSet<string>(_generatedFiles, PathComparer));
@@ -429,7 +445,10 @@ public sealed class ServeCommand
         foreach (var page in _pages.Values)
         {
             if (string.IsNullOrWhiteSpace(page.OpenApiSpec)) continue;
-            var specPath = OpenApiMarkdownRenderer.ResolveSpecPath(page.FileInfo.FullName, page.OpenApiSpec);
+            var specPath = OpenApiMarkdownRenderer.ResolveSpecPath(
+                page.OpenApiSpecBasePath ?? page.FileInfo.FullName,
+                page.OpenApiSpec,
+                page.OpenApiSpecBasePath is null ? page.SourceRootPath : null);
             if (PathComparer.Equals(specPath, change.Path) ||
                 change.OldPath is not null && PathComparer.Equals(specPath, change.OldPath)) return true;
         }
@@ -452,12 +471,11 @@ public sealed class ServeCommand
         Directory.Exists(change.Path) ||
         change.OldPath is not null && !Path.HasExtension(change.Path) && !Path.HasExtension(change.OldPath);
 
-    private void CopyOrRemoveAsset(string assetPath)
+    private void CopyOrRemoveAsset(MarkdownFile page, string assetPath)
     {
         var source = Path.GetFullPath(assetPath);
-        if (!IsInsideDirectory(_rootPath, source)) return;
-
-        var output = GetAssetOutputPath(source);
+        var output = GetAssetOutputPath(page, source);
+        if (output is null) return;
         if (!File.Exists(source))
         {
             if (File.Exists(output)) File.Delete(output);
@@ -498,10 +516,15 @@ public sealed class ServeCommand
         foreach (var assetPath in _configurationAssets)
             if (File.Exists(assetPath)) currentFiles.Add(GetAssetOutputPath(assetPath));
 
-        foreach (var assetPath in _pagesByAsset.Keys)
+        foreach (var (assetPath, dependentPages) in _pagesByAsset)
         {
-            if (File.Exists(assetPath) && IsInsideDirectory(_rootPath, assetPath))
-                currentFiles.Add(GetAssetOutputPath(assetPath));
+            if (!File.Exists(assetPath)) continue;
+            foreach (var pagePath in dependentPages)
+                if (_pages.TryGetValue(pagePath, out var page))
+                {
+                    var outputPath = GetAssetOutputPath(page, assetPath);
+                    if (outputPath is not null) currentFiles.Add(outputPath);
+                }
         }
 
         foreach (var staleFile in previousFiles.Except(currentFiles, PathComparer))
@@ -515,7 +538,7 @@ public sealed class ServeCommand
 
     private string GetPageOutputPath(MarkdownFile page)
     {
-        var pathInfo = FilePathInfo.CreateRenderFileInfo(_rootPath, _outputPath, page.FileInfo, ".html");
+        var pathInfo = FilePathInfo.CreateRenderFileInfo(_rootPath, _outputPath, page.FileInfo, ".html", page.SiteRelativePath);
         var outputPath = pathInfo.OutputFullFilePath;
         if (outputPath.EndsWith("readme.html", StringComparison.OrdinalIgnoreCase))
             outputPath = outputPath[..^"readme.html".Length] + "index.html";
@@ -524,18 +547,41 @@ public sealed class ServeCommand
 
     private string? GetAliasOutputPath(MarkdownFile page)
     {
+        if (!string.IsNullOrWhiteSpace(page.AliasRelativePath))
+            return Path.GetFullPath(Path.Combine(_outputPath, page.AliasRelativePath));
         if (page.FileInfo.Name.Equals("README.md", StringComparison.OrdinalIgnoreCase)) return null;
         var aliasDirectory = Path.Combine(page.FileInfo.DirectoryName!, Path.GetFileNameWithoutExtension(page.FileInfo.Name));
         if (Directory.Exists(aliasDirectory) && Directory.EnumerateFiles(aliasDirectory).Any(filePath =>
                 Path.GetFileName(filePath).Equals("README.md", StringComparison.OrdinalIgnoreCase) ||
                 Path.GetFileName(filePath).Equals("index.md", StringComparison.OrdinalIgnoreCase))) return null;
-        return Path.GetFullPath(Path.Combine(_outputPath, Path.GetRelativePath(_rootPath, aliasDirectory), "index.html"));
+        var pageOutputPath = GetPageOutputPath(page);
+        return Path.GetFullPath(Path.Combine(
+            Path.GetDirectoryName(pageOutputPath)!,
+            Path.GetFileNameWithoutExtension(pageOutputPath),
+            "index.html"));
     }
 
     private string GetAssetOutputPath(string assetPath)
     {
         var relativePath = Path.GetRelativePath(_rootPath, assetPath);
         return Path.GetFullPath(Path.Combine(_outputPath, relativePath));
+    }
+
+    private string? GetAssetOutputPath(MarkdownFile page, string assetPath)
+    {
+        var sourceDirectory = page.FileInfo.DirectoryName ?? _rootPath;
+        var pageDirectory = Path.GetDirectoryName(page.SiteRelativePath ?? Path.GetRelativePath(_rootPath, page.FileInfo.FullName)) ?? string.Empty;
+        var relativeAssetPath = Path.GetRelativePath(sourceDirectory, assetPath);
+        var outputPath = Path.GetFullPath(Path.Combine(_outputPath, pageDirectory, relativeAssetPath));
+        return IsInsideDirectory(_outputPath, outputPath) ? outputPath : null;
+    }
+
+    private string GetPageKey(MarkdownFile page)
+    {
+        var sourcePath = Path.GetFullPath(page.FileInfo.FullName);
+        return page.SourceRootPath is null
+            ? sourcePath
+            : $"{sourcePath}|{page.SiteRelativePath}";
     }
 
     private static bool IsInsideDirectory(string directory, string path)
@@ -591,7 +637,10 @@ public sealed class ServeCommand
         {
             var directories = pages
                 .Where(page => !string.IsNullOrWhiteSpace(page.OpenApiSpec))
-                .Select(page => OpenApiMarkdownRenderer.ResolveSpecPath(page.FileInfo.FullName, page.OpenApiSpec))
+                .Select(page => OpenApiMarkdownRenderer.ResolveSpecPath(
+                    page.OpenApiSpecBasePath ?? page.FileInfo.FullName,
+                    page.OpenApiSpec,
+                    page.OpenApiSpecBasePath is null ? page.SourceRootPath : null))
                 .Where(path => !IsInsideDirectory(_rootPath, path))
                 .Select(path => Path.GetDirectoryName(path)!)
                 .Where(Directory.Exists)

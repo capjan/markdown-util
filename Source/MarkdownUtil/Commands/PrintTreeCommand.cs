@@ -29,12 +29,21 @@ public class PrintTreeCommand
             return 1;
         }
 
-        var graph = _graphBuilder.CreateGraph(new VisitorSettings
+        MarkdownUtil.Model.MarkdownFile[] graph;
+        try
         {
-            RootPath = rootPath,
-            SearchPattern = settings.SearchPattern,
-            IncludeHidden = settings.IncludeHidden
-        });
+            graph = _graphBuilder.CreateGraph(new VisitorSettings
+            {
+                RootPath = rootPath,
+                SearchPattern = settings.SearchPattern,
+                IncludeHidden = settings.IncludeHidden
+            });
+        }
+        catch (Exception exception) when (exception is IOException or UnauthorizedAccessException or InvalidOperationException or ArgumentException)
+        {
+            Console.Error.WriteLine($"Could not resolve Markdown sources: {exception.Message}");
+            return 1;
+        }
         graph.Visit(_printTreeVisitor);
         return 0;
     }

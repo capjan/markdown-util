@@ -1,4 +1,5 @@
 using Core.Collections.NodeGraph.Extensions;
+using Markdown.Renderer;
 using MarkdownUtil.Commands.Settings;
 using MarkdownUtil.Model;
 using MarkdownUtil.Service.Visitors;
@@ -12,10 +13,12 @@ public class GraphBuilder
 {
 
     private readonly DataPreparationVisitor _dataPreparationVisitor;
+    private readonly IGitHubTreeSourceResolver _sourceResolver;
 
-    public GraphBuilder(DataPreparationVisitor dataPreparationVisitor)
+    public GraphBuilder(DataPreparationVisitor dataPreparationVisitor, IGitHubTreeSourceResolver? sourceResolver = null)
     {
         _dataPreparationVisitor = dataPreparationVisitor;
+        _sourceResolver = sourceResolver ?? new GitHubTreeSourceResolver();
     }
 
     public MarkdownFile[] CreateGraph(IVisitorSettings settings)
@@ -28,14 +31,145 @@ public class GraphBuilder
             RecurseSubdirectories = false
         };
 
-        var rootPath = settings.RootPath ?? Directory.GetCurrentDirectory();
+        var rootPath = Path.GetFullPath(settings.RootPath ?? Directory.GetCurrentDirectory());
         var searchPattern = settings.SearchPattern ?? Default.SearchPattern;
         
         var rootDirectory = new DirectoryInfo(rootPath);
         
         var graph = CreateGraph(rootDirectory, searchPattern, searchOptions);
         graph.Visit(_dataPreparationVisitor);
+        foreach (var page in Flatten(graph))
+            page.SiteRelativePath = Path.GetRelativePath(rootPath, page.FileInfo.FullName);
+
+        graph = ExpandImports(graph, searchPattern, searchOptions);
+        ValidateSitePaths(graph);
         return graph;
+    }
+
+    private MarkdownFile[] ExpandImports(
+        MarkdownFile[] pages,
+        string searchPattern,
+        EnumerationOptions searchOptions)
+    {
+        var result = pages.ToArray();
+        for (var index = 0; index < result.Length; index++)
+        {
+            var page = result[index];
+            if (!string.IsNullOrWhiteSpace(page.ImportSource))
+            {
+                result[index] = ImportPages(page, searchPattern, searchOptions);
+                continue;
+            }
+
+            page.Children = ExpandImports(page.Children, searchPattern, searchOptions);
+        }
+
+        return result;
+    }
+
+    private MarkdownFile ImportPages(
+        MarkdownFile importPage,
+        string searchPattern,
+        EnumerationOptions searchOptions)
+    {
+        var importBody = RemoveFrontMatter(importPage.ReadMarkdown(), importPage.FrontMatter).Trim();
+        if (!string.IsNullOrWhiteSpace(importBody))
+            throw new InvalidOperationException("An mdu.import page must contain front matter only; put its content in the imported README.md or index.md.");
+
+        var source = _sourceResolver.Resolve(importPage.ImportSource!);
+        var importedPages = GetMarkdownFilesAt(null, new DirectoryInfo(source.SourceFolderPath), searchPattern, searchOptions).ToArray();
+        if (importedPages.Length != 1 ||
+            !IsSectionRoot(importedPages[0].FileInfo.Name))
+            throw new InvalidOperationException(
+                $"Imported folder '{source.SourcePath}' must contain a README.md or index.md at its root.");
+
+        importedPages.Visit(_dataPreparationVisitor);
+        if (Flatten(importedPages).Any(page => !string.IsNullOrWhiteSpace(page.ImportSource)))
+            throw new InvalidOperationException("Imported documentation cannot contain another mdu.import declaration.");
+
+        var importedRoot = importedPages[0];
+        var importedMarkdown = importedRoot.ReadMarkdown();
+        var importedFrontMatter = importedRoot.FrontMatter;
+        importedRoot.MarkdownContent = importPage.FrontMatter + RemoveFrontMatter(importedMarkdown, importedFrontMatter);
+        importedRoot.OpenApiSpecBasePath = importPage.FileInfo.FullName;
+
+        var mountDirectory = GetMountDirectory(importPage.SiteRelativePath!);
+        var rootRelativePath = Path.Combine(mountDirectory, importedRoot.FileInfo.Name);
+        importedRoot.ImportMarkerPath = importPage.FileInfo.FullName;
+        importedRoot.Parent = importPage.Parent;
+
+        foreach (var page in Flatten(importedPages))
+        {
+            var sourceRelativePath = Path.GetRelativePath(source.SourceFolderPath, page.FileInfo.FullName);
+            page.SiteRelativePath = Path.Combine(mountDirectory, sourceRelativePath);
+            page.EditPageLink = GetEditPageLink(source, page.FileInfo);
+            page.SourceRootPath = source.RepositoryPath;
+        }
+
+        importedRoot.SiteRelativePath = rootRelativePath;
+        importedRoot.AliasRelativePath = IsSectionRoot(Path.GetFileName(importPage.SiteRelativePath!))
+            ? null
+            : Path.ChangeExtension(importPage.SiteRelativePath, ".html");
+        _dataPreparationVisitor.Process(importedRoot, importPage.CountDepth());
+        importedRoot.ImportSource = null;
+
+        foreach (var page in Flatten(importedPages).Where(page => !ReferenceEquals(page, importedRoot)))
+        {
+            if (string.IsNullOrWhiteSpace(page.OpenApiSpec)) continue;
+            OpenApiMarkdownRenderer.ResolveSpecPath(page.FileInfo.FullName, page.OpenApiSpec, source.RepositoryPath);
+        }
+
+        var localChildren = ExpandImports(importPage.Children, searchPattern, searchOptions);
+        foreach (var child in localChildren) child.Parent = importedRoot;
+        importedRoot.Children = importedRoot.Children.Concat(localChildren).ToArray();
+        return importedRoot;
+    }
+
+    private static string GetMountDirectory(string importRelativePath)
+    {
+        var directory = Path.GetDirectoryName(importRelativePath) ?? string.Empty;
+        var fileName = Path.GetFileName(importRelativePath);
+        return IsSectionRoot(fileName)
+            ? directory
+            : Path.Combine(directory, Path.GetFileNameWithoutExtension(fileName));
+    }
+
+    private static bool IsSectionRoot(string fileName) =>
+        fileName.Equals("README.md", StringComparison.OrdinalIgnoreCase) ||
+        fileName.Equals("index.md", StringComparison.OrdinalIgnoreCase);
+
+    private static string GetEditPageLink(ResolvedGitHubTreeSource source, FileInfo file)
+    {
+        var relativePath = Path.GetRelativePath(source.RepositoryPath, file.FullName)
+            .Replace(Path.DirectorySeparatorChar, '/');
+        var reference = string.Join('/', source.ReferenceName.Split('/').Select(Uri.EscapeDataString));
+        var filePath = string.Join('/', relativePath.Split('/').Select(Uri.EscapeDataString));
+        return $"{source.WebRepositoryUrl}/edit/{reference}/{filePath}";
+    }
+
+    private static string RemoveFrontMatter(string markdown, string frontMatter) =>
+        !string.IsNullOrEmpty(frontMatter) && markdown.StartsWith(frontMatter, StringComparison.Ordinal)
+            ? markdown[frontMatter.Length..].TrimStart('\r', '\n')
+            : markdown;
+
+    private static IEnumerable<MarkdownFile> Flatten(IEnumerable<MarkdownFile> pages)
+    {
+        foreach (var page in pages)
+        {
+            yield return page;
+            foreach (var child in Flatten(page.Children)) yield return child;
+        }
+    }
+
+    private static void ValidateSitePaths(IEnumerable<MarkdownFile> roots)
+    {
+        var paths = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+        foreach (var page in Flatten(roots))
+        {
+            var relativePath = page.SiteRelativePath!.Replace(Path.DirectorySeparatorChar, '/');
+            if (!paths.Add(relativePath))
+                throw new InvalidOperationException($"More than one Markdown page maps to '{relativePath}'.");
+        }
     }
 
     private MarkdownFile[] CreateGraph(DirectoryInfo directoryInfo, string searchPattern, EnumerationOptions searchOptions)

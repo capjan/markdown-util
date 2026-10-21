@@ -63,10 +63,20 @@ public class RenderCommand
             Console.Error.WriteLine($"Could not read mdu.yml: {exception.Message}");
             return 1;
         }
+        MarkdownFile[] graph;
+        try
+        {
+            graph = _graphBuilder.CreateGraph(resolvedSettings);
+        }
+        catch (Exception exception) when (exception is IOException or UnauthorizedAccessException or ArgumentException or InvalidOperationException)
+        {
+            Console.Error.WriteLine($"Could not resolve Markdown sources: {exception.Message}");
+            return 1;
+        }
+
         _renderer.PrepareBasePath(outPath, siteConfiguration);
         SearchClientAsset.WriteTo(outPath);
         _searchIndexBuilder.Clear();
-        var graph = _graphBuilder.CreateGraph(resolvedSettings);
         var nodeCount = CountMarkdownNodes(graph);
         
         Console.WriteLine("Preparing Assets");

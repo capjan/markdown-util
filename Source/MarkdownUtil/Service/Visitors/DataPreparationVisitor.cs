@@ -1,5 +1,4 @@
 using System.Globalization;
-using System.Text;
 using Core.Parser.Special;
 using Core.Collections.NodeGraph;
 using Markdown.Document;
@@ -22,7 +21,7 @@ public class DataPreparationVisitor: IVisitor<MarkdownFile>
 
     public bool Process(MarkdownFile entity, int graphDepth)
     {
-        using var reader = new StreamReader(entity.FileInfo.FullName, Encoding.UTF8);
+        using var reader = new StringReader(entity.ReadMarkdown());
         var input = new ParserInput(reader);
         var header = _markdownReader.ReadHeader(input);
         entity.HeadingTitle = header.Title;
@@ -32,6 +31,7 @@ public class DataPreparationVisitor: IVisitor<MarkdownFile>
         entity.Description = navigationSettings.Description ?? string.Empty;
         entity.Icon = navigationSettings.Icon ?? string.Empty;
         entity.OpenApiSpec = navigationSettings.OpenApiSpec ?? string.Empty;
+        entity.ImportSource = navigationSettings.ImportSource;
         entity.NavigationTitle = navigationSettings.NavigationTitle ?? string.Empty;
         entity.NavigationOrder = navigationSettings.Order;
         entity.NavigationVisible = navigationSettings.Visible;
@@ -61,6 +61,7 @@ public class DataPreparationVisitor: IVisitor<MarkdownFile>
             var description = ReadScalar(metadata, "description");
             var icon = ReadScalar(metadata, "icon");
             var openApiSpec = ReadScalar(metadata, "openapi");
+            var importSource = ReadImportSource(metadata);
             YamlMappingNode? navigation = null;
             if (metadata.Children.TryGetValue(new YamlScalarNode("navigation"), out var navigationNode))
                 navigation = navigationNode as YamlMappingNode;
@@ -129,13 +130,29 @@ public class DataPreparationVisitor: IVisitor<MarkdownFile>
                 ? placementValue ?? "(must be a string)"
                 : null;
 
-            return new FrontMatterSettings(title, description, icon, openApiSpec, navigationTitle, order, visible, expanded,
+            return new FrontMatterSettings(title, description, icon, openApiSpec, importSource, navigationTitle, order, visible, expanded,
                 placement, invalidPlacement);
         }
         catch (YamlException)
         {
             return new FrontMatterSettings();
         }
+    }
+
+    private static string? ReadImportSource(YamlMappingNode metadata)
+    {
+        if (!metadata.Children.TryGetValue(new YamlScalarNode("mdu"), out var mduNode) || mduNode is not YamlMappingNode mdu ||
+            !mdu.Children.TryGetValue(new YamlScalarNode("import"), out var importNode))
+            return null;
+
+        if (importNode is not YamlMappingNode import)
+            throw new InvalidOperationException("The mdu.import frontmatter field must be a mapping with a source URL.");
+
+        var source = ReadScalar(import, "source");
+        if (string.IsNullOrWhiteSpace(source))
+            throw new InvalidOperationException("The mdu.import.source frontmatter field is required.");
+
+        return source;
     }
 
     private static string? ReadScalar(YamlMappingNode mapping, string key) =>
@@ -148,6 +165,7 @@ public class DataPreparationVisitor: IVisitor<MarkdownFile>
         string? Description = null,
         string? Icon = null,
         string? OpenApiSpec = null,
+        string? ImportSource = null,
         string? NavigationTitle = null,
         int? Order = null,
         bool Visible = true,

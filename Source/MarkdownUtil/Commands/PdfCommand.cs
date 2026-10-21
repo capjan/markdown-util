@@ -37,12 +37,21 @@ public sealed class PdfCommand(GraphBuilder graphBuilder, PdfRenderer pdfRendere
 
         var defaultOutputName = singleFilePath is null ? "documentation.pdf" : $"{Path.GetFileNameWithoutExtension(singleFilePath)}.pdf";
         var outputPath = Path.GetFullPath(settings.OutputPath ?? Path.Combine(Environment.CurrentDirectory, defaultOutputName));
-        var graph = graphBuilder.CreateGraph(new RenderCommandSettings
+        MarkdownFile[] graph;
+        try
         {
-            RootPath = rootPath,
-            SearchPattern = settings.SearchPattern,
-            IncludeHidden = settings.IncludeHidden
-        });
+            graph = graphBuilder.CreateGraph(new RenderCommandSettings
+            {
+                RootPath = rootPath,
+                SearchPattern = settings.SearchPattern,
+                IncludeHidden = settings.IncludeHidden
+            });
+        }
+        catch (Exception exception) when (exception is IOException or UnauthorizedAccessException or InvalidOperationException or ArgumentException)
+        {
+            Console.Error.WriteLine($"Could not resolve Markdown sources: {exception.Message}");
+            return 1;
+        }
         var files = Flatten(graph);
         if (singleFilePath is not null)
             files = files.Where(item => Path.GetFullPath(item.File.FileInfo.FullName).Equals(singleFilePath, StringComparison.Ordinal));
@@ -64,7 +73,7 @@ public sealed class PdfCommand(GraphBuilder graphBuilder, PdfRenderer pdfRendere
     {
         var files = Flatten(graph).ToArray();
         var containsPdfLink = files.Any(item => pdfRenderer.ContainsPdfLink(
-            RemoveFrontMatter(File.ReadAllText(item.File.FileInfo.FullName), item.File.FrontMatter)));
+            RemoveFrontMatter(item.File.ReadMarkdown(), item.File.FrontMatter)));
         if (!containsPdfLink)
         {
             if (File.Exists(outputPath)) File.Delete(outputPath);
@@ -83,9 +92,13 @@ public sealed class PdfCommand(GraphBuilder graphBuilder, PdfRenderer pdfRendere
         var sections = files.Where(item => IsPdfVisible(item.File.FrontMatter))
             .Select(item =>
             {
-                var markdown = RemoveFrontMatter(File.ReadAllText(item.File.FileInfo.FullName), item.File.FrontMatter);
+                var markdown = RemoveFrontMatter(item.File.ReadMarkdown(), item.File.FrontMatter);
                 if (!string.IsNullOrWhiteSpace(item.File.OpenApiSpec))
-                    markdown = OpenApiMarkdownRenderer.AppendFromFile(markdown, item.File.FileInfo.FullName, item.File.OpenApiSpec);
+                    markdown = OpenApiMarkdownRenderer.AppendFromFile(
+                        markdown,
+                        item.File.OpenApiSpecBasePath ?? item.File.FileInfo.FullName,
+                        item.File.OpenApiSpec,
+                        item.File.OpenApiSpecBasePath is null ? item.File.SourceRootPath : null);
                 return new PdfSourceSection(
                     GetTitle(item.File),
                     GetRelativeHtmlPath(rootPath, item.File),
@@ -140,7 +153,7 @@ public sealed class PdfCommand(GraphBuilder graphBuilder, PdfRenderer pdfRendere
 
     private static string GetRelativeHtmlPath(string rootPath, MarkdownFile file)
     {
-        var relativePath = Path.ChangeExtension(Path.GetRelativePath(rootPath, file.FileInfo.FullName), ".html");
+        var relativePath = Path.ChangeExtension(file.SiteRelativePath ?? Path.GetRelativePath(rootPath, file.FileInfo.FullName), ".html");
         if (Path.GetFileName(relativePath).Equals("README.html", StringComparison.OrdinalIgnoreCase))
             relativePath = Path.Combine(Path.GetDirectoryName(relativePath) ?? string.Empty, "index.html");
         return relativePath.Replace(Path.DirectorySeparatorChar, '/');
