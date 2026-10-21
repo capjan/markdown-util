@@ -29,6 +29,10 @@ Everything on these pages is written in ordinary Markdown. Each page shows the s
 
 - [Navigation](Navigation.md) - Sidebar, top tabs, breadcrumbs, ordering, and the page footer
 
+## Document APIs
+
+- [OpenAPI](OpenAPI.md) - Add a static API reference from a local OpenAPI specification
+
 ## Publish
 
 - [PDF Link](Pdf-Link.md) - Place a link to the generated PDF anywhere in your pages
