@@ -2,6 +2,8 @@
 
 `mdu render` and `mdu serve` create a combined `documentation.pdf` in the site output folder only when at least one Markdown page contains a PDF Link. With no PDF Link, no PDF asset is generated. `mdu serve` refreshes the PDF when Markdown pages change.
 
+## Syntax
+
 Place a styled link anywhere in your Markdown and choose its label:
 
 ```markdown title="Markdown"
