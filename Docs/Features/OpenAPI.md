@@ -30,6 +30,6 @@ The response selector shows the status code and name, followed by a media type s
 
 Parameter and schema tables combine names and types as `name: Type`. Primitive types with a format show the format instead, such as `uuid`, `int64`, or `dateTime`. Required fields carry a red asterisk, and default values follow the type as `= value`. The allowed values of an enum appear below the field that uses it, so enums need no separate schema table. Table descriptions start hidden; use **Show descriptions** in the table header to reveal them. Tables without description text omit this control.
 
-Generated examples use typical values for common string formats, such as a UUID or a UTC timestamp, when the specification provides no example.
+Generated examples use typical values for common string formats, such as a UUID or a UTC timestamp, when the specification provides no example. Generated numbers respect declared minimums, request examples leave out read-only properties, and response examples leave out write-only properties.
 
 The generated reference gives each HTTP method a distinct label, highlights endpoint paths, and separates API groups and schemas. It follows the site's light or dark theme and is published as static HTML and CSS without making API requests. References within the specification are resolved; external `$ref` files are not loaded.

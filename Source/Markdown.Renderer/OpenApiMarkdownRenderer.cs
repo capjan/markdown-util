@@ -303,7 +303,9 @@ public static class OpenApiMarkdownRenderer
                 .Select(ResolveReference)
                 .Select(value => value.Value)
                 .FirstOrDefault(value => value is not null);
-            var exampleValue = example ?? (media.Value.Schema is null ? null : CreateSchemaExample(media.Value.Schema));
+            var exampleValue = example ?? (media.Value.Schema is null
+                ? null
+                : CreateSchemaExample(media.Value.Schema, mediaHeadingClass == "openapi-request-media-type"));
             if (exampleValue is null)
                 output.AppendLine("No example is available.");
             else
@@ -724,10 +726,11 @@ public static class OpenApiMarkdownRenderer
         return text.ToString();
     }
 
-    private static JsonNode? CreateSchemaExample(IOpenApiSchema schema) =>
-        CreateSchemaExample(schema, new HashSet<IOpenApiSchema>(ReferenceEqualityComparer.Instance));
+    // Request examples leave out read-only properties and response examples leave out write-only ones.
+    private static JsonNode? CreateSchemaExample(IOpenApiSchema schema, bool forRequest) =>
+        CreateSchemaExample(schema, new HashSet<IOpenApiSchema>(ReferenceEqualityComparer.Instance), forRequest);
 
-    private static JsonNode? CreateSchemaExample(IOpenApiSchema schema, HashSet<IOpenApiSchema> ancestors)
+    private static JsonNode? CreateSchemaExample(IOpenApiSchema schema, HashSet<IOpenApiSchema> ancestors, bool forRequest)
     {
         schema = ResolveReference(schema);
         if (!ancestors.Add(schema)) return null;
@@ -740,13 +743,13 @@ public static class OpenApiMarkdownRenderer
 #pragma warning restore CS0618
             suppliedExample ??= schema.Default ?? schema.Enum?.FirstOrDefault();
             if (suppliedExample is not null) return suppliedExample.DeepClone();
-            if (schema.OneOf?.FirstOrDefault() is { } oneOf) return CreateSchemaExample(oneOf, ancestors);
-            if (schema.AnyOf?.FirstOrDefault() is { } anyOf) return CreateSchemaExample(anyOf, ancestors);
+            if (schema.OneOf?.FirstOrDefault() is { } oneOf) return CreateSchemaExample(oneOf, ancestors, forRequest);
+            if (schema.AnyOf?.FirstOrDefault() is { } anyOf) return CreateSchemaExample(anyOf, ancestors, forRequest);
 
             if (schema.Type?.HasFlag(JsonSchemaType.Array) == true || schema.Items is not null)
             {
                 var example = new JsonArray();
-                if (schema.Items is not null) example.Add(CreateSchemaExample(schema.Items, ancestors));
+                if (schema.Items is not null) example.Add(CreateSchemaExample(schema.Items, ancestors, forRequest));
                 return example;
             }
 
@@ -755,25 +758,25 @@ public static class OpenApiMarkdownRenderer
                 var example = new JsonObject();
                 foreach (var part in schema.AllOf)
                 {
-                    if (CreateSchemaExample(part, ancestors) is not JsonObject partExample) continue;
+                    if (CreateSchemaExample(part, ancestors, forRequest) is not JsonObject partExample) continue;
                     foreach (var property in partExample)
                         example[property.Key] = property.Value?.DeepClone();
                 }
-                AddSchemaProperties(example, schema, ancestors);
+                AddSchemaProperties(example, schema, ancestors, forRequest);
                 return example;
             }
 
             if (schema.Properties is { Count: > 0 } || schema.Type?.HasFlag(JsonSchemaType.Object) == true)
             {
                 var example = new JsonObject();
-                AddSchemaProperties(example, schema, ancestors);
+                AddSchemaProperties(example, schema, ancestors, forRequest);
                 return example;
             }
 
             var type = schema.Type ?? JsonSchemaType.Null;
             if (type.HasFlag(JsonSchemaType.String)) return JsonValue.Create(StringExample(schema.Format));
-            if (type.HasFlag(JsonSchemaType.Integer)) return JsonValue.Create(0);
-            if (type.HasFlag(JsonSchemaType.Number)) return JsonValue.Create(0);
+            if (type.HasFlag(JsonSchemaType.Integer)) return JsonValue.Create(NumberExample(schema, 1m));
+            if (type.HasFlag(JsonSchemaType.Number)) return JsonValue.Create(NumberExample(schema, ParseNumber(schema.MultipleOf) ?? 1m));
             if (type.HasFlag(JsonSchemaType.Boolean)) return JsonValue.Create(false);
             return null;
         }
@@ -799,11 +802,31 @@ public static class OpenApiMarkdownRenderer
         _ => "string"
     };
 
-    private static void AddSchemaProperties(JsonObject example, IOpenApiSchema schema, HashSet<IOpenApiSchema> ancestors)
+    private static void AddSchemaProperties(JsonObject example, IOpenApiSchema schema, HashSet<IOpenApiSchema> ancestors, bool forRequest)
     {
         foreach (var property in schema.Properties ?? new Dictionary<string, IOpenApiSchema>())
-            example[property.Key] = CreateSchemaExample(property.Value, ancestors);
+        {
+            var propertySchema = ResolveReference(property.Value);
+            if (forRequest ? propertySchema.ReadOnly : propertySchema.WriteOnly) continue;
+            example[property.Key] = CreateSchemaExample(property.Value, ancestors, forRequest);
+        }
     }
+
+    // Generated numbers stay inside the declared bounds, so an exclusive minimum of 0 does not produce 0.
+    private static decimal NumberExample(IOpenApiSchema schema, decimal step)
+    {
+        if (ParseNumber(schema.Minimum) is { } minimum) return minimum;
+        if (ParseNumber(schema.ExclusiveMinimum) is { } exclusiveMinimum) return exclusiveMinimum + step;
+        if (ParseNumber(schema.Maximum) is { } maximum && maximum < 0) return maximum;
+        if (ParseNumber(schema.ExclusiveMaximum) is { } exclusiveMaximum && exclusiveMaximum <= 0) return exclusiveMaximum - step;
+        return 0;
+    }
+
+    private static decimal? ParseNumber(object? value) =>
+        value is not null && decimal.TryParse(Convert.ToString(value, System.Globalization.CultureInfo.InvariantCulture),
+            System.Globalization.NumberStyles.Float, System.Globalization.CultureInfo.InvariantCulture, out var number)
+            ? number
+            : null;
 
     private static string? ResponseStatusName(string status)
     {

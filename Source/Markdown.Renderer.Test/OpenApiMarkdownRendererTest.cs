@@ -285,6 +285,39 @@ public class OpenApiMarkdownRendererTest
         Assert.Contains("template[data-openapi-shared=", html);
     }
 
+    [Theory]
+    [InlineData(true, "password", "id")]
+    [InlineData(false, "id", "password")]
+    public async Task GeneratedExamplesFollowAccessModesAndBounds(bool request, string included, string excluded)
+    {
+        var html = await RenderHtml($$"""
+            {
+              "openapi": "3.1.0",
+              "info": { "title": "Accounts", "version": "1" },
+              "paths": { "/accounts": { "post": {
+                "requestBody": { "content": { "application/json": { "schema": { "$ref": "#/components/schemas/Account" } } } },
+                "responses": { "201": { "description": "Created", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/Account" } } } } }
+              } } },
+              "components": { "schemas": { "Account": { "type": "object", "properties": {
+                "id": { "type": "string", "readOnly": true },
+                "password": { "type": "string", "writeOnly": true },
+                "balance": { "type": "number", "exclusiveMinimum": 0 },
+                "level": { "type": "integer", "minimum": 3 }
+              } } } }
+            }
+            """);
+
+        var section = request
+            ? html[html.IndexOf("class=\"openapi-request-body\"", StringComparison.Ordinal)..html.IndexOf("class=\"openapi-responses\"", StringComparison.Ordinal)]
+            : html[html.IndexOf("class=\"openapi-responses\"", StringComparison.Ordinal)..];
+        var example = System.Text.RegularExpressions.Regex.Replace(
+            System.Text.RegularExpressions.Regex.Match(section, "<pre.*?</pre>", System.Text.RegularExpressions.RegexOptions.Singleline).Value, "<[^>]+>", "");
+        Assert.Contains($"&quot;{included}&quot;", example);
+        Assert.DoesNotContain($"&quot;{excluded}&quot;", example);
+        Assert.Contains("&quot;balance&quot;: 1", example);
+        Assert.Contains("&quot;level&quot;: 3", example);
+    }
+
     private static async Task<string> RenderHtml(string specification)
     {
         var directory = Path.Combine(Path.GetTempPath(), $"mdu-openapi-html-{Guid.NewGuid():N}");
