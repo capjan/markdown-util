@@ -11,8 +11,9 @@ any trademark rights.
 
 - Source: https://pictogrammers.com/library/mdi/, through the npm package `@iconify-json/mdi`
 - License: Pictogrammers Free License; the icons are distributed under the Apache License 2.0
-  (https://github.com/Templarian/MaterialDesign/blob/master/LICENSE). The text of the Apache License 2.0 is in
-  `Res/dashboard-icons.LICENSE`.
+  (https://github.com/Templarian/MaterialDesign/blob/master/LICENSE). The Apache License 2.0 text is in
+  `licenses/dashboard-icons.LICENSE` in release archives and the NuGet package; in the repository it is
+  `Source/StaticCode.Icons/Res/dashboard-icons.LICENSE`.
 
 ## Font Awesome Free (Brands, Regular, Solid)
 
@@ -59,7 +60,8 @@ SOFTWARE.
 
 - Source: https://github.com/homarr-labs/dashboard-icons
 - Copyright (c) 2024 Bjorn Lammers, Meier Lukas, Thomas Camlong and Homarr Labs
-- License: Apache License 2.0; the full license text is in `Res/dashboard-icons.LICENSE`
+- License: Apache License 2.0; the full license text is in `licenses/dashboard-icons.LICENSE` in release archives
+  and the NuGet package, and `Source/StaticCode.Icons/Res/dashboard-icons.LICENSE` in the repository.
 
 ## Math rendering
 

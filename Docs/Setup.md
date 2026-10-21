@@ -15,6 +15,14 @@ Install the [.NET 10 SDK](https://dotnet.microsoft.com/en-us/download/dotnet/10.
 
 Each GitHub release includes self-contained executables for Windows x64, Linux x64, macOS Intel, and Apple silicon (ARM64). They do not require the .NET SDK or runtime. Download the archive for your system from the [latest release](https://github.com/capjan/mdu/releases/latest), extract it, and put `mdu` or `mdu.exe` on your `PATH`.
 
+The Linux x64 executable requires glibc 2.35 or newer; Alpine Linux and other musl-based distributions are not supported.
+
+The macOS executable is not signed or notarized. If Gatekeeper blocks it after extraction, remove the quarantine attribute and try again:
+
+```bash
+xattr -d com.apple.quarantine ./mdu
+```
+
 ## Install globally
 
 A global tool is available everywhere on your machine:
