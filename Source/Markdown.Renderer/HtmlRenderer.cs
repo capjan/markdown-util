@@ -710,9 +710,9 @@ public class HtmlRenderer
     {
         if (mediaTypes.Count == 0) return;
         output.AppendLine("<div class=\"openapi-media-type-control\">");
-        output.Append("<label class=\"openapi-media-type-label\">Media Type <span class=\"openapi-media-type-position\">1 of ")
+        output.Append("<label class=\"openapi-media-type-label\"><span class=\"openapi-media-type-heading\">Media Type <span class=\"openapi-media-type-position\">1 of ")
             .Append(mediaTypes.Count)
-            .AppendLine("</span>");
+            .AppendLine("</span></span>");
         output.AppendLine("<select class=\"openapi-media-type-select\" aria-label=\"Media type\">");
         for (var index = 0; index < mediaTypes.Count; index++)
         {

@@ -209,7 +209,7 @@ public static class OpenApiMarkdownRenderer
             var anchorPrefix = CreateSchemaAnchorPrefix($"{responseKey}-{media.Key}");
             output.AppendLine($"###### Media type {CodeSpan(media.Key)} {{.openapi-media-type}}");
             output.AppendLine("##### Example {.openapi-response-example}");
-            AppendResponseSchemaName(output, media.Value.Schema);
+            AppendResponseSchemaName(output, media.Value.Schema, schemas);
             var example = media.Value.Example ?? (media.Value.Examples ?? new Dictionary<string, IOpenApiExample>()).Values
                 .Select(ResolveReference)
                 .Select(value => value.Value)
@@ -221,12 +221,12 @@ public static class OpenApiMarkdownRenderer
                 AppendCodeBlock(output, ExampleText(exampleValue, media.Key), ExampleLanguage(media.Key));
 
             output.AppendLine("##### Schema {.openapi-response-schema-table}");
-            AppendResponseSchemaName(output, media.Value.Schema);
+            AppendResponseSchemaName(output, media.Value.Schema, schemas);
             AppendResponseSchemaTable(output, media.Value.Schema, schemas, anchorPrefix);
             AppendReferencedResponseSchemas(output, media.Value.Schema, schemas, anchorPrefix);
 
             output.AppendLine("##### Schema JSON {.openapi-response-schema-json}");
-            AppendResponseSchemaName(output, media.Value.Schema);
+            AppendResponseSchemaName(output, media.Value.Schema, schemas);
             if (media.Value.Schema is null)
                 output.AppendLine("No schema is defined.");
             else
@@ -250,10 +250,13 @@ public static class OpenApiMarkdownRenderer
         return string.Empty;
     }
 
-    private static void AppendResponseSchemaName(StringBuilder output, IOpenApiSchema? schema)
+    private static void AppendResponseSchemaName(
+        StringBuilder output,
+        IOpenApiSchema? schema,
+        IDictionary<string, IOpenApiSchema>? components)
     {
         if (schema is null) return;
-        output.AppendLine($"**{CodeSpan(SchemaName(schema))}**");
+        output.AppendLine($"**{CodeSpan(SchemaName(schema, components))}**");
         output.AppendLine();
     }
 
@@ -270,7 +273,10 @@ public static class OpenApiMarkdownRenderer
         }
 
         var tableSchema = ResolveResponseSchemaReference(schema, components);
-        var isArrayOfReference = tableSchema.Items is not null && GetReference(tableSchema.Items) is { IsLocal: true };
+        var isArrayOfReference = tableSchema.Type == JsonSchemaType.Array &&
+                                 tableSchema.Items is not null &&
+                                 GetReference(tableSchema.Items) is { IsLocal: true };
+        if (isArrayOfReference) return;
         if (tableSchema.Items is not null && !isArrayOfReference)
             tableSchema = ResolveReference(tableSchema.Items);
 
@@ -423,6 +429,10 @@ public static class OpenApiMarkdownRenderer
         schema = ResolveReference(schema);
         if (schema.Type == JsonSchemaType.Array && schema.Items is not null)
             return $"array of {SchemaTypeMarkup(schema.Items, anchors)}";
+        if (schema.OneOf is { Count: > 0 } nullableOneOf && HasNullableUnion(nullableOneOf))
+            return CodeSpan(SchemaUnionType(nullableOneOf));
+        if (schema.AnyOf is { Count: > 0 } nullableAnyOf && HasNullableUnion(nullableAnyOf))
+            return CodeSpan(SchemaUnionType(nullableAnyOf));
         if (schema.OneOf is { Count: > 0 } oneOf)
             return string.Join(" or ", oneOf.Select(nested => SchemaTypeMarkup(nested, anchors)));
         if (schema.AnyOf is { Count: > 0 } anyOf)
@@ -432,12 +442,14 @@ public static class OpenApiMarkdownRenderer
         return CodeSpan(SchemaType(schema));
     }
 
-    private static string SchemaName(IOpenApiSchema schema)
+    private static string SchemaName(IOpenApiSchema schema, IDictionary<string, IOpenApiSchema>? components)
     {
+        var resolvedSchema = ResolveResponseSchemaReference(schema, components);
+        if (resolvedSchema.Type == JsonSchemaType.Array && resolvedSchema.Items is not null)
+            return $"[{SchemaName(resolvedSchema.Items, components)}]";
         if (GetReference(schema) is { IsLocal: true, Id: { Length: > 0 } id })
             return NormalizeSchemaReferenceName(id);
-        schema = ResolveReference(schema);
-        return !string.IsNullOrWhiteSpace(schema.Title) ? schema.Title : SchemaType(schema);
+        return !string.IsNullOrWhiteSpace(resolvedSchema.Title) ? resolvedSchema.Title : SchemaType(resolvedSchema);
     }
 
     private static string CreateSchemaAnchorPrefix(string value)
@@ -612,11 +624,11 @@ public static class OpenApiMarkdownRenderer
             return id.Replace("~1", "/", StringComparison.Ordinal).Replace("~0", "~", StringComparison.Ordinal);
 
         schema = ResolveReference(schema);
-        if (schema.OneOf is { Count: > 0 } oneOf) return string.Join(" or ", oneOf.Select(SchemaType));
-        if (schema.AnyOf is { Count: > 0 } anyOf) return string.Join(" or ", anyOf.Select(SchemaType));
+        if (schema.OneOf is { Count: > 0 } oneOf) return SchemaUnionType(oneOf);
+        if (schema.AnyOf is { Count: > 0 } anyOf) return SchemaUnionType(anyOf);
         if (schema.AllOf is { Count: > 0 } allOf) return string.Join(" & ", allOf.Select(SchemaType));
 
-        var type = schema.Type?.ToString().Replace(", ", " or ", StringComparison.Ordinal).ToLowerInvariant();
+        var type = schema.Type is { } schemaType ? FormatSchemaType(schemaType) : null;
         if (type is null) type = schema.Properties is { Count: > 0 } ? "object" : "any";
         var display = string.IsNullOrWhiteSpace(schema.Format) ? type : $"{type} ({schema.Format})";
         if (schema.Type == JsonSchemaType.Array && schema.Items is not null)
@@ -624,6 +636,33 @@ public static class OpenApiMarkdownRenderer
         if (schema.Enum is { Count: > 0 } values)
             display += $": {string.Join(", ", values.Select(item => item?.ToString()))}";
         return display;
+    }
+
+    private static string SchemaUnionType(IEnumerable<IOpenApiSchema> schemas)
+    {
+        var types = schemas.Select(SchemaType).ToArray();
+        return HasNullableUnion(types)
+            ? $"{types.Single(type => type != "null")}?"
+            : string.Join(" or ", types);
+    }
+
+    private static bool HasNullableUnion(IEnumerable<IOpenApiSchema> schemas) =>
+        HasNullableUnion(schemas.Select(SchemaType).ToArray());
+
+    private static bool HasNullableUnion(IReadOnlyCollection<string> types) =>
+        types.Count == 2 && types.Count(type => type == "null") == 1;
+
+    private static string FormatSchemaType(JsonSchemaType type)
+    {
+        if (type.HasFlag(JsonSchemaType.Null) && type != JsonSchemaType.Null)
+        {
+            var nonNullType = (type & ~JsonSchemaType.Null).ToString()
+                .Replace(", ", " or ", StringComparison.Ordinal)
+                .ToLowerInvariant();
+            return $"{nonNullType}?";
+        }
+
+        return type.ToString().Replace(", ", " or ", StringComparison.Ordinal).ToLowerInvariant();
     }
 
     private static IOpenApiPathItem ResolveReference(IOpenApiPathItem item) =>
