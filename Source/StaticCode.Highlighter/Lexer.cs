@@ -12,9 +12,8 @@ public class Lexer
 {
     private static readonly ConcurrentDictionary<string, Lazy<Lexer>> Cache = new(StringComparer.Ordinal);
     private static readonly Regex NumberRegex = new(
-        @"(?<![\p{L}\p{N}_$])\d+(?:\.\d+)?",
+        @"(?<![\p{L}\p{N}_$#])\d+(?:\.\d+)?",
         RegexOptions.Compiled);
-    private static readonly string[] CssAtRules = { "font-face", "import", "keyframes", "media", "supports" };
     private static readonly Regex HtmlTagRegex = new(
         """</?(?<tag>[A-Za-z][A-Za-z0-9:-]*)(?:[^>"']|"[^"]*"|'[^']*')*>""",
         RegexOptions.Compiled);
@@ -59,15 +58,14 @@ public class Lexer
             LazyThreadSafetyMode.ExecutionAndPublication)).Value;
     }
     private readonly Regex? _keywordRegex;
-    private readonly Regex? _cssPropertyRegex;
-    private readonly Regex? _cssAtRuleRegex;
+    private readonly Regex? _declarationKeywordRegex;
+    private readonly Regex? _atRuleRegex;
     private readonly LanguageString[] _strings;
     private readonly string _lineCommentStart;
     private readonly bool _highlightKeys;
     private readonly bool _highlightShellTokens;
     private readonly bool _highlightMarkdown;
     private readonly bool _highlightHtml;
-    private readonly bool _hyphenatedKeywords;
     private readonly bool _highlightNumbers;
     private readonly string? _blockCommentStart;
     private readonly string? _blockCommentEnd;
@@ -78,25 +76,34 @@ public class Lexer
         _highlightShellTokens = settings.HighlightShellTokens;
         _highlightMarkdown = settings.HighlightMarkdown;
         _highlightHtml = settings.HighlightHtml;
-        _hyphenatedKeywords = settings.HyphenatedKeywords;
         _lineCommentStart = settings.LineCommentStart;
         _blockCommentStart = settings.BlockCommentStart;
         _blockCommentEnd = settings.BlockCommentEnd;
-        _highlightNumbers = settings.Keywords.Count > 0;
-        if (settings.Keywords.Count > 0 && _hyphenatedKeywords)
+        _highlightNumbers = settings.Keywords.Count > 0 ||
+                            settings.DeclarationKeywords.Count > 0 ||
+                            settings.AtRules.Count > 0;
+        var contextualKeywordOptions = RegexOptions.Compiled | RegexOptions.CultureInvariant;
+        if (settings.IgnoreKeywordCase)
+            contextualKeywordOptions |= RegexOptions.IgnoreCase;
+        if (settings.DeclarationKeywords.Count > 0)
         {
-            var properties = settings.Keywords.Except(CssAtRules, StringComparer.OrdinalIgnoreCase)
+            var keywords = string.Join("|", settings.DeclarationKeywords
                 .OrderByDescending(keyword => keyword.Length)
-                .Select(Regex.Escape);
-            var atRules = string.Join("|", CssAtRules.OrderByDescending(keyword => keyword.Length).Select(Regex.Escape));
-            _cssPropertyRegex = new Regex(
-                $@"(?:^|[;{{])\s*(?<keyword>{string.Join("|", properties)})\s*:",
-                RegexOptions.Compiled | RegexOptions.IgnoreCase | RegexOptions.CultureInvariant | RegexOptions.Multiline);
-            _cssAtRuleRegex = new Regex(
-                $@"@(?<keyword>{atRules})(?![\p{{L}}\p{{N}}_-])",
-                RegexOptions.Compiled | RegexOptions.IgnoreCase | RegexOptions.CultureInvariant);
+                .Select(Regex.Escape));
+            _declarationKeywordRegex = new Regex(
+                $@"(?:^|[;{{])\s*(?:/\*[\s\S]*?\*/\s*)*(?<keyword>{keywords})\s*:",
+                contextualKeywordOptions | RegexOptions.Multiline);
         }
-        else if (settings.Keywords.Count > 0)
+        if (settings.AtRules.Count > 0)
+        {
+            var atRules = string.Join("|", settings.AtRules
+                .OrderByDescending(keyword => keyword.Length)
+                .Select(Regex.Escape));
+            _atRuleRegex = new Regex(
+                $@"@(?<keyword>{atRules})(?![\p{{L}}\p{{N}}_-])",
+                contextualKeywordOptions);
+        }
+        if (settings.Keywords.Count > 0)
         {
             const string boundary = @"[\p{L}\p{N}_$]";
             var keywords = string.Join("|", settings.Keywords
@@ -425,17 +432,15 @@ public class Lexer
     private List<(int Start, int End, TokenType Type)> FindKeywordAndNumberRanges(string source)
     {
         var ranges = new List<(int Start, int End, TokenType Type)>();
-        if (_cssPropertyRegex is not null && _cssAtRuleRegex is not null)
-        {
-            ranges.AddRange(FindRegexGroupRanges(_cssPropertyRegex, source, "keyword", TokenType.Keyword));
-            ranges.AddRange(FindRegexGroupRanges(_cssAtRuleRegex, source, "keyword", TokenType.Keyword));
-        }
-        else if (_keywordRegex is not null)
+        if (_keywordRegex is not null)
             ranges.AddRange(FindRegexRanges(_keywordRegex, source, TokenType.Keyword));
+        if (_declarationKeywordRegex is not null)
+            ranges.AddRange(FindRegexGroupRanges(_declarationKeywordRegex, source, "keyword", TokenType.Keyword));
+        if (_atRuleRegex is not null)
+            ranges.AddRange(FindRegexGroupRanges(_atRuleRegex, source, "keyword", TokenType.Keyword));
 
         if (_highlightNumbers)
-            ranges.AddRange(FindRegexRanges(NumberRegex, source, TokenType.Number)
-                .Where(range => !_hyphenatedKeywords || range.Start == 0 || source[range.Start - 1] != '#'));
+            ranges.AddRange(FindRegexRanges(NumberRegex, source, TokenType.Number));
 
         return ranges;
     }

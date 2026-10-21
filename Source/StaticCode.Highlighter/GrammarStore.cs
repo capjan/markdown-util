@@ -253,11 +253,16 @@ public static class GrammarStore
     private static Grammar Css()
     {
         return new Grammar(
-            keywords: new[]
+            keywords: Array.Empty<string>(),
+            declarationKeywords: new[]
             {
                 "align-items", "background-color", "background", "border-radius", "border", "color", "display",
-                "flex", "font-family", "font-size", "font-weight", "gap", "grid", "height", "import", "justify-content",
-                "keyframes", "margin", "max-width", "media", "padding", "position", "supports", "width", "font-face"
+                "flex", "font-family", "font-size", "font-weight", "gap", "grid", "height", "justify-content",
+                "margin", "max-width", "padding", "position", "width"
+            },
+            atRules: new[]
+            {
+                "font-face", "import", "keyframes", "media", "supports"
             },
             operators: new[]
             {
@@ -270,7 +275,6 @@ public static class GrammarStore
             },
             lineCommentStart: string.Empty,
             ignoreKeywordCase: true,
-            hyphenatedKeywords: true,
             blockCommentStart: "/*",
             blockCommentEnd: "*/");
     }

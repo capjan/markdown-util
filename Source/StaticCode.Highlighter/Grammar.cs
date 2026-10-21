@@ -40,7 +40,8 @@ public class Grammar
         bool highlightShellTokens = false,
         bool highlightMarkdown = false,
         bool ignoreKeywordCase = false,
-        bool hyphenatedKeywords = false,
+        IReadOnlyCollection<string>? declarationKeywords = null,
+        IReadOnlyCollection<string>? atRules = null,
         string? blockCommentStart = null,
         string? blockCommentEnd = null,
         bool highlightHtml = false)
@@ -53,7 +54,8 @@ public class Grammar
         HighlightShellTokens = highlightShellTokens;
         HighlightMarkdown = highlightMarkdown;
         IgnoreKeywordCase = ignoreKeywordCase;
-        HyphenatedKeywords = hyphenatedKeywords;
+        DeclarationKeywords = declarationKeywords ?? Array.Empty<string>();
+        AtRules = atRules ?? Array.Empty<string>();
         BlockCommentStart = blockCommentStart;
         BlockCommentEnd = blockCommentEnd;
         HighlightHtml = highlightHtml;
@@ -74,7 +76,9 @@ public class Grammar
 
     public bool IgnoreKeywordCase { get; }
 
-    public bool HyphenatedKeywords { get; }
+    public IReadOnlyCollection<string> DeclarationKeywords { get; }
+
+    public IReadOnlyCollection<string> AtRules { get; }
 
     public string? BlockCommentStart { get; }
 
