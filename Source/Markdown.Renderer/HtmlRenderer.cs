@@ -578,7 +578,7 @@ public class HtmlRenderer
     {
         var responses = HeadingRegex.Matches(content)
             .Cast<Match>()
-            .Where(match => match.Groups["level"].Value == "5" && HasClass(match, "openapi-response"))
+            .Where(match => match.Groups["level"].Value == "5")
             .Select(match => new
             {
                 Heading = match,

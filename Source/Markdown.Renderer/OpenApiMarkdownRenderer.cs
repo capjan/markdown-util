@@ -178,7 +178,7 @@ public static class OpenApiMarkdownRenderer
         foreach (var response in operation.Responses)
         {
             var responseObject = ResolveReference(response.Value);
-            output.AppendLine($"##### Response {CodeSpan(response.Key)} {{.openapi-response}}");
+            output.AppendLine($"##### Response {CodeSpan(response.Key)}");
             AppendMarkdown(output, responseObject.Description);
             AppendContent(output, responseObject.Content ?? new Dictionary<string, IOpenApiMediaType>(), mediaHeadingLevel: 6);
         }
