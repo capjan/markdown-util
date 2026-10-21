@@ -2620,6 +2620,7 @@ th, td {
 .markdown-content .openapi-response-control {
     display: flex;
     align-items: center;
+    flex-wrap: wrap;
     gap: 0.75rem;
     margin: 1.2rem 0 0.5rem;
     color: var(--text-secondary);
@@ -2627,7 +2628,13 @@ th, td {
     font-weight: 650;
 }
 
-.markdown-content .openapi-response-select {
+.markdown-content .openapi-media-type-count {
+    font-size: 0.82rem;
+    font-weight: 600;
+}
+
+.markdown-content .openapi-response-select,
+.markdown-content .openapi-media-type-select {
     min-width: 6.5rem;
     padding: 0.42rem 0.75rem;
     border: 1px solid var(--openapi-response-border);
@@ -2639,12 +2646,14 @@ th, td {
     cursor: pointer;
 }
 
-.markdown-content .openapi-response-select:focus-visible {
+.markdown-content .openapi-response-select:focus-visible,
+.markdown-content .openapi-media-type-select:focus-visible {
     outline: 2px solid var(--openapi-response-color);
     outline-offset: 2px;
 }
 
-.markdown-content .openapi-response-select option {
+.markdown-content .openapi-response-select option,
+.markdown-content .openapi-media-type-select option {
     background: var(--page-background);
     color: var(--text-primary);
 }
@@ -2663,6 +2672,50 @@ th, td {
 
 .markdown-content .openapi-response-panel[hidden] {
     display: none;
+}
+
+.markdown-content .openapi-response-description > :first-child {
+    margin-top: 0.5rem;
+}
+
+.markdown-content .openapi-media-panel[hidden],
+.markdown-content .openapi-response-tabpanel[hidden] {
+    display: none;
+}
+
+.markdown-content .openapi-response-tab-list {
+    display: flex;
+    gap: 0.35rem;
+    overflow-x: auto;
+    margin-top: 1rem;
+    border-bottom: 1px solid var(--border-subtle);
+}
+
+.markdown-content .openapi-response-tab {
+    flex: 0 0 auto;
+    padding: 0.65rem 0.9rem;
+    border: 0;
+    border-bottom: 2px solid transparent;
+    margin-bottom: -1px;
+    background: transparent;
+    color: var(--text-secondary);
+    font: inherit;
+    cursor: pointer;
+}
+
+.markdown-content .openapi-response-tab[aria-selected="true"] {
+    border-bottom-color: var(--openapi-response-color);
+    color: var(--text-primary);
+    font-weight: 700;
+}
+
+.markdown-content .openapi-response-tab:focus-visible {
+    outline: 2px solid var(--openapi-response-color);
+    outline-offset: -2px;
+}
+
+.markdown-content .openapi-response-tabpanel {
+    padding: 0.8rem 0 0.25rem;
 }
 
 .markdown-content .openapi-status-2xx {

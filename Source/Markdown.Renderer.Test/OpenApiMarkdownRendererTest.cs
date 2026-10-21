@@ -6,7 +6,7 @@ namespace Markdown.Renderer.Test;
 public class OpenApiMarkdownRendererTest
 {
     [Fact]
-    public async Task CollapsesEndpointsAndRendersPathParametersAndSelectableResponses()
+    public async Task CollapsesEndpointsAndRendersResponseMediaTypesAndTabs()
     {
         var html = await RenderHtml("""
             {
@@ -19,7 +19,17 @@ public class OpenApiMarkdownRendererTest
                     "responses": {
                       "200": {
                         "description": "Found",
-                        "content": { "application/json": { "schema": { "type": "string" } } }
+                        "content": {
+                          "application/json": {
+                            "schema": {
+                              "type": "object",
+                              "required": ["id"],
+                              "properties": { "id": { "type": "integer", "description": "Order identifier" } }
+                            },
+                            "example": { "id": 42 }
+                          },
+                          "text/plain": { "schema": { "type": "string" }, "example": "Found" }
+                        }
                       },
                       "404": { "description": "Not found" }
                     }
@@ -49,9 +59,26 @@ public class OpenApiMarkdownRendererTest
         Assert.Contains("<option value=\"200\" class=\"openapi-status-2xx\" selected>200 - OK</option>", html);
         Assert.Contains("<option value=\"404\" class=\"openapi-status-4xx\">404 - Not Found</option>", html);
         Assert.DoesNotContain("Response <code>200</code>", html);
-        Assert.Contains("<h6 id=\"media-type-applicationjson\">Media type <code>application/json</code>", html);
+        Assert.Contains("<span class=\"openapi-media-type-count\">2 Media Types</span>", html);
+        Assert.Contains("<option value=\"0\" selected>application/json</option>", html);
+        Assert.Contains("<option value=\"1\">text/plain</option>", html);
+        Assert.Contains("<button type=\"button\" class=\"openapi-response-tab\" role=\"tab\"", html);
+        Assert.Contains(">Example</button>", html);
+        Assert.Contains(">Schema</button>", html);
+        Assert.Contains(">Schema JSON</button>", html);
+        Assert.Equal(6, System.Text.RegularExpressions.Regex.Matches(html, "role=\"tab\"").Count);
+        Assert.Contains("<th>Property</th>", html);
+        Assert.Contains("<td>Order identifier</td>", html);
+        Assert.Contains("<div class=\"openapi-response-description\">", html);
+        Assert.True(
+            html.IndexOf("class=\"openapi-response-select", StringComparison.Ordinal) <
+            html.IndexOf("class=\"openapi-media-type-select", StringComparison.Ordinal) &&
+            html.IndexOf("class=\"openapi-media-type-select", StringComparison.Ordinal) <
+            html.IndexOf("class=\"openapi-response-description", StringComparison.Ordinal) &&
+            html.IndexOf("class=\"openapi-response-description", StringComparison.Ordinal) <
+            html.IndexOf("role=\"tablist\"", StringComparison.Ordinal), html);
         Assert.Contains("&quot;type&quot;", html);
-        Assert.Contains("&quot;string&quot;", html);
+        Assert.Contains("&quot;properties&quot;", html);
     }
 
     [Fact]
@@ -67,7 +94,12 @@ public class OpenApiMarkdownRendererTest
                     "tags": ["Orders"],
                     "summary": "Get `order` <details>",
                     "operationId": "getOrder",
-                    "responses": { "204": { "description": "Done" } }
+                    "responses": {
+                      "204": {
+                        "description": "Done",
+                        "content": { "text/plain": { "schema": { "type": "string" } } }
+                      }
+                    }
                   }
                 }
               }
@@ -79,6 +111,7 @@ public class OpenApiMarkdownRendererTest
         Assert.Contains("<p><strong>Get `order` &lt;details&gt;</strong></p>", html);
         Assert.Contains("<p>Operation ID: <code>getOrder</code></p>", html);
         Assert.Contains("1 Response", html);
+        Assert.Contains("<span class=\"openapi-media-type-count\">1 Media Type</span>", html);
         Assert.DoesNotContain("<p><strong>Orders <script>", html);
     }
 

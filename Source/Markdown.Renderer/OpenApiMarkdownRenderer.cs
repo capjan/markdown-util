@@ -5,6 +5,7 @@ using System.Security.Cryptography;
 using System.Text;
 using System.Text.Encodings.Web;
 using System.Text.Json;
+using System.Text.Json.Nodes;
 using Microsoft.OpenApi;
 using Microsoft.OpenApi.Reader;
 
@@ -185,8 +186,82 @@ public static class OpenApiMarkdownRenderer
             var statusSuffix = string.IsNullOrWhiteSpace(statusName) ? string.Empty : $" - {EscapeMarkdown(statusName)}";
             output.AppendLine($"##### Response {CodeSpan(response.Key)}{statusSuffix} {{.openapi-response}}");
             AppendMarkdown(output, responseObject.Description);
-            AppendContent(output, responseObject.Content ?? new Dictionary<string, IOpenApiMediaType>(), mediaHeadingLevel: 6);
+            AppendResponseContent(output, responseObject.Content ?? new Dictionary<string, IOpenApiMediaType>());
         }
+    }
+
+    private static void AppendResponseContent(StringBuilder output, IDictionary<string, IOpenApiMediaType> content)
+    {
+        foreach (var media in content)
+        {
+            output.AppendLine($"###### Media type {CodeSpan(media.Key)} {{.openapi-media-type}}");
+            output.AppendLine("##### Example {.openapi-response-example}");
+            var example = media.Value.Example ?? (media.Value.Examples ?? new Dictionary<string, IOpenApiExample>()).Values
+                .Select(ResolveReference)
+                .Select(value => value.Value)
+                .FirstOrDefault(value => value is not null);
+            var exampleValue = example ?? (media.Value.Schema is null ? null : CreateSchemaExample(media.Value.Schema));
+            if (exampleValue is null)
+                output.AppendLine("No example is available.");
+            else
+                AppendCodeBlock(output, ExampleText(exampleValue, media.Key), ExampleLanguage(media.Key));
+
+            output.AppendLine("##### Schema {.openapi-response-schema-table}");
+            AppendResponseSchemaTable(output, media.Value.Schema);
+
+            output.AppendLine("##### Schema JSON {.openapi-response-schema-json}");
+            if (media.Value.Schema is null)
+                output.AppendLine("No schema is defined.");
+            else
+                AppendExample(output, SerializeSchema(media.Value.Schema));
+        }
+    }
+
+    private static string ExampleText(JsonNode example, string mediaType)
+    {
+        if (IsJsonMediaType(mediaType))
+            return example.ToJsonString(new JsonSerializerOptions { WriteIndented = true });
+        if (example is JsonValue value && value.TryGetValue<string>(out var text)) return text;
+        return example.ToJsonString(new JsonSerializerOptions { WriteIndented = true });
+    }
+
+    private static string ExampleLanguage(string mediaType)
+    {
+        if (IsJsonMediaType(mediaType)) return "json";
+        if (mediaType.Contains("xml", StringComparison.OrdinalIgnoreCase)) return "xml";
+        if (mediaType.Contains("html", StringComparison.OrdinalIgnoreCase)) return "html";
+        return string.Empty;
+    }
+
+    private static void AppendResponseSchemaTable(StringBuilder output, IOpenApiSchema? schema)
+    {
+        if (schema is null)
+        {
+            output.AppendLine("No schema is defined.");
+            return;
+        }
+
+        var tableSchema = ResolveReference(schema);
+        if (tableSchema.Items is not null)
+            tableSchema = ResolveReference(tableSchema.Items);
+
+        var properties = tableSchema.Properties ?? new Dictionary<string, IOpenApiSchema>();
+        var required = tableSchema.Required ?? new HashSet<string>();
+        output.AppendLine("| Property | Type | Required | Description |");
+        output.AppendLine("| --- | --- | --- | --- |");
+        if (properties.Count == 0)
+        {
+            output.AppendLine($"| Response | {EscapeTableCell(SchemaType(schema))} | Yes | {EscapeTableCell(tableSchema.Description)} |");
+            output.AppendLine();
+            return;
+        }
+
+        foreach (var property in properties)
+        {
+            var propertySchema = ResolveReference(property.Value);
+            output.AppendLine($"| {EscapeTableCell(property.Key)} | {EscapeTableCell(SchemaType(property.Value))} | {(required.Contains(property.Key) ? "Yes" : "No")} | {EscapeTableCell(propertySchema.Description)} |");
+        }
+        output.AppendLine();
     }
 
     private static void AppendContent(
@@ -234,6 +309,71 @@ public static class OpenApiMarkdownRenderer
         return text.ToString();
     }
 
+    private static JsonNode? CreateSchemaExample(IOpenApiSchema schema) =>
+        CreateSchemaExample(schema, new HashSet<IOpenApiSchema>(ReferenceEqualityComparer.Instance));
+
+    private static JsonNode? CreateSchemaExample(IOpenApiSchema schema, HashSet<IOpenApiSchema> ancestors)
+    {
+        schema = ResolveReference(schema);
+        if (!ancestors.Add(schema)) return null;
+
+        try
+        {
+            var suppliedExample = schema.Examples?.FirstOrDefault();
+#pragma warning disable CS0618 // OpenAPI 3.0 still uses the singular schema example field.
+            suppliedExample ??= schema.Example;
+#pragma warning restore CS0618
+            suppliedExample ??= schema.Default ?? schema.Enum?.FirstOrDefault();
+            if (suppliedExample is not null) return suppliedExample.DeepClone();
+            if (schema.OneOf?.FirstOrDefault() is { } oneOf) return CreateSchemaExample(oneOf, ancestors);
+            if (schema.AnyOf?.FirstOrDefault() is { } anyOf) return CreateSchemaExample(anyOf, ancestors);
+
+            if (schema.Type?.HasFlag(JsonSchemaType.Array) == true || schema.Items is not null)
+            {
+                var example = new JsonArray();
+                if (schema.Items is not null) example.Add(CreateSchemaExample(schema.Items, ancestors));
+                return example;
+            }
+
+            if (schema.AllOf is { Count: > 0 })
+            {
+                var example = new JsonObject();
+                foreach (var part in schema.AllOf)
+                {
+                    if (CreateSchemaExample(part, ancestors) is not JsonObject partExample) continue;
+                    foreach (var property in partExample)
+                        example[property.Key] = property.Value?.DeepClone();
+                }
+                AddSchemaProperties(example, schema, ancestors);
+                return example;
+            }
+
+            if (schema.Properties is { Count: > 0 } || schema.Type?.HasFlag(JsonSchemaType.Object) == true)
+            {
+                var example = new JsonObject();
+                AddSchemaProperties(example, schema, ancestors);
+                return example;
+            }
+
+            var type = schema.Type ?? JsonSchemaType.Null;
+            if (type.HasFlag(JsonSchemaType.String)) return JsonValue.Create("string");
+            if (type.HasFlag(JsonSchemaType.Integer)) return JsonValue.Create(0);
+            if (type.HasFlag(JsonSchemaType.Number)) return JsonValue.Create(0);
+            if (type.HasFlag(JsonSchemaType.Boolean)) return JsonValue.Create(false);
+            return null;
+        }
+        finally
+        {
+            ancestors.Remove(schema);
+        }
+    }
+
+    private static void AddSchemaProperties(JsonObject example, IOpenApiSchema schema, HashSet<IOpenApiSchema> ancestors)
+    {
+        foreach (var property in schema.Properties ?? new Dictionary<string, IOpenApiSchema>())
+            example[property.Key] = CreateSchemaExample(property.Value, ancestors);
+    }
+
     private static string? ResponseStatusName(string status)
     {
         var normalizedStatus = status.ToUpperInvariant();
@@ -259,11 +399,14 @@ public static class OpenApiMarkdownRenderer
     }
 
     private static void AppendExample(StringBuilder output, string json)
+        => AppendCodeBlock(output, json, "json");
+
+    private static void AppendCodeBlock(StringBuilder output, string code, string language)
     {
-        var fenceLength = Math.Max(3, LongestBacktickRun(json) + 1);
+        var fenceLength = Math.Max(3, LongestBacktickRun(code) + 1);
         var fence = new string('`', fenceLength);
-        output.AppendLine($"{fence}json");
-        output.AppendLine(json);
+        output.Append(fence).AppendLine(language);
+        output.AppendLine(code);
         output.AppendLine(fence);
         output.AppendLine();
     }

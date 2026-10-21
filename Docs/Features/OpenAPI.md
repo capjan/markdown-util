@@ -24,6 +24,6 @@ This introduction appears before the generated reference.
 
 ## Generated reference
 
-Operations are grouped by their first tag. Tag groups and endpoints start collapsed; expand a tag to browse its endpoints, then expand an endpoint to inspect its method and path, parameters, request body, and responses. The response count uses singular or plural wording, and each response selector shows the status code and name. JSON response schemas appear as formatted JSON. 2xx statuses are green, 4xx statuses are yellow, and 5xx statuses are red. Schemas defined in the same specification appear in a separate section.
+Operations are grouped by their first tag. Tag groups and endpoints start collapsed; expand a tag to browse its endpoints, then expand an endpoint to inspect its method and path, parameters, request body, and responses. The response selector shows the status code and name, followed by a media type selector when the response has content. A response description appears above tabs for its example, schema table, and JSON schema. Response and media type counts use singular or plural wording. 2xx statuses are green, 4xx are yellow, and 5xx are red. Schemas defined in the same specification appear in a separate section.
 
 The generated reference gives each HTTP method a distinct label, highlights endpoint paths, and separates API groups and schemas. It follows the site's light or dark theme and is published as static HTML and CSS without making API requests. References within the specification are resolved; external `$ref` files are not loaded.
