@@ -45,7 +45,7 @@ public static class PageMover
         var movedPaths = new Dictionary<string, string>(comparer);
         if (isDirectory)
         {
-            RejectRedirectedRelativeLinks(rootPath, sourcePath, targetPath);
+            RejectRedirectedLinks(rootPath, sourcePath, targetPath);
             // Symbolic links inside the folder move as links; the files they point to stay where they are.
             var options = new EnumerationOptions { RecurseSubdirectories = true, AttributesToSkip = FileAttributes.ReparsePoint };
             foreach (var file in Directory.EnumerateFiles(sourcePath, "*", options))
@@ -111,27 +111,27 @@ public static class PageMover
         }
     }
 
-    // A moved folder takes its symbolic links along unchanged, so a relative link points from its new place. The move
-    // is refused only when that changes what a link points to; links inside the folder, absolute links, and links of a
-    // folder renamed in place keep their target.
-    private static void RejectRedirectedRelativeLinks(string rootPath, string folder, string newFolder)
+    // A moved folder takes its symbolic links along unchanged: a relative link then resolves from its new place, and an
+    // absolute link keeps its old path. The move is refused when either changes what a link points to, for example a
+    // relative link out of a folder that moves one level deeper, or an absolute link to a file inside the moved folder.
+    private static void RejectRedirectedLinks(string rootPath, string folder, string newFolder)
     {
         foreach (var link in EnumerateLinks(new DirectoryInfo(folder)))
         {
             var target = link.LinkTarget!;
-            if (Path.IsPathRooted(target)) continue;
-
             var linkDirectory = Path.GetDirectoryName(link.FullName)!;
             var newLinkDirectory = Path.Combine(newFolder, Path.GetRelativePath(folder, linkDirectory));
             var before = Path.GetFullPath(target, linkDirectory);
             var after = Path.GetFullPath(target, newLinkDirectory);
             var expected = IsInside(folder, before) ? Path.Combine(newFolder, Path.GetRelativePath(folder, before)) : before;
+            // Git stores the link text, so a link that only works because this file system ignores case would break in
+            // checkouts on Linux; the comparison respects case like the rewriting of Markdown links.
             if (string.Equals(Path.TrimEndingDirectorySeparator(after), Path.TrimEndingDirectorySeparator(expected), StringComparison.Ordinal))
                 continue;
 
             throw new InvalidOperationException(
                 $"{Path.GetRelativePath(rootPath, link.FullName)} is a symbolic link to {target}, which would point somewhere else after the move. " +
-                "Remove it or make it absolute, then move the folder.");
+                "Remove or change the link, then move the folder.");
         }
     }
 

@@ -174,6 +174,26 @@ public class PageCommandTest : IDisposable
     }
 
     [Fact]
+    public void RefusesFolderMovesThatBreakAbsoluteSymbolicLinksIntoTheFolder()
+    {
+        File.CreateSymbolicLink(Path.Combine(_root, "Guide", "steps-link.md"), Path.Combine(_root, "Guide", "Steps.md"));
+        var error = new StringWriter();
+        var originalError = Console.Error;
+        Console.SetError(error);
+        try
+        {
+            Assert.Equal(1, Move("Guide", "Handbook/Guide").Exit);
+        }
+        finally
+        {
+            Console.SetError(originalError);
+        }
+
+        Assert.Contains("steps-link.md is a symbolic link to", error.ToString());
+        Assert.True(Directory.Exists(Path.Combine(_root, "Guide")));
+    }
+
+    [Fact]
     public void RenamesFoldersInPlaceWhenRelativeSymbolicLinksKeepTheirTarget()
     {
         File.CreateSymbolicLink(Path.Combine(_root, "Guide", "logo.svg"), "../assets/logo.svg");
