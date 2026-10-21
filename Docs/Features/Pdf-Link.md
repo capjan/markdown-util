@@ -7,14 +7,14 @@
 Place a styled link anywhere in your Markdown and choose its label:
 
 ```markdown title="Markdown"
-[Download the PDF](mdu:pdf)
+[Download Documentation as PDF](mdu:pdf)
 ```
 
 MDU resolves the link to the generated PDF, including on pages in nested folders.
 
 ## Rendered example
 
-[Download the MDU documentation as PDF](mdu:pdf)
+[Download Documentation as PDF](mdu:pdf)
 
 The PDF follows the documentation navigation order and honors [`pdf.visible`](../Usage/pdf.md#exclude-pages) in page front matter.
 
