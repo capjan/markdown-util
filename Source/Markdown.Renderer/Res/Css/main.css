@@ -2544,24 +2544,26 @@ th, td {
     color: var(--text-primary);
 }
 
-.markdown-content h3.openapi-operation {
+.markdown-content details.openapi-endpoint {
     --openapi-method-color: #096b45;
 
+    margin: 1.25rem 0;
+    border-left: 4px solid var(--openapi-method-color);
+    border-radius: 0.7rem;
+}
+
+.markdown-content details.openapi-endpoint > summary.openapi-operation {
     display: flex;
     flex-wrap: wrap;
     align-items: center;
     gap: 0.45rem 0.7rem;
-    margin: 1.75rem 0 0.85rem;
-    padding: 0.8rem 0.95rem;
-    border: 1px solid var(--border-subtle);
-    border-left: 4px solid var(--openapi-method-color);
-    border-radius: 0.7rem;
-    background: var(--surface-current);
+    padding: 0.85rem 2.75rem 0.85rem 0.95rem;
+    color: var(--text-primary);
     font-size: 1.05rem;
     overflow-wrap: anywhere;
 }
 
-.markdown-content h3.openapi-operation > code:first-child {
+.markdown-content details.openapi-endpoint > summary.openapi-operation > code:first-child {
     padding: 0.24rem 0.48rem;
     border-radius: 0.35rem;
     background: color-mix(in srgb, var(--openapi-method-color) 13%, var(--page-background));
@@ -2572,21 +2574,25 @@ th, td {
     letter-spacing: 0.045em;
 }
 
-.markdown-content h3.openapi-operation > code:nth-child(2) {
+.markdown-content details.openapi-endpoint > summary.openapi-operation > code:nth-child(2) {
     padding: 0;
     background: transparent;
     color: var(--text-primary);
     overflow-wrap: anywhere;
 }
 
-.markdown-content h3.openapi-method-post { --openapi-method-color: #075e9c; }
-.markdown-content h3.openapi-method-put { --openapi-method-color: #895500; }
-.markdown-content h3.openapi-method-patch { --openapi-method-color: #7040a0; }
-.markdown-content h3.openapi-method-delete { --openapi-method-color: #b4232e; }
-.markdown-content h3.openapi-method-options { --openapi-method-color: #087c83; }
-.markdown-content h3.openapi-method-head { --openapi-method-color: #5a6472; }
-.markdown-content h3.openapi-method-trace { --openapi-method-color: #5a6472; }
-.markdown-content h3.openapi-method-query { --openapi-method-color: #7040a0; }
+.markdown-content details.openapi-endpoint.openapi-method-post { --openapi-method-color: #075e9c; }
+.markdown-content details.openapi-endpoint.openapi-method-put { --openapi-method-color: #895500; }
+.markdown-content details.openapi-endpoint.openapi-method-patch { --openapi-method-color: #7040a0; }
+.markdown-content details.openapi-endpoint.openapi-method-delete { --openapi-method-color: #b4232e; }
+.markdown-content details.openapi-endpoint.openapi-method-options { --openapi-method-color: #087c83; }
+.markdown-content details.openapi-endpoint.openapi-method-head { --openapi-method-color: #5a6472; }
+.markdown-content details.openapi-endpoint.openapi-method-trace { --openapi-method-color: #5a6472; }
+.markdown-content details.openapi-endpoint.openapi-method-query { --openapi-method-color: #7040a0; }
+
+.markdown-content .openapi-operation-content {
+    display: flow-root;
+}
 
 .markdown-content h3.openapi-schema {
     padding-bottom: 0.4rem;
@@ -2599,26 +2605,26 @@ th, td {
     color: var(--text-primary);
 }
 
-:root[data-theme="dark"] .markdown-content h3.openapi-method-get { --openapi-method-color: #57d49a; }
-:root[data-theme="dark"] .markdown-content h3.openapi-method-post { --openapi-method-color: #73c0ff; }
-:root[data-theme="dark"] .markdown-content h3.openapi-method-put { --openapi-method-color: #f2bd55; }
-:root[data-theme="dark"] .markdown-content h3.openapi-method-patch,
-:root[data-theme="dark"] .markdown-content h3.openapi-method-query { --openapi-method-color: #d0a0ff; }
-:root[data-theme="dark"] .markdown-content h3.openapi-method-delete { --openapi-method-color: #ff8585; }
-:root[data-theme="dark"] .markdown-content h3.openapi-method-options { --openapi-method-color: #65d4d9; }
-:root[data-theme="dark"] .markdown-content h3.openapi-method-head,
-:root[data-theme="dark"] .markdown-content h3.openapi-method-trace { --openapi-method-color: #bec5d0; }
+:root[data-theme="dark"] .markdown-content details.openapi-method-get { --openapi-method-color: #57d49a; }
+:root[data-theme="dark"] .markdown-content details.openapi-method-post { --openapi-method-color: #73c0ff; }
+:root[data-theme="dark"] .markdown-content details.openapi-method-put { --openapi-method-color: #f2bd55; }
+:root[data-theme="dark"] .markdown-content details.openapi-method-patch,
+:root[data-theme="dark"] .markdown-content details.openapi-method-query { --openapi-method-color: #d0a0ff; }
+:root[data-theme="dark"] .markdown-content details.openapi-method-delete { --openapi-method-color: #ff8585; }
+:root[data-theme="dark"] .markdown-content details.openapi-method-options { --openapi-method-color: #65d4d9; }
+:root[data-theme="dark"] .markdown-content details.openapi-method-head,
+:root[data-theme="dark"] .markdown-content details.openapi-method-trace { --openapi-method-color: #bec5d0; }
 
 @media (prefers-color-scheme: dark) {
-    :root[data-theme="auto"] .markdown-content h3.openapi-method-get { --openapi-method-color: #57d49a; }
-    :root[data-theme="auto"] .markdown-content h3.openapi-method-post { --openapi-method-color: #73c0ff; }
-    :root[data-theme="auto"] .markdown-content h3.openapi-method-put { --openapi-method-color: #f2bd55; }
-    :root[data-theme="auto"] .markdown-content h3.openapi-method-patch,
-    :root[data-theme="auto"] .markdown-content h3.openapi-method-query { --openapi-method-color: #d0a0ff; }
-    :root[data-theme="auto"] .markdown-content h3.openapi-method-delete { --openapi-method-color: #ff8585; }
-    :root[data-theme="auto"] .markdown-content h3.openapi-method-options { --openapi-method-color: #65d4d9; }
-    :root[data-theme="auto"] .markdown-content h3.openapi-method-head,
-    :root[data-theme="auto"] .markdown-content h3.openapi-method-trace { --openapi-method-color: #bec5d0; }
+    :root[data-theme="auto"] .markdown-content details.openapi-method-get { --openapi-method-color: #57d49a; }
+    :root[data-theme="auto"] .markdown-content details.openapi-method-post { --openapi-method-color: #73c0ff; }
+    :root[data-theme="auto"] .markdown-content details.openapi-method-put { --openapi-method-color: #f2bd55; }
+    :root[data-theme="auto"] .markdown-content details.openapi-method-patch,
+    :root[data-theme="auto"] .markdown-content details.openapi-method-query { --openapi-method-color: #d0a0ff; }
+    :root[data-theme="auto"] .markdown-content details.openapi-method-delete { --openapi-method-color: #ff8585; }
+    :root[data-theme="auto"] .markdown-content details.openapi-method-options { --openapi-method-color: #65d4d9; }
+    :root[data-theme="auto"] .markdown-content details.openapi-method-head,
+    :root[data-theme="auto"] .markdown-content details.openapi-method-trace { --openapi-method-color: #bec5d0; }
 }
 
 .footnotes > ol {

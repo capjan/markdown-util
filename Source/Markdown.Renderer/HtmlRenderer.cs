@@ -19,6 +19,10 @@ public class HtmlRenderer
         @"<h(?<level>[1-6])(?<attributes>\s[^>]*)?>(?<content>.*?)</h\k<level>>",
         RegexOptions.Compiled | RegexOptions.Singleline);
     private static readonly Regex HeadingIdRegex = new(@"\bid=""(?<id>[^""]+)""", RegexOptions.Compiled);
+    private static readonly Regex ClassAttributeRegex = new(@"\bclass=""(?<class>[^""]*)""", RegexOptions.Compiled);
+    private static readonly Regex OpenApiPermalinkRegex = new(
+        @"<a\b[^>]*\bclass=""headerlink""[^>]*>.*?</a>",
+        RegexOptions.Compiled | RegexOptions.Singleline);
     private static readonly Regex FootnoteReferenceRegex = new(
         @"<a\b[^>]*\bclass=""footnote-ref""[^>]*>.*?</a>",
         RegexOptions.Compiled | RegexOptions.Singleline);
@@ -133,6 +137,7 @@ public class HtmlRenderer
         var tocHeadings = GetTableOfContentsHeadings(renderedMarkdown);
         var pageHeading = GetPageHeadingTitle(renderedMarkdown);
         renderedMarkdown = InsertHeadingPermalinks(renderedMarkdown);
+        renderedMarkdown = CollapseOpenApiOperations(renderedMarkdown);
         renderedMarkdown = InsertEditPageLink(renderedMarkdown, editPageLink, out var editLinkInserted);
         var breadcrumbMarkup = RenderBreadcrumbs(renderedMarkdown, breadcrumbs ?? Array.Empty<BreadcrumbItem>());
         var model = new MainModel
@@ -516,6 +521,63 @@ public class HtmlRenderer
             var contentEnd = match.Groups["content"].Index + match.Groups["content"].Length - match.Index;
             return match.Value.Insert(contentEnd, permalink);
         });
+
+    private static string CollapseOpenApiOperations(string renderedMarkdown)
+    {
+        var markerHeadings = HeadingRegex.Matches(renderedMarkdown)
+            .Cast<Match>()
+            .Where(match => HasClass(match, "openapi-operation") ||
+                            HasClass(match, "openapi-tag") ||
+                            HasClass(match, "openapi-schemas"))
+            .ToArray();
+        if (!markerHeadings.Any(match => HasClass(match, "openapi-operation"))) return renderedMarkdown;
+
+        var output = new StringBuilder(renderedMarkdown.Length);
+        var copiedUntil = 0;
+        for (var index = 0; index < markerHeadings.Length; index++)
+        {
+            var heading = markerHeadings[index];
+            if (!HasClass(heading, "openapi-operation")) continue;
+
+            var attributes = heading.Groups["attributes"].Value;
+            var id = HeadingIdRegex.Match(attributes);
+            var classAttribute = ClassAttributeRegex.Match(attributes);
+            var methodClass = classAttribute.Success
+                ? classAttribute.Groups["class"].Value.Split(' ').FirstOrDefault(value => value.StartsWith("openapi-method-", StringComparison.Ordinal))
+                : null;
+            if (!id.Success || methodClass is null) continue;
+
+            var contentEnd = index + 1 < markerHeadings.Length
+                ? markerHeadings[index + 1].Index
+                : renderedMarkdown.Length;
+            var contentStart = heading.Index + heading.Length;
+            output.Append(renderedMarkdown, copiedUntil, heading.Index - copiedUntil);
+            output.Append("<details class=\"openapi-endpoint ")
+                .Append(HtmlEncoder.Default.Encode(methodClass))
+                .AppendLine("\">");
+            output.Append("<summary id=\"")
+                .Append(HtmlEncoder.Default.Encode(id.Groups["id"].Value))
+                .AppendLine("\" class=\"openapi-operation\">");
+            output.Append(OpenApiPermalinkRegex.Replace(heading.Groups["content"].Value, string.Empty));
+            output.AppendLine("</summary>");
+            output.AppendLine("<div class=\"openapi-operation-content\">");
+            output.Append(renderedMarkdown, contentStart, contentEnd - contentStart);
+            output.AppendLine("</div>");
+            output.AppendLine("</details>");
+            copiedUntil = contentEnd;
+        }
+
+        output.Append(renderedMarkdown, copiedUntil, renderedMarkdown.Length - copiedUntil);
+        return output.ToString();
+    }
+
+    private static bool HasClass(Match heading, string className)
+    {
+        var attribute = ClassAttributeRegex.Match(heading.Groups["attributes"].Value);
+        return attribute.Success && attribute.Groups["class"].Value
+            .Split(' ', StringSplitOptions.RemoveEmptyEntries)
+            .Contains(className, StringComparer.Ordinal);
+    }
 
     private static string InsertEditPageLink(string renderedMarkdown, string editPageLink, out bool inserted)
     {

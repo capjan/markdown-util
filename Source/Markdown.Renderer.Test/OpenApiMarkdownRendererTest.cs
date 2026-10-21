@@ -6,7 +6,7 @@ namespace Markdown.Renderer.Test;
 public class OpenApiMarkdownRendererTest
 {
     [Fact]
-    public async Task RendersPathParametersAndNestedResponseMediaHeadings()
+    public async Task CollapsesEndpointsAndRendersPathParametersAndNestedResponseMediaHeadings()
     {
         var html = await RenderHtml("""
             {
@@ -30,13 +30,19 @@ public class OpenApiMarkdownRendererTest
 
         var operationHeading = System.Text.RegularExpressions.Regex.Match(
             html,
-            "<h3(?<attributes>[^>]*)><code>GET</code> <code>/orders/\\{id\\}</code>");
+            "<summary(?<attributes>[^>]*)><code>GET</code> <code>/orders/\\{id\\}</code>");
         Assert.True(operationHeading.Success, html);
-        Assert.Contains("class=\"openapi-operation openapi-method-get\"", operationHeading.Groups["attributes"].Value);
+        Assert.Contains("class=\"openapi-operation\"", operationHeading.Groups["attributes"].Value);
+        Assert.Contains("<details class=\"openapi-endpoint openapi-method-get\">", html);
         var operationId = System.Text.RegularExpressions.Regex.Match(
             operationHeading.Groups["attributes"].Value,
             "id=\"(?<id>[^\"]+)\"").Groups["id"].Value;
         Assert.Contains($"href=\"#{operationId}\"", html);
+        Assert.DoesNotContain("<details class=\"openapi-endpoint openapi-method-get\" open", html);
+        var detailsStart = html.IndexOf("<details class=\"openapi-endpoint openapi-method-get\">", StringComparison.Ordinal);
+        var detailsEnd = html.IndexOf("</details>", detailsStart, StringComparison.Ordinal);
+        var responseHeading = html.IndexOf("<h5 id=\"response-200\">", detailsStart, StringComparison.Ordinal);
+        Assert.True(detailsEnd > responseHeading, html);
         Assert.DoesNotContain("id=\"get-orders\" id=\"\"", html);
         Assert.Contains("<h5 id=\"response-200\">Response <code>200</code>", html);
         Assert.Contains("<h6 id=\"media-type-applicationjson\">Media type <code>application/json</code>", html);
