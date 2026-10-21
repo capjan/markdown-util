@@ -3095,9 +3095,16 @@ th, td {
 }
 
 .markdown-content .openapi-request-body > h4:first-child {
-    margin-top: 0.75rem;
-    margin-bottom: 1rem;
-    font-size: 1rem;
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    margin-top: 0.9rem;
+    margin-bottom: 0.6rem;
+    color: var(--text-secondary);
+    font-size: 0.72rem;
+    font-weight: 700;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
 }
 
 .markdown-content .openapi-request-description > :first-child {
@@ -3197,6 +3204,190 @@ th, td {
 .markdown-content .openapi-default {
     color: var(--text-secondary);
     cursor: help;
+}
+
+.markdown-content .openapi-badge {
+    display: inline-flex;
+    align-items: center;
+    padding: 0.12rem 0.42rem;
+    border-radius: 999px;
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Helvetica, Arial, sans-serif;
+    font-size: 0.66rem;
+    font-weight: 700;
+    letter-spacing: 0.05em;
+    line-height: 1.2;
+    text-decoration: none;
+    text-transform: uppercase;
+    vertical-align: 0.1em;
+    white-space: nowrap;
+}
+
+.markdown-content .openapi-badge-deprecated {
+    background: color-mix(in srgb, var(--alert-warning-accent) 15%, transparent);
+    color: var(--alert-warning-accent);
+}
+
+.markdown-content .openapi-badge-required {
+    background: color-mix(in srgb, var(--alert-caution-accent) 13%, transparent);
+    color: var(--alert-caution-accent);
+}
+
+/* Deprecated items stay readable; the badge and a light strike-through carry the status. */
+.markdown-content .openapi-declaration-deprecated > .openapi-declaration-name,
+.markdown-content details.openapi-endpoint-deprecated > summary.openapi-operation .openapi-path {
+    text-decoration: line-through;
+    text-decoration-color: var(--text-secondary);
+    text-decoration-thickness: 1.5px;
+}
+
+.markdown-content details.openapi-endpoint-deprecated > summary.openapi-operation .openapi-path {
+    color: var(--text-secondary);
+}
+
+.markdown-content details.openapi-endpoint-deprecated > summary.openapi-operation > code:first-child {
+    opacity: 0.7;
+}
+
+.markdown-content details.openapi-endpoint > summary.openapi-operation .openapi-operation-summary {
+    order: 1;
+}
+
+.markdown-content .openapi-deprecated-notice {
+    margin: 0.9rem 0 0;
+    padding: 0.5rem 0.75rem;
+    border-left: 3px solid var(--alert-warning-accent);
+    border-radius: 0.2rem 0.45rem 0.45rem 0.2rem;
+    background: color-mix(in srgb, var(--alert-warning-accent) 9%, transparent);
+    color: var(--text-primary);
+    font-size: 0.85rem;
+}
+
+.markdown-content .openapi-lock {
+    display: inline-flex;
+    flex: 0 0 auto;
+    order: 2;
+    width: 0.95rem;
+    height: 0.95rem;
+    margin-left: auto;
+    color: var(--text-secondary);
+    cursor: help;
+}
+
+.markdown-content .openapi-lock svg,
+.markdown-content .openapi-security-label svg {
+    width: 100%;
+    height: 100%;
+    fill: none;
+    stroke: currentColor;
+    stroke-linecap: round;
+    stroke-linejoin: round;
+    stroke-width: 1.6;
+}
+
+.markdown-content .openapi-security {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: baseline;
+    gap: 0.4rem 0.75rem;
+    margin: 0.85rem 0 0;
+    font-size: 0.85rem;
+}
+
+.markdown-content .openapi-security-label {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.35rem;
+    color: var(--text-secondary);
+    font-size: 0.72rem;
+    font-weight: 700;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+}
+
+.markdown-content .openapi-security-label svg {
+    width: 0.85rem;
+    height: 0.85rem;
+}
+
+.markdown-content .openapi-security ul {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.35rem 0.75rem;
+    margin: 0;
+    padding: 0;
+    list-style: none;
+}
+
+.markdown-content .openapi-security li,
+.markdown-content .openapi-auth li {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: baseline;
+    gap: 0.25rem 0.45rem;
+    margin: 0;
+}
+
+.markdown-content .openapi-security li + li::before {
+    margin-right: 0.3rem;
+    color: var(--text-secondary);
+    content: "or";
+}
+
+.markdown-content .openapi-security code:not(.openapi-enum-value) {
+    padding: 0;
+    border: 0;
+    background: transparent;
+    font-size: 0.82rem;
+    font-weight: 600;
+}
+
+.markdown-content .openapi-security-kind,
+.markdown-content .openapi-security-and {
+    color: var(--text-secondary);
+    font-size: 0.82rem;
+}
+
+.markdown-content .openapi-security-kind code {
+    padding: 0;
+    border: 0;
+    background: transparent;
+    font-size: 0.8rem;
+}
+
+.markdown-content .openapi-api-meta {
+    margin: -0.75rem 0 1.25rem;
+    color: var(--text-secondary);
+    font-size: 0.8rem;
+}
+
+.markdown-content .openapi-response-headers-label {
+    margin: 0.75rem 0 0.25rem;
+    color: var(--text-secondary);
+    font-size: 0.72rem;
+    font-weight: 700;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+}
+
+.markdown-content .openapi-facets {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.15rem 0.5rem;
+    margin-top: 0.3rem;
+    color: var(--text-secondary);
+    font-size: 0.75rem;
+}
+
+.markdown-content .openapi-facet + .openapi-facet::before {
+    margin-right: 0.5rem;
+    color: var(--text-secondary);
+    content: "·";
+    opacity: 0.6;
+}
+
+.markdown-content .openapi-facet code {
+    padding: 0.05rem 0.3rem;
+    font-size: 0.72rem;
 }
 
 .markdown-content .openapi-enum {

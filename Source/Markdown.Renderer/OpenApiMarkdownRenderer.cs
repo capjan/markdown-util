@@ -88,6 +88,7 @@ public static class OpenApiMarkdownRenderer
             AppendParagraph(output, $"<p class=\"openapi-api-title\"><strong>{HtmlEncoder.Default.Encode(info.Title)}</strong></p>");
         if (!string.IsNullOrWhiteSpace(info?.Version))
             AppendParagraph(output, $"<p class=\"openapi-api-version\">Version <code>{HtmlEncoder.Default.Encode(info.Version)}</code></p>");
+        AppendInfoMeta(output, info);
         AppendMarkdown(output, info?.Description);
 
         // Raw HTML keeps the server list from merging into a list that ends the API description.
@@ -110,6 +111,8 @@ public static class OpenApiMarkdownRenderer
             output.AppendLine();
         }
 
+        AppendSecuritySchemes(output, document);
+
         var declaredTags = (document.Tags ?? new HashSet<OpenApiTag>()).Where(tag => !string.IsNullOrWhiteSpace(tag.Name)).ToArray();
         var tags = declaredTags.ToDictionary(tag => tag.Name!, tag => tag.Description ?? string.Empty, StringComparer.Ordinal);
         var tagOrder = declaredTags.Select(tag => tag.Name!).ToList();
@@ -123,7 +126,7 @@ public static class OpenApiMarkdownRenderer
                          .OrderBy(operation => OperationMethodOrder(operation.Method))
                          .ThenBy(operation => operation.Method, StringComparer.Ordinal)
                          .ThenBy(operation => operation.Path, StringComparer.Ordinal))
-                AppendOperation(output, operation, document.Components?.Schemas);
+                AppendOperation(output, operation, document.Components?.Schemas, operation.Data.Security ?? document.Security);
         }
 
         return output.ToString();
@@ -160,17 +163,35 @@ public static class OpenApiMarkdownRenderer
     private static void AppendOperation(
         StringBuilder output,
         Operation operation,
-        IDictionary<string, IOpenApiSchema>? schemas)
+        IDictionary<string, IOpenApiSchema>? schemas,
+        IList<OpenApiSecurityRequirement>? security)
     {
         var pathParameterColors = GetPathParameterColors(operation.Path);
-        output.AppendLine($"### {CodeSpan(operation.Method)} {PathMarkup(operation.Path, pathParameterColors)} {{.openapi-operation .openapi-method-{operation.Method.ToLowerInvariant()}}}");
+        var requirements = (security ?? []).Where(requirement => requirement.Count > 0).ToArray();
+        var deprecated = operation.Data.Deprecated;
+        var headingMarkup = new StringBuilder($"{CodeSpan(operation.Method)} {PathMarkup(operation.Path, pathParameterColors)}");
+        if (deprecated) headingMarkup.Append(' ').Append(DeprecatedBadge);
+        if (requirements.Length > 0)
+        {
+            var schemeNames = string.Join(" or ", requirements.Select(requirement =>
+                string.Join(" + ", requirement.Keys.Select(SecuritySchemeName))));
+            headingMarkup.Append(" <span class=\"openapi-lock\" role=\"img\" aria-label=\"Requires authorization\" data-tooltip=\"Requires ")
+                .Append(HtmlEncoder.Default.Encode(schemeNames))
+                .Append("\">").Append(LockIcon).Append("</span>");
+        }
+        output.AppendLine($"### {headingMarkup} {{.openapi-operation .openapi-method-{operation.Method.ToLowerInvariant()}{(deprecated ? " .openapi-deprecated" : string.Empty)}}}");
         var summary = operation.Data.Summary;
         if (!string.IsNullOrWhiteSpace(summary))
             AppendParagraph(output, $"<p class=\"openapi-operation-summary\">{HtmlEncoder.Default.Encode(summary.Trim())}</p>");
+        if (deprecated)
+            AppendParagraph(output, "<p class=\"openapi-deprecated-notice\">This operation is deprecated and should no longer be used.</p>");
         var operationId = operation.Data.OperationId;
         if (!string.IsNullOrWhiteSpace(operationId))
             AppendParagraph(output, $"<p class=\"openapi-operation-id\">Operation ID <code>{HtmlEncoder.Default.Encode(operationId)}</code></p>");
-        AppendMarkdown(output, operation.Data.Description);
+        // Many generators repeat the summary as the description; the summary already shows in the endpoint row.
+        if (!SameText(summary, operation.Data.Description))
+            AppendMarkdown(output, operation.Data.Description);
+        AppendSecurityRequirements(output, requirements);
 
         AppendParameters(output, operation.PathItem, operation.Data, pathParameterColors, schemas);
         AppendRequestBody(output, operation.Data, schemas, $"{operation.Method}-{operation.Path}");
@@ -204,7 +225,7 @@ public static class OpenApiMarkdownRenderer
                     ? $"<span class=\"openapi-path-parameter {colorClass}\">{HtmlEncoder.Default.Encode(name)}</span>"
                     : HtmlEncoder.Default.Encode(name);
                 if (parameter.Required) nameMarkup += RequiredMarker;
-                output.AppendLine($"| {EscapeTableCell(DeclarationMarkup(nameMarkup, SchemaTypeMarkup(parameter.Schema), parameter.Schema, schemas))} | {EscapeTableCell(parameter.Description)} |");
+                output.AppendLine($"| {EscapeTableCell(DeclarationMarkup(nameMarkup, SchemaTypeMarkup(parameter.Schema), parameter.Schema, schemas, parameter.Deprecated, parameter.Example))} | {EscapeTableCell(parameter.Description)} |");
             }
             output.AppendLine();
         }
@@ -246,8 +267,9 @@ public static class OpenApiMarkdownRenderer
     {
         if (operation.RequestBody is null) return;
         var requestBody = ResolveReference(operation.RequestBody);
-        output.AppendLine("#### Request body {.openapi-request-body}");
-        if (requestBody.Required) output.AppendLine("Required.");
+        output.AppendLine(requestBody.Required
+            ? "#### Request body <span class=\"openapi-badge openapi-badge-required\">Required</span> {.openapi-request-body}"
+            : "#### Request body {.openapi-request-body}");
         AppendMarkdown(output, requestBody.Description);
         AppendMediaContent(
             output,
@@ -271,6 +293,7 @@ public static class OpenApiMarkdownRenderer
             var statusSuffix = string.IsNullOrWhiteSpace(statusName) ? string.Empty : $" - {EscapeMarkdown(statusName)}";
             output.AppendLine($"##### Response {CodeSpan(response.Key)}{statusSuffix} {{.openapi-response}}");
             AppendMarkdown(output, responseObject.Description);
+            AppendResponseHeaders(output, responseObject.Headers, schemas);
             AppendResponseContent(
                 output,
                 responseObject.Content ?? new Dictionary<string, IOpenApiMediaType>(),
@@ -420,7 +443,8 @@ public static class OpenApiMarkdownRenderer
         {
             var propertySchema = ResolveReference(property.Value);
             var propertyName = HtmlEncoder.Default.Encode(property.Key) + (required.Contains(property.Key) ? RequiredMarker : string.Empty);
-            output.AppendLine($"| {EscapeTableCell(DeclarationMarkup(propertyName, SchemaTypeMarkup(property.Value, anchors), property.Value, components))} | {EscapeTableCell(propertySchema.Description)} |");
+            var deprecated = property.Value.Deprecated || propertySchema.Deprecated;
+            output.AppendLine($"| {EscapeTableCell(DeclarationMarkup(propertyName, SchemaTypeMarkup(property.Value, anchors), property.Value, components, deprecated))} | {EscapeTableCell(propertySchema.Description)} |");
         }
     }
 
@@ -604,6 +628,12 @@ public static class OpenApiMarkdownRenderer
             var array = $"{TypeMarkup("[")}{SchemaTypeMarkup(schema.Items, anchors)}{TypeMarkup("]")}";
             return schema.Type.Value.HasFlag(JsonSchemaType.Null) ? AppendOptionalTypeMarker(array) : array;
         }
+        // A map reads like the array notation: [string: Value].
+        if (IsMapSchema(schema))
+        {
+            var map = $"{TypeMarkup("[string: ")}{SchemaTypeMarkup(schema.AdditionalProperties, anchors)}{TypeMarkup("]")}";
+            return schema.Type?.HasFlag(JsonSchemaType.Null) == true ? AppendOptionalTypeMarker(map) : map;
+        }
         if (schema.OneOf is { Count: > 0 } nullableOneOf && HasNullableUnion(nullableOneOf))
         {
             var nonNullable = nullableOneOf.Single(nested => SchemaType(nested) != "null");
@@ -630,9 +660,13 @@ public static class OpenApiMarkdownRenderer
         string name,
         string type,
         IOpenApiSchema? schema = null,
-        IDictionary<string, IOpenApiSchema>? components = null)
+        IDictionary<string, IOpenApiSchema>? components = null,
+        bool deprecated = false,
+        JsonNode? example = null)
     {
-        var declaration = new StringBuilder("<span class=\"openapi-declaration\"><span class=\"openapi-declaration-name\">")
+        var declaration = new StringBuilder(deprecated
+                ? "<span class=\"openapi-declaration openapi-declaration-deprecated\"><span class=\"openapi-declaration-name\">"
+                : "<span class=\"openapi-declaration\"><span class=\"openapi-declaration-name\">")
             .Append(name)
             .Append("</span><span class=\"openapi-declaration-colon\">:</span> <span class=\"openapi-declaration-type\">")
             .Append(type)
@@ -642,7 +676,16 @@ public static class OpenApiMarkdownRenderer
             declaration.Append("<span class=\"openapi-default\" data-tooltip=\"Default value\"> = ")
                 .Append(HtmlEncoder.Default.Encode(defaultValue.ToJsonString()))
                 .Append("</span>");
+        if (deprecated) declaration.Append(' ').Append(DeprecatedBadge);
         declaration.Append("</span>");
+
+        var facets = resolved is null ? new List<string>() : SchemaFacets(resolved);
+        if (example is not null)
+            facets.Add($"example <code>{HtmlEncoder.Default.Encode(EnumValueText(example))}</code>");
+        if (facets.Count > 0)
+            declaration.Append("<span class=\"openapi-facets\">")
+                .AppendJoin(string.Empty, facets.Select(facet => $"<span class=\"openapi-facet\">{facet}</span>"))
+                .Append("</span>");
 
         var values = schema is null ? null : EnumValues(schema, components);
         if (values is null) return declaration.ToString();
@@ -652,6 +695,144 @@ public static class OpenApiMarkdownRenderer
                 .Append(HtmlEncoder.Default.Encode(EnumValueText(value)))
                 .Append("</code>");
         return declaration.Append("</span>").ToString();
+    }
+
+    private const string DeprecatedBadge = "<span class=\"openapi-badge openapi-badge-deprecated\">Deprecated</span>";
+
+    private const string LockIcon =
+        "<svg viewBox=\"0 0 20 20\" aria-hidden=\"true\" focusable=\"false\"><rect x=\"4.5\" y=\"9\" width=\"11\" height=\"8\" rx=\"1.8\"></rect><path d=\"M7 9V6.5a3 3 0 0 1 6 0V9\"></path></svg>";
+
+    // Validation keywords and access modes, shortened to read like a type annotation.
+    private static List<string> SchemaFacets(IOpenApiSchema schema)
+    {
+        var facets = new List<string>();
+        if (schema.ReadOnly) facets.Add("read-only");
+        if (schema.WriteOnly) facets.Add("write-only");
+        var minLength = schema.MinLength is > 0 ? schema.MinLength : null;
+        if (minLength is not null && schema.MaxLength is not null)
+            facets.Add(minLength == schema.MaxLength ? $"length {minLength}" : $"length {minLength}–{schema.MaxLength}");
+        else if (minLength is not null) facets.Add($"min length {minLength}");
+        else if (schema.MaxLength is not null) facets.Add($"max length {schema.MaxLength}");
+        AddBound(facets, schema.Minimum, schema.ExclusiveMinimum, "≥", ">");
+        AddBound(facets, schema.Maximum, schema.ExclusiveMaximum, "≤", "<");
+        if (schema.MultipleOf is { } multipleOf) facets.Add($"multiple of {FormatNumber(multipleOf)}");
+        var minItems = schema.MinItems is > 0 ? schema.MinItems : null;
+        if (minItems is not null && schema.MaxItems is not null)
+            facets.Add(minItems == schema.MaxItems ? $"{minItems} items" : $"{minItems}–{schema.MaxItems} items");
+        else if (minItems is not null) facets.Add($"at least {minItems} {(minItems == 1 ? "item" : "items")}");
+        else if (schema.MaxItems is not null) facets.Add($"at most {schema.MaxItems} {(schema.MaxItems == 1 ? "item" : "items")}");
+        if (schema.UniqueItems == true) facets.Add("unique items");
+        if (!string.IsNullOrWhiteSpace(schema.Pattern))
+            facets.Add($"pattern <code>{HtmlEncoder.Default.Encode(schema.Pattern)}</code>");
+        return facets;
+    }
+
+    private static void AddBound(List<string> facets, object? inclusive, object? exclusive, string inclusiveSymbol, string exclusiveSymbol)
+    {
+        if (IsNumber(exclusive)) facets.Add($"{exclusiveSymbol} {FormatNumber(exclusive!)}");
+        else if (IsNumber(inclusive)) facets.Add($"{inclusiveSymbol} {FormatNumber(inclusive!)}");
+    }
+
+    private static bool IsNumber(object? value) => ParseNumber(value) is not null;
+
+    private static string FormatNumber(object value) =>
+        HtmlEncoder.Default.Encode(Convert.ToString(value, System.Globalization.CultureInfo.InvariantCulture) ?? string.Empty);
+
+    private static bool SameText(string? first, string? second) =>
+        !string.IsNullOrWhiteSpace(first) && !string.IsNullOrWhiteSpace(second) &&
+        string.Equals(first.Trim().TrimEnd('.'), second.Trim().TrimEnd('.'), StringComparison.OrdinalIgnoreCase);
+
+    private static string SecuritySchemeName(OpenApiSecuritySchemeReference scheme) =>
+        scheme.Reference.Id ?? scheme.Name ?? "security scheme";
+
+    private static string SecuritySchemeKind(IOpenApiSecurityScheme scheme) => scheme.Type switch
+    {
+        SecuritySchemeType.Http when string.Equals(scheme.Scheme, "bearer", StringComparison.OrdinalIgnoreCase) =>
+            string.IsNullOrWhiteSpace(scheme.BearerFormat) ? "Bearer token" : $"Bearer token ({scheme.BearerFormat})",
+        SecuritySchemeType.Http when string.Equals(scheme.Scheme, "basic", StringComparison.OrdinalIgnoreCase) => "HTTP Basic",
+        SecuritySchemeType.Http => $"HTTP {scheme.Scheme}",
+        SecuritySchemeType.ApiKey => $"API key {(string.IsNullOrWhiteSpace(scheme.Name) ? string.Empty : $"<code>{HtmlEncoder.Default.Encode(scheme.Name)}</code> ")}in {scheme.In?.ToString().ToLowerInvariant() ?? "request"}",
+        SecuritySchemeType.OAuth2 => "OAuth 2.0",
+        SecuritySchemeType.OpenIdConnect => "OpenID Connect",
+        _ => HtmlEncoder.Default.Encode(scheme.Type?.ToString() ?? "Custom")
+    };
+
+    private static void AppendSecuritySchemes(StringBuilder output, OpenApiDocument document)
+    {
+        var schemes = document.Components?.SecuritySchemes;
+        if (schemes is not { Count: > 0 }) return;
+        output.Append("<div class=\"openapi-servers openapi-auth\"><span class=\"openapi-servers-label\">Authentication</span><ul>");
+        foreach (var (name, scheme) in schemes)
+        {
+            output.Append("<li><code>").Append(HtmlEncoder.Default.Encode(name)).Append("</code>")
+                .Append("<span class=\"openapi-security-kind\">").Append(SecuritySchemeKind(scheme)).Append("</span>");
+            if (!string.IsNullOrWhiteSpace(scheme.Description))
+                output.Append("<span class=\"openapi-server-description\">").Append(HtmlEncoder.Default.Encode(scheme.Description)).Append("</span>");
+            output.Append("</li>");
+        }
+        output.AppendLine("</ul></div>");
+        output.AppendLine();
+    }
+
+    private static void AppendSecurityRequirements(StringBuilder output, IReadOnlyList<OpenApiSecurityRequirement> requirements)
+    {
+        if (requirements.Count == 0) return;
+        output.Append("<div class=\"openapi-security\"><span class=\"openapi-security-label\">")
+            .Append(LockIcon)
+            .Append("Authorization</span><ul>");
+        foreach (var requirement in requirements)
+        {
+            output.Append("<li>");
+            var first = true;
+            foreach (var (scheme, scopes) in requirement)
+            {
+                if (!first) output.Append("<span class=\"openapi-security-and\">and</span>");
+                first = false;
+                output.Append("<code>").Append(HtmlEncoder.Default.Encode(SecuritySchemeName(scheme))).Append("</code>")
+                    .Append("<span class=\"openapi-security-kind\">").Append(SecuritySchemeKind(scheme)).Append("</span>");
+                foreach (var scope in scopes ?? [])
+                    output.Append("<code class=\"openapi-enum-value\">").Append(HtmlEncoder.Default.Encode(scope)).Append("</code>");
+            }
+            output.Append("</li>");
+        }
+        output.AppendLine("</ul></div>");
+        output.AppendLine();
+    }
+
+    private static void AppendInfoMeta(StringBuilder output, OpenApiInfo? info)
+    {
+        if (info is null) return;
+        var items = new List<string>();
+        if (info.License is { Name.Length: > 0 } license)
+            items.Add($"License {Link(license.Url, license.Name)}");
+        if (info.Contact is { } contact && (contact.Name ?? contact.Email ?? contact.Url?.ToString()) is { Length: > 0 } contactName)
+            items.Add($"Contact {Link(contact.Url ?? (contact.Email is null ? null : new Uri($"mailto:{contact.Email}")), contactName)}");
+        if (info.TermsOfService is { } terms)
+            items.Add(Link(terms, "Terms of service"));
+        if (items.Count > 0)
+            AppendParagraph(output, $"<p class=\"openapi-api-meta\">{string.Join("<span aria-hidden=\"true\"> · </span>", items)}</p>");
+    }
+
+    private static string Link(Uri? url, string text) => url is null
+        ? HtmlEncoder.Default.Encode(text)
+        : $"<a href=\"{HtmlEncoder.Default.Encode(url.ToString())}\">{HtmlEncoder.Default.Encode(text)}</a>";
+
+    private static void AppendResponseHeaders(
+        StringBuilder output,
+        IDictionary<string, IOpenApiHeader>? headers,
+        IDictionary<string, IOpenApiSchema>? components)
+    {
+        if (headers is not { Count: > 0 }) return;
+        output.AppendLine("<p class=\"openapi-response-headers-label\">Response headers</p>");
+        output.AppendLine();
+        output.AppendLine("| Header | Description |");
+        output.AppendLine("| --- | --- |");
+        foreach (var (name, header) in headers)
+        {
+            var nameMarkup = HtmlEncoder.Default.Encode(name) + (header.Required ? RequiredMarker : string.Empty);
+            output.AppendLine($"| {EscapeTableCell(DeclarationMarkup(nameMarkup, SchemaTypeMarkup(header.Schema), header.Schema, components, header.Deprecated))} | {EscapeTableCell(header.Description)} |");
+        }
+        output.AppendLine();
     }
 
     private static IList<JsonNode>? EnumValues(IOpenApiSchema schema, IDictionary<string, IOpenApiSchema>? components)
@@ -765,6 +946,9 @@ public static class OpenApiMarkdownRenderer
                 AddSchemaProperties(example, schema, ancestors, forRequest);
                 return example;
             }
+
+            if (IsMapSchema(schema))
+                return new JsonObject { ["additionalProp1"] = CreateSchemaExample(schema.AdditionalProperties!, ancestors, forRequest) };
 
             if (schema.Properties is { Count: > 0 } || schema.Type?.HasFlag(JsonSchemaType.Object) == true)
             {
@@ -888,9 +1072,15 @@ public static class OpenApiMarkdownRenderer
                 : $"{type} ({schema.Format})";
         if (schema.Type == JsonSchemaType.Array && schema.Items is not null)
             display = $"array of {SchemaType(schema.Items)}";
+        if (IsMapSchema(schema))
+            display = $"[string: {SchemaType(schema.AdditionalProperties)}]";
         if (optional) display += "?";
         return display;
     }
+
+    private static bool IsMapSchema(IOpenApiSchema schema) =>
+        schema.AdditionalProperties is not null && schema.Properties is not { Count: > 0 } &&
+        schema.Type?.HasFlag(JsonSchemaType.Array) != true;
 
     private static string FormatName(string format)
     {

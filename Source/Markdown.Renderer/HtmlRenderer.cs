@@ -27,7 +27,7 @@ public class HtmlRenderer
         @"^Media type\s*<code>(?<mediaType>[^<]+)</code>",
         RegexOptions.Compiled);
     private static readonly Regex OpenApiTagEndpointRegex = new(
-        "<details class=\"openapi-endpoint (?<method>openapi-method-[a-z]+)\"",
+        "<details class=\"openapi-endpoint (?<method>openapi-method-[a-z]+)[\" ]",
         RegexOptions.Compiled);
     private static readonly Regex OpenApiOperationSummaryRegex = new(
         @"\A\s*<p class=""openapi-operation-summary"">(?<summary>.*?)</p>\s*",
@@ -595,6 +595,7 @@ public class HtmlRenderer
             output.Append(renderedMarkdown, copiedUntil, heading.Index - copiedUntil);
             output.Append("<details class=\"openapi-endpoint ")
                 .Append(HtmlEncoder.Default.Encode(methodClass))
+                .Append(HasClass(heading, "openapi-deprecated") ? " openapi-endpoint-deprecated" : string.Empty)
                 .AppendLine("\">");
             output.Append("<summary id=\"")
                 .Append(HtmlEncoder.Default.Encode(id.Groups["id"].Value))

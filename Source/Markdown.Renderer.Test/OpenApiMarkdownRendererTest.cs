@@ -285,6 +285,66 @@ public class OpenApiMarkdownRendererTest
         Assert.Contains("template[data-openapi-shared=", html);
     }
 
+    [Fact]
+    public async Task MarksDeprecationSecurityConstraintsAndHeaders()
+    {
+        var html = await RenderHtml("""
+            {
+              "openapi": "3.1.0",
+              "info": { "title": "Items", "version": "1", "license": { "name": "MIT", "identifier": "MIT" } },
+              "security": [{ "bearer": [] }],
+              "paths": {
+                "/items": { "get": {
+                  "summary": "List items", "description": "List items.",
+                  "parameters": [
+                    { "name": "q", "in": "query", "deprecated": true, "schema": { "type": "string", "minLength": 3, "maxLength": 64 } },
+                    { "name": "limit", "in": "query", "example": 50, "schema": { "type": "integer", "minimum": 1, "maximum": 100 } }
+                  ],
+                  "responses": { "200": {
+                    "description": "Items",
+                    "headers": { "X-Rate-Limit": { "required": true, "schema": { "type": "integer", "format": "int32" } } },
+                    "content": { "application/json": { "schema": { "$ref": "#/components/schemas/Item" } } }
+                  } }
+                } },
+                "/items/{id}": { "delete": {
+                  "deprecated": true, "security": [],
+                  "parameters": [{ "name": "id", "in": "path", "required": true, "schema": { "type": "string" } }],
+                  "responses": { "204": { "description": "Deleted" } }
+                } }
+              },
+              "components": {
+                "securitySchemes": { "bearer": { "type": "http", "scheme": "bearer", "bearerFormat": "JWT" } },
+                "schemas": { "Item": { "type": "object", "properties": {
+                  "id": { "type": "string", "readOnly": true },
+                  "password": { "type": "string", "writeOnly": true },
+                  "price": { "type": "number", "exclusiveMinimum": 0 },
+                  "labels": { "type": "object", "additionalProperties": { "type": "string" } },
+                  "legacyCode": { "type": "string", "deprecated": true }
+                } } }
+              }
+            }
+            """);
+
+        var plain = System.Text.RegularExpressions.Regex.Replace(html, "<[^>]+>", "");
+        Assert.Contains("<details class=\"openapi-endpoint openapi-method-delete openapi-endpoint-deprecated\">", html);
+        Assert.Contains("This operation is deprecated and should no longer be used.", html);
+        Assert.Contains("data-tooltip=\"1 DELETE endpoint\"", html);
+        Assert.Single(System.Text.RegularExpressions.Regex.Matches(html, "class=\"openapi-lock\""));
+        Assert.Contains("data-tooltip=\"Requires bearer\"", html);
+        Assert.Contains("<span class=\"openapi-security-kind\">Bearer token (JWT)</span>", html);
+        Assert.Contains("License MIT", plain);
+        Assert.DoesNotContain("<p>List items.</p>", html);
+        Assert.Contains("openapi-declaration openapi-declaration-deprecated", html);
+        Assert.Contains("<span class=\"openapi-facet\">length 3–64</span>", html);
+        Assert.Contains("<span class=\"openapi-facet\">≥ 1</span><span class=\"openapi-facet\">≤ 100</span><span class=\"openapi-facet\">example <code>50</code></span>", html);
+        Assert.Contains("<span class=\"openapi-facet\">read-only</span>", html);
+        Assert.Contains("<span class=\"openapi-facet\">&gt; 0</span>", html);
+        Assert.Contains("labels: [string: string]", plain);
+        Assert.Contains("X-Rate-Limit: int32", plain);
+        Assert.Contains("Response headers", html);
+        Assert.Contains("&quot;additionalProp1&quot;", html);
+    }
+
     [Theory]
     [InlineData(true, "password", "id")]
     [InlineData(false, "id", "password")]
