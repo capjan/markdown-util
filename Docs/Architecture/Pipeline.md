@@ -13,7 +13,7 @@ Most commands follow the same pattern: find the Markdown files, build a page tre
 1. It lists the files that match the search pattern, `*.md` by default, folder by folder.
 2. A folder's `README.md`, or else its `index.md`, becomes the parent of the other pages in that folder and of the pages in its subfolders.
 3. A folder without such a page adds its pages to the nearest parent above it.
-4. `DataPreparationVisitor` reads each page's level-one heading and front matter: `title`, `description`, `icon`, and the `navigation.*` settings.
+4. `DataPreparationVisitor` reads each page's level-one heading and front matter: `title`, `description`, `icon`, `openapi`, and the `navigation.*` settings.
 
 ```text
 docs/
@@ -65,7 +65,7 @@ flowchart TD
 
 For each page, `MarkdigVisitor`:
 
-- removes the front matter and adds the page text, split at its headings, to the search index;
+- removes the front matter, appends any generated OpenAPI reference, and adds the page text, split at its headings, to the search index;
 - collects the navigation, top navigation, breadcrumbs, and last-changed date from the tree and git;
 - lets `HtmlRenderer` write the page to a temporary file and then moves it into place, so a browser never reads a half-written page;
 - writes `README.md` as `index.html`, and adds a small redirect page so that `Setup/` also reaches `Setup.html`.
@@ -96,7 +96,7 @@ sequenceDiagram
     Browser->>Browser: Reload if the open page changed
 ```
 
-`serve` remembers which assets each page links to. When an image changes, it copies the new file and reloads only the pages that show it. Files that disappear from the site are removed from the output folder.
+`serve` remembers which assets each page links to. When an image changes, it copies the new file and reloads only the pages that show it. Changes to an OpenAPI specification rebuild the site so its generated reference stays current. Files that disappear from the site are removed from the output folder.
 
 When Markdown content changes, `serve` refreshes `documentation.pdf` if a PDF Link remains in the project. Adding the first link creates the file; removing the last link deletes it.
 

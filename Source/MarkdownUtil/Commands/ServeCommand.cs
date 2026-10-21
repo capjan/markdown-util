@@ -299,6 +299,13 @@ public sealed class ServeCommand
             return;
         }
 
+        if (relevantChanges.Any(IsOpenApiSpecChange))
+        {
+            RebuildSite();
+            server.Publish(reloadAll: true);
+            return;
+        }
+
         // Editors that save through a temporary file report creations, renames, and deletions for a page whose
         // content only changed. Only the state after the batch decides whether pages were added or removed.
         var requiresRebuild = relevantChanges.Any(change =>
@@ -409,6 +416,18 @@ public sealed class ServeCommand
 
     private bool ChangesPageSet(string path) =>
         _pages.ContainsKey(path) ? !File.Exists(path) : File.Exists(path) && IsMarkdownCandidate(path);
+
+    private bool IsOpenApiSpecChange(FileChange change)
+    {
+        foreach (var page in _pages.Values)
+        {
+            if (string.IsNullOrWhiteSpace(page.OpenApiSpec)) continue;
+            var specPath = Path.GetFullPath(Path.Combine(Path.GetDirectoryName(page.FileInfo.FullName)!, page.OpenApiSpec));
+            if (PathComparer.Equals(specPath, change.Path) ||
+                change.OldPath is not null && PathComparer.Equals(specPath, change.OldPath)) return true;
+        }
+        return false;
+    }
 
     private bool IsMarkdownCandidate(string path)
     {

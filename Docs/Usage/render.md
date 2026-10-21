@@ -77,5 +77,26 @@ navigation:
 | `navigation.expanded` | `true` opens the section in the sidebar initially |
 | `navigation.placement` | `top` makes a first-level page or section a [top navigation tab](../Features/Navigation.md#top-navigation) |
 | `pdf.visible` | `false` leaves the page out of [`mdu pdf`](pdf.md) |
+| `openapi` | Path to a local OpenAPI JSON or YAML file to append as a generated API reference |
 
 Both the nested form shown above and the compact form `navigation.order: 10` work. [Navigation](../Features/Navigation.md) explains the navigation keys in detail.
+
+## OpenAPI references
+
+Add an `openapi` path to a Markdown page's front matter to include an API reference in that page:
+
+```markdown
+---
+title: Orders API
+description: Reference for the Orders service.
+openapi: ./orders.yaml
+---
+
+# Orders API
+
+The generated reference follows this introduction.
+```
+
+The path is relative to the Markdown file. `mdu render`, `mdu serve`, and `mdu pdf` read `.json`, `.yaml`, and `.yml` specifications and append the generated reference after the page's Markdown. Operations are grouped by their first tag; the output includes parameters, request bodies, responses, examples, and component schemas. The rendered HTML uses MDU's normal page layout and stylesheet and is static.
+
+Component schemas within the OpenAPI document are included. Separate files named by external `$ref` values are not loaded. The static reference does not send API requests.

@@ -13,7 +13,7 @@ MDU is one solution, `MarkdownUtils.sln`, with one executable project and severa
 | [MarkdownUtil](#markdownutil) | `mdu` command line, page tree, orchestration | all libraries below |
 | [Markdown.Document](#markdown.document) | Reads titles, front matter, and links of a page | Markdig, Cap.Core |
 | [Markdown.Linter](#markdown.linter) | Validators for titles, link casing, and link targets | SuperiorIO, FluentValidation |
-| [Markdown.Renderer](#markdown.renderer) | HTML and PDF rendering | StaticCode.\*, Markdig |
+| [Markdown.Renderer](#markdown.renderer) | HTML and PDF rendering, including OpenAPI references | StaticCode.\*, Markdig, Microsoft.OpenApi |
 | [Markdown.Search](#markdown.search) | Static search index and search script | Markdown.Renderer |
 | [StaticCode.Highlighter](#staticcode.highlighter) | Syntax highlighting for code blocks | — |
 | [StaticCode.Diagrams](#staticcode.diagrams) | Mermaid, PlantUML, and context diagrams as SVG | — |
@@ -108,7 +108,7 @@ The validators use FluentValidation. Rules that need the whole page tree, such a
 
 ## Markdown.Renderer
 
-Turns Markdown into pages. `HtmlRenderer` holds the Markdig pipeline and the embedded HTML template, stylesheet, and scripts; `PdfRenderer` lays out the same HTML on A4 pages. [Rendering](Rendering.md) describes both in detail.
+Turns Markdown into pages. `HtmlRenderer` holds the Markdig pipeline and the embedded HTML template, stylesheet, and scripts; `OpenApiMarkdownRenderer` reads referenced JSON or YAML specifications and appends their API reference as Markdown; `PdfRenderer` lays out the same content on A4 pages. [Rendering](Rendering.md) describes both in detail.
 
 ## Markdown.Search
 
