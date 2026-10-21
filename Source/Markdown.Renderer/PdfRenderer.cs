@@ -44,6 +44,10 @@ public sealed class PdfRenderer(HtmlRenderer htmlRenderer)
 
 internal sealed class PdfLayout
 {
+    private static readonly Regex StartTagRegex = new(@"<[a-zA-Z][^<>]*>", RegexOptions.Compiled);
+    private static readonly Regex BooleanAttributeRegex = new(
+        @"\s(disabled|hidden|checked|selected|required|multiple|controls|playsinline|autoplay|muted|loop|data-media-error)(?=[\s/>])",
+        RegexOptions.Compiled | RegexOptions.IgnoreCase);
     internal const double PageWidth = 595.28;
     internal const double PageHeight = 841.89;
     internal const double Left = 48;
@@ -445,7 +449,7 @@ internal sealed class PdfLayout
             .Select(child => child.GetAttribute("src"))
             .FirstOrDefault(value => !string.IsNullOrWhiteSpace(value))
             ?? video.GetAttribute("src");
-        var label = source.Length == 0 ? "[Video]" : "[Video ansehen]";
+        var label = source.Length == 0 ? "[Video]" : "[Watch video]";
         var style = source.Length == 0 ? PdfTextStyle.Muted : PdfTextStyle.Linked(source);
         WriteParagraph([new PdfRun(label, style)], 9, indent + 8, 4, 7);
     }
@@ -700,7 +704,8 @@ internal sealed class PdfLayout
     internal static string NormalizeVoidElements(string html)
     {
         var normalized = Regex.Replace(html, @"<(input|br|hr|img|source)(?<attributes>[^<>]*?)(?<!/)>", "<$1${attributes} />", RegexOptions.IgnoreCase);
-        return Regex.Replace(normalized, @"\s(disabled|hidden|checked|selected|required|multiple|controls|playsinline|autoplay|muted|loop|data-media-error)(?=[\s/>])", " $1=\"$1\"", RegexOptions.IgnoreCase);
+        return StartTagRegex.Replace(normalized, tag =>
+            BooleanAttributeRegex.Replace(tag.Value, " $1=\"$1\""));
     }
     private static IEnumerable<XmlElement> Descendants(XmlElement element, string name) =>
         element.GetElementsByTagName(name).OfType<XmlElement>();

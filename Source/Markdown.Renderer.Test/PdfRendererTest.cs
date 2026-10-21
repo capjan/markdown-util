@@ -30,6 +30,30 @@ public class PdfRendererTest
     }
 
     [Fact]
+    public void DoesNotNormalizeBooleanWordsInPdfTextOrCodeBlocks()
+    {
+        const string markdown = """
+            Use the player controls to start the video. Wrap it in a loop for testing.
+            The sound stays muted until you press play.
+
+            ```html
+            <video controls playsinline muted>
+              <!-- then loop forever -->
+            </video>
+            ```
+            """;
+        using var output = new MemoryStream();
+
+        new PdfRenderer(new HtmlRenderer()).WritePdf(output, "Videos",
+        [new PdfSourceSection("Videos", "videos/index.html", markdown)], includeFrontMatter: false);
+
+        var pdf = Encoding.Latin1.GetString(output.ToArray());
+        Assert.Contains(Convert.ToHexString(Encoding.ASCII.GetBytes("<video controls playsinline muted>")), pdf);
+        foreach (var text in new[] { "controls=\"controls\"", "loop=\"loop\"", "muted=\"muted\"", "playsinline=\"playsinline\"" })
+            Assert.DoesNotContain(Convert.ToHexString(Encoding.ASCII.GetBytes(text)), pdf);
+    }
+
+    [Fact]
     public void RendersTablesInsideScrollableContainersToPdf()
     {
         using var output = new MemoryStream();
