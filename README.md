@@ -22,6 +22,8 @@ MDU (`mdu`) turns a `docs` folder into a static HTML site with top navigation, a
 dotnet tool install --global MarkdownUtil
 ```
 
+Prefer a standalone executable? Download one for Windows x64, Linux x64, macOS Intel, or Apple silicon from the [GitHub Releases](https://github.com/capjan/mdu/releases/latest). These downloads do not require the .NET SDK or runtime.
+
 **2. Write your docs** in a `docs` folder. Each folder can use a `README.md` as its section page:
 
 ```text

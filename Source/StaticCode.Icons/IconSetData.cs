@@ -1,5 +1,6 @@
 using System.IO.Compression;
 using System.Text.Json;
+using System.Text.Json.Serialization;
 
 namespace StaticCode.Icons;
 
@@ -9,6 +10,7 @@ namespace StaticCode.Icons;
 internal sealed class IconSetData
 {
     private static readonly JsonSerializerOptions JsonOptions = new() { PropertyNamingPolicy = JsonNamingPolicy.CamelCase };
+    private static readonly IconSetJsonContext JsonContext = new(JsonOptions);
 
     public string Name { get; init; } = string.Empty;
     public string Version { get; init; } = string.Empty;
@@ -25,7 +27,7 @@ internal sealed class IconSetData
         using var resource = typeof(IconSetData).Assembly.GetManifestResourceStream($"StaticCode.Icons.Res.{resourceName}.json.gz")
             ?? throw new InvalidOperationException($"The icon set '{resourceName}' is missing.");
         using var json = new GZipStream(resource, CompressionMode.Decompress);
-        return JsonSerializer.Deserialize<IconSetData>(json, JsonOptions)
+        return JsonSerializer.Deserialize(json, JsonContext.IconSetData)
             ?? throw new InvalidOperationException($"The icon set '{resourceName}' is empty.");
     }
 }
@@ -41,4 +43,9 @@ internal sealed class IconData
 
     /// <summary>The variant for the dark theme, if the icon has light and dark variants.</summary>
     public IconData? Dark { get; init; }
+}
+
+[JsonSerializable(typeof(IconSetData))]
+internal partial class IconSetJsonContext : JsonSerializerContext
+{
 }

@@ -3,6 +3,7 @@ using System.Net;
 using System.Net.Sockets;
 using System.Text;
 using System.Text.Json;
+using System.Text.Json.Serialization;
 using System.Threading.Channels;
 
 namespace MarkdownUtil.Service;
@@ -85,12 +86,11 @@ public sealed class PreviewServer : IDisposable
     public void Publish(IEnumerable<string>? paths = null, bool reloadAll = false)
     {
         var revision = Interlocked.Increment(ref _revision);
-        var message = JsonSerializer.Serialize(new
-        {
+        var message = JsonSerializer.Serialize(new LiveReloadMessage(
             revision,
             reloadAll,
-            paths = paths?.Distinct(StringComparer.Ordinal).ToArray() ?? Array.Empty<string>()
-        });
+            paths?.Distinct(StringComparer.Ordinal).ToArray() ?? Array.Empty<string>()),
+            PreviewServerJsonContext.Default.LiveReloadMessage);
 
         foreach (var client in _eventClients.Values)
             client.Messages.Writer.TryWrite(message);
@@ -237,12 +237,11 @@ public sealed class PreviewServer : IDisposable
             await client.Response.OutputStream.FlushAsync(cancellationToken);
 
             var revision = Interlocked.Read(ref _revision);
-            var initialMessage = JsonSerializer.Serialize(new
-            {
+            var initialMessage = JsonSerializer.Serialize(new LiveReloadMessage(
                 revision,
-                reloadAll = clientRevision.HasValue && clientRevision.Value != revision,
-                paths = Array.Empty<string>()
-            });
+                clientRevision.HasValue && clientRevision.Value != revision,
+                Array.Empty<string>()),
+                PreviewServerJsonContext.Default.LiveReloadMessage);
             var initialEvent = Encoding.UTF8.GetBytes($"data: {initialMessage}\n\n");
             await client.Response.OutputStream.WriteAsync(initialEvent, cancellationToken);
             await client.Response.OutputStream.FlushAsync(cancellationToken);
@@ -284,7 +283,7 @@ public sealed class PreviewServer : IDisposable
         var script = $$"""
             <script>
             (() => {
-              const currentPath = {{JsonSerializer.Serialize(servedPath)}};
+              const currentPath = {{JsonSerializer.Serialize(servedPath, PreviewServerJsonContext.Default.String)}};
               let events;
               let revision;
               const disconnect = () => {
@@ -351,3 +350,12 @@ public sealed class PreviewServer : IDisposable
         public Channel<string> Messages { get; } = Channel.CreateUnbounded<string>();
     }
 }
+
+[JsonSourceGenerationOptions(PropertyNamingPolicy = JsonKnownNamingPolicy.CamelCase)]
+[JsonSerializable(typeof(LiveReloadMessage))]
+[JsonSerializable(typeof(string))]
+internal partial class PreviewServerJsonContext : JsonSerializerContext
+{
+}
+
+internal sealed record LiveReloadMessage(long Revision, bool ReloadAll, string[] Paths);

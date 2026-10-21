@@ -18,6 +18,7 @@ public sealed class SearchIndexBuilder
     private static readonly Regex HtmlTagRegex = new("<[^>]+>", RegexOptions.Compiled | RegexOptions.Singleline);
     private static readonly Regex WhitespaceRegex = new("\\s+", RegexOptions.Compiled);
     private static readonly JsonSerializerOptions JsonOptions = new() { PropertyNamingPolicy = JsonNamingPolicy.CamelCase };
+    private static readonly SearchIndexJsonContext JsonContext = new(JsonOptions);
 
     private readonly List<SearchIndexEntry> _entries = new();
     private readonly MarkdownPipeline _pipeline = new MarkdownPipelineBuilder()
@@ -67,7 +68,7 @@ public sealed class SearchIndexBuilder
     {
         Directory.CreateDirectory(outputPath);
         var indexPath = Path.Combine(outputPath, "search-index.json");
-        File.WriteAllText(indexPath, JsonSerializer.Serialize(_entries, JsonOptions), Encoding.UTF8);
+        File.WriteAllText(indexPath, JsonSerializer.Serialize(_entries, JsonContext.ListSearchIndexEntry), Encoding.UTF8);
     }
 
     private void AddEntry(string title, string section, string url, string text) =>
@@ -79,11 +80,16 @@ public sealed class SearchIndexBuilder
         var withoutTags = HtmlTagRegex.Replace(withoutScripts, " ");
         return WhitespaceRegex.Replace(WebUtility.HtmlDecode(withoutTags), " ").Trim();
     }
+}
 
-    private sealed record SearchIndexEntry(
-        string Title,
-        string Section,
-        string Url,
-        [property: JsonIgnore] string PageUrl,
-        string Text);
+internal sealed record SearchIndexEntry(
+    string Title,
+    string Section,
+    string Url,
+    [property: JsonIgnore] string PageUrl,
+    string Text);
+
+[JsonSerializable(typeof(List<SearchIndexEntry>))]
+internal partial class SearchIndexJsonContext : JsonSerializerContext
+{
 }
