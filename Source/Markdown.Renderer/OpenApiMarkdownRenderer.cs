@@ -757,6 +757,7 @@ public static class OpenApiMarkdownRenderer
         {
             "uuid" => "uuid",
             "int32" => "int32",
+            "double" => "double",
             "date-time" => "dateTime",
             _ => string.IsNullOrWhiteSpace(schema.Format) ? type : $"{type} ({schema.Format})"
         };
