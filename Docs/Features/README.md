@@ -31,4 +31,4 @@ Everything on these pages is written in ordinary Markdown. Each page shows the s
 
 ## Publish
 
-- [PDF Link](Pdf-Link.md) - Place a styled link to the generated PDF anywhere in your pages
+- [PDF Link](Pdf-Link.md) - Place a link to the generated PDF anywhere in your pages

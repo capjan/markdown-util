@@ -1677,33 +1677,6 @@ blockquote {
     border-radius: 2px;
 }
 
-.markdown-content a.pdf-link {
-    display: inline-flex;
-    align-items: center;
-    gap: 0.55rem;
-    padding: 0.55rem 0.9rem;
-    border: 1px solid var(--border);
-    border-radius: 999px;
-    background: var(--surface-current);
-    color: var(--text-primary);
-    font-weight: 600;
-    text-decoration: none;
-    transition: border-color 120ms ease, color 120ms ease, background 120ms ease;
-}
-
-.markdown-content a.pdf-link::before {
-    content: "↓";
-    color: var(--link);
-    font-size: 1.15em;
-    line-height: 1;
-}
-
-.markdown-content a.pdf-link:hover {
-    border-color: var(--link);
-    background: color-mix(in srgb, var(--surface-current) 78%, var(--link));
-    color: var(--link);
-}
-
 /* Icons with light and dark variants contain one SVG per theme. */
 .icon .icon-dark,
 :root[data-theme="dark"] .icon .icon-light {
