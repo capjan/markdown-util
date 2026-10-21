@@ -17,11 +17,24 @@ Each GitHub release includes self-contained executables for Windows x64, Linux x
 
 The Linux x64 executable requires glibc 2.35 or newer; Alpine Linux and other musl-based distributions are not supported.
 
-The macOS executable is not signed or notarized. If Gatekeeper blocks it after extraction, remove the quarantine attribute and try again:
+The macOS executables in GitHub releases are signed with a Developer ID Application certificate and notarized by Apple. Gatekeeper checks the notarization on first launch, so connect to the internet then. The notarization ticket cannot be stapled to the standalone executable.
 
-```bash
-xattr -d com.apple.quarantine ./mdu
-```
+## Configure macOS release signing
+
+The release workflow requires these repository secrets:
+
+- `APPLE_DEVELOPER_ID_APPLICATION_CERTIFICATE_BASE64` — base64-encoded `.p12` export of your **Developer ID Application** certificate and private key.
+- `APPLE_DEVELOPER_ID_APPLICATION_CERTIFICATE_PASSWORD` — password used to export the `.p12` file.
+- `APPLE_NOTARIZATION_PRIVATE_KEY` — private key (`.p8`) for an App Store Connect API key.
+
+Add these repository variables as well:
+
+- `APPLE_NOTARIZATION_KEY_ID` — the API key ID.
+- `APPLE_NOTARIZATION_ISSUER_ID` — the API key issuer ID.
+
+The API key must have the **Developer** role or higher. Create a [Developer ID Application certificate](https://developer.apple.com/help/account/certificates/create-developer-id-certificates/), export it with its private key from Keychain Access, and create an App Store Connect API key under **Users and Access → Integrations**. Store the values in the repository's **Settings → Secrets and variables → Actions**. The workflow stops before publishing macOS artifacts if any are missing.
+
+Apple's guides: [notarizing macOS software](https://developer.apple.com/documentation/security/notarizing-macos-software-before-distribution) and [customizing the notarization workflow](https://developer.apple.com/documentation/security/customizing-the-notarization-workflow).
 
 ## Install globally
 
