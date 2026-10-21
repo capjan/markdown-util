@@ -22,10 +22,14 @@ public static class MarkdownLinks
         Path.GetExtension(path).Equals(".md", StringComparison.OrdinalIgnoreCase) ||
         Path.GetExtension(path).Equals(".markdown", StringComparison.OrdinalIgnoreCase);
 
+    /// <summary>
+    /// Lists the Markdown pages of a folder. Symbolic links are skipped, so pages outside the folder are never read
+    /// or rewritten through them.
+    /// </summary>
     public static IEnumerable<string> EnumerateMarkdownFiles(string rootPath, bool includeHidden) =>
         Directory.EnumerateFiles(rootPath, "*", new EnumerationOptions
             {
-                AttributesToSkip = includeHidden ? FileAttributes.System : FileAttributes.Hidden | FileAttributes.System,
+                AttributesToSkip = FileAttributes.System | FileAttributes.ReparsePoint | (includeHidden ? 0 : FileAttributes.Hidden),
                 RecurseSubdirectories = true
             })
             .Where(IsMarkdownFile)

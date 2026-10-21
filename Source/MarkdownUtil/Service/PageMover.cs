@@ -22,6 +22,7 @@ public static class PageMover
             throw new InvalidOperationException($"{source} is not inside the documentation folder {rootPath}.");
         if (!isDirectory && !MarkdownLinks.IsMarkdownFile(sourcePath))
             throw new InvalidOperationException($"{source} is not a Markdown page. Move pages or folders.");
+        RejectSymbolicLinks(rootPath, sourcePath, source);
 
         var targetPath = Path.GetFullPath(target);
         if (Directory.Exists(targetPath) && !comparer.Equals(targetPath, sourcePath) ||
@@ -32,6 +33,7 @@ public static class PageMover
 
         if (!IsInside(rootPath, targetPath))
             throw new InvalidOperationException($"{target} is not inside the documentation folder {rootPath}.");
+        RejectSymbolicLinks(rootPath, targetPath, target);
         if (string.Equals(sourcePath, targetPath, StringComparison.Ordinal))
             throw new InvalidOperationException($"{source} is already at that path.");
         if ((File.Exists(targetPath) || Directory.Exists(targetPath)) && !comparer.Equals(sourcePath, targetPath))
@@ -43,7 +45,9 @@ public static class PageMover
         var movedPaths = new Dictionary<string, string>(comparer);
         if (isDirectory)
         {
-            foreach (var file in Directory.EnumerateFiles(sourcePath, "*", SearchOption.AllDirectories))
+            // Symbolic links inside the folder move as links; the files they point to stay where they are.
+            var options = new EnumerationOptions { RecurseSubdirectories = true, AttributesToSkip = FileAttributes.ReparsePoint };
+            foreach (var file in Directory.EnumerateFiles(sourcePath, "*", options))
                 movedPaths[Path.GetFullPath(file)] = Path.Combine(targetPath, Path.GetRelativePath(sourcePath, file));
         }
         else
@@ -89,6 +93,21 @@ public static class PageMover
             !MarkdownLinks.PathComparer.Equals(sourceDirectory, plan.RootPath) &&
             Directory.Exists(sourceDirectory) && !Directory.EnumerateFileSystemEntries(sourceDirectory).Any())
             Directory.Delete(sourceDirectory);
+    }
+
+    // Path checks compare names, so a symbolic link could lead a move outside the documentation folder. Moves through
+    // links are refused instead of resolved.
+    private static void RejectSymbolicLinks(string rootPath, string path, string displayPath)
+    {
+        var current = rootPath;
+        foreach (var part in Path.GetRelativePath(rootPath, path).Split(Path.DirectorySeparatorChar, StringSplitOptions.RemoveEmptyEntries))
+        {
+            current = Path.Combine(current, part);
+            FileSystemInfo info = Directory.Exists(current) ? new DirectoryInfo(current) : new FileInfo(current);
+            if (info.LinkTarget is not null)
+                throw new InvalidOperationException($"{displayPath} goes through the symbolic link {Path.GetRelativePath(rootPath, current)}; move the files it points to instead.");
+            if (!info.Exists) return;
+        }
     }
 
     private static void Move(string from, string to, bool isDirectory)

@@ -105,6 +105,41 @@ public class PageCommandTest : IDisposable
     }
 
     [Fact]
+    public void RefusesMovesThroughSymbolicLinksAndLeavesLinkedPagesAlone()
+    {
+        var outside = _root + "-outside";
+        Directory.CreateDirectory(outside);
+        try
+        {
+            File.WriteAllText(Path.Combine(outside, "Shared.md"), "# Shared\n\n[Setup](../Setup.md)\n");
+            Directory.CreateSymbolicLink(Path.Combine(_root, "External"), outside);
+            var error = new StringWriter();
+            var originalError = Console.Error;
+            Console.SetError(error);
+            try
+            {
+                Assert.Equal(1, Move("Setup.md", "External/Setup.md").Exit);
+                Assert.Equal(1, Move("External", "Moved").Exit);
+            }
+            finally
+            {
+                Console.SetError(originalError);
+            }
+
+            Assert.Contains("goes through the symbolic link External", error.ToString());
+            Assert.True(File.Exists(Path.Combine(_root, "Setup.md")));
+            Assert.False(File.Exists(Path.Combine(outside, "Setup.md")));
+
+            Assert.Equal(0, Move("Setup.md", "Start/Setup.md").Exit);
+            Assert.Equal("# Shared\n\n[Setup](../Setup.md)\n", File.ReadAllText(Path.Combine(outside, "Shared.md")));
+        }
+        finally
+        {
+            Directory.Delete(outside, recursive: true);
+        }
+    }
+
+    [Fact]
     public void ListsTheLinksThatPointToAPage()
     {
         var output = new StringWriter();
