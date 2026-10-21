@@ -45,6 +45,7 @@ public static class PageMover
         var movedPaths = new Dictionary<string, string>(comparer);
         if (isDirectory)
         {
+            RejectBrokenRelativeLinks(rootPath, sourcePath);
             // Symbolic links inside the folder move as links; the files they point to stay where they are.
             var options = new EnumerationOptions { RecurseSubdirectories = true, AttributesToSkip = FileAttributes.ReparsePoint };
             foreach (var file in Directory.EnumerateFiles(sourcePath, "*", options))
@@ -107,6 +108,34 @@ public static class PageMover
             if (info.LinkTarget is not null)
                 throw new InvalidOperationException($"{displayPath} goes through the symbolic link {Path.GetRelativePath(rootPath, current)}; move the files it points to instead.");
             if (!info.Exists) return;
+        }
+    }
+
+    // A moved folder takes its symbolic links along unchanged. A relative link that points out of the folder would
+    // then point somewhere else, so such folders are refused; links inside the folder and absolute links stay valid.
+    private static void RejectBrokenRelativeLinks(string rootPath, string folder)
+    {
+        foreach (var link in EnumerateLinks(new DirectoryInfo(folder)))
+        {
+            var target = link.LinkTarget!;
+            if (Path.IsPathRooted(target) || IsInside(folder, Path.GetFullPath(target, Path.GetDirectoryName(link.FullName)!)))
+                continue;
+
+            throw new InvalidOperationException(
+                $"{Path.GetRelativePath(rootPath, link.FullName)} is a symbolic link to {target}, which would point somewhere else after the move. " +
+                "Remove it or make it absolute, then move the folder.");
+        }
+    }
+
+    // Walks the folder without following symbolic links, so linked folders are neither entered nor looped through.
+    private static IEnumerable<FileSystemInfo> EnumerateLinks(DirectoryInfo directory)
+    {
+        foreach (var entry in directory.EnumerateFileSystemInfos("*", new EnumerationOptions { AttributesToSkip = 0 }))
+        {
+            if (entry.LinkTarget is not null) yield return entry;
+            else if (entry is DirectoryInfo child)
+                foreach (var link in EnumerateLinks(child))
+                    yield return link;
         }
     }
 

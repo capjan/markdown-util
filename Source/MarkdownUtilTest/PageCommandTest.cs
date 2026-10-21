@@ -140,6 +140,40 @@ public class PageCommandTest : IDisposable
     }
 
     [Fact]
+    public void RefusesFolderMovesThatWouldRedirectRelativeSymbolicLinks()
+    {
+        File.CreateSymbolicLink(Path.Combine(_root, "Guide", "logo.svg"), "../assets/logo.svg");
+        var error = new StringWriter();
+        var originalError = Console.Error;
+        Console.SetError(error);
+        try
+        {
+            Assert.Equal(1, Move("Guide", "Handbook/Guide").Exit);
+        }
+        finally
+        {
+            Console.SetError(originalError);
+        }
+
+        Assert.Contains("Guide/logo.svg is a symbolic link to ../assets/logo.svg", error.ToString().Replace('\\', '/'));
+        Assert.True(Directory.Exists(Path.Combine(_root, "Guide")));
+        Assert.False(Directory.Exists(Path.Combine(_root, "Handbook")));
+    }
+
+    [Fact]
+    public void MovesFoldersWhoseSymbolicLinksStayValid()
+    {
+        File.CreateSymbolicLink(Path.Combine(_root, "Guide", "steps-link.md"), "Steps.md");
+        File.CreateSymbolicLink(Path.Combine(_root, "Guide", "absolute-logo.svg"), Path.Combine(_root, "assets", "logo.svg"));
+
+        Assert.Equal(0, Move("Guide", "Handbook/Guide").Exit);
+
+        var moved = Path.Combine(_root, "Handbook", "Guide");
+        Assert.Equal("# Steps\n\n[Back](README.md)\n", File.ReadAllText(Path.Combine(moved, "steps-link.md")));
+        Assert.Equal("<svg />", File.ReadAllText(Path.Combine(moved, "absolute-logo.svg")));
+    }
+
+    [Fact]
     public void ListsTheLinksThatPointToAPage()
     {
         var output = new StringWriter();
