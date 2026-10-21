@@ -2730,7 +2730,7 @@ th, td {
     align-items: center;
     flex-wrap: wrap;
     gap: 0.75rem;
-    margin: 1.2rem 0 0.5rem;
+    margin: 0.65rem 0 0.65rem;
     color: var(--text-secondary);
     font-size: 0.9rem;
     font-weight: 650;
@@ -2797,9 +2797,9 @@ th, td {
 .markdown-content .openapi-response-panel {
     margin: 0 0 1rem;
     padding: 0.1rem 1rem 0.75rem;
-    border-left: 3px solid var(--openapi-response-color);
+    border-left: 2px solid var(--openapi-response-color);
     border-radius: 0.25rem 0.6rem 0.6rem 0.25rem;
-    background: color-mix(in srgb, var(--openapi-response-color) 4%, var(--page-background));
+    background: color-mix(in srgb, var(--openapi-response-color) 2%, var(--surface-current));
 }
 
 .markdown-content .openapi-response-panel[hidden] {
@@ -2810,17 +2810,19 @@ th, td {
     margin-top: 0.5rem;
 }
 
-.markdown-content .openapi-request-body {
+.markdown-content section.openapi-request-body {
     --openapi-response-color: var(--link);
-    margin: 0 0 1rem;
+    margin: 1.25rem 0 1.5rem;
     padding: 0.1rem 1rem 0.75rem;
-    border-left: 3px solid var(--border);
+    border-left: 2px solid var(--border-subtle);
     border-radius: 0.25rem 0.6rem 0.6rem 0.25rem;
-    background: color-mix(in srgb, var(--border) 4%, var(--page-background));
+    background: var(--surface-current);
 }
 
 .markdown-content .openapi-request-body > h4:first-child {
     margin-top: 0.75rem;
+    margin-bottom: 1rem;
+    font-size: 1rem;
 }
 
 .markdown-content .openapi-request-description > :first-child {
@@ -2849,13 +2851,15 @@ th, td {
     background: transparent;
     color: var(--text-secondary);
     font: inherit;
+    font-size: 0.9rem;
+    font-weight: 600;
     cursor: pointer;
 }
 
 .markdown-content .openapi-response-tab[aria-selected="true"] {
     border-bottom-color: var(--openapi-response-color);
     color: var(--text-primary);
-    font-weight: 700;
+    font-weight: 600;
 }
 
 .markdown-content .openapi-response-tab:focus-visible {
@@ -2864,7 +2868,34 @@ th, td {
 }
 
 .markdown-content .openapi-response-tabpanel {
-    padding: 0.8rem 0 0.25rem;
+    padding: 1rem 0 0.25rem;
+}
+
+.markdown-content .openapi-response-tabpanel > p:first-child {
+    margin-top: 0;
+}
+
+.markdown-content .openapi-response-tabpanel > p > strong:only-child > code:only-child,
+.markdown-content .openapi-response-tabpanel > h6 code {
+    padding: 0;
+    border: 0;
+    background: transparent;
+    font-size: 0.9rem;
+    overflow-wrap: anywhere;
+}
+
+.markdown-content .openapi-response-tabpanel > p + p {
+    color: var(--text-secondary);
+    line-height: 1.6;
+}
+
+.markdown-content .openapi-response-tabpanel .code-block {
+    margin: 1rem 0 0.5rem;
+}
+
+.markdown-content .openapi-response-tabpanel pre code {
+    white-space: pre-wrap;
+    overflow-wrap: anywhere;
 }
 
 .markdown-content .openapi-required-marker {

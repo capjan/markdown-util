@@ -334,6 +334,16 @@ public static class OpenApiMarkdownRenderer
             output.Append("<span id=\"").Append(HtmlEncoder.Default.Encode(anchor)).AppendLine("\"></span>");
         output.AppendLine($"**{CodeSpan(SchemaName(schema, components))}**");
         output.AppendLine();
+        AppendMarkdown(output, SchemaDescription(schema, components));
+    }
+
+    private static string? SchemaDescription(IOpenApiSchema schema, IDictionary<string, IOpenApiSchema>? components)
+    {
+        var resolved = ResolveResponseSchemaReference(schema, components);
+        if (!string.IsNullOrWhiteSpace(resolved.Description)) return resolved.Description;
+        return ArrayItemReferenceName(schema, components) is not null && resolved.Items is not null
+            ? ResolveResponseSchemaReference(resolved.Items, components).Description
+            : null;
     }
 
     private static void AppendResponseSchemaTable(
@@ -394,7 +404,8 @@ public static class OpenApiMarkdownRenderer
             var resolvedSchema = ResolveResponseSchemaReference(referencedSchema, components);
             if (name == flattenedArrayItemName)
             {
-                AppendMarkdown(output, resolvedSchema.Description);
+                if (resolvedSchema.Description != SchemaDescription(schema, components))
+                    AppendMarkdown(output, resolvedSchema.Description);
                 AppendSchemaPropertyTable(output, resolvedSchema, anchors);
                 continue;
             }
@@ -414,6 +425,7 @@ public static class OpenApiMarkdownRenderer
         {
             var resolvedSchema = ResolveResponseSchemaReference(referencedSchema, components);
             output.AppendLine($"###### {CodeSpan(name)}");
+            AppendMarkdown(output, resolvedSchema.Description);
             AppendExample(output, SerializeSchema(resolvedSchema));
         }
     }

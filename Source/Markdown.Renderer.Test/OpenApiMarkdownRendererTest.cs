@@ -155,6 +155,7 @@ public class OpenApiMarkdownRendererTest
             Assert.Contains("#### Request body", firstRender);
             Assert.Contains("##### Response `201`", firstRender);
             Assert.Contains("**`Order`**", firstRender);
+            Assert.Contains($"**`Order`**{Environment.NewLine}{Environment.NewLine}Order description.", firstRender);
             Assert.Contains("| id<span class=\"openapi-required-marker\" aria-label=\"Required\">*</span> | <span class=\"openapi-type\"><span class=\"openapi-type-keyword\">string</span></span> | Identifier |", firstRender);
             Assert.DoesNotContain("## Schemas", firstRender);
 
@@ -216,6 +217,7 @@ public class OpenApiMarkdownRendererTest
             "schemas": {
               "{{schemaName}}": {
                 "type": "object",
+                "description": "Order description.",
                 "required": ["id"],
                 "properties": { "id": { "type": "string", "description": "Identifier" } }
               }
