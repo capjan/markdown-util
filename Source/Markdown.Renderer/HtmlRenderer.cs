@@ -139,6 +139,7 @@ public class HtmlRenderer
         var pageHeading = GetPageHeadingTitle(renderedMarkdown);
         renderedMarkdown = InsertHeadingPermalinks(renderedMarkdown);
         renderedMarkdown = CollapseOpenApiOperations(renderedMarkdown);
+        renderedMarkdown = CollapseOpenApiTagGroups(renderedMarkdown);
         var hasOpenApiResponses = renderedMarkdown.Contains("class=\"openapi-responses\"", StringComparison.Ordinal);
         renderedMarkdown = InsertEditPageLink(renderedMarkdown, editPageLink, out var editLinkInserted);
         var breadcrumbMarkup = RenderBreadcrumbs(renderedMarkdown, breadcrumbs ?? Array.Empty<BreadcrumbItem>());
@@ -635,6 +636,44 @@ public class HtmlRenderer
         }
 
         output.AppendLine("</div>");
+        return output.ToString();
+    }
+
+    private static string CollapseOpenApiTagGroups(string renderedMarkdown)
+    {
+        var groupHeadings = HeadingRegex.Matches(renderedMarkdown)
+            .Cast<Match>()
+            .Where(match => HasClass(match, "openapi-tag") || HasClass(match, "openapi-schemas"))
+            .ToArray();
+        if (!groupHeadings.Any(match => HasClass(match, "openapi-tag"))) return renderedMarkdown;
+
+        var output = new StringBuilder(renderedMarkdown.Length);
+        var copiedUntil = 0;
+        for (var index = 0; index < groupHeadings.Length; index++)
+        {
+            var heading = groupHeadings[index];
+            if (!HasClass(heading, "openapi-tag")) continue;
+
+            var id = HeadingIdRegex.Match(heading.Groups["attributes"].Value);
+            if (!id.Success) continue;
+
+            var groupEnd = index + 1 < groupHeadings.Length
+                ? groupHeadings[index + 1].Index
+                : renderedMarkdown.Length;
+            var contentStart = heading.Index + heading.Length;
+            output.Append(renderedMarkdown, copiedUntil, heading.Index - copiedUntil);
+            output.AppendLine("<details class=\"openapi-tag-group\">");
+            output.Append("<summary id=\"")
+                .Append(HtmlEncoder.Default.Encode(id.Groups["id"].Value))
+                .AppendLine("\" class=\"openapi-tag\">");
+            output.Append(OpenApiPermalinkRegex.Replace(heading.Groups["content"].Value, string.Empty));
+            output.AppendLine("</summary>");
+            output.Append(renderedMarkdown, contentStart, groupEnd - contentStart);
+            output.AppendLine("</details>");
+            copiedUntil = groupEnd;
+        }
+
+        output.Append(renderedMarkdown, copiedUntil, renderedMarkdown.Length - copiedUntil);
         return output.ToString();
     }
 

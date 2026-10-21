@@ -2524,21 +2524,44 @@ th, td {
     color: var(--text-primary);
 }
 
-.markdown-content h2.openapi-tag,
 .markdown-content h2.openapi-schemas {
     padding-bottom: 0.55rem;
     border-bottom: 1px solid var(--border-subtle);
 }
 
-.markdown-content h2.openapi-tag {
+.markdown-content details.openapi-tag-group {
     margin-top: 3rem;
+    margin-bottom: 1.5rem;
+    border: 1px solid var(--border-subtle);
+    border-radius: 0.7rem;
 }
 
 .markdown-content h2.openapi-schemas {
     margin-top: 3.5rem;
 }
 
-.markdown-content h2.openapi-tag code {
+.markdown-content details.openapi-tag-group > summary.openapi-tag {
+    padding: 0.8rem 1rem;
+    color: var(--text-primary);
+    font-size: 1.25rem;
+    font-weight: 700;
+    cursor: pointer;
+}
+
+.markdown-content details.openapi-tag-group > summary.openapi-tag::marker {
+    color: var(--text-secondary);
+    font-size: 0.85rem;
+}
+
+.markdown-content details.openapi-tag-group[open] > summary.openapi-tag {
+    border-bottom: 1px solid var(--border-subtle);
+}
+
+.markdown-content details.openapi-tag-group > details.openapi-endpoint {
+    margin: 1rem;
+}
+
+.markdown-content details.openapi-tag-group > summary.openapi-tag code {
     padding: 0;
     background: transparent;
     color: var(--text-primary);
