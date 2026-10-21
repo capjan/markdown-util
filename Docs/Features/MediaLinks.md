@@ -6,6 +6,8 @@ Use an HTML `<video>` element to embed an MP4 directly. Put a YouTube or Vimeo l
 
 This eight-second demo scene is attached to the [v4.6.1 GitHub release](https://github.com/capjan/mdu/releases/tag/v4.6.1). The Pages workflow copies it into the documentation site, so the video renders from the central docs site without being stored in the Git repository.
 
+For PDF output, put the opening `<video>` tag on its own line, as in the example below. A one-line `<video ...></video>` is treated as inline HTML and omitted from the PDF.
+
 ```html title="HTML"
 <video controls playsinline preload="none" width="960" height="540" poster="https://capjan.github.io/mdu/assets/mdu-demoscene-preview.png">
   <source src="https://capjan.github.io/mdu/assets/mdu-demoscene.mp4" type="video/mp4">
