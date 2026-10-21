@@ -6,7 +6,14 @@ namespace MarkdownUtilTest;
 
 public class LintFormatTest
 {
-    private static (int Exit, string Output) Render(LintFormat format, string rootPath, params LintDiagnostic[] diagnostics)
+    private static (int Exit, string Output) Render(LintFormat format, string rootPath, params LintDiagnostic[] diagnostics) =>
+        Render(format, rootPath, Array.Empty<MarkdownFile>(), diagnostics);
+
+    private static (int Exit, string Output) Render(
+        LintFormat format,
+        string rootPath,
+        IReadOnlyCollection<MarkdownFile> orphanedPages,
+        params LintDiagnostic[] diagnostics)
     {
         var receiver = new ConsoleLintErrorReceiver();
         foreach (var diagnostic in diagnostics)
@@ -16,7 +23,7 @@ public class LintFormatTest
         }
 
         var output = new StringWriter();
-        var exit = new LintResultRenderer(receiver).Render(format, Array.Empty<MarkdownFile>(), rootPath, output);
+        var exit = new LintResultRenderer(receiver).Render(format, orphanedPages, rootPath, output);
         return (exit, output.ToString().ReplaceLineEndings("\n"));
     }
 
@@ -52,6 +59,18 @@ public class LintFormatTest
         Assert.Equal(1, exit);
         Assert.StartsWith("::error file=Docs/Guide%2C Part 1.md,line=3,title=MDU004 LocalLinkExists::100%25 broken: a.md\n", output);
         Assert.EndsWith("Linter detected 1 error and 0 warnings.\n", output);
+    }
+
+    [Fact]
+    public void CountsOrphanedPagesAsWarningsInTheGitHubSummary()
+    {
+        var page = new MarkdownFile(new FileInfo(Path.Combine(Directory.GetCurrentDirectory(), "Docs", "Hidden.md")), null);
+
+        var (exit, output) = Render(LintFormat.GitHub, Directory.GetCurrentDirectory(), [page]);
+
+        Assert.Equal(0, exit);
+        Assert.StartsWith("::warning file=Docs/Hidden.md,line=1,title=Orphaned page::", output);
+        Assert.EndsWith("Linter detected 0 errors and 1 warning.\n", output);
     }
 
     [Fact]

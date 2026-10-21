@@ -145,8 +145,10 @@ public class LintResultRenderer
             output.WriteLine($"::warning file={EscapeProperty(GitHubPath(page.FileInfo.FullName))},line=1,title=Orphaned page::" +
                              EscapeData("This page is hidden from navigation and no visible page links to it."));
 
+        // Orphaned pages appear as warning annotations, so the summary counts them as warnings too.
+        var warningCount = _receiver.WarningCount + orphanedPages.Count;
         output.WriteLine($"Linter detected {_receiver.ErrorCount} error{(_receiver.ErrorCount == 1 ? "" : "s")} and " +
-                         $"{_receiver.WarningCount} warning{(_receiver.WarningCount == 1 ? "" : "s")}.");
+                         $"{warningCount} warning{(warningCount == 1 ? "" : "s")}.");
     }
 
     private static (string? Code, string? Rule, string Text) Parse(string message)
