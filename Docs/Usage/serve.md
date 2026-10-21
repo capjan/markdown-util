@@ -4,7 +4,7 @@ navigation.order: 5
 
 # serve
 
-`mdu serve` renders the site, starts a local preview server, and opens it in your browser. It generates `documentation.pdf` only if a page contains `[Download the PDF](mdu:pdf)`. While it runs, it watches the documentation folder: when you save a page, a linked image, or a referenced OpenAPI file, the affected output is refreshed and the browser reloads it. Markdown changes refresh the PDF when a PDF Link is present; adding the first link creates the PDF, and removing the last link removes it. Press ++ctrl+c++ to stop.
+`mdu serve` renders the site, starts a local preview server, and opens it in your browser. It generates `documentation.pdf` only if a page contains `[Download the PDF](mdu:pdf)`. While it runs, it watches the documentation folder and the folders containing referenced OpenAPI files: when you save a page, a linked image, or a referenced OpenAPI file, the affected output is refreshed and the browser reloads it. Markdown changes refresh the PDF when a PDF Link is present; adding the first link creates the PDF, and removing the last link removes it. Press ++ctrl+c++ to stop.
 
 ## Usage
 

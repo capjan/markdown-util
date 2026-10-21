@@ -34,6 +34,17 @@ public class PageCommandTest : IDisposable
     }
 
     [Fact]
+    public void UpdatesOpenApiReferenceWhenPageMoves()
+    {
+        Write("api/orders.yaml", "openapi: 3.1.0\n");
+        Write("Reference.md", "---\nopenapi: api/orders.yaml\n---\n# Orders\n");
+
+        Assert.Equal(0, Move("Reference.md", "Guide/Reference.md").Exit);
+
+        Assert.Equal("---\nopenapi: \"../api/orders.yaml\"\n---\n# Orders\n", Read("Guide/Reference.md"));
+    }
+
+    [Fact]
     public void MovesAFolderWithItsFilesAndKeepsLinksBetweenThem()
     {
         var result = Move("Guide", "Handbook/Guide");

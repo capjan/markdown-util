@@ -30,6 +30,7 @@ public sealed class ServeCommand
     private readonly Dictionary<string, HashSet<string>> _pagesByAsset = new(PathComparer);
     private readonly HashSet<string> _generatedFiles = new(PathComparer);
     private readonly HashSet<string> _configurationAssets = new(PathComparer);
+    private FileWatcherSet? _watchers;
 
     private MarkdownFile[] _navigationRoots = Array.Empty<MarkdownFile>();
     private IReadOnlyCollection<string> _siteMediaProviders = Array.Empty<string>();
@@ -118,7 +119,9 @@ public sealed class ServeCommand
         var url = server.BaseUrl;
         Console.WriteLine($"Serving {_rootPath} at {url} (press Ctrl+C to stop)");
         var changes = Channel.CreateUnbounded<FileChange>();
-        using var watcher = CreateWatcher(changes.Writer);
+        using var watcher = new FileWatcherSet(_rootPath, changes.Writer);
+        _watchers = watcher;
+        watcher.UpdateOpenApiSpecs(_pages.Values);
         if (!noBrowser) OpenBrowser(url);
 
         using var cancellation = new CancellationTokenSource();
@@ -155,6 +158,7 @@ public sealed class ServeCommand
         finally
         {
             Console.CancelKeyPress -= cancelHandler;
+            _watchers = null;
         }
 
         return 0;
@@ -211,6 +215,8 @@ public sealed class ServeCommand
             _pages[pagePath] = page;
             UpdatePageAssets(pagePath, page);
         }
+
+        _watchers?.UpdateOpenApiSpecs(_pages.Values);
     }
 
     private static IEnumerable<MarkdownFile> Flatten(IEnumerable<MarkdownFile> pages)
@@ -345,6 +351,7 @@ public sealed class ServeCommand
             var previousNavigationPlacement = page.NavigationPlacement;
             var previousInvalidNavigationPlacement = page.InvalidNavigationPlacement;
             _dataPreparationVisitor.Process(page, depth);
+            _watchers?.UpdateOpenApiSpecs(_pages.Values);
             if (!previousTitle.Equals(page.Title, StringComparison.Ordinal) ||
                 !previousNavigationTitle.Equals(page.NavigationTitle, StringComparison.Ordinal) ||
                 previousNavigationOrder != page.NavigationOrder ||
@@ -422,7 +429,7 @@ public sealed class ServeCommand
         foreach (var page in _pages.Values)
         {
             if (string.IsNullOrWhiteSpace(page.OpenApiSpec)) continue;
-            var specPath = Path.GetFullPath(Path.Combine(Path.GetDirectoryName(page.FileInfo.FullName)!, page.OpenApiSpec));
+            var specPath = OpenApiMarkdownRenderer.ResolveSpecPath(page.FileInfo.FullName, page.OpenApiSpec);
             if (PathComparer.Equals(specPath, change.Path) ||
                 change.OldPath is not null && PathComparer.Equals(specPath, change.OldPath)) return true;
         }
@@ -531,25 +538,6 @@ public sealed class ServeCommand
         return Path.GetFullPath(Path.Combine(_outputPath, relativePath));
     }
 
-    private FileSystemWatcher CreateWatcher(ChannelWriter<FileChange> writer)
-    {
-        var watcher = new FileSystemWatcher(_rootPath)
-        {
-            IncludeSubdirectories = true,
-            NotifyFilter = NotifyFilters.FileName | NotifyFilters.DirectoryName |
-                           NotifyFilters.LastWrite | NotifyFilters.Size,
-            EnableRaisingEvents = false
-        };
-
-        watcher.Changed += (_, eventArgs) => writer.TryWrite(new(eventArgs.FullPath, null, FileChangeKind.Changed));
-        watcher.Created += (_, eventArgs) => writer.TryWrite(new(eventArgs.FullPath, null, FileChangeKind.Created));
-        watcher.Deleted += (_, eventArgs) => writer.TryWrite(new(eventArgs.FullPath, null, FileChangeKind.Deleted));
-        watcher.Renamed += (_, eventArgs) => writer.TryWrite(new(eventArgs.FullPath, eventArgs.OldFullPath, FileChangeKind.Renamed));
-        watcher.Error += (_, _) => writer.TryWrite(new(_rootPath, null, FileChangeKind.Rescan));
-        watcher.EnableRaisingEvents = true;
-        return watcher;
-    }
-
     private static bool IsInsideDirectory(string directory, string path)
     {
         var relativePath = Path.GetRelativePath(directory, path);
@@ -583,5 +571,66 @@ public sealed class ServeCommand
         Deleted,
         Renamed,
         Rescan
+    }
+
+    private sealed class FileWatcherSet : IDisposable
+    {
+        private readonly string _rootPath;
+        private readonly ChannelWriter<FileChange> _writer;
+        private readonly FileSystemWatcher _rootWatcher;
+        private readonly Dictionary<string, FileSystemWatcher> _openApiWatchers = new(PathComparer);
+
+        public FileWatcherSet(string rootPath, ChannelWriter<FileChange> writer)
+        {
+            _rootPath = rootPath;
+            _writer = writer;
+            _rootWatcher = Create(_rootPath, includeSubdirectories: true);
+        }
+
+        public void UpdateOpenApiSpecs(IEnumerable<MarkdownFile> pages)
+        {
+            var directories = pages
+                .Where(page => !string.IsNullOrWhiteSpace(page.OpenApiSpec))
+                .Select(page => OpenApiMarkdownRenderer.ResolveSpecPath(page.FileInfo.FullName, page.OpenApiSpec))
+                .Where(path => !IsInsideDirectory(_rootPath, path))
+                .Select(path => Path.GetDirectoryName(path)!)
+                .Where(Directory.Exists)
+                .ToHashSet(PathComparer);
+
+            foreach (var directory in _openApiWatchers.Keys.Except(directories, PathComparer).ToArray())
+            {
+                _openApiWatchers[directory].Dispose();
+                _openApiWatchers.Remove(directory);
+            }
+
+            foreach (var directory in directories.Except(_openApiWatchers.Keys, PathComparer))
+                _openApiWatchers.Add(directory, Create(directory, includeSubdirectories: false));
+        }
+
+        public void Dispose()
+        {
+            _rootWatcher.Dispose();
+            foreach (var watcher in _openApiWatchers.Values) watcher.Dispose();
+            _openApiWatchers.Clear();
+        }
+
+        private FileSystemWatcher Create(string path, bool includeSubdirectories)
+        {
+            var watcher = new FileSystemWatcher(path)
+            {
+                IncludeSubdirectories = includeSubdirectories,
+                NotifyFilter = NotifyFilters.FileName | NotifyFilters.DirectoryName |
+                               NotifyFilters.LastWrite | NotifyFilters.Size,
+                EnableRaisingEvents = false
+            };
+
+            watcher.Changed += (_, eventArgs) => _writer.TryWrite(new(eventArgs.FullPath, null, FileChangeKind.Changed));
+            watcher.Created += (_, eventArgs) => _writer.TryWrite(new(eventArgs.FullPath, null, FileChangeKind.Created));
+            watcher.Deleted += (_, eventArgs) => _writer.TryWrite(new(eventArgs.FullPath, null, FileChangeKind.Deleted));
+            watcher.Renamed += (_, eventArgs) => _writer.TryWrite(new(eventArgs.FullPath, eventArgs.OldFullPath, FileChangeKind.Renamed));
+            watcher.Error += (_, _) => _writer.TryWrite(new(_rootPath, null, FileChangeKind.Rescan));
+            watcher.EnableRaisingEvents = true;
+            return watcher;
+        }
     }
 }
