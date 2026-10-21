@@ -174,18 +174,18 @@ public static class OpenApiMarkdownRenderer
                      .OrderBy(group => ParameterLocationOrder(group.Key)))
         {
             output.AppendLine($"#### {ParameterHeading(group.Key)}");
-            output.AppendLine("| Name | Type | Description |");
-            output.AppendLine("| --- | --- | --- |");
+            output.AppendLine("| Parameter | Description |");
+            output.AppendLine("| --- | --- |");
             foreach (var parameter in group)
             {
                 var name = parameter.Name ?? string.Empty;
                 var nameMarkup = parameter.In == ParameterLocation.Path && pathParameterColors.TryGetValue(name, out var colorClass)
                     ? $"<span class=\"openapi-path-parameter {colorClass}\">{HtmlEncoder.Default.Encode(name)}</span>"
-                    : EscapeTableCell(name);
+                    : HtmlEncoder.Default.Encode(name);
                 nameMarkup += parameter.Required
                     ? "<span class=\"openapi-required-marker\" aria-label=\"Required\">*</span>"
                     : string.Empty;
-                output.AppendLine($"| {nameMarkup} | {EscapeTableCell(SchemaTypeMarkup(parameter.Schema))} | {EscapeTableCell(parameter.Description)} |");
+                output.AppendLine($"| {EscapeTableCell(DeclarationMarkup(nameMarkup, SchemaTypeMarkup(parameter.Schema)))} | {EscapeTableCell(parameter.Description)} |");
             }
             output.AppendLine();
         }
@@ -375,11 +375,11 @@ public static class OpenApiMarkdownRenderer
         var properties = tableSchema.Properties ?? new Dictionary<string, IOpenApiSchema>();
         var required = tableSchema.Required ?? new HashSet<string>();
         var anchors = CreateSchemaAnchors(schema, components, anchorPrefix);
-        output.AppendLine("| Property | Type | Description |");
-        output.AppendLine("| --- | --- | --- |");
+        output.AppendLine("| Property | Description |");
+        output.AppendLine("| --- | --- |");
         if (properties.Count == 0)
         {
-            output.AppendLine($"| Response | {EscapeTableCell(SchemaTypeMarkup(schema))} | {EscapeTableCell(tableSchema.Description)} |");
+            output.AppendLine($"| {EscapeTableCell(DeclarationMarkup("value", SchemaTypeMarkup(schema)))} | {EscapeTableCell(tableSchema.Description)} |");
             output.AppendLine();
             return;
         }
@@ -387,10 +387,10 @@ public static class OpenApiMarkdownRenderer
         foreach (var property in properties)
         {
             var propertySchema = ResolveReference(property.Value);
-            var propertyName = EscapeTableCell(property.Key) + (required.Contains(property.Key)
+            var propertyName = HtmlEncoder.Default.Encode(property.Key) + (required.Contains(property.Key)
                 ? "<span class=\"openapi-required-marker\" aria-label=\"Required\">*</span>"
                 : string.Empty);
-            output.AppendLine($"| {propertyName} | {EscapeTableCell(SchemaTypeMarkup(property.Value, anchors))} | {EscapeTableCell(propertySchema.Description)} |");
+            output.AppendLine($"| {EscapeTableCell(DeclarationMarkup(propertyName, SchemaTypeMarkup(property.Value, anchors)))} | {EscapeTableCell(propertySchema.Description)} |");
         }
         output.AppendLine();
     }
@@ -466,23 +466,23 @@ public static class OpenApiMarkdownRenderer
         var properties = schema.Properties ?? new Dictionary<string, IOpenApiSchema>();
         if (properties.Count == 0)
         {
-            output.AppendLine($"| Property | Type | Description |");
-            output.AppendLine("| --- | --- | --- |");
-            output.AppendLine($"| Response | {EscapeTableCell(SchemaTypeMarkup(schema, anchors))} | {EscapeTableCell(schema.Description)} |");
+            output.AppendLine($"| Property | Description |");
+            output.AppendLine("| --- | --- |");
+            output.AppendLine($"| {EscapeTableCell(DeclarationMarkup("value", SchemaTypeMarkup(schema, anchors)))} | {EscapeTableCell(schema.Description)} |");
             output.AppendLine();
             return;
         }
 
         var required = schema.Required ?? new HashSet<string>();
-        output.AppendLine("| Property | Type | Description |");
-        output.AppendLine("| --- | --- | --- |");
+        output.AppendLine("| Property | Description |");
+        output.AppendLine("| --- | --- |");
         foreach (var property in properties)
         {
             var propertySchema = ResolveReference(property.Value);
-            var propertyName = EscapeTableCell(property.Key) + (required.Contains(property.Key)
+            var propertyName = HtmlEncoder.Default.Encode(property.Key) + (required.Contains(property.Key)
                 ? "<span class=\"openapi-required-marker\" aria-label=\"Required\">*</span>"
                 : string.Empty);
-            output.AppendLine($"| {propertyName} | {EscapeTableCell(SchemaTypeMarkup(property.Value, anchors))} | {EscapeTableCell(propertySchema.Description)} |");
+            output.AppendLine($"| {EscapeTableCell(DeclarationMarkup(propertyName, SchemaTypeMarkup(property.Value, anchors)))} | {EscapeTableCell(propertySchema.Description)} |");
         }
         output.AppendLine();
     }
@@ -586,6 +586,9 @@ public static class OpenApiMarkdownRenderer
             return string.Join(" & ", allOf.Select(nested => SchemaTypeMarkup(nested, anchors)));
         return TypeMarkup(SchemaType(schema));
     }
+
+    private static string DeclarationMarkup(string name, string type) =>
+        $"<span class=\"openapi-declaration\"><span class=\"openapi-declaration-name\">{name}</span><span class=\"openapi-declaration-colon\">:</span> <span class=\"openapi-declaration-type\">{type}</span></span>";
 
     private static string TypeMarkup(string type)
     {

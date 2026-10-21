@@ -2739,7 +2739,39 @@ th, td {
 }
 
 .markdown-content .openapi-type-keyword {
-    color: var(--syntax-keyword);
+    color: var(--text-secondary);
+}
+
+.markdown-content .openapi-declaration {
+    font-family: var(--font-mono);
+    overflow-wrap: anywhere;
+}
+
+.markdown-content .openapi-declaration-name {
+    font-weight: 600;
+}
+
+.markdown-content .openapi-declaration-colon {
+    color: var(--text-secondary);
+}
+
+.markdown-content .openapi-type-reference {
+    color: var(--text-secondary);
+    text-decoration: underline;
+    text-decoration-color: var(--border-subtle);
+    text-underline-offset: 0.2em;
+}
+
+.markdown-content .openapi-type-reference:hover,
+.markdown-content .openapi-type-reference:focus-visible {
+    text-decoration-color: currentColor;
+}
+
+@media (max-width: 640px) {
+    .markdown-content .openapi-declaration-type {
+        display: block;
+        margin-top: 0.25rem;
+    }
 }
 
 .markdown-content .openapi-type-optional {

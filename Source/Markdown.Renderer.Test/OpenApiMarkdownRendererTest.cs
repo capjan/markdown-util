@@ -25,8 +25,8 @@ public class OpenApiMarkdownRendererTest
             }
             """);
         var cell = System.Text.RegularExpressions.Regex.Match(html,
-            @"<td>metaInfoAssets</td>\s*<td>(?<type>.*?)</td>").Groups["type"].Value;
-        Assert.Equal("[LocationAssetDto]?", System.Text.RegularExpressions.Regex.Replace(cell, "<[^>]+>", ""));
+            @"<td>(?<type><span[^>]+><span[^>]+>metaInfoAssets.*?)</td>").Groups["type"].Value;
+        Assert.Equal("metaInfoAssets: [LocationAssetDto]?", System.Text.RegularExpressions.Regex.Replace(cell, "<[^>]+>", ""));
         var link = System.Text.RegularExpressions.Regex.Match(cell,
             "class=\"openapi-type-reference\" href=\"#(?<anchor>[^\"]+)\"");
         Assert.True(link.Success);
@@ -102,6 +102,7 @@ public class OpenApiMarkdownRendererTest
         Assert.Contains(">Schema JSON</button>", html);
         Assert.Equal(6, System.Text.RegularExpressions.Regex.Matches(html, "role=\"tab\"").Count);
         Assert.Contains("<th>Property</th>", html);
+        Assert.DoesNotContain("<th>Type</th>", html);
         Assert.DoesNotContain("<th>Required</th>", html);
         Assert.Contains("<span class=\"openapi-required-marker\" aria-label=\"Required\">*</span>", html);
         Assert.Contains("<td>Order identifier</td>", html);
@@ -181,12 +182,14 @@ public class OpenApiMarkdownRendererTest
             var firstRender = OpenApiMarkdownRenderer.AppendFromFile("# Orders", markdownPath, "orders.json");
             Assert.Contains("#### Path Parameters", firstRender);
             Assert.DoesNotContain("**Orders**", firstRender);
-            Assert.Contains("| <span class=\"openapi-path-parameter openapi-path-parameter-color-1\">id</span><span class=\"openapi-required-marker\" aria-label=\"Required\">*</span> | <span class=\"openapi-type\"><span class=\"openapi-type-keyword\">string</span></span> |", firstRender);
+            Assert.Contains("<span class=\"openapi-path-parameter openapi-path-parameter-color-1\">id</span>", firstRender);
+            var plainMarkdown = System.Text.RegularExpressions.Regex.Replace(firstRender, "<[^>]+>", "");
+            Assert.Contains("| id*: string |", plainMarkdown);
             Assert.Contains("#### Request body", firstRender);
             Assert.Contains("##### Response `201`", firstRender);
             Assert.Contains("**`Order`**", firstRender);
             Assert.Contains($"**`Order`**{Environment.NewLine}{Environment.NewLine}Order description.", firstRender);
-            Assert.Contains("| id<span class=\"openapi-required-marker\" aria-label=\"Required\">*</span> | <span class=\"openapi-type\"><span class=\"openapi-type-keyword\">string</span></span> | Identifier |", firstRender);
+            Assert.Contains("| id*: string | Identifier |", plainMarkdown);
             Assert.DoesNotContain("## Schemas", firstRender);
 
             File.WriteAllText(specPath, ReferencedSpecification("UpdatedOrder"));
