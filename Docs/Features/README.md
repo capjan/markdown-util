@@ -28,3 +28,7 @@ Everything on these pages is written in ordinary Markdown. Each page shows the s
 ## Organize
 
 - [Navigation](Navigation.md) - Sidebar, top tabs, breadcrumbs, ordering, and the page footer
+
+## Publish
+
+- [PDF download link](Pdf-Download.md) - Include an up-to-date PDF with the rendered site

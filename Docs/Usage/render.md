@@ -4,7 +4,7 @@ navigation.order: 4
 
 # render
 
-`mdu render` converts the Markdown pages into a static HTML site and exits. It writes the pages and the linked local assets to the output folder, `./site` by default. Your Markdown files stay unchanged.
+`mdu render` converts the Markdown pages into a static HTML site and exits. It writes the pages, linked local assets, and a combined `documentation.pdf` to the output folder, `./site` by default. Each page includes a PDF link in its header. Your Markdown files stay unchanged.
 
 ## Usage
 

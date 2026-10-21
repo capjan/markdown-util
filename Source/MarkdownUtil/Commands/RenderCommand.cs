@@ -14,17 +14,20 @@ public class RenderCommand
     private readonly CountNodesVisitor<MarkdownFile> _countNodesVisitor;
     private readonly HtmlRenderer _renderer;
     private readonly SearchIndexBuilder _searchIndexBuilder;
+    private readonly PdfCommand _pdfCommand;
 
     public RenderCommand(
         GraphBuilder graphBuilder,
         CountNodesVisitor<MarkdownFile> countNodesVisitor,
         HtmlRenderer renderer,
-        SearchIndexBuilder searchIndexBuilder)
+        SearchIndexBuilder searchIndexBuilder,
+        PdfCommand? pdfCommand = null)
     {
         _graphBuilder = graphBuilder;
         _countNodesVisitor = countNodesVisitor;
         _renderer = renderer;
         _searchIndexBuilder = searchIndexBuilder;
+        _pdfCommand = pdfCommand ?? new PdfCommand(graphBuilder, new PdfRenderer(renderer));
     }
 
     public int Execute(RenderCommandSettings settings)
@@ -69,6 +72,9 @@ public class RenderCommand
         Console.WriteLine("Preparing Assets");
         CopyAssets(rootPath, outPath, graph);
         SiteConfigurationReader.CopyAssets(rootPath, outPath, siteConfiguration);
+
+        if (_pdfCommand.WriteSitePdf(rootPath, Path.Combine(outPath, "documentation.pdf"), graph) != 0)
+            return 1;
         
         Console.WriteLine($"Rendering {nodeCount} Files");
         RenderNodesToHtml(rootPath, outPath, graph, settings.EditPageRoot);
