@@ -19,7 +19,7 @@ public class LintCommand
         _graphBuilder = graphBuilder;
     }
 
-    public int Execute(VisitorSettings settings, bool pretty = false, bool color = false)
+    public int Execute(VisitorSettings settings, bool pretty = false, bool color = false, LintFormat format = LintFormat.Text)
     {
         string rootPath;
         try
@@ -32,7 +32,8 @@ public class LintCommand
             return 1;
         }
 
-        Console.WriteLine("Running Linter");
+        // JSON output must stay a single document.
+        if (format != LintFormat.Json) Console.WriteLine("Running Linter");
         var graph = _graphBuilder.CreateGraph(new VisitorSettings
         {
             RootPath = rootPath,
@@ -41,6 +42,8 @@ public class LintCommand
         });
         _linterVisitor.Prepare(graph, rootPath);
         graph.Visit(_linterVisitor);
-        return _lintResultRenderer.Render(_linterVisitor.OrphanedPages, rootPath, pretty, color);
+        return format == LintFormat.Text
+            ? _lintResultRenderer.Render(_linterVisitor.OrphanedPages, rootPath, pretty, color)
+            : _lintResultRenderer.Render(format, _linterVisitor.OrphanedPages, rootPath);
     }
 }

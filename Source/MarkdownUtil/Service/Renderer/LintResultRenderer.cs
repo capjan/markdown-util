@@ -1,6 +1,20 @@
+using System.Text.Json;
+using System.Text.RegularExpressions;
 using MarkdownUtil.Model;
 
 namespace MarkdownUtil.Service.Renderer;
+
+/// <summary>How <c>mdu lint</c> prints its results.</summary>
+public enum LintFormat
+{
+    Text,
+
+    /// <summary>One JSON document for scripts and tools.</summary>
+    Json,
+
+    /// <summary>GitHub Actions workflow commands, shown as annotations on the changed lines of a pull request.</summary>
+    GitHub
+}
 
 public class LintResultRenderer
 {
@@ -8,6 +22,15 @@ public class LintResultRenderer
     private const string Red = "\u001b[31m";
     private const string Yellow = "\u001b[33m";
     private const string Cyan = "\u001b[36m";
+    private static readonly Regex DiagnosticMessage = new(@"^(?<code>MDU\d+)(?:\s+(?<rule>[A-Za-z]+))?:\s*(?<text>.*)$",
+        RegexOptions.Compiled | RegexOptions.Singleline);
+    // The output is read by tools, not embedded in HTML, so quotes and accents stay readable.
+    private static readonly JsonSerializerOptions JsonOptions = new()
+    {
+        WriteIndented = true,
+        Encoder = System.Text.Encodings.Web.JavaScriptEncoder.UnsafeRelaxedJsonEscaping
+    };
+
     private readonly ILinterErrorReceiver _receiver;
 
     public LintResultRenderer(ILinterErrorReceiver receiver)
@@ -55,6 +78,93 @@ public class LintResultRenderer
 
         return errorCount > 0 ? 1 : 0;
     }
+
+    /// <summary>Prints the results in a machine-readable format; returns 1 when there are errors.</summary>
+    public int Render(
+        LintFormat format,
+        IReadOnlyCollection<MarkdownFile> orphanedPages,
+        string rootPath,
+        TextWriter? output = null)
+    {
+        output ??= Console.Out;
+        switch (format)
+        {
+            case LintFormat.Json:
+                RenderJson(orphanedPages, rootPath, output);
+                break;
+            case LintFormat.GitHub:
+                RenderGitHub(orphanedPages, output);
+                break;
+            default:
+                return Render(orphanedPages, rootPath, output: output);
+        }
+
+        return _receiver.ErrorCount > 0 ? 1 : 0;
+    }
+
+    private void RenderJson(IReadOnlyCollection<MarkdownFile> orphanedPages, string rootPath, TextWriter output)
+    {
+        var result = new
+        {
+            root = rootPath,
+            errors = _receiver.ErrorCount,
+            warnings = _receiver.WarningCount,
+            diagnostics = _receiver.Diagnostics.Select(diagnostic =>
+            {
+                var (code, rule, text) = Parse(diagnostic.Message);
+                return new
+                {
+                    file = Path.GetRelativePath(rootPath, diagnostic.FilePath).Replace(Path.DirectorySeparatorChar, '/'),
+                    path = diagnostic.FilePath,
+                    line = diagnostic.LineNumber,
+                    severity = diagnostic.IsWarning ? "warning" : "error",
+                    code,
+                    rule,
+                    message = text
+                };
+            }),
+            orphanedPages = orphanedPages.Select(page =>
+                Path.GetRelativePath(rootPath, page.FileInfo.FullName).Replace(Path.DirectorySeparatorChar, '/'))
+        };
+        output.WriteLine(JsonSerializer.Serialize(result, JsonOptions));
+    }
+
+    // Paths are relative to the working directory, which is the repository root in a GitHub Actions job.
+    private void RenderGitHub(IReadOnlyCollection<MarkdownFile> orphanedPages, TextWriter output)
+    {
+        foreach (var diagnostic in _receiver.Diagnostics)
+        {
+            var (code, rule, text) = Parse(diagnostic.Message);
+            var title = rule is null ? code : $"{code} {rule}";
+            output.WriteLine($"::{(diagnostic.IsWarning ? "warning" : "error")} " +
+                             $"file={EscapeProperty(GitHubPath(diagnostic.FilePath))},line={diagnostic.LineNumber}," +
+                             $"title={EscapeProperty(title ?? "mdu lint")}::{EscapeData(text)}");
+        }
+
+        foreach (var page in orphanedPages)
+            output.WriteLine($"::warning file={EscapeProperty(GitHubPath(page.FileInfo.FullName))},line=1,title=Orphaned page::" +
+                             EscapeData("This page is hidden from navigation and no visible page links to it."));
+
+        output.WriteLine($"Linter detected {_receiver.ErrorCount} error{(_receiver.ErrorCount == 1 ? "" : "s")} and " +
+                         $"{_receiver.WarningCount} warning{(_receiver.WarningCount == 1 ? "" : "s")}.");
+    }
+
+    private static (string? Code, string? Rule, string Text) Parse(string message)
+    {
+        var match = DiagnosticMessage.Match(message);
+        return match.Success
+            ? (match.Groups["code"].Value, match.Groups["rule"].Success ? match.Groups["rule"].Value : null, match.Groups["text"].Value)
+            : (null, null, message);
+    }
+
+    private static string GitHubPath(string path) =>
+        Path.GetRelativePath(Directory.GetCurrentDirectory(), path).Replace(Path.DirectorySeparatorChar, '/');
+
+    private static string EscapeData(string value) =>
+        value.Replace("%", "%25").Replace("\r", "%0D").Replace("\n", "%0A");
+
+    private static string EscapeProperty(string value) =>
+        EscapeData(value).Replace(":", "%3A").Replace(",", "%2C");
 
     private static void RenderStandard(IReadOnlyList<LintDiagnostic> diagnostics, bool color, TextWriter output)
     {

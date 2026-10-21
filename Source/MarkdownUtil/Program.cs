@@ -46,13 +46,21 @@ var lintColor = new Option<bool>("--color")
 {
     Description = "Colorize lint results."
 };
+var lintFormat = new Option<string>("--format")
+{
+    Description = "Output format: text, json for scripts and tools, or github for annotations in GitHub Actions.",
+    DefaultValueFactory = _ => "text"
+};
+lintFormat.AcceptOnlyFromAmong("text", "json", "github");
 lintCommand.Options.Add(lintPretty);
 lintCommand.Options.Add(lintColor);
+lintCommand.Options.Add(lintFormat);
 lintCommand.SetAction(parseResult =>
     services.GetRequiredService<LintCommand>().Execute(
         GetVisitorSettings(parseResult, lintPath, lintPattern, lintHidden),
         parseResult.GetValue(lintPretty),
-        parseResult.GetValue(lintColor)));
+        parseResult.GetValue(lintColor),
+        Enum.Parse<LintFormat>(parseResult.GetValue(lintFormat) ?? "text", ignoreCase: true)));
 rootCommand.Subcommands.Add(lintCommand);
 
 var fixCommand = new Command("fix", "Migrates MkDocs-specific Markdown to supported Markdown and applies automatic fixes.");
