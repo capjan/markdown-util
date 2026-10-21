@@ -4,17 +4,17 @@ Use an HTML `<video>` element to embed an MP4 directly. Put a YouTube or Vimeo l
 
 ## Direct MP4 video
 
-This eight-second demo scene is attached to the [v4.6.1 GitHub release](https://github.com/capjan/mdu/releases/tag/v4.6.1), so the video is available to the documentation without being stored in the Git repository.
+This eight-second demo scene is attached to the [v4.6.1 GitHub release](https://github.com/capjan/mdu/releases/tag/v4.6.1). The Pages workflow copies it into the documentation site, so the video renders from the central docs site without being stored in the Git repository.
 
 ```html title="HTML"
-<video controls="controls" playsinline="playsinline" preload="none" width="960" poster="https://github.com/capjan/mdu/releases/download/v4.6.1/mdu-demoscene-preview.png">
-  <source src="https://github.com/capjan/mdu/releases/download/v4.6.1/mdu-demoscene.mp4" type="video/mp4" />
+<video controls playsinline preload="none" width="960" height="540" poster="https://capjan.github.io/mdu/assets/mdu-demoscene-preview.png">
+  <source src="https://capjan.github.io/mdu/assets/mdu-demoscene.mp4" type="video/mp4">
   Your browser does not support embedded videos.
 </video>
 ```
 
-<video controls="controls" playsinline="playsinline" preload="none" width="960" poster="https://github.com/capjan/mdu/releases/download/v4.6.1/mdu-demoscene-preview.png">
-  <source src="https://github.com/capjan/mdu/releases/download/v4.6.1/mdu-demoscene.mp4" type="video/mp4" />
+<video controls playsinline preload="none" width="960" height="540" poster="https://capjan.github.io/mdu/assets/mdu-demoscene-preview.png">
+  <source src="https://capjan.github.io/mdu/assets/mdu-demoscene.mp4" type="video/mp4">
   Your browser does not support embedded videos.
 </video>
 
@@ -38,10 +38,10 @@ This eight-second demo scene is attached to the [v4.6.1 GitHub release](https://
 
 ### Privacy by default
 
-An embedded player contacts its provider as soon as it loads, even if nobody presses play. MDU therefore shows a placeholder first and loads the video only when the reader agrees:
+An embedded player contacts its provider as soon as it loads, even if nobody presses play. MDU therefore shows a placeholder first and loads the video only when the reader agrees. Depending on the selected player, the buttons read:
 
-- **Load this video once** loads only that video on this page.
-- **Always allow this provider on this site** saves the choice in the browser's local storage, so later visits load that provider's videos directly.
+- **Load this video once from YouTube** or **Load this video once from Vimeo** loads only that video on this page.
+- **Always allow YouTube on this site** or **Always allow Vimeo on this site** saves the choice in the browser's local storage, so later visits load that provider's videos directly.
 
 The reader can review or revoke saved choices at any time under **Media settings** in the page header. Revoking removes the saved choice and unloads that provider's players on the current page.
 
