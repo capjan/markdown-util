@@ -13,6 +13,9 @@ public static class GrammarStore
         {
             case "cs": case "csharp": return CSharp();
             case "swift": return Swift();
+            case "ts": case "typescript": return TypeScript();
+            case "py": case "python": return Python();
+            case "kt": case "kotlin": return Kotlin();
             case "yaml": case "yml": return Yaml();
             case "bash": case "zsh": case "sh": case "shell": return Shell();
             case "md": case "markdown": return Markdown();
@@ -64,6 +67,87 @@ public static class GrammarStore
                 new LanguageString(
                     startEnd: '"',
                     escapeSequences: "\\\"")
+            },
+            lineCommentStart: "//");
+    }
+
+    private static Grammar TypeScript()
+    {
+        return new Grammar(
+            keywords: new[]
+            {
+                "abstract", "any", "as", "async", "await", "boolean", "break", "case", "catch", "class",
+                "const", "constructor", "continue", "debugger", "declare", "default", "delete", "do", "else",
+                "enum", "export", "extends", "false", "finally", "for", "from", "function", "get", "if",
+                "implements", "import", "in", "instanceof", "interface", "keyof", "let", "module", "namespace",
+                "never", "new", "null", "number", "object", "private", "protected", "public", "readonly",
+                "return", "set", "static", "string", "super", "switch", "symbol", "this", "throw", "true",
+                "try", "type", "typeof", "undefined", "unique", "unknown", "var", "void", "while", "with",
+                "yield"
+            },
+            operators: new[]
+            {
+                "===", "!==", ">>>", "**=", "...", "=>", "==", "!=", "<=", ">=", "++", "--", "&&", "||",
+                "??", "?.", "**", "<<", ">>", "+=", "-=", "*=", "/=", "%=", "&=", "|=", "^=",
+                "=", "+", "-", "*", "/", "%", "<", ">", "!", "~", "&", "|", "^", "?", ":", ";", ",",
+                ".", "(", ")", "[", "]", "{", "}"
+            },
+            strings: new[]
+            {
+                new LanguageString('"', "\\\"", "\\\\"),
+                new LanguageString('\'', "\\\'", "\\\\"),
+                new LanguageString('`', "\\`", "\\\\")
+            },
+            lineCommentStart: "//");
+    }
+
+    private static Grammar Python()
+    {
+        return new Grammar(
+            keywords: new[]
+            {
+                "False", "None", "True", "and", "as", "assert", "async", "await", "break", "class", "continue",
+                "def", "del", "elif", "else", "except", "finally", "for", "from", "global", "if", "import",
+                "in", "is", "lambda", "nonlocal", "not", "or", "pass", "raise", "return", "try", "while",
+                "with", "yield"
+            },
+            operators: new[]
+            {
+                "**=", "//=", ">>=", "<<=", ":=", "==", "!=", "<=", ">=", "+=", "-=", "*=", "/=", "%=",
+                "&=", "|=", "^=", "**", "//", "<<", ">>", "=", "+", "-", "*", "/", "%", "<", ">", "&",
+                "|", "^", "~", ":", ";", ",", ".", "(", ")", "[", "]", "{", "}"
+            },
+            strings: new[]
+            {
+                new LanguageString('"', "\\\"", "\\\\"),
+                new LanguageString('\'', "\\\'", "\\\\")
+            },
+            lineCommentStart: "#");
+    }
+
+    private static Grammar Kotlin()
+    {
+        return new Grammar(
+            keywords: new[]
+            {
+                "as", "break", "by", "catch", "class", "companion", "const", "constructor", "continue", "data",
+                "delegate", "do", "else", "enum", "external", "false", "field", "final", "finally", "for",
+                "fun", "get", "if", "import", "in", "infix", "init", "inline", "inner", "interface", "internal",
+                "is", "lateinit", "noinline", "null", "object", "open", "operator", "out", "override", "package",
+                "private", "property", "protected", "public", "receiver", "reified", "return", "sealed", "set",
+                "suspend", "tailrec", "this", "throw", "true", "try", "typealias", "val", "var", "vararg",
+                "when", "where", "while"
+            },
+            operators: new[]
+            {
+                "===", "!==", "!in", "!is", "..<", "..", "!!", "?.", "?:", "::", "->", "==", "!=", "<=", ">=",
+                "+=", "-=", "*=", "/=", "%=", "++", "--", "&&", "||", "=", "+", "-", "*", "/", "%", "<", ">",
+                "!", "?", ":", ";", ",", ".", "(", ")", "[", "]", "{", "}"
+            },
+            strings: new[]
+            {
+                new LanguageString('"', "\\\"", "\\\\"),
+                new LanguageString('\'', "\\\'", "\\\\")
             },
             lineCommentStart: "//");
     }

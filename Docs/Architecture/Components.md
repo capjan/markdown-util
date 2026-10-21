@@ -116,7 +116,7 @@ Turns Markdown into pages. `HtmlRenderer` holds the Markdig pipeline and the emb
 
 ## StaticCode.Highlighter
 
-A small lexer with lightweight grammars for C#, Swift, YAML, shell, and Markdown. `HtmlFormatter` wraps the tokens in `span` elements whose classes the stylesheet colors. Other languages stay readable as plain code.
+A small lexer with lightweight grammars for C#, Swift, TypeScript, Python, Kotlin, YAML, shell, and Markdown. `HtmlFormatter` wraps the tokens in `span` elements whose classes the stylesheet colors. Other languages stay readable as plain code.
 
 ## StaticCode.Diagrams
 

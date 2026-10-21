@@ -46,6 +46,9 @@ Use one of these language identifiers:
 | --- | --- |
 | C# | `cs`, `csharp` |
 | Swift | `swift` |
+| TypeScript | `ts`, `typescript` |
+| Python | `py`, `python` |
+| Kotlin | `kt`, `kotlin` |
 | YAML | `yaml`, `yml` |
 | Shell | `bash`, `zsh`, `sh`, `shell` |
 | Markdown | `md`, `markdown` |
