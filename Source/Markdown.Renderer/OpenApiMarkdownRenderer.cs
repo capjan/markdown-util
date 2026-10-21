@@ -138,43 +138,70 @@ public static class OpenApiMarkdownRenderer
         Operation operation,
         IDictionary<string, IOpenApiSchema>? schemas)
     {
-        output.AppendLine($"### {CodeSpan(operation.Method)} {PathMarkup(operation.Path)} {{.openapi-operation .openapi-method-{operation.Method.ToLowerInvariant()}}}");
+        var pathParameterColors = GetPathParameterColors(operation.Path);
+        output.AppendLine($"### {CodeSpan(operation.Method)} {PathMarkup(operation.Path, pathParameterColors)} {{.openapi-operation .openapi-method-{operation.Method.ToLowerInvariant()}}}");
         var summary = operation.Data.Summary;
         if (!string.IsNullOrWhiteSpace(summary)) AppendParagraph(output, $"**{EscapeMarkdown(summary)}**");
         var operationId = operation.Data.OperationId;
         if (!string.IsNullOrWhiteSpace(operationId)) AppendParagraph(output, $"Operation ID: {CodeSpan(operationId)}");
         AppendMarkdown(output, operation.Data.Description);
 
-        AppendParameters(output, operation.PathItem, operation.Data);
-        AppendRequestBody(output, operation.Data);
+        AppendParameters(output, operation.PathItem, operation.Data, pathParameterColors);
+        AppendRequestBody(output, operation.Data, schemas, $"{operation.Method}-{operation.Path}");
         AppendResponses(output, operation.Data, schemas, $"{operation.Method}-{operation.Path}");
     }
 
-    private static void AppendParameters(StringBuilder output, IOpenApiPathItem pathItem, OpenApiOperation operation)
+    private static void AppendParameters(
+        StringBuilder output,
+        IOpenApiPathItem pathItem,
+        OpenApiOperation operation,
+        IReadOnlyDictionary<string, string> pathParameterColors)
     {
         var parameters = new Dictionary<string, IOpenApiParameter>(StringComparer.Ordinal);
         AddParameters(pathItem.Parameters ?? [], parameters);
         AddParameters(operation.Parameters ?? [], parameters);
         if (parameters.Count == 0) return;
 
-        output.AppendLine("#### Parameters");
-        output.AppendLine("| Name | In | Type | Description |");
-        output.AppendLine("| --- | --- | --- | --- |");
-        foreach (var value in parameters.Values)
+        foreach (var group in parameters.Values
+                     .Select(ResolveReference)
+                     .GroupBy(parameter => parameter.In)
+                     .OrderBy(group => ParameterLocationOrder(group.Key)))
         {
-            var parameter = ResolveReference(value);
-            var name = parameter.Name ?? string.Empty;
-            var location = parameter.In?.ToString().ToLowerInvariant() ?? string.Empty;
-            var nameMarkup = EscapeTableCell(name) + (parameter.Required
-                ? "<span class=\"openapi-required-marker\" aria-label=\"Required\">*</span>"
-                : string.Empty);
-            var locationMarkup = parameter.In == ParameterLocation.Path
-                ? "<span class=\"openapi-parameter-location-path\">path</span>"
-                : EscapeTableCell(location);
-            output.AppendLine($"| {nameMarkup} | {locationMarkup} | {EscapeTableCell(SchemaTypeMarkup(parameter.Schema))} | {EscapeTableCell(parameter.Description)} |");
+            output.AppendLine($"#### {ParameterHeading(group.Key)}");
+            output.AppendLine("| Name | Type | Description |");
+            output.AppendLine("| --- | --- | --- |");
+            foreach (var parameter in group)
+            {
+                var name = parameter.Name ?? string.Empty;
+                var nameMarkup = parameter.In == ParameterLocation.Path && pathParameterColors.TryGetValue(name, out var colorClass)
+                    ? $"<span class=\"openapi-path-parameter {colorClass}\">{HtmlEncoder.Default.Encode(name)}</span>"
+                    : EscapeTableCell(name);
+                nameMarkup += parameter.Required
+                    ? "<span class=\"openapi-required-marker\" aria-label=\"Required\">*</span>"
+                    : string.Empty;
+                output.AppendLine($"| {nameMarkup} | {EscapeTableCell(SchemaTypeMarkup(parameter.Schema))} | {EscapeTableCell(parameter.Description)} |");
+            }
+            output.AppendLine();
         }
-        output.AppendLine();
     }
+
+    private static int ParameterLocationOrder(ParameterLocation? location) => location switch
+    {
+        ParameterLocation.Path => 0,
+        ParameterLocation.Query => 1,
+        ParameterLocation.Header => 2,
+        ParameterLocation.Cookie => 3,
+        _ => 4
+    };
+
+    private static string ParameterHeading(ParameterLocation? location) => location switch
+    {
+        ParameterLocation.Path => "Path Parameters",
+        ParameterLocation.Query => "Query Parameters",
+        ParameterLocation.Header => "Header Parameters",
+        ParameterLocation.Cookie => "Cookie Parameters",
+        _ => $"{location?.ToString() ?? "Other"} Parameters"
+    };
 
     private static void AddParameters(IEnumerable<IOpenApiParameter> values, IDictionary<string, IOpenApiParameter> parameters)
     {
@@ -186,14 +213,23 @@ public static class OpenApiMarkdownRenderer
         }
     }
 
-    private static void AppendRequestBody(StringBuilder output, OpenApiOperation operation)
+    private static void AppendRequestBody(
+        StringBuilder output,
+        OpenApiOperation operation,
+        IDictionary<string, IOpenApiSchema>? schemas,
+        string operationKey)
     {
         if (operation.RequestBody is null) return;
         var requestBody = ResolveReference(operation.RequestBody);
-        output.AppendLine("#### Request body");
+        output.AppendLine("#### Request body {.openapi-request-body}");
         if (requestBody.Required) output.AppendLine("Required.");
         AppendMarkdown(output, requestBody.Description);
-        AppendContent(output, requestBody.Content ?? new Dictionary<string, IOpenApiMediaType>(), mediaHeadingLevel: 5);
+        AppendMediaContent(
+            output,
+            requestBody.Content ?? new Dictionary<string, IOpenApiMediaType>(),
+            schemas,
+            $"{operationKey}-request",
+            "openapi-request-media-type");
     }
 
     private static void AppendResponses(
@@ -223,11 +259,19 @@ public static class OpenApiMarkdownRenderer
         IDictionary<string, IOpenApiMediaType> content,
         IDictionary<string, IOpenApiSchema>? schemas,
         string responseKey)
+        => AppendMediaContent(output, content, schemas, responseKey, "openapi-media-type");
+
+    private static void AppendMediaContent(
+        StringBuilder output,
+        IDictionary<string, IOpenApiMediaType> content,
+        IDictionary<string, IOpenApiSchema>? schemas,
+        string contentKey,
+        string mediaHeadingClass)
     {
         foreach (var media in content)
         {
-            var anchorPrefix = CreateSchemaAnchorPrefix($"{responseKey}-{media.Key}");
-            output.AppendLine($"###### Media type {CodeSpan(media.Key)} {{.openapi-media-type}}");
+            var anchorPrefix = CreateSchemaAnchorPrefix($"{contentKey}-{media.Key}");
+            output.AppendLine($"###### Media type {CodeSpan(media.Key)} {{.{mediaHeadingClass}}}");
             output.AppendLine("##### Example {.openapi-response-example}");
             AppendResponseSchemaName(output, media.Value.Schema, schemas);
             var example = media.Value.Example ?? (media.Value.Examples ?? new Dictionary<string, IOpenApiExample>()).Values
@@ -561,35 +605,6 @@ public static class OpenApiMarkdownRenderer
         return slug.ToString().Trim('-');
     }
 
-    private static void AppendContent(
-        StringBuilder output,
-        IDictionary<string, IOpenApiMediaType> content,
-        int mediaHeadingLevel)
-    {
-        foreach (var media in content)
-        {
-            output.AppendLine($"{new string('#', mediaHeadingLevel)} Media type {CodeSpan(media.Key)}");
-            var example = media.Value.Example ?? (media.Value.Examples ?? new Dictionary<string, IOpenApiExample>()).Values
-                .Select(ResolveReference)
-                .Select(value => value.Value)
-                .FirstOrDefault(value => value is not null);
-            if (IsJsonMediaType(media.Key))
-            {
-                if (media.Value.Schema is not null)
-                    AppendExample(output, SerializeSchema(media.Value.Schema));
-                else if (example is not null)
-                    AppendExample(output, example.ToJsonString(new JsonSerializerOptions { WriteIndented = true }));
-            }
-            else
-            {
-                if (media.Value.Schema is not null)
-                    output.AppendLine($"Schema: {CodeSpan(SchemaType(media.Value.Schema))}");
-                if (example is not null)
-                    AppendExample(output, example.ToJsonString(new JsonSerializerOptions { WriteIndented = true }));
-            }
-        }
-    }
-
     private static bool IsJsonMediaType(string mediaType)
     {
         var type = mediaType.Split(';', 2)[0].Trim();
@@ -818,14 +833,30 @@ public static class OpenApiMarkdownRenderer
         .Replace("]", "\\]", StringComparison.Ordinal)
         .Replace("`", "&#96;", StringComparison.Ordinal);
 
-    private static string PathMarkup(string path)
+    private static IReadOnlyDictionary<string, string> GetPathParameterColors(string path)
+    {
+        var colors = new Dictionary<string, string>(StringComparer.Ordinal);
+        foreach (Match match in PathParameterRegex.Matches(path))
+        {
+            var name = match.Value[1..^1];
+            if (!colors.ContainsKey(name))
+                colors.Add(name, $"openapi-path-parameter-color-{colors.Count % 6 + 1}");
+        }
+        return colors;
+    }
+
+    private static string PathMarkup(string path, IReadOnlyDictionary<string, string> pathParameterColors)
     {
         var output = new StringBuilder("<span class=\"openapi-path\">");
         var position = 0;
         foreach (Match match in PathParameterRegex.Matches(path))
         {
             output.Append(EncodePath(path[position..match.Index]));
-            output.Append("<span class=\"openapi-path-parameter\">")
+            var name = match.Value[1..^1];
+            var colorClass = pathParameterColors.TryGetValue(name, out var color)
+                ? color
+                : "openapi-path-parameter-color-1";
+            output.Append($"<span class=\"openapi-path-parameter {colorClass}\">")
                 .Append(EncodePath(match.Value))
                 .Append("</span>");
             position = match.Index + match.Length;

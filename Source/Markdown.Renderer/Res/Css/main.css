@@ -35,6 +35,12 @@
     --syntax-keyword: #0550ae;
     --syntax-string: #a31515;
     --syntax-operator: #0550ae;
+    --openapi-path-color-1: #0550ae;
+    --openapi-path-color-2: #8250df;
+    --openapi-path-color-3: #9a6700;
+    --openapi-path-color-4: #1a7f5a;
+    --openapi-path-color-5: #bf3989;
+    --openapi-path-color-6: #596c00;
     --alert-note-accent: #0066cc;
     --alert-note-background: #f0f6fd;
     --alert-tip-accent: #1a7f5a;
@@ -91,6 +97,12 @@
     --syntax-keyword: #79c0ff;
     --syntax-string: #ce9f89;
     --syntax-operator: #79c0ff;
+    --openapi-path-color-1: #79c0ff;
+    --openapi-path-color-2: #d2a8ff;
+    --openapi-path-color-3: #f2cc60;
+    --openapi-path-color-4: #56d4dd;
+    --openapi-path-color-5: #ff9bce;
+    --openapi-path-color-6: #a5d46a;
     --alert-note-accent: #6cb4ff;
     --alert-note-background: #001b33;
     --alert-tip-accent: #64e3c4;
@@ -144,6 +156,12 @@
         --syntax-keyword: #79c0ff;
         --syntax-string: #ce9f89;
         --syntax-operator: #79c0ff;
+        --openapi-path-color-1: #79c0ff;
+        --openapi-path-color-2: #d2a8ff;
+        --openapi-path-color-3: #f2cc60;
+        --openapi-path-color-4: #56d4dd;
+        --openapi-path-color-5: #ff9bce;
+        --openapi-path-color-6: #a5d46a;
         --alert-note-accent: #6cb4ff;
         --alert-note-background: #001b33;
         --alert-tip-accent: #64e3c4;
@@ -2652,8 +2670,15 @@ th, td {
 }
 
 .markdown-content .openapi-path-parameter {
-    color: var(--link);
+    font-family: var(--font-mono);
 }
+
+.markdown-content .openapi-path-parameter-color-1 { color: var(--openapi-path-color-1); }
+.markdown-content .openapi-path-parameter-color-2 { color: var(--openapi-path-color-2); }
+.markdown-content .openapi-path-parameter-color-3 { color: var(--openapi-path-color-3); }
+.markdown-content .openapi-path-parameter-color-4 { color: var(--openapi-path-color-4); }
+.markdown-content .openapi-path-parameter-color-5 { color: var(--openapi-path-color-5); }
+.markdown-content .openapi-path-parameter-color-6 { color: var(--openapi-path-color-6); }
 
 .markdown-content .openapi-type {
     font-family: var(--font-mono);
@@ -2782,6 +2807,23 @@ th, td {
 }
 
 .markdown-content .openapi-response-description > :first-child {
+    margin-top: 0.5rem;
+}
+
+.markdown-content .openapi-request-body {
+    --openapi-response-color: var(--link);
+    margin: 0 0 1rem;
+    padding: 0.1rem 1rem 0.75rem;
+    border-left: 3px solid var(--border);
+    border-radius: 0.25rem 0.6rem 0.6rem 0.25rem;
+    background: color-mix(in srgb, var(--border) 4%, var(--page-background));
+}
+
+.markdown-content .openapi-request-body > h4:first-child {
+    margin-top: 0.75rem;
+}
+
+.markdown-content .openapi-request-description > :first-child {
     margin-top: 0.5rem;
 }
 
