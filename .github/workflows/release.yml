@@ -55,9 +55,39 @@ jobs:
           echo "Release tag: $release_tag"
           echo "Package version: $package_version"
 
+      - name: Generate release notes
+        env:
+          LATEST_TAG: ${{ steps.version.outputs.latest_tag }}
+          RELEASE_TAG: ${{ steps.version.outputs.tag }}
+        run: git cliff --tag "$RELEASE_TAG" --strip all "$LATEST_TAG..HEAD" --output "$RUNNER_TEMP/release-notes.md"
+
+      - name: Upload release notes
+        uses: actions/upload-artifact@v4
+        with:
+          name: release-notes
+          path: ${{ runner.temp }}/release-notes.md
+          if-no-files-found: error
+
+  test:
+    name: Test
+    needs: prepare-release
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v7
+
+      - name: Setup .NET
+        uses: actions/setup-dotnet@v6
+        with:
+          dotnet-version: 10.0.x
+
+      - name: Test
+        run: dotnet test MarkdownUtils.sln --configuration Release
+
   build-native:
     name: Build ${{ matrix.rid }}
-    needs: prepare-release
+    needs: [prepare-release, test]
     strategy:
       matrix:
         include:
@@ -89,7 +119,21 @@ jobs:
         env:
           PACKAGE_VERSION: ${{ needs.prepare-release.outputs.package_version }}
           RID: ${{ matrix.rid }}
-        run: dotnet publish Source/MarkdownUtil/MarkdownUtil.csproj --configuration Release --runtime $env:RID --self-contained true -p:PublishAot=true "-p:Version=$env:PACKAGE_VERSION" --output "$env:RUNNER_TEMP/mdu-publish"
+        run: dotnet publish Source/MarkdownUtil/MarkdownUtil.csproj --configuration Release --runtime $env:RID --self-contained true -p:PublishAot=true "-p:Version=$env:PACKAGE_VERSION" --output "$env:RUNNER_TEMP/publish"
+
+      - name: Prepare executable archive contents
+        shell: pwsh
+        run: |
+          $archiveContents = "$env:RUNNER_TEMP/release-files"
+          New-Item -ItemType Directory -Force "$archiveContents/licenses" | Out-Null
+          if ($env:RUNNER_OS -eq 'Windows') {
+            Copy-Item "$env:RUNNER_TEMP/publish/mdu.exe" $archiveContents
+          } else {
+            Copy-Item "$env:RUNNER_TEMP/publish/mdu" $archiveContents
+          }
+          Copy-Item -Path README.md, LICENSE -Destination $archiveContents
+          Copy-Item -Path Source/StaticCode.Icons/THIRD-PARTY-NOTICES.md -Destination $archiveContents
+          Copy-Item -Path Source/StaticCode.Icons/Res/dashboard-icons.LICENSE -Destination "$archiveContents/licenses"
 
       - name: Archive Unix executable
         if: runner.os != 'Windows'
@@ -97,7 +141,7 @@ jobs:
         env:
           PACKAGE_VERSION: ${{ needs.prepare-release.outputs.package_version }}
           RID: ${{ matrix.rid }}
-        run: tar -czf "$env:RUNNER_TEMP/mdu-$env:PACKAGE_VERSION-$env:RID.tar.gz" -C "$env:RUNNER_TEMP/mdu-publish" mdu
+        run: tar -czf "$env:RUNNER_TEMP/mdu-$env:PACKAGE_VERSION-$env:RID.tar.gz" -C "$env:RUNNER_TEMP/release-files" mdu README.md LICENSE THIRD-PARTY-NOTICES.md licenses
 
       - name: Archive Windows executable
         if: runner.os == 'Windows'
@@ -105,18 +149,18 @@ jobs:
         env:
           PACKAGE_VERSION: ${{ needs.prepare-release.outputs.package_version }}
           RID: ${{ matrix.rid }}
-        run: Compress-Archive -Path "$env:RUNNER_TEMP/mdu-publish/mdu.exe" -DestinationPath "$env:RUNNER_TEMP/mdu-$env:PACKAGE_VERSION-$env:RID.zip"
+        run: Compress-Archive -Path "$env:RUNNER_TEMP/release-files/*" -DestinationPath "$env:RUNNER_TEMP/mdu-$env:PACKAGE_VERSION-$env:RID.zip"
 
       - name: Upload executable archive
         uses: actions/upload-artifact@v4
         with:
           name: mdu-${{ matrix.rid }}
-          path: ${{ runner.temp }}/mdu-*
+          path: ${{ runner.temp }}/mdu-${{ needs.prepare-release.outputs.package_version }}-${{ matrix.rid }}.*
           if-no-files-found: error
 
   release:
-    name: Test, pack, publish, and create release
-    needs: [prepare-release, build-native]
+    name: Pack, publish, and create release
+    needs: [prepare-release, test, build-native]
     if: github.ref == 'refs/heads/main'
     runs-on: ubuntu-latest
     permissions:
@@ -126,32 +170,53 @@ jobs:
     steps:
       - name: Checkout
         uses: actions/checkout@v7
-        with:
-          fetch-depth: 0
 
       - name: Setup .NET
         uses: actions/setup-dotnet@v6
         with:
           dotnet-version: 10.0.x
 
-      - name: Install git-cliff
-        uses: taiki-e/install-action@v2
-        with:
-          tool: git-cliff@2.14.2
-
-      - name: Test
-        run: dotnet test MarkdownUtils.sln --configuration Release
-
       - name: Pack
         env:
           PACKAGE_VERSION: ${{ needs.prepare-release.outputs.package_version }}
         run: dotnet pack Source/MarkdownUtil/MarkdownUtil.csproj --configuration Release --output artifacts/packages -p:Version="$PACKAGE_VERSION"
 
-      - name: Generate release notes
+      - name: Download native executable archives
+        uses: actions/download-artifact@v4
+        with:
+          pattern: mdu-*
+          path: artifacts/native
+          merge-multiple: true
+
+      - name: Validate native release assets and generate checksums
+        shell: bash
         env:
-          LATEST_TAG: ${{ needs.prepare-release.outputs.latest_tag }}
-          RELEASE_TAG: ${{ needs.prepare-release.outputs.tag }}
-        run: git cliff --tag "$RELEASE_TAG" --strip all "$LATEST_TAG..HEAD" --output "$RUNNER_TEMP/release-notes.md"
+          PACKAGE_VERSION: ${{ needs.prepare-release.outputs.package_version }}
+        run: |
+          expected=(
+            "mdu-$PACKAGE_VERSION-linux-x64.tar.gz"
+            "mdu-$PACKAGE_VERSION-win-x64.zip"
+            "mdu-$PACKAGE_VERSION-osx-x64.tar.gz"
+            "mdu-$PACKAGE_VERSION-osx-arm64.tar.gz"
+          )
+          for asset in "${expected[@]}"; do
+            if [[ ! -f "artifacts/native/$asset" ]]; then
+              echo "Missing native release asset: $asset" >&2
+              exit 1
+            fi
+          done
+          actual_count=$(find artifacts/native -maxdepth 1 -type f | wc -l)
+          if [[ "$actual_count" -ne "${#expected[@]}" ]]; then
+            echo "Expected ${#expected[@]} native archives, found $actual_count." >&2
+            exit 1
+          fi
+          (cd artifacts/native && sha256sum "${expected[@]}" > SHA256SUMS)
+
+      - name: Download release notes
+        uses: actions/download-artifact@v4
+        with:
+          name: release-notes
+          path: ${{ runner.temp }}/release-notes
 
       - name: Validate NuGet publisher
         env:
@@ -173,15 +238,8 @@ jobs:
           NUGET_API_KEY: ${{ steps.nuget-login.outputs.NUGET_API_KEY }}
         run: dotnet nuget push "artifacts/packages/*.nupkg" --api-key "$NUGET_API_KEY" --source https://api.nuget.org/v3/index.json --skip-duplicate
 
-      - name: Download native executable archives
-        uses: actions/download-artifact@v4
-        with:
-          pattern: mdu-*
-          path: artifacts/native
-          merge-multiple: true
-
       - name: Create GitHub release
         env:
           GH_TOKEN: ${{ github.token }}
           RELEASE_TAG: ${{ needs.prepare-release.outputs.tag }}
-        run: gh release create "$RELEASE_TAG" --title "$RELEASE_TAG" --notes-file "$RUNNER_TEMP/release-notes.md" artifacts/native/*
+        run: gh release create "$RELEASE_TAG" --title "$RELEASE_TAG" --notes-file "$RUNNER_TEMP/release-notes/release-notes.md" artifacts/native/*

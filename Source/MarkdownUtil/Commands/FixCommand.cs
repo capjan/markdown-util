@@ -5,7 +5,6 @@ using Markdig.Syntax;
 using Markdig.Syntax.Inlines;
 using System.Text.RegularExpressions;
 using YamlDotNet.RepresentationModel;
-using YamlDotNet.Serialization;
 using MarkdownUtil.Commands.Settings;
 using MarkdownUtil.Model;
 using MarkdownUtil.Service;
@@ -405,11 +404,16 @@ public class FixCommand
         }
 
         destination.Children[new YamlScalarNode(keyParts[^1])] = new YamlScalarNode(value);
-        var serializer = new SerializerBuilder().Build();
+        var output = new YamlStream(new YamlDocument(mapping));
         using var writer = new StringWriter();
-        serializer.Serialize(writer, mapping);
+        output.Save(writer, assignAnchors: false);
+        var serialized = writer.ToString().Trim();
+        if (serialized.StartsWith("---", StringComparison.Ordinal))
+            serialized = serialized[3..].TrimStart();
+        if (serialized.EndsWith("...", StringComparison.Ordinal))
+            serialized = serialized[..^3].TrimEnd();
         var newline = content.Contains("\r\n", StringComparison.Ordinal) ? "\r\n" : "\n";
-        var serialized = writer.ToString().TrimEnd().Replace("\n", newline, StringComparison.Ordinal);
+        serialized = serialized.Replace("\n", newline, StringComparison.Ordinal);
         return $"---{newline}{serialized}{newline}---{newline}{newline}{body}";
     }
 
