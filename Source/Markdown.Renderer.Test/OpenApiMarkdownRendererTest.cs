@@ -81,6 +81,8 @@ public class OpenApiMarkdownRendererTest
         Assert.Contains("<span class=\"openapi-tag-description\">Order operations</span>", html);
         Assert.Contains("class=\"openapi-tag-method-count openapi-method-get\" data-method=\"openapi-method-get\" data-count=\"1\" data-deprecated=\"0\" data-tooltip=\"1 GET endpoint\" aria-label=\"1 GET endpoint\">1", html);
         Assert.DoesNotContain("<input type=\"checkbox\" class=\"openapi-show-deprecated\"", html);
+        Assert.Contains("<div class=\"openapi-media-type-label\">", html);
+        Assert.Contains("const enhanceSelects = root =>", html);
         var operationId = System.Text.RegularExpressions.Regex.Match(
             operationHeading.Groups["attributes"].Value,
             "id=\"(?<id>[^\"]+)\"").Groups["id"].Value;

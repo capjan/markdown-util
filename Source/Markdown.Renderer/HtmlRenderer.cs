@@ -655,8 +655,8 @@ public class HtmlRenderer
             {
                 response.Heading,
                 Status = WebUtility.HtmlDecode(response.Code.Groups["status"].Value),
-                Label = WebUtility.HtmlDecode(response.Code.Groups["status"].Value +
-                    OpenApiPermalinkRegex.Replace(response.Code.Groups["suffix"].Value, string.Empty)).Trim()
+                Label = OpenApiResponseLabel(WebUtility.HtmlDecode(response.Code.Groups["status"].Value +
+                    OpenApiPermalinkRegex.Replace(response.Code.Groups["suffix"].Value, string.Empty)).Trim())
             })
             .ToArray();
         if (responseHeadings.Length == 0) return content;
@@ -752,6 +752,15 @@ public class HtmlRenderer
         return output.ToString();
     }
 
+    // "default - Default" says the same twice, so a name that only repeats the status code stands alone.
+    private static string OpenApiResponseLabel(string label)
+    {
+        var separator = label.IndexOf(" - ", StringComparison.Ordinal);
+        return separator > 0 && label[..separator].Equals(label[(separator + 3)..], StringComparison.OrdinalIgnoreCase)
+            ? label[(separator + 3)..]
+            : label;
+    }
+
     private static string WrapOpenApiRequestBodies(string content, string operationScopeId)
     {
         var requestHeadings = HeadingRegex.Matches(content)
@@ -828,7 +837,7 @@ public class HtmlRenderer
     {
         if (mediaTypes.Count == 0) return;
         output.AppendLine("<div class=\"openapi-media-type-control\">");
-        output.Append("<label class=\"openapi-media-type-label\"><span class=\"openapi-media-type-heading\">Media Type <span class=\"openapi-media-type-position\">1 of ")
+        output.Append("<div class=\"openapi-media-type-label\"><span class=\"openapi-media-type-heading\">Media Type <span class=\"openapi-media-type-position\">1 of ")
             .Append(mediaTypes.Count)
             .AppendLine("</span></span>");
         output.AppendLine("<select class=\"openapi-media-type-select\" aria-label=\"Media type\">");
@@ -839,7 +848,7 @@ public class HtmlRenderer
             output.Append('>').Append(HtmlEncoder.Default.Encode(mediaTypes[index].Name)).AppendLine("</option>");
         }
         output.AppendLine("</select>");
-        output.AppendLine("</label>");
+        output.AppendLine("</div>");
         output.AppendLine("</div>");
     }
 
@@ -1127,6 +1136,7 @@ public class HtmlRenderer
         document.addEventListener("toggle", event => {
             if (!(event.target instanceof HTMLDetailsElement) || !event.target.matches(".openapi-endpoint")) return;
             fillSharedContent(event.target);
+            if (event.target.open) enhanceSelects(event.target);
         }, true);
 
         const openApiFilterStates = new WeakMap();
@@ -1181,6 +1191,161 @@ public class HtmlRenderer
         };
         document.addEventListener("input", event => {
             if (event.target.matches(".openapi-path-filter")) applyEndpointFilter(event.target.closest(".openapi-tag-list"));
+        });
+
+        // Response and media type choices use a listbox instead of the native select, which stays hidden as
+        // the source of truth so the change handler below keeps working and the page still works without script.
+        const statusClasses = ["openapi-status-2xx", "openapi-status-4xx", "openapi-status-5xx", "openapi-status-neutral"];
+        let openApiSelectCount = 0;
+        const selectOptionMarkup = option => {
+            const text = option.textContent;
+            const separator = text.indexOf(" - ");
+            const label = separator < 0 || !option.closest(".openapi-response-select")
+                ? `<span class="openapi-select-text"></span>`
+                : `<span class="openapi-select-code"></span> <span class="openapi-select-text"></span>`;
+            const container = document.createElement("span");
+            container.innerHTML = label;
+            const parts = container.children.length === 2 ? [text.slice(0, separator), text.slice(separator + 3)] : [text];
+            [...container.children].forEach((child, index) => child.textContent = parts[index]);
+            return container.innerHTML;
+        };
+        const syncSelect = select => {
+            const control = select.nextElementSibling;
+            if (!control?.matches(".openapi-select")) return;
+            control.querySelector(".openapi-select-current").innerHTML = selectOptionMarkup(select.selectedOptions[0]);
+            control.classList.remove(...statusClasses);
+            const statusClass = statusClasses.find(name => select.classList.contains(name));
+            if (statusClass) control.classList.add(statusClass);
+            control.querySelectorAll("[role=option]").forEach((option, index) =>
+                option.setAttribute("aria-selected", index === select.selectedIndex ? "true" : "false"));
+        };
+        const enhanceSelects = root => {
+            root.querySelectorAll("select.openapi-response-select, select.openapi-media-type-select").forEach(select => {
+                if (select.dataset.enhanced) return;
+                select.dataset.enhanced = "true";
+                const id = `openapi-select-${++openApiSelectCount}`;
+                const label = select.getAttribute("aria-label") ?? "";
+                const control = document.createElement("div");
+                control.className = "openapi-select";
+                control.innerHTML = `<button type="button" class="openapi-select-button" aria-haspopup="listbox" aria-expanded="false" aria-controls="${id}-list" aria-labelledby="${id}-label ${id}-current"><span class="openapi-select-label" id="${id}-label"></span><span class="openapi-select-value"><span class="openapi-select-current" id="${id}-current"></span><span class="openapi-select-sizer" aria-hidden="true"></span></span><svg class="openapi-select-chevron" viewBox="0 0 20 20" aria-hidden="true" focusable="false"><path d="m6 8 4 4 4-4"></path></svg></button><ul class="openapi-select-list" id="${id}-list" role="listbox" tabindex="-1" hidden></ul>`;
+                control.querySelector(".openapi-select-label").textContent = `${label}: `;
+                const list = control.querySelector(".openapi-select-list");
+                list.setAttribute("aria-label", label);
+                // Every label sits invisibly in the button, so it is as wide as its longest option and the list.
+                const sizer = control.querySelector(".openapi-select-sizer");
+                [...select.options].forEach(option => {
+                    const label = document.createElement("span");
+                    label.innerHTML = selectOptionMarkup(option);
+                    sizer.append(label);
+                });
+                [...select.options].forEach((option, index) => {
+                    const item = document.createElement("li");
+                    item.id = `${id}-option-${index}`;
+                    item.className = `openapi-select-option ${option.className}`.trim();
+                    item.setAttribute("role", "option");
+                    item.dataset.index = index;
+                    item.innerHTML = `${selectOptionMarkup(option)}<svg class="openapi-select-check" viewBox="0 0 20 20" aria-hidden="true" focusable="false"><path d="m5 10.5 3.2 3.2L15 7"></path></svg>`;
+                    list.append(item);
+                });
+                select.after(control);
+                select.hidden = true;
+                select.tabIndex = -1;
+                syncSelect(select);
+            });
+        };
+        const setActiveOption = (control, index) => {
+            const options = [...control.querySelectorAll("[role=option]")];
+            const active = options[Math.max(0, Math.min(index, options.length - 1))];
+            options.forEach(option => option.classList.toggle("is-active", option === active));
+            control.querySelector("[role=listbox]").setAttribute("aria-activedescendant", active.id);
+            active.scrollIntoView({ block: "nearest" });
+        };
+        const activeOptionIndex = control =>
+            Number(control.querySelector("[role=option].is-active")?.dataset.index ?? 0);
+        const closeSelect = (control, focusButton) => {
+            const list = control.querySelector("[role=listbox]");
+            if (list.hidden) return;
+            list.hidden = true;
+            control.classList.remove("is-open", "opens-up");
+            control.querySelector(".openapi-select-button").setAttribute("aria-expanded", "false");
+            if (focusButton) control.querySelector(".openapi-select-button").focus();
+        };
+        const openSelect = control => {
+            document.querySelectorAll(".openapi-select.is-open").forEach(other => closeSelect(other, false));
+            const select = control.previousElementSibling;
+            const list = control.querySelector("[role=listbox]");
+            list.hidden = false;
+            control.classList.add("is-open");
+            control.querySelector(".openapi-select-button").setAttribute("aria-expanded", "true");
+            const bounds = control.getBoundingClientRect();
+            const spaceBelow = document.documentElement.clientHeight - bounds.bottom;
+            control.classList.toggle("opens-up", spaceBelow < list.offsetHeight + 12 && bounds.top > spaceBelow);
+            list.focus({ preventScroll: true });
+            setActiveOption(control, select.selectedIndex);
+        };
+        const chooseOption = (control, index) => {
+            const select = control.previousElementSibling;
+            if (select.selectedIndex !== index) {
+                select.selectedIndex = index;
+                select.dispatchEvent(new Event("change", { bubbles: true }));
+            }
+            syncSelect(select);
+            closeSelect(control, true);
+        };
+        let typeahead = "";
+        let typeaheadTimer;
+        document.addEventListener("click", event => {
+            const button = event.target.closest(".openapi-select-button");
+            const option = event.target.closest(".openapi-select-option");
+            document.querySelectorAll(".openapi-select.is-open").forEach(control => {
+                if (!control.contains(event.target)) closeSelect(control, false);
+            });
+            if (option) chooseOption(option.closest(".openapi-select"), Number(option.dataset.index));
+            else if (button) {
+                const control = button.closest(".openapi-select");
+                if (control.classList.contains("is-open")) closeSelect(control, true);
+                else openSelect(control);
+            }
+        });
+        document.addEventListener("pointermove", event => {
+            const option = event.target.closest?.(".openapi-select-option");
+            if (option && !option.classList.contains("is-active")) setActiveOption(option.closest(".openapi-select"), Number(option.dataset.index));
+        });
+        document.addEventListener("focusout", event => {
+            const control = event.target.closest?.(".openapi-select");
+            if (control && !control.contains(event.relatedTarget)) closeSelect(control, false);
+        });
+        document.addEventListener("keydown", event => {
+            const control = event.target.closest?.(".openapi-select");
+            if (!control) return;
+            const open = control.classList.contains("is-open");
+            if (!open) {
+                if (event.target.matches(".openapi-select-button") && ["ArrowDown", "ArrowUp", "Enter", " "].includes(event.key)) {
+                    event.preventDefault();
+                    openSelect(control);
+                }
+                return;
+            }
+            const count = control.querySelectorAll("[role=option]").length;
+            const index = activeOptionIndex(control);
+            if (event.key === "ArrowDown") setActiveOption(control, index + 1);
+            else if (event.key === "ArrowUp") setActiveOption(control, index - 1);
+            else if (event.key === "Home" || event.key === "PageUp") setActiveOption(control, 0);
+            else if (event.key === "End" || event.key === "PageDown") setActiveOption(control, count - 1);
+            else if (event.key === "Enter" || event.key === " ") chooseOption(control, index);
+            else if (event.key === "Escape") closeSelect(control, true);
+            else if (event.key === "Tab") { closeSelect(control, false); return; }
+            else if (event.key.length === 1 && !event.ctrlKey && !event.metaKey && !event.altKey) {
+                window.clearTimeout(typeaheadTimer);
+                typeahead += event.key.toLowerCase();
+                typeaheadTimer = window.setTimeout(() => typeahead = "", 600);
+                const match = [...control.querySelectorAll("[role=option]")]
+                    .find(option => option.textContent.trim().toLowerCase().startsWith(typeahead));
+                if (match) setActiveOption(control, Number(match.dataset.index));
+            }
+            else return;
+            event.preventDefault();
+            event.stopPropagation();
         });
 
         document.addEventListener("change", event => {
