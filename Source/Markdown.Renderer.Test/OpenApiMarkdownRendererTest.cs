@@ -30,9 +30,13 @@ public class OpenApiMarkdownRendererTest
 
         var operationHeading = System.Text.RegularExpressions.Regex.Match(
             html,
-            "<h3 id=\"(?<id>[^\"]+)\"><code>GET</code> <code>/orders/\\{id\\}</code>");
+            "<h3(?<attributes>[^>]*)><code>GET</code> <code>/orders/\\{id\\}</code>");
         Assert.True(operationHeading.Success, html);
-        Assert.Contains($"href=\"#{operationHeading.Groups["id"].Value}\"", html);
+        Assert.Contains("class=\"openapi-operation openapi-method-get\"", operationHeading.Groups["attributes"].Value);
+        var operationId = System.Text.RegularExpressions.Regex.Match(
+            operationHeading.Groups["attributes"].Value,
+            "id=\"(?<id>[^\"]+)\"").Groups["id"].Value;
+        Assert.Contains($"href=\"#{operationId}\"", html);
         Assert.DoesNotContain("id=\"get-orders\" id=\"\"", html);
         Assert.Contains("<h5 id=\"response-200\">Response <code>200</code>", html);
         Assert.Contains("<h6 id=\"media-type-applicationjson\">Media type <code>application/json</code>", html);

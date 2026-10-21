@@ -2493,6 +2493,134 @@ th, td {
     }
 }
 
+/* OpenAPI references: endpoint labels and groups take visual cues from API reference tools. */
+.markdown-content h2.openapi-overview {
+    margin: 2rem 0 0.35rem;
+    color: var(--text-secondary);
+    font-size: 0.78rem;
+    font-weight: 700;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+}
+
+.markdown-content h2.openapi-overview + p {
+    margin: 0 0 0.45rem;
+    font-size: clamp(1.75rem, 4vw, 2.25rem);
+    letter-spacing: -0.035em;
+    line-height: 1.15;
+}
+
+.markdown-content h2.openapi-overview + p + p {
+    margin-bottom: 1.25rem;
+    color: var(--text-secondary);
+    font-size: 0.9rem;
+}
+
+.markdown-content h2.openapi-overview + p + p code {
+    padding: 0.18rem 0.45rem;
+    border: 1px solid var(--border-subtle);
+    border-radius: 999px;
+    background: var(--surface-current);
+    color: var(--text-primary);
+}
+
+.markdown-content h2.openapi-tag,
+.markdown-content h2.openapi-schemas {
+    padding-bottom: 0.55rem;
+    border-bottom: 1px solid var(--border-subtle);
+}
+
+.markdown-content h2.openapi-tag {
+    margin-top: 3rem;
+}
+
+.markdown-content h2.openapi-schemas {
+    margin-top: 3.5rem;
+}
+
+.markdown-content h2.openapi-tag code {
+    padding: 0;
+    background: transparent;
+    color: var(--text-primary);
+}
+
+.markdown-content h3.openapi-operation {
+    --openapi-method-color: #096b45;
+
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 0.45rem 0.7rem;
+    margin: 1.75rem 0 0.85rem;
+    padding: 0.8rem 0.95rem;
+    border: 1px solid var(--border-subtle);
+    border-left: 4px solid var(--openapi-method-color);
+    border-radius: 0.7rem;
+    background: var(--surface-current);
+    font-size: 1.05rem;
+    overflow-wrap: anywhere;
+}
+
+.markdown-content h3.openapi-operation > code:first-child {
+    padding: 0.24rem 0.48rem;
+    border-radius: 0.35rem;
+    background: color-mix(in srgb, var(--openapi-method-color) 13%, var(--page-background));
+    color: var(--openapi-method-color);
+    font-family: inherit;
+    font-size: 0.72rem;
+    font-weight: 750;
+    letter-spacing: 0.045em;
+}
+
+.markdown-content h3.openapi-operation > code:nth-child(2) {
+    padding: 0;
+    background: transparent;
+    color: var(--text-primary);
+    overflow-wrap: anywhere;
+}
+
+.markdown-content h3.openapi-method-post { --openapi-method-color: #075e9c; }
+.markdown-content h3.openapi-method-put { --openapi-method-color: #895500; }
+.markdown-content h3.openapi-method-patch { --openapi-method-color: #7040a0; }
+.markdown-content h3.openapi-method-delete { --openapi-method-color: #b4232e; }
+.markdown-content h3.openapi-method-options { --openapi-method-color: #087c83; }
+.markdown-content h3.openapi-method-head { --openapi-method-color: #5a6472; }
+.markdown-content h3.openapi-method-trace { --openapi-method-color: #5a6472; }
+.markdown-content h3.openapi-method-query { --openapi-method-color: #7040a0; }
+
+.markdown-content h3.openapi-schema {
+    padding-bottom: 0.4rem;
+    border-bottom: 1px solid var(--border-subtle);
+}
+
+.markdown-content h3.openapi-schema code {
+    padding: 0;
+    background: transparent;
+    color: var(--text-primary);
+}
+
+:root[data-theme="dark"] .markdown-content h3.openapi-method-get { --openapi-method-color: #57d49a; }
+:root[data-theme="dark"] .markdown-content h3.openapi-method-post { --openapi-method-color: #73c0ff; }
+:root[data-theme="dark"] .markdown-content h3.openapi-method-put { --openapi-method-color: #f2bd55; }
+:root[data-theme="dark"] .markdown-content h3.openapi-method-patch,
+:root[data-theme="dark"] .markdown-content h3.openapi-method-query { --openapi-method-color: #d0a0ff; }
+:root[data-theme="dark"] .markdown-content h3.openapi-method-delete { --openapi-method-color: #ff8585; }
+:root[data-theme="dark"] .markdown-content h3.openapi-method-options { --openapi-method-color: #65d4d9; }
+:root[data-theme="dark"] .markdown-content h3.openapi-method-head,
+:root[data-theme="dark"] .markdown-content h3.openapi-method-trace { --openapi-method-color: #bec5d0; }
+
+@media (prefers-color-scheme: dark) {
+    :root[data-theme="auto"] .markdown-content h3.openapi-method-get { --openapi-method-color: #57d49a; }
+    :root[data-theme="auto"] .markdown-content h3.openapi-method-post { --openapi-method-color: #73c0ff; }
+    :root[data-theme="auto"] .markdown-content h3.openapi-method-put { --openapi-method-color: #f2bd55; }
+    :root[data-theme="auto"] .markdown-content h3.openapi-method-patch,
+    :root[data-theme="auto"] .markdown-content h3.openapi-method-query { --openapi-method-color: #d0a0ff; }
+    :root[data-theme="auto"] .markdown-content h3.openapi-method-delete { --openapi-method-color: #ff8585; }
+    :root[data-theme="auto"] .markdown-content h3.openapi-method-options { --openapi-method-color: #65d4d9; }
+    :root[data-theme="auto"] .markdown-content h3.openapi-method-head,
+    :root[data-theme="auto"] .markdown-content h3.openapi-method-trace { --openapi-method-color: #bec5d0; }
+}
+
 .footnotes > ol {
     margin: 0;
 }
