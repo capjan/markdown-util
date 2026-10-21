@@ -3235,7 +3235,9 @@ th, td {
     visibility: hidden;
 }
 
-.markdown-content .openapi-schema-table:not(.descriptions-visible) .openapi-description-label {
+.markdown-content .openapi-schema-table:not(.descriptions-visible) .openapi-description-label,
+.markdown-content .openapi-schema-table-plain > table > thead > tr > th:last-child,
+.markdown-content .openapi-schema-table-plain > table > tbody > tr > td:last-child {
     display: none;
 }
 

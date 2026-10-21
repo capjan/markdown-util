@@ -629,7 +629,7 @@ public class HtmlRenderer
             var hasDescriptions = Regex.Matches(match.Value, @"<tr>\s*<td>.*?</td>\s*<td>(?<description>.*?)</td>\s*</tr>", RegexOptions.Singleline)
                 .Cast<Match>().Any(row => !string.IsNullOrWhiteSpace(WebUtility.HtmlDecode(
                     Regex.Replace(row.Groups["description"].Value, "<[^>]+>", string.Empty))));
-            if (!hasDescriptions) return $"<div class=\"openapi-schema-table\">{match.Value}</div>";
+            if (!hasDescriptions) return $"<div class=\"openapi-schema-table openapi-schema-table-plain\">{match.Value}</div>";
             // The toggle sits in the description header cell, which stays visible while the column is collapsed.
             var headers = OpenApiTableHeaderRegex.Matches(match.Value);
             var header = headers[^1];

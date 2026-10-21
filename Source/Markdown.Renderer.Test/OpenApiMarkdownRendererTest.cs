@@ -33,6 +33,7 @@ public class OpenApiMarkdownRendererTest
         Assert.Contains($"id=\"{link.Groups["anchor"].Value}\"", html);
         Assert.Contains("class=\"openapi-type-optional\">?</span>", cell);
         Assert.DoesNotContain("class=\"openapi-description-toggle\"", html);
+        Assert.Contains("<div class=\"openapi-schema-table openapi-schema-table-plain\">", html);
     }
 
     [Fact]
