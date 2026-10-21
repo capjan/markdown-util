@@ -31,17 +31,6 @@ jobs:
         with:
           tool: git-cliff@2.14.2
 
-      - name: Ignore tags from pending draft releases
-        shell: bash
-        env:
-          GH_TOKEN: ${{ github.token }}
-        run: |
-          while IFS= read -r draft_tag; do
-            if [[ -n "$draft_tag" ]]; then
-              git tag --delete "$draft_tag"
-            fi
-          done < <(gh release list --limit 100 --json tagName,isDraft --jq '.[] | select(.isDraft) | .tagName')
-
       - name: Calculate release version
         id: version
         shell: bash
@@ -130,7 +119,7 @@ jobs:
         env:
           PACKAGE_VERSION: ${{ needs.prepare-release.outputs.package_version }}
           RID: ${{ matrix.rid }}
-        run: dotnet publish Source/MarkdownUtil/MarkdownUtil.csproj --configuration Release --runtime $env:RID --self-contained true -p:PublishAot=true -warnaserror:IL2026,IL2104,IL3050 "-p:Version=$env:PACKAGE_VERSION" --output "$env:RUNNER_TEMP/publish"
+        run: dotnet publish Source/MarkdownUtil/MarkdownUtil.csproj --configuration Release --runtime $env:RID --self-contained true -p:PublishAot=true -warnaserror:IL2026,IL2104,IL3050,IL3053 "-p:Version=$env:PACKAGE_VERSION" --output "$env:RUNNER_TEMP/publish"
 
       - name: Prepare executable archive contents
         shell: pwsh
@@ -251,17 +240,18 @@ jobs:
           GH_TOKEN: ${{ github.token }}
           RELEASE_TAG: ${{ needs.prepare-release.outputs.tag }}
         run: |
-          if gh release view "$RELEASE_TAG" --json isDraft --jq '.isDraft' > "$RUNNER_TEMP/release-is-draft"; then
-            if [[ "$(cat "$RUNNER_TEMP/release-is-draft")" == "true" ]]; then
+          if is_draft=$(gh release view "$RELEASE_TAG" --json isDraft --jq '.isDraft'); then
+            if [[ "$is_draft" == "true" ]]; then
               gh release upload "$RELEASE_TAG" artifacts/native/* --clobber
-              gh release edit "$RELEASE_TAG" --draft --title "$RELEASE_TAG" --notes-file "$RUNNER_TEMP/release-notes/release-notes.md"
+              gh release edit "$RELEASE_TAG" --draft --target "$GITHUB_SHA" --title "$RELEASE_TAG" --notes-file "$RUNNER_TEMP/release-notes/release-notes.md"
               echo "publish=true" >> "$GITHUB_OUTPUT"
             else
               echo "Release $RELEASE_TAG is already published."
               echo "publish=false" >> "$GITHUB_OUTPUT"
             fi
           else
-            gh release create "$RELEASE_TAG" --draft --title "$RELEASE_TAG" --notes-file "$RUNNER_TEMP/release-notes/release-notes.md" artifacts/native/*
+            # Use “Re-run failed jobs” after a partial release so this run reuses its calculated version.
+            gh release create "$RELEASE_TAG" --draft --target "$GITHUB_SHA" --title "$RELEASE_TAG" --notes-file "$RUNNER_TEMP/release-notes/release-notes.md" artifacts/native/*
             echo "publish=true" >> "$GITHUB_OUTPUT"
           fi
 
