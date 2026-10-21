@@ -1,26 +1,25 @@
-﻿using System.Text;
+﻿using System.Collections.Concurrent;
+using System.Text;
 using System.Text.RegularExpressions;
+using System.Threading;
 using Core.Extensions.ParserRelated;
 using Core.Parser;
 using Core.Parser.Special;
 
 namespace StaticCode.Highlighter;
 
-class DisabledPredicate : IParserInputPredicate
-{
-    public static readonly IParserInputPredicate Instance = new DisabledPredicate();
-    public bool IsMatch(IParserInput input, TextWriter writer)
-    {
-        return false;
-    }
-
-    private DisabledPredicate()
-    {
-        
-    }
-}
 public class Lexer
 {
+    private static readonly ConcurrentDictionary<string, Lazy<Lexer>> Cache = new(StringComparer.Ordinal);
+    private static readonly Regex NumberRegex = new(
+        @"(?<![\p{L}\p{N}_$#])\d+(?:\.\d+)?",
+        RegexOptions.Compiled);
+    private static readonly Regex HtmlTagRegex = new(
+        """</?(?<tag>[A-Za-z][A-Za-z0-9:-]*)(?:[^>"']|"[^"]*"|'[^']*')*>""",
+        RegexOptions.Compiled);
+    private static readonly Regex HtmlAttributeRegex = new(
+        """(?<name>[A-Za-z_:][A-Za-z0-9:_.-]*)(?:\s*=\s*(?<value>"[^"]*"|'[^']*'|[^\s>]+))?""",
+        RegexOptions.Compiled);
     private static readonly Regex YamlMappingKeyRegex = new(
         "^(?<indent>[ \\t]*)(?:-[ \\t]+)?(?<key>\"(?:\\\\.|[^\"])*\"|'(?:''|[^'])*'|[^:#\\r\\n][^:#\\r\\n]*?):(?=[ \\t]|$)",
         RegexOptions.Compiled);
@@ -54,95 +53,440 @@ public class Lexer
 
     public static Lexer ForLanguage(string name)
     {
-        var setting = GrammarStore.GetByName(name);
-        return new Lexer(setting);
+        return Cache.GetOrAdd(name, language => new Lazy<Lexer>(
+            () => new Lexer(GrammarStore.GetByName(language)),
+            LazyThreadSafetyMode.ExecutionAndPublication)).Value;
     }
-    private readonly IParserInputPredicate _keywordPredicate;
-    private readonly IParserInputPredicate _numberPredicate;
-    private readonly IParserInputPredicate _whitespacePredicate;
-    private readonly IParserInputPredicate _newLinePredicate;
-    private readonly IParserInputPredicate[] _stringPredicates;
-    private readonly IParserInputPredicate _operatorPredicate;
-    private readonly IParserInputPredicate _lineComment;
+    private readonly Regex? _keywordRegex;
+    private readonly Regex? _declarationKeywordRegex;
+    private readonly Regex? _atRuleRegex;
+    private readonly LanguageString[] _strings;
+    private readonly string _lineCommentStart;
     private readonly bool _highlightKeys;
     private readonly bool _highlightShellTokens;
     private readonly bool _highlightMarkdown;
+    private readonly bool _highlightHtml;
+    private readonly bool _highlightNumbers;
+    private readonly string? _blockCommentStart;
+    private readonly string? _blockCommentEnd;
 
     private Lexer(Grammar settings)
     {
         _highlightKeys = settings.HighlightKeys;
         _highlightShellTokens = settings.HighlightShellTokens;
         _highlightMarkdown = settings.HighlightMarkdown;
-        _keywordPredicate = ParserInput.Predicate()
-            .EqualsWordBoundary()
-            .EqualsAny(settings.Keywords)
-            .EqualsWordBoundary()
-            .Predicate;
-        _whitespacePredicate = ParserInput.Predicate()
-            .Equals(new [] {' ', '\t'}, Repetition.OneOrMore)
-            .Predicate;
-        _newLinePredicate = ParserInput.Predicate()
-            .Equals('\r', Repetition.ZeroOrOne)
-            .Equals('\n')
-            .Predicate;
-        _stringPredicates = settings.Strings.Select(rule =>
+        _highlightHtml = settings.HighlightHtml;
+        _lineCommentStart = settings.LineCommentStart;
+        _blockCommentStart = settings.BlockCommentStart;
+        _blockCommentEnd = settings.BlockCommentEnd;
+        _highlightNumbers = settings.Keywords.Count > 0 ||
+                            settings.DeclarationKeywords.Count > 0 ||
+                            settings.AtRules.Count > 0;
+        var contextualKeywordOptions = RegexOptions.Compiled | RegexOptions.CultureInvariant;
+        if (settings.IgnoreKeywordCase)
+            contextualKeywordOptions |= RegexOptions.IgnoreCase;
+        if (settings.DeclarationKeywords.Count > 0)
         {
-            return ParserInput.Predicate()
-                .Equals(rule.StartEnd)
-                .EqualsAny((option1, option2) =>
-                {
-                    option1.EqualsAny(rule.EscapeSequences);
-                    option2.EqualsNot(rule.StartEnd);
-                }, Repetition.ZeroOrMore)
-                .Equals(rule.StartEnd)
-                .Predicate;
-        }).ToArray();
-        _operatorPredicate = ParserInput.Predicate()
-            .EqualsAny(settings.Operators)
-            .Predicate;
-        
-        
-        _numberPredicate = ParserInput.Predicate()
-            .EqualsWordBoundary()
-            .EqualsCharacterRange('0', '9', Repetition.OneOrMore)
-            .Equals(block => block
-                    .Equals('.')
-                    .EqualsCharacterRange('0', '9', Repetition.OneOrMore)
-            , Repetition.ZeroOrOne)
-            .EqualsWordBoundary()
-            .Predicate;
-        
-        if (string.IsNullOrEmpty(settings.LineCommentStart))
-            _lineComment = DisabledPredicate.Instance;
-        else
-            _lineComment = ParserInput.Predicate()
-            .Equals(settings.LineCommentStart)
-            .EqualsNot(new [] {'\r', '\n'}, Repetition.ZeroOrMore)
-            .Predicate;
+            var keywords = string.Join("|", settings.DeclarationKeywords
+                .OrderByDescending(keyword => keyword.Length)
+                .Select(Regex.Escape));
+            _declarationKeywordRegex = new Regex(
+                $@"(?:^|[;{{])\s*(?:/\*[\s\S]*?\*/\s*)*(?<keyword>{keywords})\s*:",
+                contextualKeywordOptions | RegexOptions.Multiline);
+        }
+        if (settings.AtRules.Count > 0)
+        {
+            var atRules = string.Join("|", settings.AtRules
+                .OrderByDescending(keyword => keyword.Length)
+                .Select(Regex.Escape));
+            _atRuleRegex = new Regex(
+                $@"@(?<keyword>{atRules})(?![\p{{L}}\p{{N}}_-])",
+                contextualKeywordOptions);
+        }
+        if (settings.Keywords.Count > 0)
+        {
+            const string boundary = @"[\p{L}\p{N}_$]";
+            var keywords = string.Join("|", settings.Keywords
+                .OrderByDescending(keyword => keyword.Length)
+                .Select(Regex.Escape));
+            var options = RegexOptions.Compiled;
+            if (settings.IgnoreKeywordCase)
+                options |= RegexOptions.IgnoreCase | RegexOptions.CultureInvariant;
+            _keywordRegex = new Regex($@"(?<!{boundary})(?:{keywords})(?!{boundary})", options);
+        }
+        _strings = settings.Strings.OrderByDescending(rule => rule.Delimiter.Length).ToArray();
+        _operators = settings.Operators.ToArray();
     }
+
+    private readonly string[] _operators;
 
     public IEnumerable<LanguageToken> Analyse(TextReader reader)
     {
+        var source = reader.ReadToEnd();
+        IEnumerable<LanguageToken> tokens = _highlightHtml
+            ? AnalyseHtml(source)
+            : AnalyseWithLexicalSegments(source);
+        tokens = ApplyTokenRanges(
+            tokens,
+            source.Length,
+            FindKeywordAndNumberRanges(source),
+            onlyText: true);
+
+        if (_highlightKeys)
+            tokens = ApplyTokenRanges(
+                tokens,
+                source.Length,
+                FindYamlKeyRanges(source).Select(range => (range.Start, range.End, TokenType.Key)).ToList());
+        if (_highlightShellTokens)
+            tokens = ApplyTokenRanges(tokens, source.Length, FindShellTokenRanges(source));
         if (_highlightMarkdown)
+            tokens = ApplyTokenRanges(tokens, source.Length, FindMarkdownRanges(source));
+
+        return tokens;
+    }
+
+    private IEnumerable<LanguageToken> AnalyseWithLexicalSegments(string source)
+    {
+        var segmentStart = 0;
+        var position = 0;
+        while (position < source.Length)
         {
-            var markdownSource = reader.ReadToEnd();
-            return ApplyTokenRanges(
-                AnalyseCore(new StringReader(markdownSource)),
-                markdownSource.Length,
-                FindMarkdownRanges(markdownSource));
+            if (TryReadComment(source, position, out var commentEnd))
+            {
+                foreach (var token in AnalyseCore(new StringReader(source[segmentStart..position])))
+                    yield return token;
+                yield return new LanguageToken(source[position..commentEnd], TokenType.Comment);
+                position = commentEnd;
+                segmentStart = position;
+                continue;
+            }
+
+            if (TryReadString(source, position, out var stringEnd))
+            {
+                foreach (var token in AnalyseCore(new StringReader(source[segmentStart..position])))
+                    yield return token;
+                yield return new LanguageToken(source[position..stringEnd], TokenType.String);
+                position = stringEnd;
+                segmentStart = position;
+                continue;
+            }
+
+            position++;
         }
 
-        if (!_highlightKeys && !_highlightShellTokens)
-            return AnalyseCore(reader);
+        foreach (var token in AnalyseCore(new StringReader(source[segmentStart..])))
+            yield return token;
+    }
 
-        var source = reader.ReadToEnd();
+    private bool TryReadComment(string source, int position, out int end)
+    {
+        if (_lineCommentStart.Length > 0 && source.AsSpan(position).StartsWith(_lineCommentStart, StringComparison.Ordinal))
+        {
+            end = position + _lineCommentStart.Length;
+            while (end < source.Length && source[end] is not ('\r' or '\n'))
+                end++;
+            return true;
+        }
+
+        if (_blockCommentStart is not null && _blockCommentEnd is not null &&
+            source.AsSpan(position).StartsWith(_blockCommentStart, StringComparison.Ordinal))
+        {
+            var commentEnd = source.IndexOf(_blockCommentEnd, position + _blockCommentStart.Length, StringComparison.Ordinal);
+            end = commentEnd < 0 ? source.Length : commentEnd + _blockCommentEnd.Length;
+            return true;
+        }
+
+        end = position;
+        return false;
+    }
+
+    private bool TryReadString(string source, int position, out int end)
+    {
+        foreach (var rule in _strings)
+        {
+            if (!source.AsSpan(position).StartsWith(rule.Delimiter, StringComparison.Ordinal))
+                continue;
+
+            var contentPosition = position + rule.Delimiter.Length;
+            if (rule.IsCharacterLiteral)
+            {
+                if (TryReadCharacterContent(source, contentPosition, rule, out var closingPosition) &&
+                    source.AsSpan(closingPosition).StartsWith(rule.Delimiter, StringComparison.Ordinal))
+                {
+                    end = closingPosition + rule.Delimiter.Length;
+                    return true;
+                }
+
+                continue;
+            }
+
+            while (contentPosition < source.Length)
+            {
+                var escape = rule.EscapeSequences.FirstOrDefault(sequence =>
+                    source.AsSpan(contentPosition).StartsWith(sequence, StringComparison.Ordinal));
+                if (escape is not null)
+                    contentPosition += escape.Length;
+                else if (source.AsSpan(contentPosition).StartsWith(rule.Delimiter, StringComparison.Ordinal))
+                {
+                    end = contentPosition + rule.Delimiter.Length;
+                    return true;
+                }
+                else
+                    contentPosition++;
+            }
+
+            end = position;
+            continue;
+        }
+
+        end = position;
+        return false;
+    }
+
+    private static bool TryReadCharacterContent(
+        string source,
+        int position,
+        LanguageString rule,
+        out int end)
+    {
+        if (position >= source.Length || source[position] is '\r' or '\n')
+        {
+            end = position;
+            return false;
+        }
+
+        if (source[position] == '\\')
+        {
+            if (position + 2 < source.Length && source[position + 1] == 'u')
+            {
+                if (source[position + 2] == '{')
+                {
+                    var braceEnd = source.IndexOf('}', position + 3);
+                    if (braceEnd > position + 3)
+                    {
+                        end = braceEnd + 1;
+                        return true;
+                    }
+                }
+                else if (position + 6 <= source.Length &&
+                         char.IsAsciiHexDigit(source[position + 2]) &&
+                         char.IsAsciiHexDigit(source[position + 3]) &&
+                         char.IsAsciiHexDigit(source[position + 4]) &&
+                         char.IsAsciiHexDigit(source[position + 5]))
+                {
+                    end = position + 6;
+                    return true;
+                }
+            }
+
+            var escape = rule.EscapeSequences.FirstOrDefault(sequence =>
+                source.AsSpan(position).StartsWith(sequence, StringComparison.Ordinal));
+            if (escape is not null)
+                end = position + escape.Length;
+            else if (position + 1 < source.Length)
+                end = position + 2;
+            else
+            {
+                end = position;
+                return false;
+            }
+        }
+        else
+            end = char.IsHighSurrogate(source[position]) && position + 1 < source.Length && char.IsLowSurrogate(source[position + 1])
+                ? position + 2
+                : position + 1;
+
+        return true;
+    }
+
+    private IEnumerable<LanguageToken> AnalyseHtml(string source)
+    {
+        var textStart = 0;
+        var position = 0;
+        string? rawElement = null;
+
+        while (position < source.Length)
+        {
+            if (rawElement is not null)
+            {
+                position = FindHtmlClosingTag(source, position, rawElement);
+                if (position < 0)
+                    break;
+                rawElement = null;
+            }
+
+            if (source.AsSpan(position).StartsWith(_blockCommentStart!, StringComparison.Ordinal))
+            {
+                foreach (var token in AnalyseCore(new StringReader(source[textStart..position])))
+                    yield return token;
+                var commentEnd = source.IndexOf(_blockCommentEnd!, position + _blockCommentStart!.Length, StringComparison.Ordinal);
+                var end = commentEnd < 0 ? source.Length : commentEnd + _blockCommentEnd!.Length;
+                yield return new LanguageToken(source[position..end], TokenType.Comment);
+                position = end;
+                textStart = end;
+                continue;
+            }
+
+            if (TryReadHtmlTag(source, position, out var tagEnd, out var tagName, out var closingTag, out var selfClosingTag))
+            {
+                foreach (var token in AnalyseCore(new StringReader(source[textStart..position])))
+                    yield return token;
+
+                var tag = source[position..tagEnd];
+                var tagTokens = ApplyTokenRanges(
+                    AnalyseCore(new StringReader(tag)),
+                    tag.Length,
+                    FindHtmlRanges(tag));
+                foreach (var token in tagTokens)
+                    yield return token;
+
+                position = tagEnd;
+                textStart = position;
+                if (!closingTag && !selfClosingTag && tagName is "script" or "style")
+                    rawElement = tagName;
+                continue;
+            }
+
+            position++;
+        }
+
+        foreach (var token in AnalyseCore(new StringReader(source[textStart..])))
+            yield return token;
+    }
+
+    private static bool TryReadHtmlTag(
+        string source,
+        int start,
+        out int end,
+        out string tagName,
+        out bool closingTag,
+        out bool selfClosingTag)
+    {
+        end = start;
+        tagName = string.Empty;
+        closingTag = false;
+        selfClosingTag = false;
+        if (start >= source.Length || source[start] != '<')
+            return false;
+
+        var position = start + 1;
+        if (position < source.Length && source[position] == '/')
+        {
+            closingTag = true;
+            position++;
+        }
+
+        var nameStart = position;
+        while (position < source.Length && (char.IsAsciiLetterOrDigit(source[position]) || source[position] is ':' or '-' or '_'))
+            position++;
+        if (position == nameStart || !char.IsAsciiLetter(source[nameStart]))
+            return false;
+        tagName = source[nameStart..position].ToLowerInvariant();
+
+        var quote = '\0';
+        for (; position < source.Length; position++)
+        {
+            var character = source[position];
+            if (quote != '\0')
+            {
+                if (character == quote)
+                    quote = '\0';
+            }
+            else if (character is '"' or '\'')
+                quote = character;
+            else if (character == '>')
+            {
+                end = position + 1;
+                var tagContentEnd = position - 1;
+                while (tagContentEnd >= start && char.IsWhiteSpace(source[tagContentEnd]))
+                    tagContentEnd--;
+                selfClosingTag = tagContentEnd >= start && source[tagContentEnd] == '/';
+                return true;
+            }
+        }
+
+        return false;
+    }
+
+    private static int FindHtmlClosingTag(string source, int start, string tagName)
+    {
+        var position = start;
+        while ((position = source.IndexOf("</", position, StringComparison.Ordinal)) >= 0)
+        {
+            var nameStart = position + 2;
+            while (nameStart < source.Length && char.IsWhiteSpace(source[nameStart]))
+                nameStart++;
+            if (source.AsSpan(nameStart).StartsWith(tagName, StringComparison.OrdinalIgnoreCase))
+            {
+                var boundary = nameStart + tagName.Length;
+                if (boundary == source.Length || source[boundary] is '>' or '/' || char.IsWhiteSpace(source[boundary]))
+                    return position;
+            }
+
+            position += 2;
+        }
+
+        return -1;
+    }
+
+    private List<(int Start, int End, TokenType Type)> FindKeywordAndNumberRanges(string source)
+    {
         var ranges = new List<(int Start, int End, TokenType Type)>();
-        if (_highlightKeys)
-            ranges.AddRange(FindYamlKeyRanges(source).Select(range => (range.Start, range.End, TokenType.Key)));
-        if (_highlightShellTokens)
-            ranges.AddRange(FindShellTokenRanges(source));
+        if (_keywordRegex is not null)
+            ranges.AddRange(FindRegexRanges(_keywordRegex, source, TokenType.Keyword));
+        if (_declarationKeywordRegex is not null)
+            ranges.AddRange(FindRegexGroupRanges(_declarationKeywordRegex, source, "keyword", TokenType.Keyword));
+        if (_atRuleRegex is not null)
+            ranges.AddRange(FindRegexGroupRanges(_atRuleRegex, source, "keyword", TokenType.Keyword));
 
-        return ApplyTokenRanges(AnalyseCore(new StringReader(source)), source.Length, ranges);
+        if (_highlightNumbers)
+            ranges.AddRange(FindRegexRanges(NumberRegex, source, TokenType.Number));
+
+        return ranges;
+    }
+
+    private static List<(int Start, int End, TokenType Type)> FindRegexRanges(Regex regex, string source, TokenType type)
+    {
+        return regex.Matches(source)
+            .Select(match => (match.Index, match.Index + match.Length, type))
+            .ToList();
+    }
+
+    private static List<(int Start, int End, TokenType Type)> FindRegexGroupRanges(
+        Regex regex,
+        string source,
+        string groupName,
+        TokenType type)
+    {
+        return regex.Matches(source)
+            .Select(match => match.Groups[groupName])
+            .Where(group => group.Success)
+            .Select(group => (group.Index, group.Index + group.Length, type))
+            .ToList();
+    }
+
+    private static List<(int Start, int End, TokenType Type)> FindHtmlRanges(string source)
+    {
+        var ranges = new List<(int Start, int End, TokenType Type)>();
+        foreach (Match tagMatch in HtmlTagRegex.Matches(source))
+        {
+            var tag = tagMatch.Groups["tag"];
+            ranges.Add((tag.Index, tag.Index + tag.Length, TokenType.Keyword));
+
+            var attributesStart = tag.Index + tag.Length;
+            var attributesLength = tagMatch.Index + tagMatch.Length - attributesStart;
+            var attributes = source.Substring(attributesStart, attributesLength);
+            foreach (Match attributeMatch in HtmlAttributeRegex.Matches(attributes))
+            {
+                var name = attributeMatch.Groups["name"];
+                ranges.Add((attributesStart + name.Index, attributesStart + name.Index + name.Length, TokenType.Keyword));
+                var value = attributeMatch.Groups["value"];
+                if (value.Success && value.Value.Length >= 2 && value.Value[0] is '"' or '\'')
+                    ranges.Add((attributesStart + value.Index, attributesStart + value.Index + value.Length, TokenType.String));
+            }
+        }
+
+        return ranges;
     }
 
     private static List<(int Start, int End, TokenType Type)> FindMarkdownRanges(string source)
@@ -228,39 +572,23 @@ public class Lexer
     private IEnumerable<LanguageToken> AnalyseCore(TextReader reader)
     {
         var input = new ParserInput(reader);
+        var whitespacePredicate = ParserInput.Predicate()
+            .Equals(new[] { ' ', '\t' }, Repetition.OneOrMore)
+            .Predicate;
+        var newLinePredicate = ParserInput.Predicate()
+            .Equals('\r', Repetition.ZeroOrOne)
+            .Equals('\n')
+            .Predicate;
+        var operatorPredicate = ParserInput.Predicate()
+            .EqualsAny(_operators)
+            .Predicate;
         var otherTextBuilder = new StringBuilder();
 
         var done = false;
         while (!done)
         {
-            // Line Comment
-            if (input.TryReadMatch(_lineComment, out var lineComment))
-            {
-                if (otherTextBuilder.Length != 0)
-                {
-                    var otherText = otherTextBuilder.ToString();
-                    otherTextBuilder.Clear();
-                    yield return new LanguageToken(otherText, TokenType.Text);
-                }
-                yield return new LanguageToken(lineComment, TokenType.Comment);
-                continue;
-            }
-            
-            // Keyword
-            if (input.TryReadMatch(_keywordPredicate, out var keyword))
-            {
-                if (otherTextBuilder.Length != 0)
-                {
-                    var otherText = otherTextBuilder.ToString();
-                    otherTextBuilder.Clear();
-                    yield return new LanguageToken(otherText, TokenType.Text);
-                }
-                yield return new LanguageToken(keyword, TokenType.Keyword);
-                continue;
-            }
-
             // Whitespace
-            if (input.TryReadMatch(_whitespacePredicate, out var whitespace))
+            if (input.TryReadMatch(whitespacePredicate, out var whitespace))
             {
                 if (otherTextBuilder.Length != 0)
                 {
@@ -273,7 +601,7 @@ public class Lexer
             }
             
             // NewLine
-            if (input.TryReadMatch(_newLinePredicate, out var newLine))
+            if (input.TryReadMatch(newLinePredicate, out var newLine))
             {
                 if (otherTextBuilder.Length != 0)
                 {
@@ -285,32 +613,8 @@ public class Lexer
                 continue;
             }
             
-            // String
-            var hasFoundString = false;
-            var completeString = "";
-            foreach (var stringPredicate in _stringPredicates)
-            {
-                if (input.TryReadMatch(stringPredicate, out completeString))
-                {
-                    hasFoundString = true;
-                    break;
-                }
-            }
-
-            if (hasFoundString)
-            {
-                if (otherTextBuilder.Length != 0)
-                {
-                    var otherText = otherTextBuilder.ToString();
-                    otherTextBuilder.Clear();
-                    yield return new LanguageToken(otherText, TokenType.Text);
-                }
-                yield return new LanguageToken(completeString, TokenType.String);
-                continue;
-            }
-            
             // Operator
-            if (input.TryReadMatch(_operatorPredicate, out var operatorString))
+            if (input.TryReadMatch(operatorPredicate, out var operatorString))
             {
                 if (otherTextBuilder.Length != 0)
                 {
@@ -322,19 +626,6 @@ public class Lexer
                 continue;
             }
             
-            // Number
-            if (input.TryReadMatch(_numberPredicate, out var numberString))
-            {
-                if (otherTextBuilder.Length != 0)
-                {
-                    var otherText = otherTextBuilder.ToString();
-                    otherTextBuilder.Clear();
-                    yield return new LanguageToken(otherText, TokenType.Text);
-                }
-                yield return new LanguageToken(numberString, TokenType.Number);
-                continue;
-            }
-
             // Put all other to the OtherStringBuilder
             if (input.TryReadChar(out var otherCharacter))
             {
@@ -356,7 +647,8 @@ public class Lexer
     private static IEnumerable<LanguageToken> ApplyTokenRanges(
         IEnumerable<LanguageToken> tokens,
         int sourceLength,
-        IReadOnlyCollection<(int Start, int End, TokenType Type)> ranges)
+        IReadOnlyCollection<(int Start, int End, TokenType Type)> ranges,
+        bool onlyText = false)
     {
         var tokenTypes = new TokenType?[sourceLength];
         foreach (var (start, end, type) in ranges)
@@ -368,13 +660,17 @@ public class Lexer
         var sourcePosition = 0;
         foreach (var token in tokens)
         {
+            TokenType TypeAt(int offset) => onlyText && token.Type is not (TokenType.Text or TokenType.Operator)
+                ? token.Type
+                : tokenTypes[sourcePosition + offset] ?? token.Type;
+
             var tokenOffset = 0;
             while (tokenOffset < token.Text.Length)
             {
-                var type = tokenTypes[sourcePosition + tokenOffset] ?? token.Type;
+                var type = TypeAt(tokenOffset);
                 var runStart = tokenOffset;
                 while (tokenOffset < token.Text.Length &&
-                       (tokenTypes[sourcePosition + tokenOffset] ?? token.Type) == type)
+                       TypeAt(tokenOffset) == type)
                     tokenOffset++;
 
                 yield return new LanguageToken(

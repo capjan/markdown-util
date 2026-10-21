@@ -45,10 +45,18 @@ Use one of these language identifiers:
 | Language | Identifiers |
 | --- | --- |
 | C# | `cs`, `csharp` |
+| JavaScript | `js`, `javascript`, `jsx` |
 | Swift | `swift` |
 | TypeScript | `ts`, `typescript` |
 | Python | `py`, `python` |
 | Kotlin | `kt`, `kotlin` |
+| JSON | `json` |
+| SQL | `sql` |
+| HTML | `html`, `htm` |
+| CSS | `css` |
+| Java | `java` |
+| Rust | `rs`, `rust` |
+| Go | `go`, `golang` |
 | YAML | `yaml`, `yml` |
 | Shell | `bash`, `zsh`, `sh`, `shell` |
 | Markdown | `md`, `markdown` |
