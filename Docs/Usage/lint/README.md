@@ -33,6 +33,40 @@ The linter also lists completely orphaned pages: pages hidden from navigation wi
 | --- | --- |
 | `--pretty` | Group results by file and use paths relative to the lint root. |
 | `--color` | Colorize errors and warnings. |
+| `--format <format>` | `text` (default), `json` for scripts and tools, or `github` for annotations in GitHub Actions. `--pretty` and `--color` apply to `text` only. |
+
+## Output for tools and CI
+
+`--format json` prints one JSON document and nothing else, so scripts can read it directly. Paths in `file` are relative to the lint root; `path` is the full path. `code` and `rule` come from the diagnostic, and `rule` is `null` for rules whose messages carry only a code.
+
+```json
+{
+  "root": "/project/Docs",
+  "errors": 1,
+  "warnings": 0,
+  "diagnostics": [
+    {
+      "file": "Overview.md",
+      "path": "/project/Docs/Overview.md",
+      "line": 7,
+      "severity": "error",
+      "code": "MDU004",
+      "rule": "LocalLinkExists",
+      "message": "Local link target './intro.md' does not exist."
+    }
+  ],
+  "orphanedPages": []
+}
+```
+
+`--format github` writes [workflow commands](https://docs.github.com/actions/using-workflows/workflow-commands-for-github-actions) that GitHub Actions shows as annotations on the affected lines of a pull request. Paths are relative to the working directory, so run the command from the repository root:
+
+```yaml
+- name: Lint documentation
+  run: mdu lint --format github
+```
+
+The exit code is the same for every format: `1` when there are errors, otherwise `0`.
 
 ## Automatic fixes
 

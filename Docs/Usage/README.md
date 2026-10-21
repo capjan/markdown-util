@@ -46,6 +46,8 @@ Use `--no-browser` to start the server without opening a browser.
 | `mdu render [path] [outpath]` | Writes a static HTML site. Alias: `mdu r`. | [render](render.md) |
 | `mdu pdf [path] [outpath]` | Writes one local PDF file. | [pdf](pdf.md) |
 | `mdu serve [path] [outpath]` | Serves a local preview and updates it when files change. | [serve](serve.md) |
+| `mdu page move <source> <target>` | Moves a page or folder and updates every link to it. Alias: `mdu page mv`. | [page](page.md#move-pages-and-folders) |
+| `mdu page links <file>` | Lists the links that point to a page, image, or other file. | [page](page.md#find-links-to-a-file) |
 
 ## Paths and file search
 
