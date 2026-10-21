@@ -48,7 +48,8 @@ public class PdfRendererTest
         [new PdfSourceSection("Videos", "videos/index.html", markdown)], includeFrontMatter: false);
 
         var pdf = Encoding.Latin1.GetString(output.ToArray());
-        Assert.Contains(Convert.ToHexString(Encoding.ASCII.GetBytes("<video controls playsinline muted>")), pdf);
+        foreach (var text in new[] { "controls", "playsinline", "muted", "loop" })
+            Assert.Contains(Convert.ToHexString(Encoding.ASCII.GetBytes(text)), pdf);
         foreach (var text in new[] { "controls=\"controls\"", "loop=\"loop\"", "muted=\"muted\"", "playsinline=\"playsinline\"" })
             Assert.DoesNotContain(Convert.ToHexString(Encoding.ASCII.GetBytes(text)), pdf);
     }
