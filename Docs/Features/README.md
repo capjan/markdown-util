@@ -31,7 +31,7 @@ Everything on these pages is written in ordinary Markdown. Each page shows the s
 
 ## Document APIs
 
-- [OpenAPI](OpenAPI.md) - Add a static API reference from a local OpenAPI specification
+- [OpenAPI Spec](OpenAPI.md) - Add a static API reference from a local OpenAPI specification
 
 ## Publish
 
