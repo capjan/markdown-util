@@ -46,7 +46,15 @@ public sealed class PdfCommand(GraphBuilder graphBuilder, PdfRenderer pdfRendere
         var files = Flatten(graph);
         if (singleFilePath is not null)
             files = files.Where(item => Path.GetFullPath(item.File.FileInfo.FullName).Equals(singleFilePath, StringComparison.Ordinal));
-        return WritePdf(rootPath, outputPath, files, includeFrontMatter: singleFilePath is null);
+        try
+        {
+            return WritePdf(rootPath, outputPath, files, includeFrontMatter: singleFilePath is null);
+        }
+        catch (Exception exception) when (exception is IOException or UnauthorizedAccessException or InvalidOperationException)
+        {
+            Console.Error.WriteLine($"Could not render PDF: {exception.Message}");
+            return 1;
+        }
     }
 
     public int WriteSitePdf(string rootPath, string outputPath, IEnumerable<MarkdownFile> graph) =>
@@ -73,11 +81,17 @@ public sealed class PdfCommand(GraphBuilder graphBuilder, PdfRenderer pdfRendere
         bool includeFrontMatter)
     {
         var sections = files.Where(item => IsPdfVisible(item.File.FrontMatter))
-            .Select(item => new PdfSourceSection(
-                GetTitle(item.File),
-                GetRelativeHtmlPath(rootPath, item.File),
-                RemoveFrontMatter(File.ReadAllText(item.File.FileInfo.FullName), item.File.FrontMatter),
-                item.Depth))
+            .Select(item =>
+            {
+                var markdown = RemoveFrontMatter(File.ReadAllText(item.File.FileInfo.FullName), item.File.FrontMatter);
+                if (!string.IsNullOrWhiteSpace(item.File.OpenApiSpec))
+                    markdown = OpenApiMarkdownRenderer.AppendFromFile(markdown, item.File.FileInfo.FullName, item.File.OpenApiSpec);
+                return new PdfSourceSection(
+                    GetTitle(item.File),
+                    GetRelativeHtmlPath(rootPath, item.File),
+                    markdown,
+                    item.Depth);
+            })
             .ToArray();
 
         if (sections.Length == 0)

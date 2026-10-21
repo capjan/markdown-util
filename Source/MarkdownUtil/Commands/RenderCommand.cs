@@ -73,14 +73,22 @@ public class RenderCommand
         CopyAssets(rootPath, outPath, graph);
         SiteConfigurationReader.CopyAssets(rootPath, outPath, siteConfiguration);
 
-        if (_pdfCommand.WriteSitePdfIfLinked(rootPath, Path.Combine(outPath, "documentation.pdf"), graph) != 0)
+        try
+        {
+            if (_pdfCommand.WriteSitePdfIfLinked(rootPath, Path.Combine(outPath, "documentation.pdf"), graph) != 0)
+                return 1;
+
+            Console.WriteLine($"Rendering {nodeCount} Files");
+            RenderNodesToHtml(rootPath, outPath, graph, settings.EditPageRoot);
+            _searchIndexBuilder.WriteIndex(outPath);
+
+            return 0;
+        }
+        catch (Exception exception) when (exception is IOException or UnauthorizedAccessException or InvalidOperationException)
+        {
+            Console.Error.WriteLine($"Could not render the site: {exception.Message}");
             return 1;
-        
-        Console.WriteLine($"Rendering {nodeCount} Files");
-        RenderNodesToHtml(rootPath, outPath, graph, settings.EditPageRoot);
-        _searchIndexBuilder.WriteIndex(outPath);
-        
-        return 0;
+        }
     }
 
     private void RenderNodesToHtml(

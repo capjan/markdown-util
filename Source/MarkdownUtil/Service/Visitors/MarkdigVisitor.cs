@@ -50,6 +50,8 @@ public class MarkdigVisitor : BaseVisitor
         Console.WriteLine($"{io.InputRelativeFilePathToRootDirectory} => {io.OutputRelativeFilePathToRootDirectory}");
 
         var markdown = RemoveFrontMatter(io.ReadAllText(), entity.FrontMatter);
+        if (!string.IsNullOrWhiteSpace(entity.OpenApiSpec))
+            markdown = OpenApiMarkdownRenderer.AppendFromFile(markdown, entity.FileInfo.FullName, entity.OpenApiSpec);
         io.CreateOutputDirectory();    // ensures that the output directory exits
 
         var editPageLink = string.IsNullOrEmpty(_editPageRoot) ? string.Empty : GetEditPageLink(io.InputRelativeFilePathToRootDirectory);

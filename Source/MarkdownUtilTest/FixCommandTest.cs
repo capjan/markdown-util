@@ -22,8 +22,10 @@ public class FixCommandTest
         {
             File.WriteAllText(Path.Combine(root, "README.md"),
                 "# Docs\n\n[Page](./Guide/README.md#intro)\n\n[Folder](./Guide/)\n\n[Reference][guide]\n\n[guide]: ./Guide/README.md?view=full#intro\n");
+            Directory.CreateDirectory(Path.Combine(root, "api"));
+            File.WriteAllText(Path.Combine(root, "api", "orders.yaml"), "openapi: 3.1.0\n");
             File.WriteAllText(Path.Combine(section, "README.md"),
-                "# Guide\n\n[Asset](./diagram.svg)\n\n[Home](../README.md)\n\n[Anchor](#intro)\n");
+                "---\nopenapi: ../api/orders.yaml\n---\n# Guide\n\n[Asset](./diagram.svg)\n\n[Home](../README.md)\n\n[Anchor](#intro)\n");
             File.WriteAllText(Path.Combine(section, "diagram.svg"), "<svg />");
 
             var command = new FixCommand(CreateGraphBuilder(), new LinterVisitor(new ConsoleLintErrorReceiver()));
@@ -46,6 +48,7 @@ public class FixCommandTest
             Assert.Contains("[guide]: Guide.md?view=full#intro", rootContent);
 
             var movedContent = File.ReadAllText(movedPage);
+            Assert.StartsWith("---\nopenapi: api/orders.yaml\n---\n", movedContent);
             Assert.Contains("[Asset](Guide/diagram.svg)", movedContent);
             Assert.Contains("[Home](README.md)", movedContent);
             Assert.Contains("[Anchor](#intro)", movedContent);

@@ -150,12 +150,63 @@ public class ServeCommandIntegrationTest
         }
     }
 
+    [Fact]
+    public async Task WatchesOpenApiSpecificationsOutsideTheMarkdownRoot()
+    {
+        var root = Path.Combine(Path.GetTempPath(), Guid.NewGuid().ToString("N"));
+        var docs = Path.Combine(root, "Docs");
+        var api = Path.Combine(root, "api");
+        var site = Path.Combine(root, "site");
+        Directory.CreateDirectory(docs);
+        Directory.CreateDirectory(api);
+        File.WriteAllText(Path.Combine(docs, "README.md"), "---\nopenapi: ../api/orders.json\n---\n# Orders\n");
+        var specificationPath = Path.Combine(api, "orders.json");
+        File.WriteAllText(specificationPath, OpenApiSpecification("API Before"));
+
+        var port = FindAvailablePort();
+        using var process = StartServer(docs, site, port);
+        using var client = new HttpClient { Timeout = TimeSpan.FromSeconds(2) };
+        var pageUrl = $"http://127.0.0.1:{port}/index.html";
+
+        try
+        {
+            await WaitUntilAsync(async () => await PageContainsAsync(client, pageUrl, "API Before"), process);
+
+            File.WriteAllText(specificationPath, OpenApiSpecification("API After"));
+
+            await WaitUntilAsync(async () => await PageContainsAsync(client, pageUrl, "API After"), process);
+
+            var secondApi = Path.Combine(root, "second-api");
+            Directory.CreateDirectory(secondApi);
+            var secondSpecificationPath = Path.Combine(secondApi, "orders.json");
+            File.WriteAllText(secondSpecificationPath, OpenApiSpecification("API Switched"));
+            File.WriteAllText(Path.Combine(docs, "README.md"), "---\nopenapi: ../second-api/orders.json\n---\n# Orders\n");
+            await WaitUntilAsync(async () => await PageContainsAsync(client, pageUrl, "API Switched"), process);
+
+            File.WriteAllText(secondSpecificationPath, OpenApiSpecification("API Latest"));
+            await WaitUntilAsync(async () => await PageContainsAsync(client, pageUrl, "API Latest"), process);
+        }
+        finally
+        {
+            StopServer(process);
+            Directory.Delete(root, recursive: true);
+        }
+    }
+
     private static async Task<bool> PageContainsAsync(HttpClient client, string url, string text)
     {
         using var response = await client.GetAsync(url);
         return response.IsSuccessStatusCode &&
                (await response.Content.ReadAsStringAsync()).Contains(text, StringComparison.Ordinal);
     }
+
+    private static string OpenApiSpecification(string title) => $$"""
+        {
+          "openapi": "3.1.0",
+          "info": { "title": "{{title}}", "version": "1.0" },
+          "paths": {}
+        }
+        """;
 
     private static Process StartServer(string docs, string site, int port)
     {

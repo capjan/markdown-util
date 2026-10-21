@@ -23,6 +23,8 @@
     <ItemGroup>
       <PackageReference Include="CSharpMath.VectSharp" Version="1.0.0-pre.2" />
       <PackageReference Include="Markdig" Version="1.4.1" />
+      <PackageReference Include="Microsoft.OpenApi" Version="3.10.2" />
+      <PackageReference Include="Microsoft.OpenApi.YamlReader" Version="3.10.2" />
       <PackageReference Include="VectSharp.SVG" Version="1.10.2" />
       <PackageReference Include="YamlDotNet" Version="18.1.0" />
     </ItemGroup>

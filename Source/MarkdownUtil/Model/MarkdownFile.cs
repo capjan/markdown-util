@@ -19,6 +19,7 @@ public class MarkdownFile: INode<MarkdownFile>
     public string HeadingTitle { get; set; } = string.Empty;
     public string Description { get; set; } = string.Empty;
     public string Icon { get; set; } = string.Empty;
+    public string OpenApiSpec { get; set; } = string.Empty;
     public string FrontMatter { get; set; } = string.Empty;
     public int? NavigationOrder { get; set; }
     public string NavigationTitle { get; set; } = string.Empty;
