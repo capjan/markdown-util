@@ -2546,9 +2546,22 @@ th, td {
     margin: 0;
     padding: 0;
     border: 0;
-    border-bottom: 1px solid var(--border-subtle);
     border-radius: 0;
     background: var(--page-background);
+}
+
+.markdown-content .openapi-tag-rows {
+    border: 1px solid var(--border-subtle);
+    border-radius: 0.75rem;
+    overflow: hidden;
+}
+
+.markdown-content .openapi-tag-rows:not(:has(> details:not([hidden]))) {
+    display: none;
+}
+
+.markdown-content details.openapi-tag-group:not([hidden]) ~ details.openapi-tag-group:not([hidden]) {
+    border-top: 1px solid var(--border-subtle);
 }
 
 .markdown-content details.openapi-tag-group[hidden],
@@ -2984,9 +2997,51 @@ th, td {
 }
 
 .markdown-content .openapi-required-marker {
-    margin-left: 0.2rem;
-    color: #b4232e;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 1.05em;
+    height: 1.05em;
+    margin-left: 0.25rem;
+    border: 1px solid color-mix(in srgb, var(--alert-caution-accent) 25%, transparent);
+    border-radius: 50%;
+    background: color-mix(in srgb, var(--alert-caution-accent) 10%, transparent);
+    color: var(--alert-caution-accent);
+    font-size: 0.7em;
     font-weight: 800;
+    line-height: 1;
+    vertical-align: super;
+}
+
+.markdown-content .openapi-schema-table:not(.descriptions-visible) > table > thead > tr > th:last-child,
+.markdown-content .openapi-schema-table:not(.descriptions-visible) > table > tbody > tr > td:last-child {
+    display: none;
+}
+
+.markdown-content .openapi-schema-table > table {
+    width: 100%;
+}
+
+.markdown-content .openapi-description-toggle {
+    display: block;
+    margin: 0 0 0.5rem auto;
+    padding: 0.35rem 0.6rem;
+    border: 1px solid var(--border-subtle);
+    border-radius: 0.4rem;
+    background: var(--surface-current);
+    color: var(--text-secondary);
+    font: inherit;
+    font-size: 0.8rem;
+    cursor: pointer;
+}
+
+.markdown-content .openapi-description-toggle:hover {
+    color: var(--text-primary);
+}
+
+.markdown-content .openapi-description-toggle:focus-visible {
+    outline: 2px solid var(--link);
+    outline-offset: 2px;
 }
 
 .markdown-content .openapi-status-2xx {

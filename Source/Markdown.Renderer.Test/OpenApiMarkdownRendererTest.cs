@@ -32,6 +32,7 @@ public class OpenApiMarkdownRendererTest
         Assert.True(link.Success);
         Assert.Contains($"id=\"{link.Groups["anchor"].Value}\"", html);
         Assert.Contains("class=\"openapi-type-optional\">?</span>", cell);
+        Assert.DoesNotContain("class=\"openapi-description-toggle\"", html);
     }
 
     [Fact]
@@ -102,9 +103,11 @@ public class OpenApiMarkdownRendererTest
         Assert.Contains(">Schema JSON</button>", html);
         Assert.Equal(6, System.Text.RegularExpressions.Regex.Matches(html, "role=\"tab\"").Count);
         Assert.Contains("<th>Property</th>", html);
+        Assert.Contains("class=\"openapi-description-toggle\" aria-expanded=\"false\">Show descriptions</button>", html);
+        Assert.Contains("<div class=\"openapi-schema-table\">", html);
         Assert.DoesNotContain("<th>Type</th>", html);
         Assert.DoesNotContain("<th>Required</th>", html);
-        Assert.Contains("<span class=\"openapi-required-marker\" aria-label=\"Required\">*</span>", html);
+        Assert.Contains("<span class=\"openapi-required-marker\" aria-label=\"Required\" title=\"Required\">*</span>", html);
         Assert.Contains("<td>Order identifier</td>", html);
         Assert.Contains("<div class=\"openapi-response-description\">", html);
         Assert.True(

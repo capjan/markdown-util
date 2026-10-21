@@ -28,4 +28,6 @@ Operations are grouped by their first tag in a compact list. Tag groups and endp
 
 The response selector shows the status code and name, followed by a media type selector when the response has content. Responses and request bodies provide Example, Schema, and Schema JSON tabs. Schema descriptions appear below their names, and referenced schemas are linked and displayed inline. Response and media type selectors show their position as `1 of N`. 2xx statuses are green, 4xx are yellow, and 5xx are red.
 
+Parameter and schema tables combine names and types as `name: Type`. Required fields carry a raised red badge. Table descriptions start hidden; use **Show descriptions** above a table to reveal them. Tables without description text omit this control.
+
 The generated reference gives each HTTP method a distinct label, highlights endpoint paths, and separates API groups and schemas. It follows the site's light or dark theme and is published as static HTML and CSS without making API requests. References within the specification are resolved; external `$ref` files are not loaded.

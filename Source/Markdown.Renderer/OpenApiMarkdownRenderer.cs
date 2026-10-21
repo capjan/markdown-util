@@ -183,7 +183,7 @@ public static class OpenApiMarkdownRenderer
                     ? $"<span class=\"openapi-path-parameter {colorClass}\">{HtmlEncoder.Default.Encode(name)}</span>"
                     : HtmlEncoder.Default.Encode(name);
                 nameMarkup += parameter.Required
-                    ? "<span class=\"openapi-required-marker\" aria-label=\"Required\">*</span>"
+                    ? "<span class=\"openapi-required-marker\" aria-label=\"Required\" title=\"Required\">*</span>"
                     : string.Empty;
                 output.AppendLine($"| {EscapeTableCell(DeclarationMarkup(nameMarkup, SchemaTypeMarkup(parameter.Schema)))} | {EscapeTableCell(parameter.Description)} |");
             }
@@ -388,7 +388,7 @@ public static class OpenApiMarkdownRenderer
         {
             var propertySchema = ResolveReference(property.Value);
             var propertyName = HtmlEncoder.Default.Encode(property.Key) + (required.Contains(property.Key)
-                ? "<span class=\"openapi-required-marker\" aria-label=\"Required\">*</span>"
+                ? "<span class=\"openapi-required-marker\" aria-label=\"Required\" title=\"Required\">*</span>"
                 : string.Empty);
             output.AppendLine($"| {EscapeTableCell(DeclarationMarkup(propertyName, SchemaTypeMarkup(property.Value, anchors)))} | {EscapeTableCell(propertySchema.Description)} |");
         }
@@ -480,7 +480,7 @@ public static class OpenApiMarkdownRenderer
         {
             var propertySchema = ResolveReference(property.Value);
             var propertyName = HtmlEncoder.Default.Encode(property.Key) + (required.Contains(property.Key)
-                ? "<span class=\"openapi-required-marker\" aria-label=\"Required\">*</span>"
+                ? "<span class=\"openapi-required-marker\" aria-label=\"Required\" title=\"Required\">*</span>"
                 : string.Empty);
             output.AppendLine($"| {EscapeTableCell(DeclarationMarkup(propertyName, SchemaTypeMarkup(property.Value, anchors)))} | {EscapeTableCell(propertySchema.Description)} |");
         }

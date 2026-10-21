@@ -589,7 +589,7 @@ public class HtmlRenderer
             output.AppendLine("</summary>");
             output.AppendLine("<div class=\"openapi-operation-content\">");
             var operationContent = WrapOpenApiRequestBodies(renderedMarkdown[contentStart..contentEnd], operationScopeId);
-            output.Append(WrapOpenApiResponses(operationContent, operationScopeId));
+            output.Append(WrapOpenApiDescriptionTables(WrapOpenApiResponses(operationContent, operationScopeId)));
             output.AppendLine("</div>");
             output.AppendLine("</details>");
             copiedUntil = contentEnd;
@@ -598,6 +598,19 @@ public class HtmlRenderer
         output.Append(renderedMarkdown, copiedUntil, renderedMarkdown.Length - copiedUntil);
         return output.ToString();
     }
+
+    private static string WrapOpenApiDescriptionTables(string content) =>
+        Regex.Replace(content, @"<table>.*?</table>", match =>
+        {
+            if (!match.Value.Contains("class=\"openapi-declaration\"", StringComparison.Ordinal)) return match.Value;
+            var hasDescriptions = Regex.Matches(match.Value, @"<tr>\s*<td>.*?</td>\s*<td>(?<description>.*?)</td>\s*</tr>", RegexOptions.Singleline)
+                .Cast<Match>().Any(row => !string.IsNullOrWhiteSpace(WebUtility.HtmlDecode(
+                    Regex.Replace(row.Groups["description"].Value, "<[^>]+>", string.Empty))));
+            var toggle = hasDescriptions
+                ? "<button type=\"button\" class=\"openapi-description-toggle\" aria-expanded=\"false\">Show descriptions</button>"
+                : string.Empty;
+            return $"<div class=\"openapi-schema-table\">{toggle}{match.Value}</div>";
+        }, RegexOptions.Singleline);
 
     private static string WrapOpenApiResponses(string content, string operationScopeId)
     {
@@ -907,6 +920,7 @@ public class HtmlRenderer
                 output.AppendLine("<section class=\"openapi-tag-list\" aria-label=\"API endpoints\">");
                 output.AppendLine("<label class=\"openapi-path-filter-label\">Filter endpoints<input type=\"search\" class=\"openapi-path-filter\" placeholder=\"Search endpoint paths…\" autocomplete=\"off\" spellcheck=\"false\"></label>");
                 output.AppendLine("<p class=\"openapi-filter-status\" role=\"status\" hidden></p>");
+                output.AppendLine("<div class=\"openapi-tag-rows\">");
             }
             output.AppendLine("<details class=\"openapi-tag-group\">");
             output.Append("<summary id=\"")
@@ -929,7 +943,7 @@ public class HtmlRenderer
             copiedUntil = groupEnd;
         }
 
-        output.AppendLine("</section>");
+        output.AppendLine("</div></section>");
         output.Append(renderedMarkdown, copiedUntil, renderedMarkdown.Length - copiedUntil);
         return output.ToString();
     }
@@ -1055,6 +1069,13 @@ public class HtmlRenderer
         };
 
         document.addEventListener("click", event => {
+            const descriptionToggle = event.target.closest(".openapi-description-toggle");
+            if (descriptionToggle) {
+                const expanded = descriptionToggle.getAttribute("aria-expanded") !== "true";
+                descriptionToggle.setAttribute("aria-expanded", String(expanded));
+                descriptionToggle.textContent = expanded ? "Hide descriptions" : "Show descriptions";
+                descriptionToggle.closest(".openapi-schema-table").classList.toggle("descriptions-visible", expanded);
+            }
             const tab = event.target.closest(".openapi-response-tab");
             if (tab) activateResponseTab(tab);
             const reference = event.target.closest("a.openapi-type-reference");
