@@ -27,6 +27,7 @@ registrations.AddScoped<SearchIndexBuilder>();
 registrations.AddScoped<LintCommand>();
 registrations.AddScoped<PrintTreeCommand>();
 registrations.AddScoped<RenderCommand>();
+registrations.AddScoped<OpenApiCommand>();
 registrations.AddScoped<PdfCommand>();
 registrations.AddScoped<ServeCommand>();
 registrations.AddScoped<PageCommand>();
@@ -112,6 +113,26 @@ renderCommand.SetAction(parseResult =>
         EditPageRoot = parseResult.GetValue(editPageRoot) ?? string.Empty
     }));
 rootCommand.Subcommands.Add(renderCommand);
+
+var openApiCommand = new Command("openapi", "Renders OpenAPI specifications.");
+var openApiRenderCommand = new Command("render", "Renders a local OpenAPI specification as a static HTML site.");
+var openApiSpecificationPath = new Argument<string>("spec")
+{
+    Description = "Path to a local .json, .yaml, or .yml OpenAPI document."
+};
+var openApiOutputPath = new Argument<string?>("outpath")
+{
+    Arity = ArgumentArity.ZeroOrOne,
+    Description = "Output folder for rendered files. Defaults to ./openapi-site."
+};
+openApiRenderCommand.Arguments.Add(openApiSpecificationPath);
+openApiRenderCommand.Arguments.Add(openApiOutputPath);
+openApiRenderCommand.SetAction(parseResult =>
+    services.GetRequiredService<OpenApiCommand>().Execute(
+        parseResult.GetValue(openApiSpecificationPath)!,
+        parseResult.GetValue(openApiOutputPath)));
+openApiCommand.Subcommands.Add(openApiRenderCommand);
+rootCommand.Subcommands.Add(openApiCommand);
 
 var pdfCommand = new Command("pdf", "Renders Markdown documentation to one local PDF file.");
 var (pdfPattern, pdfHidden) = AddVisitorOptions(pdfCommand);

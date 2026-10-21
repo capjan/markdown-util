@@ -51,6 +51,7 @@ Linter detected 1 error.
 | [lint](./lint/README.md) | `mdu lint [path]` | Check pages and local links against the [rules](./lint/Rules.md). Alias: `l` |
 | [fix](fix.md) | `mdu fix [path]` | Migrate MkDocs syntax and apply automatic fixes |
 | [render](render.md) | `mdu render [path] [outpath]` | Write a static HTML site. Alias: `r` |
+| [openapi render](openapi.md) | `mdu openapi render <spec> [outpath]` | Write a static HTML site from one OpenAPI document |
 | [serve](serve.md) | `mdu serve [path] [outpath]` | Serve a local preview that updates on changes |
 | [pdf](pdf.md) | `mdu pdf [path] [outpath]` | Write one PDF file |
 | [page move](page.md#move-pages-and-folders) | `mdu page move <source> <target>` | Move a page or folder and update every link to it. Alias: `page mv` |

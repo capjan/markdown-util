@@ -6,7 +6,7 @@ navigation.order: 3
 
 `Markdown.Renderer` turns the Markdown of one page into a complete HTML page, or into PDF content. The page tree supplies everything around the content, such as navigation and breadcrumbs; the renderer supplies the content itself and the page frame.
 
-Pages with an `openapi` front matter entry have a generated API reference appended to their Markdown before rendering. `OpenApiMarkdownRenderer` reads the local JSON or YAML file, then the normal HTML and PDF renderers process the combined content.
+Pages with an `openapi` front matter entry have a generated API reference appended to their Markdown before rendering. `OpenApiMarkdownRenderer` reads the local JSON or YAML file, then the normal HTML and PDF renderers process the combined content. `mdu openapi render` uses the same Markdown renderer to write one standalone API reference as a static HTML site.
 
 ## From Markdown to HTML
 
