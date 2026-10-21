@@ -20,7 +20,14 @@ public class Grammar
         string lineCommentStart,
         bool highlightKeys = false,
         bool highlightShellTokens = false,
-        bool highlightMarkdown = false)
+        bool highlightMarkdown = false,
+        bool ignoreKeywordCase = false,
+        bool hyphenatedKeywords = false,
+        string? blockCommentStart = null,
+        string? blockCommentEnd = null,
+        bool highlightHtml = false,
+        bool highlightJavaTextBlocks = false,
+        bool highlightRustCharLiterals = false)
     {
         Keywords = keywords;
         Operators = operators;
@@ -29,6 +36,13 @@ public class Grammar
         HighlightKeys = highlightKeys;
         HighlightShellTokens = highlightShellTokens;
         HighlightMarkdown = highlightMarkdown;
+        IgnoreKeywordCase = ignoreKeywordCase;
+        HyphenatedKeywords = hyphenatedKeywords;
+        BlockCommentStart = blockCommentStart;
+        BlockCommentEnd = blockCommentEnd;
+        HighlightHtml = highlightHtml;
+        HighlightJavaTextBlocks = highlightJavaTextBlocks;
+        HighlightRustCharLiterals = highlightRustCharLiterals;
     }
 
     public IReadOnlyCollection<string> Keywords { get; }
@@ -43,4 +57,18 @@ public class Grammar
     public bool HighlightShellTokens { get; }
 
     public bool HighlightMarkdown { get; }
+
+    public bool IgnoreKeywordCase { get; }
+
+    public bool HyphenatedKeywords { get; }
+
+    public string? BlockCommentStart { get; }
+
+    public string? BlockCommentEnd { get; }
+
+    public bool HighlightHtml { get; }
+
+    public bool HighlightJavaTextBlocks { get; }
+
+    public bool HighlightRustCharLiterals { get; }
 }

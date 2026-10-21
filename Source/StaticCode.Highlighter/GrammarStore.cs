@@ -2,6 +2,20 @@ namespace StaticCode.Highlighter;
 
 public static class GrammarStore
 {
+    private static readonly string[] JavaScriptTypeScriptOperators =
+    {
+        "===", "!==", ">>>", "**=", "...", "=>", "==", "!=", "<=", ">=", "++", "--", "&&", "||",
+        "??", "?.", "**", "<<", ">>", "+=", "-=", "*=", "/=", "%=", "&=", "|=", "^=", "=", "+", "-",
+        "*", "/", "%", "<", ">", "!", "~", "&", "|", "^", "?", ":", ";", ",", ".", "(", ")", "[",
+        "]", "{", "}"
+    };
+    private static readonly LanguageString[] JavaScriptTypeScriptStrings =
+    {
+        new LanguageString('"', "\\\"", "\\\\"),
+        new LanguageString('\'', "\\\'", "\\\\"),
+        new LanguageString('`', "\\`", "\\\\")
+    };
+
     /// <summary>
     /// Returns the Language Settings for the given language name followed in markdown after the tree backticks
     /// </summary>
@@ -93,19 +107,8 @@ public static class GrammarStore
                 "try", "type", "typeof", "undefined", "unique", "unknown", "var", "void", "while", "with",
                 "yield"
             },
-            operators: new[]
-            {
-                "===", "!==", ">>>", "**=", "...", "=>", "==", "!=", "<=", ">=", "++", "--", "&&", "||",
-                "??", "?.", "**", "<<", ">>", "+=", "-=", "*=", "/=", "%=", "&=", "|=", "^=",
-                "=", "+", "-", "*", "/", "%", "<", ">", "!", "~", "&", "|", "^", "?", ":", ";", ",",
-                ".", "(", ")", "[", "]", "{", "}"
-            },
-            strings: new[]
-            {
-                new LanguageString('"', "\\\"", "\\\\"),
-                new LanguageString('\'', "\\\'", "\\\\"),
-                new LanguageString('`', "\\`", "\\\\")
-            },
+            operators: JavaScriptTypeScriptOperators,
+            strings: JavaScriptTypeScriptStrings,
             lineCommentStart: "//");
     }
 
@@ -171,19 +174,8 @@ public static class GrammarStore
                 "super", "switch", "this", "throw", "true", "try", "typeof", "undefined", "var", "void", "while",
                 "with", "yield"
             },
-            operators: new[]
-            {
-                "===", "!==", ">>>", "**=", "...", "=>", "==", "!=", "<=", ">=", "++", "--", "&&", "||",
-                "??", "?.", "**", "<<", ">>", "+=", "-=", "*=", "/=", "%=", "&=", "|=", "^=", "=", "+", "-",
-                "*", "/", "%", "<", ">", "!", "~", "&", "|", "^", "?", ":", ";", ",", ".", "(", ")", "[",
-                "]", "{", "}"
-            },
-            strings: new[]
-            {
-                new LanguageString('"', "\\\"", "\\\\"),
-                new LanguageString('\'', "\\\'", "\\\\"),
-                new LanguageString('`', "\\`", "\\\\")
-            },
+            operators: JavaScriptTypeScriptOperators,
+            strings: JavaScriptTypeScriptStrings,
             lineCommentStart: "//");
     }
 
@@ -216,7 +208,7 @@ public static class GrammarStore
                 "is", "join", "key", "left", "like", "limit", "not", "null", "offset", "on", "or", "order",
                 "outer", "primary", "recursive", "references", "rollback", "select", "set", "table", "then",
                 "transaction", "true", "union", "unique", "update", "values", "view", "when", "where", "with"
-            }.SelectMany(keyword => new[] { keyword, keyword.ToUpperInvariant() }).ToArray(),
+            },
             operators: new[]
             {
                 "<>", "!=", "<=", ">=", "||", "::", "=", "<", ">", "+", "-", "*", "/", "%", ".", ",", ";",
@@ -227,30 +219,23 @@ public static class GrammarStore
                 new LanguageString('\'', "''"),
                 new LanguageString('"', "\"\"")
             },
-            lineCommentStart: "--");
+            lineCommentStart: "--",
+            ignoreKeywordCase: true);
     }
 
     private static Grammar Html()
     {
         return new Grammar(
-            keywords: new[]
-            {
-                "a", "article", "aside", "body", "br", "button", "code", "div", "footer", "form", "h1", "h2",
-                "h3", "head", "header", "hr", "html", "img", "input", "label", "li", "link", "main", "meta",
-                "nav", "ol", "option", "p", "pre", "script", "section", "select", "span", "strong", "style",
-                "table", "tbody", "td", "th", "thead", "title", "tr", "ul", "class", "for", "href", "id", "name",
-                "src", "type", "value"
-            },
+            keywords: Array.Empty<string>(),
             operators: new[]
             {
                 "</", "/>", "<", ">", "=", "/"
             },
-            strings: new[]
-            {
-                new LanguageString('"', "\\\"", "\\\\"),
-                new LanguageString('\'', "\\\'", "\\\\")
-            },
-            lineCommentStart: string.Empty);
+            strings: Array.Empty<LanguageString>(),
+            lineCommentStart: string.Empty,
+            blockCommentStart: "<!--",
+            blockCommentEnd: "-->",
+            highlightHtml: true);
     }
 
     private static Grammar Css()
@@ -258,20 +243,24 @@ public static class GrammarStore
         return new Grammar(
             keywords: new[]
             {
-                "@font-face", "@import", "@keyframes", "@media", "@supports", "align-items", "background",
-                "border", "color", "display", "flex", "font-family", "font-size", "font-weight", "gap", "grid",
-                "height", "justify-content", "margin", "max-width", "padding", "position", "width"
+                "align-items", "background-color", "background", "border-radius", "border", "color", "display",
+                "flex", "font-family", "font-size", "font-weight", "gap", "grid", "height", "import", "justify-content",
+                "keyframes", "margin", "max-width", "media", "padding", "position", "supports", "width", "font-face"
             },
             operators: new[]
             {
-                "::", ":", ";", ",", "{", "}", "(", ")", "[", "]", ">", "+", "~", "=", ".", "#", "*"
+                "::", ":", ";", ",", "{", "}", "(", ")", "[", "]", ">", "+", "~", "=", ".", "#", "*", "@"
             },
             strings: new[]
             {
                 new LanguageString('"', "\\\"", "\\\\"),
                 new LanguageString('\'', "\\\'", "\\\\")
             },
-            lineCommentStart: string.Empty);
+            lineCommentStart: string.Empty,
+            ignoreKeywordCase: true,
+            hyphenatedKeywords: true,
+            blockCommentStart: "/*",
+            blockCommentEnd: "*/");
     }
 
     private static Grammar Java()
@@ -284,7 +273,7 @@ public static class GrammarStore
                 "for", "if", "implements", "import", "instanceof", "int", "interface", "long", "native", "new",
                 "null", "package", "private", "protected", "public", "return", "short", "static", "strictfp",
                 "super", "switch", "synchronized", "this", "throw", "throws", "transient", "try", "void", "volatile",
-                "while", "true", "false"
+                "while", "true", "false", "var", "record", "yield", "sealed", "permits"
             },
             operators: new[]
             {
@@ -297,7 +286,8 @@ public static class GrammarStore
                 new LanguageString('"', "\\\"", "\\\\"),
                 new LanguageString('\'', "\\\'", "\\\\")
             },
-            lineCommentStart: "//");
+            lineCommentStart: "//",
+            highlightJavaTextBlocks: true);
     }
 
     private static Grammar Rust()
@@ -308,7 +298,7 @@ public static class GrammarStore
                 "Self", "as", "async", "await", "bool", "break", "const", "continue", "crate", "else", "enum",
                 "extern", "false", "fn", "for", "if", "impl", "in", "let", "loop", "match", "mod", "move", "mut",
                 "pub", "ref", "return", "self", "static", "struct", "super", "trait", "true", "type", "union",
-                "unsafe", "use", "where", "while"
+                "unsafe", "use", "where", "while", "dyn"
             },
             operators: new[]
             {
@@ -318,10 +308,10 @@ public static class GrammarStore
             },
             strings: new[]
             {
-                new LanguageString('"', "\\\"", "\\\\"),
-                new LanguageString('\'', "\\\'", "\\\\")
+                new LanguageString('"', "\\\"", "\\\\")
             },
-            lineCommentStart: "//");
+            lineCommentStart: "//",
+            highlightRustCharLiterals: true);
     }
 
     private static Grammar Go()
