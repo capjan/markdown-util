@@ -4,7 +4,7 @@
 
 Place a styled link anywhere in your Markdown and choose its label:
 
-```markdown
+```markdown title="Markdown"
 [Download the PDF](mdu:pdf)
 ```
 
