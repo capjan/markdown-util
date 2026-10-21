@@ -1,4 +1,5 @@
 using System.Text.Json;
+using System.Text.Json.Serialization;
 using System.Text.RegularExpressions;
 using MarkdownUtil.Model;
 
@@ -27,9 +28,11 @@ public class LintResultRenderer
     // The output is read by tools, not embedded in HTML, so quotes and accents stay readable.
     private static readonly JsonSerializerOptions JsonOptions = new()
     {
+        PropertyNamingPolicy = JsonNamingPolicy.CamelCase,
         WriteIndented = true,
         Encoder = System.Text.Encodings.Web.JavaScriptEncoder.UnsafeRelaxedJsonEscaping
     };
+    private static readonly LintJsonContext JsonContext = new(JsonOptions);
 
     private readonly ILinterErrorReceiver _receiver;
 
@@ -104,29 +107,26 @@ public class LintResultRenderer
 
     private void RenderJson(IReadOnlyCollection<MarkdownFile> orphanedPages, string rootPath, TextWriter output)
     {
-        var result = new
+        var diagnostics = _receiver.Diagnostics.Select(diagnostic =>
         {
-            root = rootPath,
-            errors = _receiver.ErrorCount,
-            warnings = _receiver.WarningCount,
-            diagnostics = _receiver.Diagnostics.Select(diagnostic =>
-            {
-                var (code, rule, text) = Parse(diagnostic.Message);
-                return new
-                {
-                    file = Path.GetRelativePath(rootPath, diagnostic.FilePath).Replace(Path.DirectorySeparatorChar, '/'),
-                    path = diagnostic.FilePath,
-                    line = diagnostic.LineNumber,
-                    severity = diagnostic.IsWarning ? "warning" : "error",
-                    code,
-                    rule,
-                    message = text
-                };
-            }),
-            orphanedPages = orphanedPages.Select(page =>
-                Path.GetRelativePath(rootPath, page.FileInfo.FullName).Replace(Path.DirectorySeparatorChar, '/'))
-        };
-        output.WriteLine(JsonSerializer.Serialize(result, JsonOptions));
+            var (code, rule, text) = Parse(diagnostic.Message);
+            return new LintJsonDiagnostic(
+                Path.GetRelativePath(rootPath, diagnostic.FilePath).Replace(Path.DirectorySeparatorChar, '/'),
+                diagnostic.FilePath,
+                diagnostic.LineNumber,
+                diagnostic.IsWarning ? "warning" : "error",
+                code,
+                rule,
+                text);
+        }).ToArray();
+        var result = new LintJsonResult(
+            rootPath,
+            _receiver.ErrorCount,
+            _receiver.WarningCount,
+            diagnostics,
+            orphanedPages.Select(page =>
+                Path.GetRelativePath(rootPath, page.FileInfo.FullName).Replace(Path.DirectorySeparatorChar, '/')).ToArray());
+        output.WriteLine(JsonSerializer.Serialize(result, JsonContext.LintJsonResult));
     }
 
     // Paths are relative to the working directory, which is the repository root in a GitHub Actions job.
@@ -201,4 +201,25 @@ public class LintResultRenderer
 
     private static string Style(string value, string colorCode, bool color) =>
         color ? $"{colorCode}{value}{Reset}" : value;
+}
+
+internal sealed record LintJsonResult(
+    string Root,
+    int Errors,
+    int Warnings,
+    LintJsonDiagnostic[] Diagnostics,
+    string[] OrphanedPages);
+
+internal sealed record LintJsonDiagnostic(
+    string File,
+    string Path,
+    int Line,
+    string Severity,
+    string? Code,
+    string? Rule,
+    string Message);
+
+[JsonSerializable(typeof(LintJsonResult))]
+internal partial class LintJsonContext : JsonSerializerContext
+{
 }

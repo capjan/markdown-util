@@ -11,24 +11,20 @@ concurrency:
   cancel-in-progress: false
 
 jobs:
-  release:
-    name: Test, pack, publish, and create release
+  prepare-release:
+    name: Calculate release version
     if: github.ref == 'refs/heads/main'
     runs-on: ubuntu-latest
-    permissions:
-      contents: write
-      id-token: write
+    outputs:
+      latest_tag: ${{ steps.version.outputs.latest_tag }}
+      tag: ${{ steps.version.outputs.tag }}
+      package_version: ${{ steps.version.outputs.package_version }}
 
     steps:
       - name: Checkout
         uses: actions/checkout@v7
         with:
           fetch-depth: 0
-
-      - name: Setup .NET
-        uses: actions/setup-dotnet@v6
-        with:
-          dotnet-version: 10.0.x
 
       - name: Install git-cliff
         uses: taiki-e/install-action@v2
@@ -59,18 +55,102 @@ jobs:
           echo "Release tag: $release_tag"
           echo "Package version: $package_version"
 
+  build-native:
+    name: Build ${{ matrix.rid }}
+    needs: prepare-release
+    strategy:
+      matrix:
+        include:
+          - os: ubuntu-22.04
+            rid: linux-x64
+          - os: windows-latest
+            rid: win-x64
+          - os: macos-15-intel
+            rid: osx-x64
+          - os: macos-latest
+            rid: osx-arm64
+    runs-on: ${{ matrix.os }}
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v7
+
+      - name: Setup .NET
+        uses: actions/setup-dotnet@v6
+        with:
+          dotnet-version: 10.0.x
+
+      - name: Install Native AOT prerequisites on Linux
+        if: runner.os == 'Linux'
+        run: sudo apt-get update && sudo apt-get install --yes clang zlib1g-dev
+
+      - name: Publish Native AOT executable
+        shell: pwsh
+        env:
+          PACKAGE_VERSION: ${{ needs.prepare-release.outputs.package_version }}
+          RID: ${{ matrix.rid }}
+        run: dotnet publish Source/MarkdownUtil/MarkdownUtil.csproj --configuration Release --runtime $env:RID --self-contained true -p:PublishAot=true "-p:Version=$env:PACKAGE_VERSION" --output "$env:RUNNER_TEMP/mdu-publish"
+
+      - name: Archive Unix executable
+        if: runner.os != 'Windows'
+        shell: pwsh
+        env:
+          PACKAGE_VERSION: ${{ needs.prepare-release.outputs.package_version }}
+          RID: ${{ matrix.rid }}
+        run: tar -czf "$env:RUNNER_TEMP/mdu-$env:PACKAGE_VERSION-$env:RID.tar.gz" -C "$env:RUNNER_TEMP/mdu-publish" mdu
+
+      - name: Archive Windows executable
+        if: runner.os == 'Windows'
+        shell: pwsh
+        env:
+          PACKAGE_VERSION: ${{ needs.prepare-release.outputs.package_version }}
+          RID: ${{ matrix.rid }}
+        run: Compress-Archive -Path "$env:RUNNER_TEMP/mdu-publish/mdu.exe" -DestinationPath "$env:RUNNER_TEMP/mdu-$env:PACKAGE_VERSION-$env:RID.zip"
+
+      - name: Upload executable archive
+        uses: actions/upload-artifact@v4
+        with:
+          name: mdu-${{ matrix.rid }}
+          path: ${{ runner.temp }}/mdu-*
+          if-no-files-found: error
+
+  release:
+    name: Test, pack, publish, and create release
+    needs: [prepare-release, build-native]
+    if: github.ref == 'refs/heads/main'
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+      id-token: write
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v7
+        with:
+          fetch-depth: 0
+
+      - name: Setup .NET
+        uses: actions/setup-dotnet@v6
+        with:
+          dotnet-version: 10.0.x
+
+      - name: Install git-cliff
+        uses: taiki-e/install-action@v2
+        with:
+          tool: git-cliff@2.14.2
+
       - name: Test
         run: dotnet test MarkdownUtils.sln --configuration Release
 
       - name: Pack
         env:
-          PACKAGE_VERSION: ${{ steps.version.outputs.package_version }}
+          PACKAGE_VERSION: ${{ needs.prepare-release.outputs.package_version }}
         run: dotnet pack Source/MarkdownUtil/MarkdownUtil.csproj --configuration Release --output artifacts/packages -p:Version="$PACKAGE_VERSION"
 
       - name: Generate release notes
         env:
-          LATEST_TAG: ${{ steps.version.outputs.latest_tag }}
-          RELEASE_TAG: ${{ steps.version.outputs.tag }}
+          LATEST_TAG: ${{ needs.prepare-release.outputs.latest_tag }}
+          RELEASE_TAG: ${{ needs.prepare-release.outputs.tag }}
         run: git cliff --tag "$RELEASE_TAG" --strip all "$LATEST_TAG..HEAD" --output "$RUNNER_TEMP/release-notes.md"
 
       - name: Validate NuGet publisher
@@ -93,8 +173,15 @@ jobs:
           NUGET_API_KEY: ${{ steps.nuget-login.outputs.NUGET_API_KEY }}
         run: dotnet nuget push "artifacts/packages/*.nupkg" --api-key "$NUGET_API_KEY" --source https://api.nuget.org/v3/index.json --skip-duplicate
 
+      - name: Download native executable archives
+        uses: actions/download-artifact@v4
+        with:
+          pattern: mdu-*
+          path: artifacts/native
+          merge-multiple: true
+
       - name: Create GitHub release
         env:
           GH_TOKEN: ${{ github.token }}
-          RELEASE_TAG: ${{ steps.version.outputs.tag }}
-        run: gh release create "$RELEASE_TAG" --title "$RELEASE_TAG" --notes-file "$RUNNER_TEMP/release-notes.md"
+          RELEASE_TAG: ${{ needs.prepare-release.outputs.tag }}
+        run: gh release create "$RELEASE_TAG" --title "$RELEASE_TAG" --notes-file "$RUNNER_TEMP/release-notes.md" artifacts/native/*
