@@ -26,4 +26,4 @@ This introduction appears before the generated reference.
 
 Operations are grouped by their first tag. Each operation shows its method and path, parameters, request body, responses, content types, and examples. Schemas defined in the same specification appear in a separate section.
 
-The HTML uses MDU's normal page layout and stylesheet. It is static: it makes no API requests and does not include an interactive Swagger UI. References within the specification are resolved; external `$ref` files are not loaded.
+The generated reference gives each HTTP method a distinct label, highlights endpoint paths, and separates API groups and schemas. It follows the site's light or dark theme and is published as static HTML and CSS without making API requests. References within the specification are resolved; external `$ref` files are not loaded.

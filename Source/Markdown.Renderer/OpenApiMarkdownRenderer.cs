@@ -72,7 +72,7 @@ public static class OpenApiMarkdownRenderer
     {
         var output = new StringBuilder();
         var info = document.Info;
-        output.AppendLine("## API overview");
+        output.AppendLine("## API overview {.openapi-overview}");
         if (!string.IsNullOrWhiteSpace(info?.Title)) AppendParagraph(output, $"**{EscapeMarkdown(info.Title)}**");
         if (!string.IsNullOrWhiteSpace(info?.Version)) AppendParagraph(output, $"Version: {CodeSpan(info.Version)}");
         AppendMarkdown(output, info?.Description);
@@ -88,7 +88,7 @@ public static class OpenApiMarkdownRenderer
         foreach (var group in operations.GroupBy(operation => operation.Tag)
                      .OrderBy(group => TagOrder(tagOrder, group.Key)))
         {
-            output.AppendLine($"## {CodeSpan(group.Key)}");
+            output.AppendLine($"## {CodeSpan(group.Key)} {{.openapi-tag}}");
             AppendMarkdown(output, tags.GetValueOrDefault(group.Key));
             foreach (var operation in group)
                 AppendOperation(output, operation);
@@ -118,7 +118,7 @@ public static class OpenApiMarkdownRenderer
 
     private static void AppendOperation(StringBuilder output, Operation operation)
     {
-        output.AppendLine($"### {CodeSpan(operation.Method)} {CodeHtml(operation.Path)}");
+        output.AppendLine($"### {CodeSpan(operation.Method)} {CodeHtml(operation.Path)} {{.openapi-operation .openapi-method-{operation.Method.ToLowerInvariant()}}}");
         var summary = operation.Data.Summary;
         if (!string.IsNullOrWhiteSpace(summary)) AppendParagraph(output, $"**{EscapeMarkdown(summary)}**");
         var operationId = operation.Data.OperationId;
@@ -218,11 +218,11 @@ public static class OpenApiMarkdownRenderer
         var schemas = document.Components?.Schemas;
         if (schemas is null || schemas.Count == 0) return;
 
-        output.AppendLine("## Schemas");
+        output.AppendLine("## Schemas {.openapi-schemas}");
         foreach (var entry in schemas)
         {
             var schema = ResolveReference(entry.Value);
-            output.AppendLine($"### {CodeSpan(entry.Key)}");
+            output.AppendLine($"### {CodeSpan(entry.Key)} {{.openapi-schema}}");
             output.AppendLine($"Type: {CodeSpan(SchemaType(entry.Value))}");
             AppendMarkdown(output, schema.Description);
 
