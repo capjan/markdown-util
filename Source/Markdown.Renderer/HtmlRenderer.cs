@@ -26,6 +26,9 @@ public class HtmlRenderer
     private static readonly Regex OpenApiMediaTypeCodeRegex = new(
         @"^Media type\s*<code>(?<mediaType>[^<]+)</code>",
         RegexOptions.Compiled);
+    private static readonly Regex OpenApiTagEndpointRegex = new(
+        "<details class=\"openapi-endpoint (?<method>openapi-method-[a-z]+)\"",
+        RegexOptions.Compiled);
     private static readonly Regex OpenApiPermalinkRegex = new(
         @"<a\b[^>]*\bclass=""headerlink""[^>]*>.*?</a>",
         RegexOptions.Compiled | RegexOptions.Singleline);
@@ -548,8 +551,7 @@ public class HtmlRenderer
         var markerHeadings = HeadingRegex.Matches(renderedMarkdown)
             .Cast<Match>()
             .Where(match => HasClass(match, "openapi-operation") ||
-                            HasClass(match, "openapi-tag") ||
-                            HasClass(match, "openapi-schemas"))
+                            HasClass(match, "openapi-tag"))
             .ToArray();
         if (!markerHeadings.Any(match => HasClass(match, "openapi-operation"))) return renderedMarkdown;
 
@@ -797,7 +799,7 @@ public class HtmlRenderer
     {
         var groupHeadings = HeadingRegex.Matches(renderedMarkdown)
             .Cast<Match>()
-            .Where(match => HasClass(match, "openapi-tag") || HasClass(match, "openapi-schemas"))
+            .Where(match => HasClass(match, "openapi-tag"))
             .ToArray();
         if (!groupHeadings.Any(match => HasClass(match, "openapi-tag"))) return renderedMarkdown;
 
@@ -815,20 +817,63 @@ public class HtmlRenderer
                 ? groupHeadings[index + 1].Index
                 : renderedMarkdown.Length;
             var contentStart = heading.Index + heading.Length;
+            var groupContent = renderedMarkdown[contentStart..groupEnd];
+            var firstEndpoint = groupContent.IndexOf("<details class=\"openapi-endpoint ", StringComparison.Ordinal);
+            var descriptionMarkup = firstEndpoint < 0 ? groupContent : groupContent[..firstEndpoint];
+            var endpointContent = firstEndpoint < 0 ? string.Empty : groupContent[firstEndpoint..];
+            var description = WebUtility.HtmlDecode(Regex.Replace(descriptionMarkup, "<[^>]+>", " "));
+            description = Regex.Replace(description, @"\s+", " ").Trim();
             output.Append(renderedMarkdown, copiedUntil, heading.Index - copiedUntil);
             output.AppendLine("<details class=\"openapi-tag-group\">");
             output.Append("<summary id=\"")
                 .Append(HtmlEncoder.Default.Encode(id.Groups["id"].Value))
                 .AppendLine("\" class=\"openapi-tag\">");
-            output.Append(OpenApiPermalinkRegex.Replace(heading.Groups["content"].Value, string.Empty));
+            output.Append("<span class=\"openapi-tag-summary-main\"><span class=\"openapi-tag-title\">")
+                .Append(OpenApiPermalinkRegex.Replace(heading.Groups["content"].Value, string.Empty))
+                .Append("</span>");
+            AppendOpenApiTagMethodCounts(output, groupContent);
+            output.AppendLine("</span>");
+            if (description.Length > 0)
+                output.Append("<span class=\"openapi-tag-description\">")
+                    .Append(HtmlEncoder.Default.Encode(description))
+                    .AppendLine("</span>");
             output.AppendLine("</summary>");
-            output.Append(renderedMarkdown, contentStart, groupEnd - contentStart);
+            output.Append(endpointContent);
             output.AppendLine("</details>");
             copiedUntil = groupEnd;
         }
 
         output.Append(renderedMarkdown, copiedUntil, renderedMarkdown.Length - copiedUntil);
         return output.ToString();
+    }
+
+    private static void AppendOpenApiTagMethodCounts(StringBuilder output, string groupContent)
+    {
+        var counts = new Dictionary<string, int>(StringComparer.Ordinal);
+        foreach (Match match in OpenApiTagEndpointRegex.Matches(groupContent))
+        {
+            var method = match.Groups["method"].Value;
+            counts[method] = counts.GetValueOrDefault(method) + 1;
+        }
+
+        if (counts.Count == 0) return;
+        output.Append("<span class=\"openapi-tag-method-counts\">");
+        foreach (var (method, count) in counts)
+        {
+            var methodName = method["openapi-method-".Length..].ToUpperInvariant();
+            output.Append("<span class=\"openapi-tag-method-count ")
+                .Append(method)
+                .Append("\" title=\"")
+                .Append(methodName)
+                .Append("\" aria-label=\"")
+                .Append(count)
+                .Append(' ')
+                .Append(methodName)
+                .Append(count == 1 ? " endpoint\">" : " endpoints\">")
+                .Append(count)
+                .AppendLine("</span>");
+        }
+        output.AppendLine("</span>");
     }
 
     private static string GetOpenApiResponseStatusClass(string status)

@@ -97,7 +97,6 @@ public static class OpenApiMarkdownRenderer
                 AppendOperation(output, operation, document.Components?.Schemas);
         }
 
-        AppendSchemas(output, document);
         return output.ToString();
     }
 
@@ -604,36 +603,6 @@ public static class OpenApiMarkdownRenderer
         output.AppendLine(code);
         output.AppendLine(fence);
         output.AppendLine();
-    }
-
-    private static void AppendSchemas(StringBuilder output, OpenApiDocument document)
-    {
-        var schemas = document.Components?.Schemas;
-        if (schemas is null || schemas.Count == 0) return;
-
-        output.AppendLine("## Schemas {.openapi-schemas}");
-        foreach (var entry in schemas)
-        {
-            var schema = ResolveReference(entry.Value);
-            output.AppendLine($"### {CodeSpan(entry.Key)} {{.openapi-schema}}");
-            output.AppendLine($"Type: {CodeSpan(SchemaType(entry.Value))}");
-            AppendMarkdown(output, schema.Description);
-
-            var properties = schema.Properties ?? new Dictionary<string, IOpenApiSchema>();
-            if (properties.Count == 0) continue;
-            var required = schema.Required ?? new HashSet<string>();
-            output.AppendLine("| Property | Type | Description |");
-            output.AppendLine("| --- | --- | --- |");
-            foreach (var property in properties)
-            {
-                var propertySchema = ResolveReference(property.Value);
-                var propertyName = EscapeTableCell(property.Key) + (required.Contains(property.Key)
-                    ? "<span class=\"openapi-required-marker\" aria-label=\"Required\">*</span>"
-                    : string.Empty);
-                output.AppendLine($"| {propertyName} | {EscapeTableCell(SchemaType(property.Value))} | {EscapeTableCell(propertySchema.Description)} |");
-            }
-            output.AppendLine();
-        }
     }
 
     private static string SchemaType(IOpenApiSchema? schema)

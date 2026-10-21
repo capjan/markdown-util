@@ -2524,20 +2524,11 @@ th, td {
     color: var(--text-primary);
 }
 
-.markdown-content h2.openapi-schemas {
-    padding-bottom: 0.55rem;
-    border-bottom: 1px solid var(--border-subtle);
-}
-
 .markdown-content details.openapi-tag-group {
     margin-top: 3rem;
     margin-bottom: 1.5rem;
     border: 1px solid var(--border-subtle);
     border-radius: 0.7rem;
-}
-
-.markdown-content h2.openapi-schemas {
-    margin-top: 3.5rem;
 }
 
 .markdown-content details.openapi-tag-group > summary.openapi-tag {
@@ -2546,6 +2537,62 @@ th, td {
     font-size: 1.25rem;
     font-weight: 700;
     cursor: pointer;
+}
+
+.markdown-content details.openapi-tag-group > summary.openapi-tag .openapi-tag-summary-main {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 1rem;
+}
+
+.markdown-content .openapi-tag-title {
+    min-width: 0;
+}
+
+.markdown-content .openapi-tag-method-counts {
+    display: flex;
+    flex: 0 0 auto;
+    flex-wrap: wrap;
+    gap: 0.35rem;
+    margin-left: auto;
+}
+
+.markdown-content .openapi-tag-method-count {
+    --openapi-method-color: #5a6472;
+
+    display: inline-flex;
+    min-width: 1.65rem;
+    align-items: center;
+    justify-content: center;
+    padding: 0.24rem 0.42rem;
+    border: 1px solid color-mix(in srgb, var(--openapi-method-color) 35%, var(--border-subtle));
+    border-radius: 0.35rem;
+    background: color-mix(in srgb, var(--openapi-method-color) 12%, var(--page-background));
+    color: var(--openapi-method-color);
+    font-size: 0.76rem;
+    font-variant-numeric: tabular-nums;
+    font-weight: 750;
+    line-height: 1;
+}
+
+.markdown-content .openapi-tag-method-count.openapi-method-get { --openapi-method-color: #096b45; }
+.markdown-content .openapi-tag-method-count.openapi-method-post { --openapi-method-color: #075e9c; }
+.markdown-content .openapi-tag-method-count.openapi-method-put { --openapi-method-color: #895500; }
+.markdown-content .openapi-tag-method-count.openapi-method-patch,
+.markdown-content .openapi-tag-method-count.openapi-method-query { --openapi-method-color: #7040a0; }
+.markdown-content .openapi-tag-method-count.openapi-method-delete { --openapi-method-color: #b4232e; }
+.markdown-content .openapi-tag-method-count.openapi-method-options { --openapi-method-color: #087c83; }
+.markdown-content .openapi-tag-method-count.openapi-method-head,
+.markdown-content .openapi-tag-method-count.openapi-method-trace { --openapi-method-color: #5a6472; }
+
+.markdown-content details.openapi-tag-group > summary.openapi-tag .openapi-tag-description {
+    display: block;
+    margin-top: 0.25rem;
+    color: var(--text-secondary);
+    font-size: 0.82rem;
+    font-weight: 400;
+    line-height: 1.45;
 }
 
 .markdown-content details.openapi-tag-group > summary.openapi-tag::marker {
@@ -2833,17 +2880,6 @@ th, td {
     :root[data-theme="auto"] .markdown-content .openapi-response-select option.openapi-status-5xx { color: #ff8585; }
 }
 
-.markdown-content h3.openapi-schema {
-    padding-bottom: 0.4rem;
-    border-bottom: 1px solid var(--border-subtle);
-}
-
-.markdown-content h3.openapi-schema code {
-    padding: 0;
-    background: transparent;
-    color: var(--text-primary);
-}
-
 :root[data-theme="dark"] .markdown-content details.openapi-method-get { --openapi-method-color: #57d49a; }
 :root[data-theme="dark"] .markdown-content details.openapi-method-post { --openapi-method-color: #73c0ff; }
 :root[data-theme="dark"] .markdown-content details.openapi-method-put { --openapi-method-color: #f2bd55; }
@@ -2853,6 +2889,15 @@ th, td {
 :root[data-theme="dark"] .markdown-content details.openapi-method-options { --openapi-method-color: #65d4d9; }
 :root[data-theme="dark"] .markdown-content details.openapi-method-head,
 :root[data-theme="dark"] .markdown-content details.openapi-method-trace { --openapi-method-color: #bec5d0; }
+:root[data-theme="dark"] .markdown-content .openapi-tag-method-count.openapi-method-get { --openapi-method-color: #57d49a; }
+:root[data-theme="dark"] .markdown-content .openapi-tag-method-count.openapi-method-post { --openapi-method-color: #73c0ff; }
+:root[data-theme="dark"] .markdown-content .openapi-tag-method-count.openapi-method-put { --openapi-method-color: #f2bd55; }
+:root[data-theme="dark"] .markdown-content .openapi-tag-method-count.openapi-method-patch,
+:root[data-theme="dark"] .markdown-content .openapi-tag-method-count.openapi-method-query { --openapi-method-color: #d0a0ff; }
+:root[data-theme="dark"] .markdown-content .openapi-tag-method-count.openapi-method-delete { --openapi-method-color: #ff8585; }
+:root[data-theme="dark"] .markdown-content .openapi-tag-method-count.openapi-method-options { --openapi-method-color: #65d4d9; }
+:root[data-theme="dark"] .markdown-content .openapi-tag-method-count.openapi-method-head,
+:root[data-theme="dark"] .markdown-content .openapi-tag-method-count.openapi-method-trace { --openapi-method-color: #bec5d0; }
 
 @media (prefers-color-scheme: dark) {
     :root[data-theme="auto"] .markdown-content details.openapi-method-get { --openapi-method-color: #57d49a; }
@@ -2864,6 +2909,15 @@ th, td {
     :root[data-theme="auto"] .markdown-content details.openapi-method-options { --openapi-method-color: #65d4d9; }
     :root[data-theme="auto"] .markdown-content details.openapi-method-head,
     :root[data-theme="auto"] .markdown-content details.openapi-method-trace { --openapi-method-color: #bec5d0; }
+    :root[data-theme="auto"] .markdown-content .openapi-tag-method-count.openapi-method-get { --openapi-method-color: #57d49a; }
+    :root[data-theme="auto"] .markdown-content .openapi-tag-method-count.openapi-method-post { --openapi-method-color: #73c0ff; }
+    :root[data-theme="auto"] .markdown-content .openapi-tag-method-count.openapi-method-put { --openapi-method-color: #f2bd55; }
+    :root[data-theme="auto"] .markdown-content .openapi-tag-method-count.openapi-method-patch,
+    :root[data-theme="auto"] .markdown-content .openapi-tag-method-count.openapi-method-query { --openapi-method-color: #d0a0ff; }
+    :root[data-theme="auto"] .markdown-content .openapi-tag-method-count.openapi-method-delete { --openapi-method-color: #ff8585; }
+    :root[data-theme="auto"] .markdown-content .openapi-tag-method-count.openapi-method-options { --openapi-method-color: #65d4d9; }
+    :root[data-theme="auto"] .markdown-content .openapi-tag-method-count.openapi-method-head,
+    :root[data-theme="auto"] .markdown-content .openapi-tag-method-count.openapi-method-trace { --openapi-method-color: #bec5d0; }
 }
 
 .footnotes > ol {

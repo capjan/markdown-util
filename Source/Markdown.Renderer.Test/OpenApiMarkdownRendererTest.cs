@@ -12,6 +12,7 @@ public class OpenApiMarkdownRendererTest
             {
               "openapi": "3.1.0",
               "info": { "title": "Orders", "version": "1" },
+              "tags": [{ "name": "Orders", "description": "Order operations" }],
               "paths": {
                 "/orders/{id}": {
                   "get": {
@@ -45,6 +46,9 @@ public class OpenApiMarkdownRendererTest
         Assert.True(operationHeading.Success, html);
         Assert.Contains("class=\"openapi-operation\"", operationHeading.Groups["attributes"].Value);
         Assert.Contains("<details class=\"openapi-endpoint openapi-method-get\">", html);
+        Assert.Contains("<span class=\"openapi-tag-title\"><code>Orders</code></span>", html);
+        Assert.Contains("<span class=\"openapi-tag-description\">Order operations</span>", html);
+        Assert.Contains("class=\"openapi-tag-method-count openapi-method-get\" title=\"GET\" aria-label=\"1 GET endpoint\">1", html);
         var operationId = System.Text.RegularExpressions.Regex.Match(
             operationHeading.Groups["attributes"].Value,
             "id=\"(?<id>[^\"]+)\"").Groups["id"].Value;
@@ -82,6 +86,7 @@ public class OpenApiMarkdownRendererTest
             html.IndexOf("role=\"tablist\"", StringComparison.Ordinal), html);
         Assert.Contains("&quot;type&quot;", html);
         Assert.Contains("&quot;properties&quot;", html);
+        Assert.DoesNotContain("class=\"openapi-schema\"", html);
     }
 
     [Fact]
@@ -148,13 +153,14 @@ public class OpenApiMarkdownRendererTest
             Assert.Contains("| id | path | Yes | string |", firstRender);
             Assert.Contains("#### Request body", firstRender);
             Assert.Contains("##### Response `201`", firstRender);
-            Assert.Contains("### `Order`", firstRender);
+            Assert.Contains("**`Order`**", firstRender);
             Assert.Contains("| id<span class=\"openapi-required-marker\" aria-label=\"Required\">*</span> | string | Identifier |", firstRender);
+            Assert.DoesNotContain("## Schemas", firstRender);
 
             File.WriteAllText(specPath, ReferencedSpecification("UpdatedOrder"));
             var secondRender = OpenApiMarkdownRenderer.AppendFromFile("# Orders", markdownPath, "orders.json");
-            Assert.Contains("### `UpdatedOrder`", secondRender);
-            Assert.DoesNotContain("### `Order`", secondRender);
+            Assert.Contains("**`UpdatedOrder`**", secondRender);
+            Assert.DoesNotContain("**`Order`**", secondRender);
         }
         finally
         {
