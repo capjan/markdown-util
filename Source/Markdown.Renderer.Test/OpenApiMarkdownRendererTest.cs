@@ -30,7 +30,7 @@ public class OpenApiMarkdownRendererTest
 
         var operationHeading = System.Text.RegularExpressions.Regex.Match(
             html,
-            "<summary(?<attributes>[^>]*)><code>GET</code> <code>/orders/\\{id\\}</code>");
+            "<summary(?<attributes>[^>]*)>\\s*<code>GET</code> <code>/orders/\\{id\\}</code>");
         Assert.True(operationHeading.Success, html);
         Assert.Contains("class=\"openapi-operation\"", operationHeading.Groups["attributes"].Value);
         Assert.Contains("<details class=\"openapi-endpoint openapi-method-get\">", html);
