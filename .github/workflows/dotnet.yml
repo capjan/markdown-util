@@ -38,7 +38,7 @@ jobs:
       run: sudo apt-get update && sudo apt-get install --yes clang zlib1g-dev
 
     - name: Publish Native AOT executable
-      run: dotnet publish Source/MarkdownUtil/MarkdownUtil.csproj --configuration Release --runtime linux-x64 --self-contained true -p:PublishAot=true --output "$RUNNER_TEMP/mdu-publish"
+      run: dotnet publish Source/MarkdownUtil/MarkdownUtil.csproj --configuration Release --runtime linux-x64 --self-contained true -p:PublishAot=true -warnaserror:IL2026,IL2104,IL3050 --output "$RUNNER_TEMP/mdu-publish"
 
     - name: Smoke test native commands
       run: |
