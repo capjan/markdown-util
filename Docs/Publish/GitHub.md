@@ -4,10 +4,10 @@ navigation.order: 1
 
 # GitHub
 
-Use the [MarkdownUtil GitHub Pages Action](https://github.com/capjan/markdown-util-action) to render and publish your documentation.
+The [MarkdownUtil GitHub Pages Action](https://github.com/capjan/markdown-util-action) renders your documentation and publishes it to GitHub Pages.
 
-1. In your repository settings, open **Pages** and set **Build and deployment → Source** to **GitHub Actions**.
-2. Add `.github/workflows/publish.yml`:
+1. In your repository, open **Settings → Pages** and set **Build and deployment → Source** to **GitHub Actions**.
+2. Add this workflow. It runs whenever files under `docs/` change on `main`:
 
 ```yaml title=".github/workflows/publish.yml"
 name: Publish docs
@@ -31,7 +31,5 @@ jobs:
     steps:
       - uses: capjan/markdown-util-action@v1
 ```
-
-The workflow runs only when files under `docs/` change.
 
 [Action inputs and details](https://github.com/capjan/markdown-util-action#readme)

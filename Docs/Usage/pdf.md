@@ -4,13 +4,20 @@ navigation.order: 45
 
 # pdf
 
-`mdu pdf` combines the Markdown files under one source folder into a single local PDF. It uses the same Markdown pipeline as `mdu render`, including MDU's code highlighting, icons, keyboard keys, math, alerts, and supported diagrams. PDF output is generated directly in MDU without a PDF package or network service.
+`mdu pdf` combines the Markdown pages of a folder into one PDF file. It uses the same Markdown pipeline as `mdu render`, so code highlighting, icons, keyboard keys, math, callouts, and supported diagrams appear in the PDF too. MDU writes the file itself, without a PDF library, browser, or network service.
 
-```text
-mdu pdf [PATH [OUTPATH]]
+## Usage
+
+```bash
+mdu pdf [PATH [OUTPATH]] [options]
 ```
 
-`PATH` can be a documentation folder or one Markdown file. It defaults to the only `./docs` or `./Docs` folder in the current directory. `OUTPATH` is a PDF file; it defaults to `./documentation.pdf` for a folder or to a PDF named after the selected Markdown file.
+| Argument | Meaning | Default |
+| --- | --- | --- |
+| `PATH` | A documentation folder or one Markdown file | `./docs` |
+| `OUTPATH` | The PDF file to write | `./documentation.pdf`, or the Markdown file's name with `.pdf` |
+
+See [common options](README.md#common-options) for `--pattern` and `--hidden`.
 
 ```bash
 mdu pdf
@@ -18,7 +25,14 @@ mdu pdf ./ProjectDocs ./build/manual.pdf
 mdu pdf ./ProjectDocs/Features/Math.md ./build/math.pdf
 ```
 
-The renderer creates A4 pages in the order used by the documentation navigation. A folder creates a title page and a linked table of contents. A single Markdown file creates a PDF of that page without the front matter pages. Set `pdf.visible: false` in a file's front matter to leave it out of a folder export and its table of contents:
+## Layout
+
+- Pages are A4 and follow the order of the documentation navigation.
+- A folder export starts with a title page and a linked table of contents; a single file has neither.
+- Headings stay with the start of the following block when a page break is needed.
+- Links between included pages, links on diagram nodes, and external links stay clickable.
+
+To leave a page out of a folder export and its table of contents, set `pdf.visible` in its front matter:
 
 ```yaml
 ---
@@ -26,8 +40,13 @@ pdf.visible: false
 ---
 ```
 
-The nested form `pdf: { visible: false }` is also supported.
+The nested form `pdf: { visible: false }` works as well.
 
-Headings stay with the start of the following block when a page break is needed. Markdown links and links on supported diagram nodes remain clickable when their targets are included in the PDF; external links remain clickable too. It does not download web content: images are represented by their alt text, remote image URLs remain clickable, and remote media is represented by its link. Emoji shortcodes are written as shortcodes because the built-in PDF fonts do not contain emoji glyphs. The interactive icon search is available in HTML output only.
+## Limitations
 
-Use `--pattern` to choose another Markdown filename pattern and `--hidden` to include hidden files and folders. Run `mdu pdf --help` for all options.
+The PDF contains only what MDU can draw without downloading anything:
+
+- Images appear as their alt text; remote image URLs stay clickable.
+- Embedded videos appear as their link.
+- Emoji shortcodes stay text, because the built-in PDF fonts have no emoji glyphs.
+- The interactive icon search and the animated hero exist only in HTML; the hero's title, text, and button labels appear as plain text.

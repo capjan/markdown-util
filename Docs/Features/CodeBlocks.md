@@ -1,8 +1,6 @@
 # Code Blocks
 
-## Overview
-
-Fenced code blocks display code or commands without interpreting their contents as Markdown. Add a language identifier after the opening fence to enable syntax highlighting.
+Fenced code blocks show code or commands exactly as written. A language identifier after the opening fence turns on syntax highlighting, and every block gets a copy button.
 
 ## Syntax
 
@@ -31,7 +29,8 @@ MDU renders the titled code block with a header and syntax highlighting:
 console.log('Hello World!')
 ```
 
-Hover over a code block or focus it with the keyboard to show the copy button. It copies the source without the title.
+> [!TIP]
+> Hover over a code block or focus it with the keyboard to show the copy button. It copies the code without the title.
 
 If you omit the language identifier or use an unsupported one, the code is rendered without syntax highlighting:
 

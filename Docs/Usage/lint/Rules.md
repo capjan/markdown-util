@@ -60,7 +60,7 @@ This warning appears when a section directory's `README.md` is its only Markdown
 
 ## MkDocs Material compatibility
 
-Rules `MDU007`–`MDU014` identify MkDocs-specific syntax and structure that needs migration. Run `mdu fix` to convert the supported constructs. An `MDU010` error means a Mermaid diagram uses syntax not currently implemented by MDU; update the renderer before migrating that source.
+Rules `MDU007`–`MDU014` identify MkDocs-specific syntax and structure that needs migration. Run [`mdu fix`](../fix.md#migrating-mkdocs-material-markdown) to convert the supported constructs. An `MDU010` error means a Mermaid diagram uses [syntax that MDU cannot render](../../Features/Diagrams.md#unsupported-syntax); simplify the diagram, or it stays a code block in the rendered page.
 
 ## Navigation front matter
 

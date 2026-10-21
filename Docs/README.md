@@ -11,28 +11,32 @@ actions:
     link: ./Features/README.md
 ```
 
-Use these guides to install MDU, preview and publish a site, and write Markdown that renders the way you expect.
+MDU is a .NET tool that turns a folder of ordinary Markdown files into a documentation site. Your pages stay plain Markdown that reads well on GitHub; MDU adds navigation, search, diagrams, and a polished theme when it renders them.
 
 ## Get started
 
-- [Setup](Setup.md) - Install the .NET tool globally or in a repository.
-- [Usage](./Usage/README.md) - Run the commands and preview a documentation site.
-- [Publish](./Publish/README.md) - Publish the generated static site.
+- [Setup](Setup.md) - Install the .NET tool globally or in a repository
+- [Usage](./Usage/README.md) - Run the commands and preview your site
+- [Publish](./Publish/README.md) - Host the generated site on GitHub, GitLab, or any web server
 
-## Look up a command
+## Commands
 
-- [tree](./Usage/tree.md) - Inspect the page structure.
-- [lint](./Usage/lint/README.md) - Find documentation and link issues.
-- [fix](./Usage/fix.md) - Apply the supported automatic fix.
-- [render](./Usage/render.md) - Generate the static site.
-- [pdf](./Usage/pdf.md) - Combine Markdown files into one local PDF.
-- [serve](./Usage/serve.md) - Preview the site with live reload.
+| Command | Does |
+| --- | --- |
+| [mdu tree](./Usage/tree.md) | Shows the page structure |
+| [mdu lint](./Usage/lint/README.md) | Finds broken links and structure problems |
+| [mdu fix](./Usage/fix.md) | Migrates MkDocs syntax and applies automatic fixes |
+| [mdu serve](./Usage/serve.md) | Previews the site with live reload |
+| [mdu render](./Usage/render.md) | Generates the static site |
+| [mdu pdf](./Usage/pdf.md) | Combines all pages into one PDF |
+| [mdu page](./Usage/page.md) | Moves pages and updates every link to them |
 
 ## Write and organize content
 
-- [Features](./Features/README.md) - Browse supported Markdown syntax and rendering features.
+- [Features](./Features/README.md) - Callouts, diagrams, math, icons, keyboard keys, and more
+- [Navigation](./Features/Navigation.md) - Order pages, add top tabs, and hide entries
 
 ## About MDU
 
-- [Architecture](./Architecture/README.md) - Learn how MDU renders a site.
-- [Other tools](OtherTools.md) - Compare a few documentation site generators by their typical use case.
+- [Architecture](./Architecture/README.md) - How MDU reads, checks, and renders a documentation folder
+- [Other tools](OtherTools.md) - Documentation site generators worth knowing

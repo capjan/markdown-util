@@ -4,9 +4,9 @@ navigation.order: 6
 
 # page
 
-`mdu page` works with the pages of a documentation folder as a whole. `page move` moves or renames a page or a folder and updates every link to it, and `page links` shows which pages link to a page, image, or other file.
+`mdu page` works on the documentation folder as a whole: `page move` moves or renames a page or folder and updates every link to it, and `page links` shows which pages link to a file.
 
-Both commands work in the [default documentation folder](README.md#paths-and-file-search), `./docs` or `./Docs`. Choose another folder with `--root`. Links in pages outside that folder are not updated.
+Both commands work in the [default documentation folder](README.md#paths-and-file-search); choose another one with `--root`. Links in pages outside that folder are not updated.
 
 ## Move pages and folders
 
@@ -35,12 +35,20 @@ Updated 5 links in 3 pages:
 Run 'mdu lint' to check the new page structure.
 ```
 
-Add `--dry-run` to see the same report without changing any file. MDU refuses a move when the target already exists, lies outside the documentation folder, is inside the moved folder itself, or when the source or target path goes through a symbolic link. Pages reached through symbolic links are never rewritten. A folder moves together with its symbolic links; MDU refuses the move when a link inside it would point to a different file afterward, for example a relative `../Shared` in a folder that moves one level deeper, or an absolute link to a file inside the moved folder. Renaming a folder in place keeps relative links working.
+Add `--dry-run` to see the same report without changing any file.
+
+MDU refuses a move when:
+
+- the target already exists, lies outside the documentation folder, or is inside the moved folder itself;
+- the source or target path goes through a symbolic link;
+- a symbolic link inside a moved folder would point to a different file afterward, for example a relative `../Shared` in a folder that moves one level deeper, or an absolute link to a file inside the moved folder.
+
+A folder moves together with its symbolic links, and renaming a folder in place keeps their relative targets working. Pages reached through symbolic links are never rewritten.
 
 > [!TIP]
 > A new place can change the navigation: a folder needs a `README.md` page, and the [title of a section page](lint/Rule2.md) should match its folder name. Run `mdu lint` after a move.
 
-Git recognizes moved pages as renames, so `git log --follow` still shows the history of a page. Commit the moved files and the pages with updated links together.
+Git recognizes moved pages as renames, so `git log --follow` still shows a page's history. Commit the moved files together with the pages whose links changed.
 
 ## Find links to a file
 
@@ -63,6 +71,6 @@ README.md:7: [setup]: ./Setup.md
 
 | Option | Commands | Effect |
 | --- | --- | --- |
-| `--root <PATH>` | `move`, `links` | Documentation folder whose pages are updated or searched. Default: `./docs` or `./Docs`. |
+| `--root <PATH>` | `move`, `links` | Documentation folder whose pages are updated or searched. Default: `./docs`. |
 | `--dry-run` | `move` | Show what would change without changing any file. |
 | `--hidden` | `move`, `links` | Include hidden files and folders. Default: on. |

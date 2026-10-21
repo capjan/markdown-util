@@ -5,20 +5,26 @@ navigation.placement: top
 
 # Features
 
-## Main Features
+Everything on these pages is written in ordinary Markdown. Each page shows the source and the rendered result side by side, so you can copy what you need.
 
-- [Code Blocks](CodeBlocks.md) - Displays fenced code blocks with syntax highlighting
-- [Formatting](Formatting.md) - Shows common Markdown formatting supported by Markdig
-- [Footnotes](Footnotes.md) - Uses labeled references and definitions to create automatically numbered notes with hover previews
-- [Navigation](Navigation.md) - Describes top navigation tabs, the sidebar, and how to control their order
-- [Tables](Tables.md) - Examples of rendered Markdown tables
-- [Diagrams](Diagrams.md) - Renders Mermaid flowcharts, sequence and class diagrams, PlantUML component diagrams, and context diagrams to static SVG that follows the light and dark theme
-- [Callouts](Callouts.md) - Highlights notes, tips, and warnings with GitHub-compatible alert syntax
-- [Keyboard Keys](./Keyboard-Keys/README.md) - Shows keyboard shortcuts such as `++cmd+s++` as keycaps with their usual symbols
-- [Math](Math.md) - Renders GitHub-compatible math syntax as static SVG
-- [Media Links](MediaLinks.md) - Embeds standalone YouTube and Vimeo links as video players
-- [Icons and Emojis](Icons-and-Emojis.md) - Adds icons, colored logos, and GitHub-compatible emoji shortcodes, with a search that copies them to the clipboard
-- [Hero Banner](Hero.md) - Opens a landing page with an animated WebGL beach scene, configured with YAML in a `hero` code block
-- [Images](Images.md) - Renders Markdown images, copies linked local image files including WebP, and provides a dependency-free lightbox
-- Breadcrumb navigation is generated from the Markdown file structure during rendering; source files remain unchanged. Pages whose trail would only name the page itself, such as the landing page, show no breadcrumb.
+## Write
 
+- [Formatting](Formatting.md) - Headings, emphasis, lists, links, and collapsible sections
+- [Code Blocks](CodeBlocks.md) - Syntax highlighting, titles, and copy buttons
+- [Tables](Tables.md) - Column alignment and formatting inside cells
+- [Callouts](Callouts.md) - Notes, tips, and warnings with GitHub's alert syntax
+- [Footnotes](Footnotes.md) - Numbered notes with hover previews
+- [Keyboard Keys](./Keyboard-Keys/README.md) - Shortcuts such as ++cmd+s++ drawn as keycaps
+
+## Illustrate
+
+- [Diagrams](Diagrams.md) - Mermaid, PlantUML, and context diagrams as static SVG
+- [Math](Math.md) - GitHub-compatible formulas as static SVG
+- [Icons and Emojis](Icons-and-Emojis.md) - Thousands of icons, colored logos, and emoji shortcodes
+- [Images](Images.md) - Local and remote images with a lightbox
+- [Media Links](MediaLinks.md) - YouTube and Vimeo players that load only with consent
+- [Hero Banner](Hero.md) - An animated beach scene for landing pages
+
+## Organize
+
+- [Navigation](Navigation.md) - Sidebar, top tabs, breadcrumbs, ordering, and the page footer

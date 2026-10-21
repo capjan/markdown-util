@@ -4,33 +4,31 @@ navigation.order: 5
 
 # serve
 
-`mdu serve` renders the Markdown site, starts a local preview server, and watches the source folder for changes. Markdown pages and linked local assets are updated as you work. By default, the command opens the preview in a browser. Press `Ctrl+C` to stop it.
+`mdu serve` renders the site, starts a local preview server, and opens it in your browser. While it runs, it watches the documentation folder: when you save a page or a linked image, the affected pages are rendered again and the browser reloads them. Press ++ctrl+c++ to stop.
 
 ## Usage
 
 ```bash
-mdu serve [PATH [OUTPATH]]
+mdu serve [PATH [OUTPATH]] [options]
 ```
 
-See [Paths and file search](README.md#paths-and-file-search) for the default source and output paths, and [common options](README.md#common-options) for `--pattern` and `--hidden`. Run `mdu serve --help` for the current command help.
+See [Paths and file search](README.md#paths-and-file-search) for the default folders and [common options](README.md#common-options) for `--pattern` and `--hidden`.
 
 | Option | Effect |
 | --- | --- |
-| `--port <port>` | Choose the local preview server port. Default: `4173`. |
+| `--port <port>` | Port of the preview server. Default: `4173`. |
 | `--no-browser` | Start the server without opening a browser. |
-| `--editPageRoot <editPageRoot>` | Add an edit icon beside the first level-one heading, or a footer link when there is no level-one heading, and a GitHub repository button in the top bar. |
+| `--editPageRoot <url>` | Add edit links and a repository button, as with [`mdu render`](render.md). |
 
 ## Examples
-
-Start the default preview, or serve a specific documentation folder on another port:
 
 ```bash
 mdu serve
 mdu serve ./ProjectDocs ./site --port 8080
-```
-
-Run the preview without opening a browser:
-
-```bash
 mdu serve --no-browser
 ```
+
+> [!NOTE]
+> The output folder must differ from the documentation folder and must not contain it. Use `mdu render` to create the site you publish; `serve` is meant for local preview.
+
+[How live reload works](../Architecture/Pipeline.md#live-preview) describes what `serve` renders again after a change.

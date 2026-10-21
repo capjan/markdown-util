@@ -1,8 +1,6 @@
 # Callouts
 
-## Overview
-
-Callouts, also called admonitions or alerts, highlight information that readers should not miss. MDU uses the same syntax as [GitHub alerts](https://docs.github.com/en/get-started/writing-on-github/getting-started-with-writing-and-formatting-syntax#alerts), so your files look right on GitHub and in the rendered site.
+Callouts, also called admonitions or alerts, highlight information that readers should not miss. MDU uses the syntax of [GitHub alerts](https://docs.github.com/en/get-started/writing-on-github/getting-started-with-writing-and-formatting-syntax#alerts), so your files look right on GitHub and in the rendered site.
 
 ## Syntax
 
@@ -34,7 +32,7 @@ MDU supports all five GitHub alert types:
 
 ## Examples
 
-The examples below are rendered from the Markdown above. Use the theme switch in the header to see them in light and dark mode.
+This is the Markdown above, rendered. Switch the theme in the header to see the light and dark colors.
 
 > [!NOTE]
 > Useful `information` that users should know, even when skimming content.

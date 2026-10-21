@@ -1,12 +1,10 @@
 # Tables
 
-## Examples
+MDU renders GitHub-style pipe tables. Wide tables scroll horizontally on small screens instead of breaking the layout.
 
-These examples show basic tables, column alignment, and Markdown formatting inside table cells.
+## Basic table
 
-### Basic table
-
-**Markdown source:**
+Separate columns with `|` and the header from the body with a row of dashes:
 
 ```markdown title="Markdown"
 | Command      | Purpose                    | Output        |
@@ -16,17 +14,15 @@ These examples show basic tables, column alignment, and Markdown formatting insi
 | `mdu render` | Build static documentation | HTML files    |
 ```
 
-**Rendered result:**
-
 | Command      | Purpose                    | Output        |
 | ------------ | -------------------------- | ------------- |
 | `mdu lint`   | Check Markdown files       | Lint results  |
 | `mdu serve`  | Preview documentation      | Local website |
 | `mdu render` | Build static documentation | HTML files    |
 
-### Column alignment
+## Column alignment
 
-**Markdown source:**
+Colons in the separator row align a column left, center, or right:
 
 ```markdown title="Markdown"
 | Left aligned | Center aligned | Right aligned |
@@ -35,29 +31,29 @@ These examples show basic tables, column alignment, and Markdown formatting insi
 | Short text   | Centered text  | 123.45        |
 ```
 
-**Rendered result:**
-
 | Left aligned | Center aligned | Right aligned |
 | :----------- | :------------: | ------------: |
 | Markdown     | Markdown       | Markdown      |
 | Short text   | Centered text  | 123.45        |
 
-### Formatting inside cells
+## Formatting inside cells
 
-**Markdown source:**
+Cells can contain inline Markdown such as emphasis, code, links, icons, and keyboard keys:
 
 ```markdown title="Markdown"
-| Feature  | Example                      |
-| -------- | ---------------------------- |
-| Emphasis | **Important** and *helpful*  |
-| Code     | `mdu render`                 |
-| Link     | [GitHub](https://github.com) |
+| Feature  | Example                          |
+| -------- | -------------------------------- |
+| Emphasis | **Important** and *helpful*      |
+| Code     | `mdu render`                     |
+| Link     | [GitHub](https://github.com)     |
+| Icon     | :material-check-circle: Done     |
+| Keys     | ++ctrl+c++                       |
 ```
 
-**Rendered result:**
-
-| Feature  | Example                      |
-| -------- | ---------------------------- |
-| Emphasis | **Important** and *helpful*  |
-| Code     | `mdu render`                 |
-| Link     | [GitHub](https://github.com) |
+| Feature  | Example                          |
+| -------- | -------------------------------- |
+| Emphasis | **Important** and *helpful*      |
+| Code     | `mdu render`                     |
+| Link     | [GitHub](https://github.com)     |
+| Icon     | :material-check-circle: Done     |
+| Keys     | ++ctrl+c++                       |

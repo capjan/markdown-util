@@ -2,7 +2,7 @@
 
 MDU turns shortcodes such as `:rocket:` or `:material-account-circle:` into emojis and icons while it renders your Markdown. Seven open source icon sets and GitHub-compatible emoji shortcodes are built in. You do not need to configure anything, and the rendered pages load nothing from a CDN.
 
-:rocket: :tada: :white_check_mark: :material-account-circle: :fontawesome-brands-github: :octicons-heart-fill-24: :simple-dotnet: :fontawesome-solid-terminal: :dashboard-home-assistant: :dashboard-github:
+:rocket: :material-account-circle: :dashboard-github:
 
 ## Search
 
@@ -47,37 +47,39 @@ MDU writes the Unicode character into the page, so both ways produce the same re
 Icons use the name of their icon set as a prefix, followed by the icon name. The prefixes are the same as in [Material for MkDocs](https://squidfunk.github.io/mkdocs-material/reference/icons-emojis/), so existing documentation keeps working.
 
 ```markdown title="Markdown"
-Sign in with :material-account-circle: or :fontawesome-brands-github: GitHub.
+The repository is on :fontawesome-brands-github: GitHub.
 ```
 
-Sign in with :material-account-circle: or :fontawesome-brands-github: GitHub.
+The repository is on :fontawesome-brands-github: GitHub.
 
 | Icon set | Prefix | Example |
 |---|---|---|
-| :material-account-circle: [Material Design Icons](https://pictogrammers.com/library/mdi/) | `material-` | `:material-account-circle:` |
-| :fontawesome-brands-github: [Font Awesome Free](https://fontawesome.com/search?ic=free) Brands | `fontawesome-brands-` | `:fontawesome-brands-github:` |
-| :fontawesome-regular-face-laugh-wink: Font Awesome Free Regular | `fontawesome-regular-` | `:fontawesome-regular-face-laugh-wink:` |
-| :fontawesome-solid-rocket: Font Awesome Free Solid | `fontawesome-solid-` | `:fontawesome-solid-rocket:` |
-| :octicons-heart-fill-24: [Octicons](https://primer.style/octicons/) | `octicons-` | `:octicons-heart-fill-24:` |
-| :simple-dotnet: [Simple Icons](https://simpleicons.org/) | `simple-` | `:simple-dotnet:` |
-| :dashboard-jellyfin: [Dashboard Icons](https://dashboardicons.com/) | `dashboard-` | `:dashboard-jellyfin:` |
+| [Material Design Icons](https://pictogrammers.com/library/mdi/) | `material-` | `:material-account-circle:` |
+| [Font Awesome Free](https://fontawesome.com/search?ic=free) Brands | `fontawesome-brands-` | `:fontawesome-brands-github:` |
+| Font Awesome Free Regular | `fontawesome-regular-` | `:fontawesome-regular-face-laugh-wink:` |
+| Font Awesome Free Solid | `fontawesome-solid-` | `:fontawesome-solid-rocket:` |
+| [Octicons](https://primer.style/octicons/) | `octicons-` | `:octicons-heart-fill-24:` |
+| [Simple Icons](https://simpleicons.org/) | `simple-` | `:simple-dotnet:` |
+| [Dashboard Icons](https://dashboardicons.com/) | `dashboard-` | `:dashboard-jellyfin:` |
 
 For example, `:material-account-circle:` shows the `account-circle` icon from Material Design Icons, and `:octicons-heart-fill-24:` shows the 24-pixel version of the filled Octicons heart.
 
 Icons are embedded into the page as inline SVG. They scale with the font size and take the color of the surrounding text, so they fit headings, links, and the light and dark theme without extra work:
 
 > [!TIP]
-> :octicons-light-bulb-16: Icons in callouts take the color of the text around them.
+> Icons in callouts take the color of the text around them.
 
 Outside of MDU, for example on GitHub, icon shortcodes are shown as plain text.
 
 #### Logos in color
 
-Dashboard Icons are logos of apps and self-hosted services, such as :dashboard-home-assistant: Home Assistant, :dashboard-jellyfin: Jellyfin, or :dashboard-proxmox: Proxmox. Unlike the other sets, they keep their own colors. When a logo has a light and a dark variant, MDU adds both and shows the one that fits the current theme. Switch the theme in the header to see :dashboard-github: GitHub and :dashboard-apple: Apple change:
+Dashboard Icons are logos of apps and self-hosted services. Unlike the other sets, they keep their own colors. When a logo has a light and a dark variant, MDU adds both and shows the one that fits the current theme. Switch the theme in the header to see the GitHub logo change:
 
 ```markdown title="Markdown"
-:dashboard-github: GitHub and :dashboard-apple: Apple
+:dashboard-github: GitHub
 ```
+
+:dashboard-github: GitHub
 
 The variants also have their own shortcodes, for example `:dashboard-github-light:`, if a page should always show the same one.
 
@@ -89,29 +91,25 @@ Shortcodes work anywhere in text, for example in paragraphs, lists, tables, link
 
 ### Icons before links
 
-Put an icon directly before a link to lead the reader to it. When the pointer is over the link, the icon moves a little toward it. Hover over the links below to see it:
+Put an icon directly before a link to lead the reader to it. When the pointer is over the link, the icon moves a little toward it:
 
 ```markdown title="Markdown"
-:material-arrow-right: [Search](#search) - Find an icon and copy its shortcode  
-:material-arrow-right: [Logos in color](#logos-in-color) - Show app logos in their own colors  
-:material-arrow-right: [Styling](#styling) - Give an icon a color or a class
+:material-arrow-right: [Search](#search)
 ```
 
-:material-arrow-right: [Search](#search) - Find an icon and copy its shortcode  
-:material-arrow-right: [Logos in color](#logos-in-color) - Show app logos in their own colors  
-:material-arrow-right: [Styling](#styling) - Give an icon a color or a class
+:material-arrow-right: [Search](#search)
 
-Two spaces at the end of a line start a new line, so each entry gets its own line; a list works as well. Any icon works, not only arrows, for example `:octicons-arrow-right-24:` or `:material-chevron-right:`. The link must be the next element after the icon: text or spaces in between are fine, but a link inside emphasis, such as `**[Styling](#styling)**`, does not move the icon. When the reader's system asks for reduced motion, the icon stays in place.
+Use a separate line for each entry. Any icon works, not only arrows, for example `:octicons-arrow-right-24:` or `:material-chevron-right:`. The link must be the next element after the icon: text or spaces in between are fine, but a link inside emphasis, such as `**[Styling](#styling)**`, does not move the icon. When the reader's system asks for reduced motion, the icon stays in place.
 
 ### Styling
 
 Add an attribute list directly after a shortcode, without a space, to give the icon or emoji an ID, classes, or HTML attributes. For example, set a color with the `style` attribute:
 
 ```markdown title="Markdown"
-:octicons-heart-fill-24:{ style="color: #e5484d" } Made with love
+:material-check-circle:{ style="color: #16803c" } Complete
 ```
 
-:octicons-heart-fill-24:{ style="color: #e5484d" } Made with love
+:material-check-circle:{ style="color: #16803c" } Complete
 
 ## HTML output
 
