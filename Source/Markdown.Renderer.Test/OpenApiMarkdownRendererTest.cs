@@ -65,6 +65,22 @@ public class OpenApiMarkdownRendererTest
         Assert.DoesNotContain("<p><strong>Orders <script>", html);
     }
 
+    [Theory]
+    [InlineData("`1.0")]
+    [InlineData("1.0`")]
+    public async Task RendersCodeSpansWhenValuesStartOrEndWithBackticks(string version)
+    {
+        var html = await RenderHtml($$"""
+            {
+              "openapi": "3.1.0",
+              "info": { "title": "Orders", "version": "{{version}}" },
+              "paths": {}
+            }
+            """);
+
+        Assert.Contains($"<p>Version: <code>{version}</code></p>", html);
+    }
+
     [Fact]
     public void ResolvesInternalReferencesAndRefreshesCachedSpecifications()
     {
@@ -76,7 +92,7 @@ public class OpenApiMarkdownRendererTest
         {
             File.WriteAllText(specPath, ReferencedSpecification("Order"));
             var firstRender = OpenApiMarkdownRenderer.AppendFromFile("# Orders", markdownPath, "orders.json");
-            Assert.Contains("| id | Path | Yes | string |", firstRender);
+            Assert.Contains("| id | path | Yes | string |", firstRender);
             Assert.Contains("#### Request body", firstRender);
             Assert.Contains("##### Response `201`", firstRender);
             Assert.Contains("### `Order`", firstRender);

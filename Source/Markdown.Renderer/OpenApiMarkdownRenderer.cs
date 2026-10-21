@@ -144,7 +144,7 @@ public static class OpenApiMarkdownRenderer
         {
             var parameter = ResolveReference(value);
             var name = parameter.Name ?? string.Empty;
-            var location = parameter.In?.ToString() ?? string.Empty;
+            var location = parameter.In?.ToString().ToLowerInvariant() ?? string.Empty;
             var required = parameter.Required ? "Yes" : "No";
             output.AppendLine($"| {EscapeTableCell(name)} | {EscapeTableCell(location)} | {required} | {EscapeTableCell(SchemaType(parameter.Schema))} | {EscapeTableCell(parameter.Description)} |");
         }
@@ -324,7 +324,8 @@ public static class OpenApiMarkdownRenderer
     private static string CodeSpan(string value)
     {
         var fence = new string('`', Math.Max(1, LongestBacktickRun(value) + 1));
-        return $"{fence}{value}{fence}";
+        var content = value.StartsWith('`') || value.EndsWith('`') ? $" {value} " : value;
+        return $"{fence}{content}{fence}";
     }
 
     private static int LongestBacktickRun(string value)

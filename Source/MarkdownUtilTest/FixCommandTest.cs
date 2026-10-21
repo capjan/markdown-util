@@ -48,7 +48,7 @@ public class FixCommandTest
             Assert.Contains("[guide]: Guide.md?view=full#intro", rootContent);
 
             var movedContent = File.ReadAllText(movedPage);
-            Assert.StartsWith("---\nopenapi: \"api/orders.yaml\"\n---\n", movedContent);
+            Assert.StartsWith("---\nopenapi: api/orders.yaml\n---\n", movedContent);
             Assert.Contains("[Asset](Guide/diagram.svg)", movedContent);
             Assert.Contains("[Home](README.md)", movedContent);
             Assert.Contains("[Anchor](#intro)", movedContent);

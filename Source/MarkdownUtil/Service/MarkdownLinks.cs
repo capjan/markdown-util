@@ -71,11 +71,7 @@ public static class MarkdownLinks
                     ? movedSpecPath
                     : Path.GetRelativePath(Path.GetDirectoryName(newSourcePath)!, movedSpecPath).Replace('\\', '/');
                 if (updatedSpecPath != openApiSpec.Value)
-                {
-                    var escapedSpecPath = updatedSpecPath.Replace("\\", "\\\\", StringComparison.Ordinal)
-                        .Replace("\"", "\\\"", StringComparison.Ordinal);
-                    edits[(openApiSpec.Start, openApiSpec.Length)] = $"\"{escapedSpecPath}\"";
-                }
+                    edits[(openApiSpec.Start, openApiSpec.Length)] = FormatYamlPath(updatedSpecPath);
             }
         }
 
@@ -88,6 +84,26 @@ public static class MarkdownLinks
 
         changedLinkCount = edits.Count;
         return rewritten;
+
+        static string FormatYamlPath(string value)
+        {
+            var isPlainPath = !string.IsNullOrWhiteSpace(value)
+                && !char.IsDigit(value[0])
+                && !value.Equals("null", StringComparison.OrdinalIgnoreCase)
+                && !value.Equals("true", StringComparison.OrdinalIgnoreCase)
+                && !value.Equals("false", StringComparison.OrdinalIgnoreCase)
+                && !value.Equals("yes", StringComparison.OrdinalIgnoreCase)
+                && !value.Equals("no", StringComparison.OrdinalIgnoreCase)
+                && !value.Equals("on", StringComparison.OrdinalIgnoreCase)
+                && !value.Equals("off", StringComparison.OrdinalIgnoreCase)
+                && value is not ("~" or "..." or "---")
+                && value.All(character => char.IsLetterOrDigit(character) || character is '/' or '\\' or '.' or '_' or '-');
+            if (isPlainPath) return value;
+
+            var escaped = value.Replace("\\", "\\\\", StringComparison.Ordinal)
+                .Replace("\"", "\\\"", StringComparison.Ordinal);
+            return $"\"{escaped}\"";
+        }
 
         void AddEdit(SourceSpan span, string? destination)
         {
