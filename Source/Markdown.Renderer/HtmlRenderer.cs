@@ -1019,6 +1019,22 @@ public class HtmlRenderer
         document.addEventListener("click", event => {
             const tab = event.target.closest(".openapi-response-tab");
             if (tab) activateResponseTab(tab);
+            const reference = event.target.closest("a.openapi-type-reference");
+            if (!reference) return;
+            const target = document.getElementById(reference.hash.slice(1));
+            if (!target) return;
+            const color = getComputedStyle(target).getPropertyValue("--link").trim();
+            const highlight = `color-mix(in srgb, ${color} 16%, transparent)`;
+            const reducedMotion = matchMedia("(prefers-reduced-motion: reduce)").matches;
+            for (let element = target; element; element = element.nextElementSibling) {
+                if (element !== target && (element.matches("h6") || element.id)) break;
+                element.getAnimations().filter(animation => animation.id === "openapi-schema-highlight")
+                    .forEach(animation => animation.cancel());
+                element.animate([
+                    { backgroundColor: highlight },
+                    { backgroundColor: reducedMotion ? highlight : "transparent" }
+                ], { id: "openapi-schema-highlight", duration: 1600, easing: "ease-out" });
+            }
         });
 
         document.addEventListener("keydown", event => {

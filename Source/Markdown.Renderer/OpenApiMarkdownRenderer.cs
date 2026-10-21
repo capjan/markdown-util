@@ -557,8 +557,11 @@ public static class OpenApiMarkdownRenderer
         }
 
         schema = ResolveReference(schema);
-        if (schema.Type == JsonSchemaType.Array && schema.Items is not null)
-            return $"{TypeMarkup("array of")} {SchemaTypeMarkup(schema.Items, anchors)}";
+        if (schema.Type?.HasFlag(JsonSchemaType.Array) == true && schema.Items is not null)
+        {
+            var array = $"{TypeMarkup("[")}{SchemaTypeMarkup(schema.Items, anchors)}{TypeMarkup("]")}";
+            return schema.Type.Value.HasFlag(JsonSchemaType.Null) ? AppendOptionalTypeMarker(array) : array;
+        }
         if (schema.OneOf is { Count: > 0 } nullableOneOf && HasNullableUnion(nullableOneOf))
         {
             var nonNullable = nullableOneOf.Single(nested => SchemaType(nested) != "null");

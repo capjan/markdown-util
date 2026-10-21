@@ -6,6 +6,35 @@ namespace Markdown.Renderer.Test;
 public class OpenApiMarkdownRendererTest
 {
     [Fact]
+    public async Task RendersNullableArrayItemsAsLinkedCompactTypes()
+    {
+        var html = await RenderHtml("""
+            {
+              "openapi": "3.1.0",
+              "info": { "title": "Locations", "version": "1" },
+              "paths": { "/locations": { "get": { "responses": {
+                "200": { "description": "Locations", "content": { "application/json": {
+                  "schema": { "type": "object", "properties": {
+                    "metaInfoAssets": { "type": ["null", "array"], "items": { "$ref": "#/components/schemas/LocationAssetDto" } }
+                  } }
+                } } }
+              } } } },
+              "components": { "schemas": { "LocationAssetDto": {
+                "type": "object", "properties": { "id": { "type": "string" } }
+              } } }
+            }
+            """);
+        var cell = System.Text.RegularExpressions.Regex.Match(html,
+            @"<td>metaInfoAssets</td>\s*<td>(?<type>.*?)</td>").Groups["type"].Value;
+        Assert.Equal("[LocationAssetDto]?", System.Text.RegularExpressions.Regex.Replace(cell, "<[^>]+>", ""));
+        var link = System.Text.RegularExpressions.Regex.Match(cell,
+            "class=\"openapi-type-reference\" href=\"#(?<anchor>[^\"]+)\"");
+        Assert.True(link.Success);
+        Assert.Contains($"id=\"{link.Groups["anchor"].Value}\"", html);
+        Assert.Contains("class=\"openapi-type-optional\">?</span>", cell);
+    }
+
+    [Fact]
     public async Task CollapsesEndpointsAndRendersResponseMediaTypesAndTabs()
     {
         var html = await RenderHtml("""
