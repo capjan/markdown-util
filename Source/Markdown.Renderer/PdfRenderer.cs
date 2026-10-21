@@ -271,6 +271,9 @@ internal sealed class PdfLayout
             case "img":
                 RenderImage(element, indent);
                 return;
+            case "video":
+                RenderVideo(element, indent);
+                return;
             case "svg":
                 DrawSvgBlock(element, indent + 8, 470, 260);
                 return;
@@ -433,6 +436,18 @@ internal sealed class PdfLayout
         WriteParagraph([new PdfRun(text, PdfTextStyle.Muted)], 9, indent + 8, 4, 7);
         if (Uri.TryCreate(source, UriKind.Absolute, out var uri) && uri.Scheme is "http" or "https")
             WriteParagraph([new PdfRun(source, PdfTextStyle.Linked(source))], 8.5, indent + 8, 0, 7);
+    }
+
+    private void RenderVideo(XmlElement video, int indent)
+    {
+        var source = video.ChildNodes.OfType<XmlElement>()
+            .Where(child => child.LocalName == "source")
+            .Select(child => child.GetAttribute("src"))
+            .FirstOrDefault(value => !string.IsNullOrWhiteSpace(value))
+            ?? video.GetAttribute("src");
+        var label = source.Length == 0 ? "[Video]" : "[Video ansehen]";
+        var style = source.Length == 0 ? PdfTextStyle.Muted : PdfTextStyle.Linked(source);
+        WriteParagraph([new PdfRun(label, style)], 9, indent + 8, 4, 7);
     }
 
     private void DrawSvgBlock(XmlElement svg, int indent, double maxWidth, double maxHeight)
@@ -684,8 +699,8 @@ internal sealed class PdfLayout
     private static string NormalizeInlineWhitespace(string text) => Regex.Replace(WebUtility.HtmlDecode(text), @"\s+", " ");
     internal static string NormalizeVoidElements(string html)
     {
-        var normalized = Regex.Replace(html, @"<(input|br|hr|img)(?<attributes>[^<>]*?)(?<!/)>", "<$1${attributes} />", RegexOptions.IgnoreCase);
-        return Regex.Replace(normalized, @"\s(disabled|hidden|checked|selected|required|multiple|data-media-error)(?=[\s/>])", " $1=\"$1\"", RegexOptions.IgnoreCase);
+        var normalized = Regex.Replace(html, @"<(input|br|hr|img|source)(?<attributes>[^<>]*?)(?<!/)>", "<$1${attributes} />", RegexOptions.IgnoreCase);
+        return Regex.Replace(normalized, @"\s(disabled|hidden|checked|selected|required|multiple|controls|playsinline|autoplay|muted|loop|data-media-error)(?=[\s/>])", " $1=\"$1\"", RegexOptions.IgnoreCase);
     }
     private static IEnumerable<XmlElement> Descendants(XmlElement element, string name) =>
         element.GetElementsByTagName(name).OfType<XmlElement>();

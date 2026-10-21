@@ -5,6 +5,31 @@ namespace Markdown.Renderer.Test;
 public class PdfRendererTest
 {
     [Fact]
+    public void RendersVideoSourcesAsPdfLinksWithoutFallbackText()
+    {
+        const string markdown = """
+            <video controls playsinline preload="none" width="960" height="540">
+              <source src="https://example.com/demo.mp4" type="video/mp4">
+              Your browser does not support embedded videos.
+            </video>
+
+            <video src="https://example.com/direct.mp4" controls>
+              Direct video fallback.
+            </video>
+            """;
+        using var output = new MemoryStream();
+
+        new PdfRenderer(new HtmlRenderer()).WritePdf(output, "Videos",
+        [new PdfSourceSection("Videos", "videos/index.html", markdown)], includeFrontMatter: false);
+
+        var pdf = Encoding.Latin1.GetString(output.ToArray());
+        Assert.Contains("/URI (https://example.com/demo.mp4)", pdf);
+        Assert.Contains("/URI (https://example.com/direct.mp4)", pdf);
+        Assert.DoesNotContain($"<{Convert.ToHexString(Encoding.ASCII.GetBytes("Your browser does not support embedded videos."))}> Tj", pdf);
+        Assert.DoesNotContain($"<{Convert.ToHexString(Encoding.ASCII.GetBytes("Direct video fallback."))}> Tj", pdf);
+    }
+
+    [Fact]
     public void RendersTablesInsideScrollableContainersToPdf()
     {
         using var output = new MemoryStream();
