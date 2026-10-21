@@ -6,6 +6,7 @@ using System.Text;
 using System.Text.Encodings.Web;
 using System.Text.Json;
 using System.Text.Json.Nodes;
+using System.Text.RegularExpressions;
 using Microsoft.OpenApi;
 using Microsoft.OpenApi.Reader;
 
@@ -17,6 +18,7 @@ public static class OpenApiMarkdownRenderer
     {
         "GET", "PUT", "POST", "DELETE", "OPTIONS", "HEAD", "PATCH", "TRACE", "QUERY"
     };
+    private static readonly Regex PathParameterRegex = new(@"\{[^{}]+\}", RegexOptions.Compiled);
 
     private static readonly ConcurrentDictionary<string, CachedDocument> Cache = new(
         OperatingSystem.IsWindows() || OperatingSystem.IsMacOS()
@@ -136,7 +138,7 @@ public static class OpenApiMarkdownRenderer
         Operation operation,
         IDictionary<string, IOpenApiSchema>? schemas)
     {
-        output.AppendLine($"### {CodeSpan(operation.Method)} {CodeHtml(operation.Path)} {{.openapi-operation .openapi-method-{operation.Method.ToLowerInvariant()}}}");
+        output.AppendLine($"### {CodeSpan(operation.Method)} {PathMarkup(operation.Path)} {{.openapi-operation .openapi-method-{operation.Method.ToLowerInvariant()}}}");
         var summary = operation.Data.Summary;
         if (!string.IsNullOrWhiteSpace(summary)) AppendParagraph(output, $"**{EscapeMarkdown(summary)}**");
         var operationId = operation.Data.OperationId;
@@ -156,15 +158,20 @@ public static class OpenApiMarkdownRenderer
         if (parameters.Count == 0) return;
 
         output.AppendLine("#### Parameters");
-        output.AppendLine("| Name | In | Required | Type | Description |");
-        output.AppendLine("| --- | --- | --- | --- | --- |");
+        output.AppendLine("| Name | In | Type | Description |");
+        output.AppendLine("| --- | --- | --- | --- |");
         foreach (var value in parameters.Values)
         {
             var parameter = ResolveReference(value);
             var name = parameter.Name ?? string.Empty;
             var location = parameter.In?.ToString().ToLowerInvariant() ?? string.Empty;
-            var required = parameter.Required ? "Yes" : "No";
-            output.AppendLine($"| {EscapeTableCell(name)} | {EscapeTableCell(location)} | {required} | {EscapeTableCell(SchemaType(parameter.Schema))} | {EscapeTableCell(parameter.Description)} |");
+            var nameMarkup = EscapeTableCell(name) + (parameter.Required
+                ? "<span class=\"openapi-required-marker\" aria-label=\"Required\">*</span>"
+                : string.Empty);
+            var locationMarkup = parameter.In == ParameterLocation.Path
+                ? "<span class=\"openapi-parameter-location-path\">path</span>"
+                : EscapeTableCell(location);
+            output.AppendLine($"| {nameMarkup} | {locationMarkup} | {EscapeTableCell(SchemaTypeMarkup(parameter.Schema))} | {EscapeTableCell(parameter.Description)} |");
         }
         output.AppendLine();
     }
@@ -312,7 +319,7 @@ public static class OpenApiMarkdownRenderer
         output.AppendLine("| --- | --- | --- |");
         if (properties.Count == 0)
         {
-            output.AppendLine($"| Response | {EscapeTableCell(SchemaType(schema))} | {EscapeTableCell(tableSchema.Description)} |");
+            output.AppendLine($"| Response | {EscapeTableCell(SchemaTypeMarkup(schema))} | {EscapeTableCell(tableSchema.Description)} |");
             output.AppendLine();
             return;
         }
@@ -399,7 +406,7 @@ public static class OpenApiMarkdownRenderer
         {
             output.AppendLine($"| Property | Type | Description |");
             output.AppendLine("| --- | --- | --- |");
-            output.AppendLine($"| Response | {EscapeTableCell(SchemaType(schema))} | {EscapeTableCell(schema.Description)} |");
+            output.AppendLine($"| Response | {EscapeTableCell(SchemaTypeMarkup(schema, anchors))} | {EscapeTableCell(schema.Description)} |");
             output.AppendLine();
             return;
         }
@@ -479,31 +486,52 @@ public static class OpenApiMarkdownRenderer
             : resolved;
     }
 
-    private static string SchemaTypeMarkup(IOpenApiSchema? schema, IReadOnlyDictionary<string, string> anchors)
+    private static string SchemaTypeMarkup(
+        IOpenApiSchema? schema,
+        IReadOnlyDictionary<string, string>? anchors = null)
     {
-        if (schema is null) return CodeSpan("any");
+        if (schema is null) return TypeMarkup("any");
         if (GetReference(schema) is { IsLocal: true, Id: { Length: > 0 } id })
         {
             var name = NormalizeSchemaReferenceName(id);
-            var display = CodeSpan(name);
-            return anchors.TryGetValue(name, out var anchor) ? $"[{display}](#{anchor})" : display;
+            var display = TypeMarkup(name);
+            return anchors is not null && anchors.TryGetValue(name, out var anchor)
+                ? $"<a class=\"openapi-type-reference\" href=\"#{HtmlEncoder.Default.Encode(anchor)}\">{display}</a>"
+                : display;
         }
 
         schema = ResolveReference(schema);
         if (schema.Type == JsonSchemaType.Array && schema.Items is not null)
-            return $"array of {SchemaTypeMarkup(schema.Items, anchors)}";
+            return $"{TypeMarkup("array of")} {SchemaTypeMarkup(schema.Items, anchors)}";
         if (schema.OneOf is { Count: > 0 } nullableOneOf && HasNullableUnion(nullableOneOf))
-            return CodeSpan(SchemaUnionType(nullableOneOf));
+        {
+            var nonNullable = nullableOneOf.Single(nested => SchemaType(nested) != "null");
+            return AppendOptionalTypeMarker(SchemaTypeMarkup(nonNullable, anchors));
+        }
         if (schema.AnyOf is { Count: > 0 } nullableAnyOf && HasNullableUnion(nullableAnyOf))
-            return CodeSpan(SchemaUnionType(nullableAnyOf));
+        {
+            var nonNullable = nullableAnyOf.Single(nested => SchemaType(nested) != "null");
+            return AppendOptionalTypeMarker(SchemaTypeMarkup(nonNullable, anchors));
+        }
         if (schema.OneOf is { Count: > 0 } oneOf)
             return string.Join(" or ", oneOf.Select(nested => SchemaTypeMarkup(nested, anchors)));
         if (schema.AnyOf is { Count: > 0 } anyOf)
             return string.Join(" or ", anyOf.Select(nested => SchemaTypeMarkup(nested, anchors)));
         if (schema.AllOf is { Count: > 0 } allOf)
             return string.Join(" & ", allOf.Select(nested => SchemaTypeMarkup(nested, anchors)));
-        return CodeSpan(SchemaType(schema));
+        return TypeMarkup(SchemaType(schema));
     }
+
+    private static string TypeMarkup(string type)
+    {
+        var optional = type.EndsWith('?');
+        var name = optional ? type[..^1] : type;
+        var markup = $"<span class=\"openapi-type\"><span class=\"openapi-type-keyword\">{HtmlEncoder.Default.Encode(name)}</span>";
+        return optional ? $"{markup}<span class=\"openapi-type-optional\">?</span></span>" : $"{markup}</span>";
+    }
+
+    private static string AppendOptionalTypeMarker(string markup) =>
+        $"<span class=\"openapi-type\">{markup}<span class=\"openapi-type-optional\">?</span></span>";
 
     private static string SchemaName(IOpenApiSchema schema, IDictionary<string, IOpenApiSchema>? components)
     {
@@ -693,11 +721,20 @@ public static class OpenApiMarkdownRenderer
 
         var type = schema.Type is { } schemaType ? FormatSchemaType(schemaType) : null;
         if (type is null) type = schema.Properties is { Count: > 0 } ? "object" : "any";
-        var display = string.IsNullOrWhiteSpace(schema.Format) ? type : $"{type} ({schema.Format})";
+        var optional = type.EndsWith('?');
+        if (optional) type = type[..^1];
+        var display = schema.Format?.ToLowerInvariant() switch
+        {
+            "uuid" => "uuid",
+            "int32" => "int32",
+            "date-time" => "dateTime",
+            _ => string.IsNullOrWhiteSpace(schema.Format) ? type : $"{type} ({schema.Format})"
+        };
         if (schema.Type == JsonSchemaType.Array && schema.Items is not null)
             display = $"array of {SchemaType(schema.Items)}";
         if (schema.Enum is { Count: > 0 } values)
             display += $": {string.Join(", ", values.Select(item => item?.ToString()))}";
+        if (optional) display += "?";
         return display;
     }
 
@@ -781,8 +818,26 @@ public static class OpenApiMarkdownRenderer
         .Replace("]", "\\]", StringComparison.Ordinal)
         .Replace("`", "&#96;", StringComparison.Ordinal);
 
-    private static string CodeHtml(string value) =>
-        $"<code>{HtmlEncoder.Default.Encode(value).Replace("{", "&#123;", StringComparison.Ordinal).Replace("}", "&#125;", StringComparison.Ordinal)}</code>";
+    private static string PathMarkup(string path)
+    {
+        var output = new StringBuilder("<span class=\"openapi-path\">");
+        var position = 0;
+        foreach (Match match in PathParameterRegex.Matches(path))
+        {
+            output.Append(EncodePath(path[position..match.Index]));
+            output.Append("<span class=\"openapi-path-parameter\">")
+                .Append(EncodePath(match.Value))
+                .Append("</span>");
+            position = match.Index + match.Length;
+        }
+
+        output.Append(EncodePath(path[position..]));
+        return output.Append("</span>").ToString();
+    }
+
+    private static string EncodePath(string value) => HtmlEncoder.Default.Encode(value)
+        .Replace("{", "&#123;", StringComparison.Ordinal)
+        .Replace("}", "&#125;", StringComparison.Ordinal);
 
     private static string EscapeTableCell(string? value) =>
         (value ?? string.Empty).Replace("|", "\\|", StringComparison.Ordinal).Replace("\r", " ", StringComparison.Ordinal).Replace("\n", " ", StringComparison.Ordinal);

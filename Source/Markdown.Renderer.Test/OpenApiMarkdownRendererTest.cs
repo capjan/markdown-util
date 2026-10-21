@@ -42,7 +42,7 @@ public class OpenApiMarkdownRendererTest
 
         var operationHeading = System.Text.RegularExpressions.Regex.Match(
             html,
-            "<summary(?<attributes>[^>]*)>\\s*<code>GET</code> <code>/orders/\\{id\\}</code>");
+            "<summary(?<attributes>[^>]*)>\\s*<code>GET</code> <span class=\"openapi-path\">/orders/<span class=\"openapi-path-parameter\">\\{id\\}</span></span>");
         Assert.True(operationHeading.Success, html);
         Assert.Contains("class=\"openapi-operation\"", operationHeading.Groups["attributes"].Value);
         Assert.Contains("<details class=\"openapi-endpoint openapi-method-get\">", html);
@@ -150,11 +150,11 @@ public class OpenApiMarkdownRendererTest
         {
             File.WriteAllText(specPath, ReferencedSpecification("Order"));
             var firstRender = OpenApiMarkdownRenderer.AppendFromFile("# Orders", markdownPath, "orders.json");
-            Assert.Contains("| id | path | Yes | string |", firstRender);
+            Assert.Contains("| id<span class=\"openapi-required-marker\" aria-label=\"Required\">*</span> | <span class=\"openapi-parameter-location-path\">path</span> | <span class=\"openapi-type\"><span class=\"openapi-type-keyword\">string</span></span> |", firstRender);
             Assert.Contains("#### Request body", firstRender);
             Assert.Contains("##### Response `201`", firstRender);
             Assert.Contains("**`Order`**", firstRender);
-            Assert.Contains("| id<span class=\"openapi-required-marker\" aria-label=\"Required\">*</span> | `string` | Identifier |", firstRender);
+            Assert.Contains("| id<span class=\"openapi-required-marker\" aria-label=\"Required\">*</span> | <span class=\"openapi-type\"><span class=\"openapi-type-keyword\">string</span></span> | Identifier |", firstRender);
             Assert.DoesNotContain("## Schemas", firstRender);
 
             File.WriteAllText(specPath, ReferencedSpecification("UpdatedOrder"));
