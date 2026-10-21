@@ -388,14 +388,21 @@ public class HtmlRenderer
 
     private static IReadOnlyList<TocHeading> GetTableOfContentsHeadings(string renderedMarkdown)
     {
+        var matches = HeadingRegex.Matches(renderedMarkdown).Cast<Match>().ToArray();
+        var isOpenApiPage = matches.Any(match =>
+            HasClass(match, "openapi-overview") ||
+            HasClass(match, "openapi-tag") ||
+            HasClass(match, "openapi-operation"));
         var headings = new List<TocHeading>();
-        foreach (Match match in HeadingRegex.Matches(renderedMarkdown))
+        foreach (var match in matches)
         {
+            if (isOpenApiPage && !HasClass(match, "openapi-tag")) continue;
             if (HasClass(match, "openapi-response") ||
                 HasClass(match, "openapi-media-type") ||
                 HasClass(match, "openapi-response-example") ||
                 HasClass(match, "openapi-response-schema-table") ||
-                HasClass(match, "openapi-response-schema-json")) continue;
+                HasClass(match, "openapi-response-schema-json") ||
+                HasClass(match, "openapi-response-reference-schema")) continue;
             var level = match.Groups["level"].Value[0] - '0';
             if (level < 2) continue;
 
@@ -634,6 +641,7 @@ public class HtmlRenderer
         var output = new StringBuilder(content.Length + responses.Count * 200);
         output.Append(content, 0, responseHeadings[0].Heading.Index);
         output.AppendLine("<div class=\"openapi-responses\">");
+        output.AppendLine("<div class=\"openapi-response-heading\">Response <span class=\"openapi-response-position\">1 of " + responses.Count + "</span></div>");
         output.AppendLine("<div class=\"openapi-response-control\">");
         output.Append("<select class=\"openapi-response-select ")
             .Append(GetOpenApiResponseStatusClass(responses[0].Status))
@@ -643,6 +651,8 @@ public class HtmlRenderer
             var response = responses[index];
             output.Append("<option value=\"")
                 .Append(HtmlEncoder.Default.Encode(response.Status))
+                .Append("\" data-response-position=\"")
+                .Append(index + 1)
                 .Append("\" class=\"")
                 .Append(GetOpenApiResponseStatusClass(response.Status))
                 .Append('"');
@@ -650,7 +660,6 @@ public class HtmlRenderer
             output.Append('>').Append(HtmlEncoder.Default.Encode(response.Label)).AppendLine("</option>");
         }
         output.AppendLine("</select>");
-        AppendMediaTypeControl(output, responses[0].MediaTypes, responses[0].Status);
         output.AppendLine("</div>");
 
         for (var index = 0; index < responses.Count; index++)
@@ -667,6 +676,7 @@ public class HtmlRenderer
             output.AppendLine("<div class=\"openapi-response-description\">");
             output.Append(response.Body, 0, descriptionEnd);
             output.AppendLine("</div>");
+            AppendMediaTypeControl(output, response.MediaTypes);
 
             for (var mediaIndex = 0; mediaIndex < response.MediaTypes.Count; mediaIndex++)
             {
@@ -694,19 +704,14 @@ public class HtmlRenderer
         return output.ToString();
     }
 
-    private static void AppendMediaTypeControl(
-        StringBuilder output,
-        IReadOnlyList<OpenApiMediaTypeHeading> mediaTypes,
-        string status)
+    private static void AppendMediaTypeControl(StringBuilder output, IReadOnlyList<OpenApiMediaTypeHeading> mediaTypes)
     {
-        var hidden = mediaTypes.Count == 0 ? " hidden" : string.Empty;
-        output.Append("<span class=\"openapi-media-type-count\"").Append(hidden).Append('>')
-            .Append(mediaTypes.Count == 1 ? "1 Media Type" : $"{mediaTypes.Count} Media Types")
+        if (mediaTypes.Count == 0) return;
+        output.AppendLine("<div class=\"openapi-media-type-control\">");
+        output.Append("<label class=\"openapi-media-type-label\">Media Type <span class=\"openapi-media-type-position\">1 of ")
+            .Append(mediaTypes.Count)
             .AppendLine("</span>");
-        output.Append("<select class=\"openapi-media-type-select ")
-            .Append(GetOpenApiResponseStatusClass(status))
-            .Append("\"").Append(hidden)
-            .AppendLine(" aria-label=\"Media type\">");
+        output.AppendLine("<select class=\"openapi-media-type-select\" aria-label=\"Media type\">");
         for (var index = 0; index < mediaTypes.Count; index++)
         {
             output.Append("<option value=\"").Append(index).Append('"');
@@ -714,6 +719,8 @@ public class HtmlRenderer
             output.Append('>').Append(HtmlEncoder.Default.Encode(mediaTypes[index].Name)).AppendLine("</option>");
         }
         output.AppendLine("</select>");
+        output.AppendLine("</label>");
+        output.AppendLine("</div>");
     }
 
     private sealed record OpenApiResponseContent(
@@ -837,29 +844,6 @@ public class HtmlRenderer
         status.Length == 3 && status[0] == family && char.IsAsciiDigit(status[1]) && char.IsAsciiDigit(status[2]);
 
     private const string OpenApiResponseScript = """
-        const updateMediaTypes = response => {
-            const responses = response.closest(".openapi-responses");
-            const mediaPanels = [...response.querySelectorAll(".openapi-media-panel")];
-            const count = responses.querySelector(".openapi-media-type-count");
-            const select = responses.querySelector(".openapi-media-type-select");
-            const statusSelect = responses.querySelector(".openapi-response-select");
-            count.textContent = `${mediaPanels.length} Media Type${mediaPanels.length === 1 ? "" : "s"}`;
-            count.hidden = mediaPanels.length === 0;
-            select.hidden = mediaPanels.length === 0;
-            select.classList.remove("openapi-status-2xx", "openapi-status-4xx", "openapi-status-5xx", "openapi-status-neutral");
-            statusSelect.classList.forEach(className => {
-                if (className.startsWith("openapi-status-")) select.classList.add(className);
-            });
-            select.replaceChildren(...mediaPanels.map((panel, index) => {
-                const option = document.createElement("option");
-                option.value = panel.dataset.mediaIndex;
-                option.textContent = panel.dataset.mediaType;
-                option.selected = index === 0;
-                panel.hidden = index !== 0;
-                return option;
-            }));
-        };
-
         document.addEventListener("change", event => {
             const select = event.target;
             if (!(select instanceof HTMLSelectElement)) return;
@@ -870,6 +854,8 @@ public class HtmlRenderer
                 responses.querySelectorAll(".openapi-response-panel").forEach(panel => {
                     panel.hidden = panel !== activeResponse;
                 });
+                const position = select.selectedOptions[0].dataset.responsePosition;
+                responses.querySelector(".openapi-response-position").textContent = `${position} of ${select.options.length}`;
                 select.classList.remove("openapi-status-2xx", "openapi-status-4xx", "openapi-status-5xx", "openapi-status-neutral");
                 const status = select.value.toUpperCase();
                 const statusClass = /^2(?:\d{2}|XX)$/.test(status) ? "openapi-status-2xx"
@@ -877,20 +863,14 @@ public class HtmlRenderer
                     : /^5(?:\d{2}|XX)$/.test(status) ? "openapi-status-5xx"
                     : "openapi-status-neutral";
                 select.classList.add(statusClass);
-                const mediaTypeSelect = responses.querySelector(".openapi-media-type-select");
-                mediaTypeSelect.classList.remove("openapi-status-2xx", "openapi-status-4xx", "openapi-status-5xx", "openapi-status-neutral");
-                mediaTypeSelect.classList.add(statusClass);
-                updateMediaTypes(activeResponse);
                 return;
             }
             if (select.matches(".openapi-media-type-select")) {
-                const responses = select.closest(".openapi-responses");
-                const response = [...responses.querySelectorAll(".openapi-response-panel")]
-                    .find(panel => !panel.hidden);
-                if (!response) return;
+                const response = select.closest(".openapi-response-panel");
                 response.querySelectorAll(".openapi-media-panel").forEach(panel => {
                     panel.hidden = panel.dataset.mediaIndex !== select.value;
                 });
+                select.closest(".openapi-media-type-control").querySelector(".openapi-media-type-position").textContent = `${select.selectedIndex + 1} of ${select.options.length}`;
             }
         });
 

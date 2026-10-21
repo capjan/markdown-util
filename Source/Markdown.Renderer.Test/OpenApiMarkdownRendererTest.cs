@@ -55,11 +55,12 @@ public class OpenApiMarkdownRendererTest
         var responsePanel = html.IndexOf("<section class=\"openapi-response-panel openapi-status-2xx\" data-response-status=\"200\">", detailsStart, StringComparison.Ordinal);
         Assert.True(detailsEnd > responsePanel, html);
         Assert.DoesNotContain("id=\"get-orders\" id=\"\"", html);
-        Assert.Contains("2 Responses", html);
-        Assert.Contains("<option value=\"200\" class=\"openapi-status-2xx\" selected>200 - OK</option>", html);
-        Assert.Contains("<option value=\"404\" class=\"openapi-status-4xx\">404 - Not Found</option>", html);
+        Assert.Contains("<div class=\"openapi-response-heading\">Response <span class=\"openapi-response-position\">1 of 2</span></div>", html);
+        Assert.DoesNotContain("2 Responses", html);
+        Assert.Contains("<option value=\"200\" data-response-position=\"1\" class=\"openapi-status-2xx\" selected>200 - OK</option>", html);
+        Assert.Contains("<option value=\"404\" data-response-position=\"2\" class=\"openapi-status-4xx\">404 - Not Found</option>", html);
         Assert.DoesNotContain("Response <code>200</code>", html);
-        Assert.Contains("<span class=\"openapi-media-type-count\">2 Media Types</span>", html);
+        Assert.Contains("Media Type <span class=\"openapi-media-type-position\">1 of 2</span>", html);
         Assert.Contains("<option value=\"0\" selected>application/json</option>", html);
         Assert.Contains("<option value=\"1\">text/plain</option>", html);
         Assert.Contains("<button type=\"button\" class=\"openapi-response-tab\" role=\"tab\"", html);
@@ -68,14 +69,16 @@ public class OpenApiMarkdownRendererTest
         Assert.Contains(">Schema JSON</button>", html);
         Assert.Equal(6, System.Text.RegularExpressions.Regex.Matches(html, "role=\"tab\"").Count);
         Assert.Contains("<th>Property</th>", html);
+        Assert.DoesNotContain("<th>Required</th>", html);
+        Assert.Contains("<span class=\"openapi-required-marker\" aria-label=\"Required\">*</span>", html);
         Assert.Contains("<td>Order identifier</td>", html);
         Assert.Contains("<div class=\"openapi-response-description\">", html);
         Assert.True(
             html.IndexOf("class=\"openapi-response-select", StringComparison.Ordinal) <
-            html.IndexOf("class=\"openapi-media-type-select", StringComparison.Ordinal) &&
-            html.IndexOf("class=\"openapi-media-type-select", StringComparison.Ordinal) <
             html.IndexOf("class=\"openapi-response-description", StringComparison.Ordinal) &&
             html.IndexOf("class=\"openapi-response-description", StringComparison.Ordinal) <
+            html.IndexOf("class=\"openapi-media-type-select", StringComparison.Ordinal) &&
+            html.IndexOf("class=\"openapi-media-type-select", StringComparison.Ordinal) <
             html.IndexOf("role=\"tablist\"", StringComparison.Ordinal), html);
         Assert.Contains("&quot;type&quot;", html);
         Assert.Contains("&quot;properties&quot;", html);
@@ -110,8 +113,8 @@ public class OpenApiMarkdownRendererTest
         Assert.Contains("<p>Version: <code>1.0</code></p>", html);
         Assert.Contains("<p><strong>Get `order` &lt;details&gt;</strong></p>", html);
         Assert.Contains("<p>Operation ID: <code>getOrder</code></p>", html);
-        Assert.Contains("1 Response", html);
-        Assert.Contains("<span class=\"openapi-media-type-count\">1 Media Type</span>", html);
+        Assert.Contains("Response <span class=\"openapi-response-position\">1 of 1</span>", html);
+        Assert.Contains("Media Type <span class=\"openapi-media-type-position\">1 of 1</span>", html);
         Assert.DoesNotContain("<p><strong>Orders <script>", html);
     }
 
@@ -146,7 +149,7 @@ public class OpenApiMarkdownRendererTest
             Assert.Contains("#### Request body", firstRender);
             Assert.Contains("##### Response `201`", firstRender);
             Assert.Contains("### `Order`", firstRender);
-            Assert.Contains("| id | string | Yes |", firstRender);
+            Assert.Contains("| id<span class=\"openapi-required-marker\" aria-label=\"Required\">*</span> | string | Identifier |", firstRender);
 
             File.WriteAllText(specPath, ReferencedSpecification("UpdatedOrder"));
             var secondRender = OpenApiMarkdownRenderer.AppendFromFile("# Orders", markdownPath, "orders.json");

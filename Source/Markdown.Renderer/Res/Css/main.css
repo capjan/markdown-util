@@ -2617,6 +2617,21 @@ th, td {
     display: flow-root;
 }
 
+.markdown-content .openapi-response-heading {
+    margin-top: 1.15rem;
+    color: var(--text-primary);
+    font-size: 1rem;
+    font-weight: 700;
+}
+
+.markdown-content .openapi-response-position,
+.markdown-content .openapi-media-type-position {
+    margin-left: 0.35rem;
+    color: var(--text-secondary);
+    font-size: 0.86em;
+    font-weight: 500;
+}
+
 .markdown-content .openapi-response-control {
     display: flex;
     align-items: center;
@@ -2628,13 +2643,7 @@ th, td {
     font-weight: 650;
 }
 
-.markdown-content .openapi-media-type-count {
-    font-size: 0.82rem;
-    font-weight: 600;
-}
-
-.markdown-content .openapi-response-select,
-.markdown-content .openapi-media-type-select {
+.markdown-content .openapi-response-select {
     min-width: 6.5rem;
     padding: 0.42rem 0.75rem;
     border: 1px solid var(--openapi-response-border);
@@ -2646,9 +2655,39 @@ th, td {
     cursor: pointer;
 }
 
-.markdown-content .openapi-response-select:focus-visible,
-.markdown-content .openapi-media-type-select:focus-visible {
+.markdown-content .openapi-media-type-control {
+    margin: 0.85rem 0 0.35rem;
+}
+
+.markdown-content .openapi-media-type-label {
+    display: grid;
+    width: fit-content;
+    gap: 0.35rem;
+    color: var(--text-primary);
+    font-size: 0.9rem;
+    font-weight: 650;
+}
+
+.markdown-content .openapi-media-type-select {
+    min-width: 12rem;
+    max-width: min(100%, 34rem);
+    padding: 0.42rem 0.75rem;
+    border: 1px solid var(--border-subtle);
+    border-radius: 0.45rem;
+    background: var(--page-background);
+    color: var(--text-primary);
+    font: inherit;
+    font-weight: 500;
+    cursor: pointer;
+}
+
+.markdown-content .openapi-response-select:focus-visible {
     outline: 2px solid var(--openapi-response-color);
+    outline-offset: 2px;
+}
+
+.markdown-content .openapi-media-type-select:focus-visible {
+    outline: 2px solid var(--border);
     outline-offset: 2px;
 }
 
@@ -2685,8 +2724,8 @@ th, td {
 
 .markdown-content .openapi-response-tab-list {
     display: flex;
+    flex-wrap: wrap;
     gap: 0.35rem;
-    overflow-x: auto;
     margin-top: 1rem;
     border-bottom: 1px solid var(--border-subtle);
 }
@@ -2716,6 +2755,12 @@ th, td {
 
 .markdown-content .openapi-response-tabpanel {
     padding: 0.8rem 0 0.25rem;
+}
+
+.markdown-content .openapi-required-marker {
+    margin-left: 0.2rem;
+    color: #b4232e;
+    font-weight: 800;
 }
 
 .markdown-content .openapi-status-2xx {
