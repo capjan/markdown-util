@@ -5,7 +5,7 @@ openapi: ./openapi-petstore.json
 
 # Swagger Petstore example
 
-This page renders the [Swagger Petstore](https://petstore.swagger.io/) sample API, a larger reference than the [short OpenAPI Spec example](openapi-example.md). The specification uses the Swagger 2.0 format and contains pets, store orders, and users with path, query, header, and form parameters, enums, and file uploads.
+This page renders the [Swagger Petstore](https://petstore.swagger.io/) sample API, a larger reference than the [short OpenAPI Spec example](openapi-example.md). The specification uses the Swagger 2.0 format and contains pets, store orders, and users with path, query, header, and form parameters, enums, and file uploads. The [OpenAPI 3.0 Petstore example](openapi-petstore-v3.md) shows the same API in the newer format.
 
 The page needs only this front matter:
 
