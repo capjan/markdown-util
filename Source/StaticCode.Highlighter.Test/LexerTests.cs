@@ -204,7 +204,7 @@ public class LexerTests
     public void CssHighlightsPropertiesOnlyInDeclarationsAndKeepsHexColorsConsistent()
     {
         var tokens = Lexer.ForLanguage("css")
-            .Analyse(".color { /* c */ color: #000; background-color: #fff; width: 1.5em; /* w */ height: 2px; } @media screen {}")
+            .Analyse(".color { /* c */ color: #000; background-color: #fff; width: 1.5em; /* w */ height: 2px; } @media screen {} @layer components {}")
             .ToList();
         var colorTokens = tokens.Where(token => token.Text == "color").ToList();
 
@@ -215,12 +215,13 @@ public class LexerTests
         Assert.Contains(tokens, token => token.Text == "width" && token.Type == TokenType.Keyword);
         Assert.Contains(tokens, token => token.Text == "height" && token.Type == TokenType.Keyword);
         Assert.Contains(tokens, token => token.Text == "media" && token.Type == TokenType.Keyword);
+        Assert.Contains(tokens, token => token.Text == "layer" && token.Type == TokenType.Keyword);
         Assert.DoesNotContain(tokens, token => token.Text == "000" && token.Type == TokenType.Number);
         Assert.Contains(tokens, token => token.Text == "1" && token.Type == TokenType.Number);
         Assert.Contains(tokens, token => token.Text == "." && token.Type == TokenType.Number);
         Assert.Contains(tokens, token => token.Text == "5" && token.Type == TokenType.Number);
         Assert.Contains(tokens, token => token.Text == "2" && token.Type == TokenType.Number);
-        Assert.Equal(".color { /* c */ color: #000; background-color: #fff; width: 1.5em; /* w */ height: 2px; } @media screen {}",
+        Assert.Equal(".color { /* c */ color: #000; background-color: #fff; width: 1.5em; /* w */ height: 2px; } @media screen {} @layer components {}",
             string.Concat(tokens.Select(token => token.Text)));
     }
 

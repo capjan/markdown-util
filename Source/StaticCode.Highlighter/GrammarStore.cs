@@ -262,7 +262,7 @@ public static class GrammarStore
             },
             atRules: new[]
             {
-                "font-face", "import", "keyframes", "media", "supports"
+                "font-face", "import", "keyframes", "layer", "media", "supports"
             },
             operators: new[]
             {
