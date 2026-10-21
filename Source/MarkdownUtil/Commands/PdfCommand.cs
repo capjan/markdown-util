@@ -46,6 +46,18 @@ public sealed class PdfCommand(GraphBuilder graphBuilder, PdfRenderer pdfRendere
         var files = Flatten(graph);
         if (singleFilePath is not null)
             files = files.Where(item => Path.GetFullPath(item.File.FileInfo.FullName).Equals(singleFilePath, StringComparison.Ordinal));
+        return WritePdf(rootPath, outputPath, files, includeFrontMatter: singleFilePath is null);
+    }
+
+    public int WriteSitePdf(string rootPath, string outputPath, IEnumerable<MarkdownFile> graph) =>
+        WritePdf(rootPath, outputPath, Flatten(graph), includeFrontMatter: true);
+
+    private int WritePdf(
+        string rootPath,
+        string outputPath,
+        IEnumerable<(MarkdownFile File, int Depth)> files,
+        bool includeFrontMatter)
+    {
         var sections = files.Where(item => IsPdfVisible(item.File.FrontMatter))
             .Select(item => new PdfSourceSection(
                 GetTitle(item.File),
@@ -66,7 +78,7 @@ public sealed class PdfCommand(GraphBuilder graphBuilder, PdfRenderer pdfRendere
         try
         {
             using (var stream = new FileStream(temporaryPath, FileMode.CreateNew, FileAccess.Write))
-                pdfRenderer.WritePdf(stream, Path.GetFileNameWithoutExtension(outputPath), sections, includeFrontMatter: singleFilePath is null);
+                pdfRenderer.WritePdf(stream, Path.GetFileNameWithoutExtension(outputPath), sections, includeFrontMatter);
             File.Move(temporaryPath, outputPath, true);
         }
         catch (Exception exception) when (exception is IOException or UnauthorizedAccessException or XmlException)

@@ -36,8 +36,8 @@ The tree is the single source for the sidebar, the top navigation, breadcrumbs, 
 | `tree` | `PrintTreeVisitor` | Indented page titles |
 | `lint` | `LinterVisitor`, then `LintResultRenderer` | Diagnostics as text, JSON, or GitHub annotations |
 | `fix` | `LinterVisitor`, then `MarkdownCompatibility` and `MarkdownLinks` | Converted syntax, moved pages, and updated links |
-| `render` | `LocalAssetsCopy`, `MarkdigVisitor` | Static site in `./site` |
-| `serve` | Same as `render`, then a file watcher | Static site, preview server, live reload |
+| `render` | `LocalAssetsCopy`, `PdfCommand`, `MarkdigVisitor` | Static site and `documentation.pdf` in `./site` |
+| `serve` | Same as `render`, then a file watcher | Preview site and refreshed `documentation.pdf` |
 | `pdf` | The tree in navigation order, then `PdfRenderer` | One PDF file |
 
 `mdu page move` and `mdu page links` need no page tree. They read every Markdown file below the documentation folder with `MarkdownLinks`, so they also see pages that are hidden from navigation.
@@ -53,7 +53,8 @@ flowchart TD
     Config --> Prepare[Write stylesheet and search script]
     Prepare --> Tree[Build the page tree]
     Tree --> Assets[Copy linked local assets]
-    Assets --> Pages[[Render every page]]
+    Assets --> Pdf[Write documentation.pdf]
+    Pdf --> Pages[[Render every page]]
     Pages --> Index[Write search-index.json]
     click Config href "../Usage/render.md#site-configuration"
     click Tree href "#page-tree"
@@ -94,6 +95,8 @@ sequenceDiagram
 ```
 
 `serve` remembers which assets each page links to. When an image changes, it copies the new file and reloads only the pages that show it. Files that disappear from the site are removed from the output folder.
+
+When Markdown content changes, `serve` also rewrites `documentation.pdf` from the current page tree.
 
 ## PDF export
 

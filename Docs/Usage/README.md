@@ -61,7 +61,7 @@ Linter detected 1 error.
 | | Default |
 | --- | --- |
 | Source folder | `./docs`. Pass the path explicitly if it does not exist. |
-| Output of `render` and `serve` | `./site` |
+| Output of `render` and `serve` | `./site`, including `documentation.pdf` |
 | Output of `pdf` | `./documentation.pdf` |
 | Pages | Files matching `*.md` |
 

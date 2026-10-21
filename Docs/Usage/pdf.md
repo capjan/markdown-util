@@ -6,6 +6,8 @@ navigation.order: 45
 
 `mdu pdf` combines the Markdown pages of a folder into one PDF file. It uses the same Markdown pipeline as `mdu render`, so code highlighting, icons, keyboard keys, math, callouts, and supported diagrams appear in the PDF too. MDU writes the file itself, without a PDF library, browser, or network service.
 
+For automatic PDF generation during `mdu render` and `mdu serve`, see the [PDF download link feature](../Features/Pdf-Download.md).
+
 ## Usage
 
 ```bash
@@ -31,6 +33,8 @@ mdu pdf ./ProjectDocs/Features/Math.md ./build/math.pdf
 - A folder export starts with a title page and a linked table of contents; a single file has neither.
 - Headings stay with the start of the following block when a page break is needed.
 - Links between included pages, links on diagram nodes, and external links stay clickable.
+
+## Exclude pages
 
 To leave a page out of a folder export and its table of contents, set `pdf.visible` in its front matter:
 

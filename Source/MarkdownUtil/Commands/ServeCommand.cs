@@ -24,6 +24,7 @@ public sealed class ServeCommand
     private readonly DataPreparationVisitor _dataPreparationVisitor;
     private readonly HtmlRenderer _renderer;
     private readonly SearchIndexBuilder _searchIndexBuilder;
+    private readonly PdfCommand _pdfCommand;
     private readonly Dictionary<string, MarkdownFile> _pages = new(PathComparer);
     private readonly Dictionary<string, HashSet<string>> _assetsByPage = new(PathComparer);
     private readonly Dictionary<string, HashSet<string>> _pagesByAsset = new(PathComparer);
@@ -40,12 +41,14 @@ public sealed class ServeCommand
         GraphBuilder graphBuilder,
         DataPreparationVisitor dataPreparationVisitor,
         HtmlRenderer renderer,
-        SearchIndexBuilder searchIndexBuilder)
+        SearchIndexBuilder searchIndexBuilder,
+        PdfCommand? pdfCommand = null)
     {
         _graphBuilder = graphBuilder;
         _dataPreparationVisitor = dataPreparationVisitor;
         _renderer = renderer;
         _searchIndexBuilder = searchIndexBuilder;
+        _pdfCommand = pdfCommand ?? new PdfCommand(graphBuilder, new PdfRenderer(renderer));
     }
 
     public int Execute(RenderCommandSettings settings, int port, bool noBrowser) =>
@@ -175,6 +178,8 @@ public sealed class ServeCommand
         SearchClientAsset.WriteTo(_outputPath);
         _searchIndexBuilder.Clear();
         graph.Visit(new LocalAssetsCopy(_rootPath, _outputPath));
+        if (_pdfCommand.WriteSitePdf(_rootPath, Path.Combine(_outputPath, "documentation.pdf"), graph) != 0)
+            throw new InvalidOperationException("Could not render the documentation PDF.");
         var rendererVisitor = new MarkdigVisitor(
             _rootPath,
             _outputPath,
@@ -364,7 +369,10 @@ public sealed class ServeCommand
         }
 
         if (changedPages.Length > 0)
+        {
             _searchIndexBuilder.WriteIndex(_outputPath);
+            _pdfCommand.WriteSitePdf(_rootPath, Path.Combine(_outputPath, "documentation.pdf"), _navigationRoots);
+        }
 
         var assetChanges = relevantChanges
             .Where(change => change.Kind is FileChangeKind.Changed or FileChangeKind.Created or FileChangeKind.Deleted or FileChangeKind.Renamed)
@@ -443,7 +451,8 @@ public sealed class ServeCommand
         {
             Path.Combine(_outputPath, "css", "main.css"),
             Path.Combine(_outputPath, "js", "search.js"),
-            Path.Combine(_outputPath, "search-index.json")
+            Path.Combine(_outputPath, "search-index.json"),
+            Path.Combine(_outputPath, "documentation.pdf")
         };
         currentFiles.UnionWith(_renderer.IconSearchAssets);
 

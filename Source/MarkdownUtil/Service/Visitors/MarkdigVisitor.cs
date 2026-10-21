@@ -86,7 +86,10 @@ public class MarkdigVisitor : BaseVisitor
                     _siteMediaProviders,
                     entity.Icon,
                     BuildTopNavigation(entity, outputFileName),
-                    GetLastModified(entity)).GetAwaiter().GetResult();
+                    GetLastModified(entity),
+                    GetRelativeUrl(
+                        GetSiteRelativeSegments(Path.GetDirectoryName(Path.GetFullPath(outputFileName))!),
+                        ["documentation.pdf"])).GetAwaiter().GetResult();
 
             File.Move(temporaryPath, outputFileName, true);
             WriteAliasPage(entity, outputFileName);

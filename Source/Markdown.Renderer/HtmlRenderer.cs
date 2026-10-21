@@ -91,7 +91,8 @@ public class HtmlRenderer
         IReadOnlyCollection<string>? siteMediaProviders = null,
         string pageIcon = "",
         IReadOnlyList<NavigationItem>? topNavigationItems = null,
-        DateTimeOffset? lastModified = null)
+        DateTimeOffset? lastModified = null,
+        string? pdfDownloadUrl = null)
     {
         var prefix = string.Concat(Enumerable.Repeat("../", nestingDeep));
         var cssFileLink = prefix + "css/main.css";
@@ -172,6 +173,7 @@ public class HtmlRenderer
                     : " has-top-navigation no-wide-sidebar"
                 : " has-wide-sidebar",
             ["MEDIA_SETTINGS_BUTTON"] = providersForSettings.Count > 0 ? MediaLinkEmbedder.SettingsButtonHtml : string.Empty,
+            ["PDF_DOWNLOAD_LINK"] = RenderPdfDownloadLink(pdfDownloadUrl),
             ["MEDIA_SETTINGS_DIALOG"] = MediaLinkEmbedder.RenderSettingsDialog(providersForSettings),
             ["MARKDOWN"] = model.RenderedMarkdown,
             ["PAGE_HERO"] = pageHero,
@@ -217,6 +219,13 @@ public class HtmlRenderer
         if (light.Length == 0) return string.Empty;
         var dark = ResolveAssetUrl(prefix, configuration.FaviconDark);
         return $"<link rel=\"icon\" href=\"{HtmlEncoder.Default.Encode(light)}\" data-light-href=\"{HtmlEncoder.Default.Encode(light)}\" data-dark-href=\"{HtmlEncoder.Default.Encode(dark)}\">";
+    }
+
+    private static string RenderPdfDownloadLink(string? url)
+    {
+        if (string.IsNullOrWhiteSpace(url)) return string.Empty;
+
+        return $"<a class=\"pdf-download-link\" href=\"{HtmlEncoder.Default.Encode(url)}\" title=\"Documentation PDF\" aria-label=\"Open documentation PDF\"><svg viewBox=\"0 0 20 20\" aria-hidden=\"true\" focusable=\"false\"><path d=\"M10 2.5v9m0 0 3.5-3.5M10 11.5 6.5 8M3 13.5v3h14v-3\"></path></svg><span>PDF</span></a>";
     }
 
     private static string ResolveAssetUrl(string prefix, string? asset)
