@@ -93,7 +93,10 @@ public static class OpenApiMarkdownRenderer
         {
             output.AppendLine($"## {CodeSpan(group.Key)} {{.openapi-tag}}");
             AppendMarkdown(output, tags.GetValueOrDefault(group.Key));
-            foreach (var operation in group)
+            foreach (var operation in group
+                         .OrderBy(operation => OperationMethodOrder(operation.Method))
+                         .ThenBy(operation => operation.Method, StringComparer.Ordinal)
+                         .ThenBy(operation => operation.Path, StringComparer.Ordinal))
                 AppendOperation(output, operation, document.Components?.Schemas);
         }
 
@@ -117,6 +120,16 @@ public static class OpenApiMarkdownRenderer
 
         return operations;
     }
+
+    private static int OperationMethodOrder(string method) => method switch
+    {
+        "GET" => 0,
+        "POST" => 1,
+        "PUT" => 2,
+        "PATCH" => 3,
+        "DELETE" => 4,
+        _ => 5
+    };
 
     private static void AppendOperation(
         StringBuilder output,

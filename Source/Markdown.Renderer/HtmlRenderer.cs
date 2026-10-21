@@ -29,6 +29,7 @@ public class HtmlRenderer
     private static readonly Regex OpenApiTagEndpointRegex = new(
         "<details class=\"openapi-endpoint (?<method>openapi-method-[a-z]+)\"",
         RegexOptions.Compiled);
+    private static readonly string[] OpenApiTagMethodOrder = ["GET", "POST", "PUT", "PATCH", "DELETE"];
     private static readonly Regex OpenApiPermalinkRegex = new(
         @"<a\b[^>]*\bclass=""headerlink""[^>]*>.*?</a>",
         RegexOptions.Compiled | RegexOptions.Singleline);
@@ -858,7 +859,9 @@ public class HtmlRenderer
 
         if (counts.Count == 0) return;
         output.Append("<span class=\"openapi-tag-method-counts\">");
-        foreach (var (method, count) in counts)
+        foreach (var (method, count) in counts
+                     .OrderBy(pair => TagMethodOrder(pair.Key["openapi-method-".Length..]))
+                     .ThenBy(pair => pair.Key, StringComparer.Ordinal))
         {
             var methodName = method["openapi-method-".Length..].ToUpperInvariant();
             output.Append("<span class=\"openapi-tag-method-count ")
@@ -874,6 +877,12 @@ public class HtmlRenderer
                 .AppendLine("</span>");
         }
         output.AppendLine("</span>");
+    }
+
+    private static int TagMethodOrder(string method)
+    {
+        var index = Array.IndexOf(OpenApiTagMethodOrder, method.ToUpperInvariant());
+        return index < 0 ? OpenApiTagMethodOrder.Length : index;
     }
 
     private static string GetOpenApiResponseStatusClass(string status)

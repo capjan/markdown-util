@@ -2532,7 +2532,7 @@ th, td {
 }
 
 .markdown-content details.openapi-tag-group > summary.openapi-tag {
-    padding: 0.8rem 1rem;
+    padding: 0.8rem 3rem 0.8rem 1rem;
     color: var(--text-primary);
     font-size: 1.25rem;
     font-weight: 700;
