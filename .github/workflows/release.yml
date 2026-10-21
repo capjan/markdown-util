@@ -21,6 +21,20 @@ jobs:
       package_version: ${{ steps.version.outputs.package_version }}
 
     steps:
+      - name: Validate macOS signing configuration
+        shell: bash
+        env:
+          APPLE_CERTIFICATE: ${{ secrets.APPLE_DEVELOPER_ID_APPLICATION_CERTIFICATE_BASE64 }}
+          APPLE_CERTIFICATE_PASSWORD: ${{ secrets.APPLE_DEVELOPER_ID_APPLICATION_CERTIFICATE_PASSWORD }}
+          APPLE_NOTARIZATION_KEY: ${{ secrets.APPLE_NOTARIZATION_PRIVATE_KEY }}
+          APPLE_NOTARIZATION_KEY_ID: ${{ vars.APPLE_NOTARIZATION_KEY_ID }}
+          APPLE_NOTARIZATION_ISSUER_ID: ${{ vars.APPLE_NOTARIZATION_ISSUER_ID }}
+        run: |
+          if [[ -z "$APPLE_CERTIFICATE" || -z "$APPLE_CERTIFICATE_PASSWORD" || -z "$APPLE_NOTARIZATION_KEY" || -z "$APPLE_NOTARIZATION_KEY_ID" || -z "$APPLE_NOTARIZATION_ISSUER_ID" ]]; then
+            echo "Configure the Apple signing and notarization secrets and variables described in AGENTS.md." >&2
+            exit 1
+          fi
+
       - name: Checkout
         uses: actions/checkout@v7
         with:
@@ -121,25 +135,10 @@ jobs:
           RID: ${{ matrix.rid }}
         run: dotnet publish Source/MarkdownUtil/MarkdownUtil.csproj --configuration Release --runtime $env:RID --self-contained true -p:PublishAot=true -warnaserror:IL2026,IL2104,IL3050,IL3053 "-p:Version=$env:PACKAGE_VERSION" --output "$env:RUNNER_TEMP/publish"
 
-      - name: Validate macOS signing configuration
-        if: runner.os == 'macOS'
-        shell: bash
-        env:
-          APPLE_CERTIFICATE: ${{ secrets.APPLE_DEVELOPER_ID_APPLICATION_CERTIFICATE_BASE64 }}
-          APPLE_CERTIFICATE_PASSWORD: ${{ secrets.APPLE_DEVELOPER_ID_APPLICATION_CERTIFICATE_PASSWORD }}
-          APPLE_NOTARIZATION_KEY: ${{ secrets.APPLE_NOTARIZATION_PRIVATE_KEY }}
-          APPLE_NOTARIZATION_KEY_ID: ${{ vars.APPLE_NOTARIZATION_KEY_ID }}
-          APPLE_NOTARIZATION_ISSUER_ID: ${{ vars.APPLE_NOTARIZATION_ISSUER_ID }}
-        run: |
-          if [[ -z "$APPLE_CERTIFICATE" || -z "$APPLE_CERTIFICATE_PASSWORD" || -z "$APPLE_NOTARIZATION_KEY" || -z "$APPLE_NOTARIZATION_KEY_ID" || -z "$APPLE_NOTARIZATION_ISSUER_ID" ]]; then
-            echo "Configure the Apple signing and notarization secrets and variables described in Docs/Setup.md." >&2
-            exit 1
-          fi
-
       - name: Import Developer ID Application certificate
         if: runner.os == 'macOS'
         id: signing-certificate
-        uses: Apple-Actions/import-codesign-certs@v7
+        uses: Apple-Actions/import-codesign-certs@77ba2a2a8f5cfc8c405ebf3159f767c323e238f9 # v7
         with:
           p12-file-base64: ${{ secrets.APPLE_DEVELOPER_ID_APPLICATION_CERTIFICATE_BASE64 }}
           p12-password: ${{ secrets.APPLE_DEVELOPER_ID_APPLICATION_CERTIFICATE_PASSWORD }}
@@ -158,6 +157,7 @@ jobs:
 
           codesign --force --options runtime --timestamp --sign "$identity_hash" "$RUNNER_TEMP/publish/mdu"
           codesign --verify --strict --verbose=2 "$RUNNER_TEMP/publish/mdu"
+          "$RUNNER_TEMP/publish/mdu" --help
 
       - name: Prepare macOS notarization archive
         if: runner.os == 'macOS'
@@ -166,7 +166,7 @@ jobs:
 
       - name: Notarize macOS executable
         if: runner.os == 'macOS'
-        uses: Apple-Actions/notarize@v1
+        uses: Apple-Actions/notarize@4c7a9c62eed74953bcc47900228429c8e31aa05c # v1
         with:
           path: ${{ runner.temp }}/mdu-notarization.zip
           issuer-id: ${{ vars.APPLE_NOTARIZATION_ISSUER_ID }}
