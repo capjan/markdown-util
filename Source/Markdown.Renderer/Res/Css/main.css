@@ -1145,6 +1145,20 @@ h1, h2, h3, h4, h5, h6 {
     margin: 1rem 0;
 }
 
+.markdown-content video {
+    display: block;
+    max-width: 100%;
+    height: auto;
+    margin: 1rem 0;
+    border-radius: 0.5rem;
+    background: var(--surface-code-block);
+}
+
+.markdown-content video:not([width][height]) {
+    width: 100%;
+    aspect-ratio: 16 / 9;
+}
+
 .media-embed-pending {
     display: flex;
     box-sizing: border-box;

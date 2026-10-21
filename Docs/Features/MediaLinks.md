@@ -1,8 +1,28 @@
 # Media Links
 
-Put a YouTube or Vimeo link on a line of its own to show the video in a responsive player. A link inside a sentence stays an ordinary link.
+Use an HTML `<video>` element to embed an MP4 directly. Put a YouTube or Vimeo link on a line of its own to show it in a responsive player; a link inside a sentence stays an ordinary link.
 
-## Syntax
+## Direct MP4 video
+
+This eight-second demo scene is attached to the [v4.6.1 GitHub release](https://github.com/capjan/mdu/releases/tag/v4.6.1). The Pages workflow copies it into the documentation site, so the video renders from the central docs site without being stored in the Git repository.
+
+For PDF output, put the opening `<video>` tag on its own line, as in the example below. A one-line `<video ...></video>` is treated as inline HTML and omitted from the PDF.
+
+```html title="HTML"
+<video controls playsinline preload="none" width="960" height="540" poster="https://capjan.github.io/mdu/assets/mdu-demoscene-preview.png">
+  <source src="https://capjan.github.io/mdu/assets/mdu-demoscene.mp4" type="video/mp4">
+  Your browser does not support embedded videos.
+</video>
+```
+
+<video controls playsinline preload="none" width="960" height="540" poster="https://capjan.github.io/mdu/assets/mdu-demoscene-preview.png">
+  <source src="https://capjan.github.io/mdu/assets/mdu-demoscene.mp4" type="video/mp4">
+  Your browser does not support embedded videos.
+</video>
+
+## YouTube and Vimeo
+
+### YouTube
 
 ```markdown title="Markdown"
 [Watch the first version of ten fingers on YouTube](https://youtu.be/hyeCMRQhVOI)
@@ -10,12 +30,20 @@ Put a YouTube or Vimeo link on a line of its own to show the video in a responsi
 
 [Watch the first version of ten fingers on YouTube](https://youtu.be/hyeCMRQhVOI)
 
-## Privacy by default
+### Vimeo
 
-An embedded player contacts its provider as soon as it loads, even if nobody presses play. MDU therefore shows a placeholder first and loads the video only when the reader agrees:
+```markdown title="Markdown"
+[Watch the Vimeo demo](https://vimeo.com/76979871)
+```
 
-- **Load this video once from YouTube** loads only this video on this page.
-- **Always allow YouTube on this site** saves the choice in the browser's local storage, so later visits load that provider's videos directly.
+[Watch the Vimeo demo](https://vimeo.com/76979871)
+
+### Privacy by default
+
+An embedded player contacts its provider as soon as it loads, even if nobody presses play. MDU therefore shows a placeholder first and loads the video only when the reader agrees. Depending on the selected player, the buttons read:
+
+- **Load this video once from YouTube** or **Load this video once from Vimeo** loads only that video on this page.
+- **Always allow YouTube on this site** or **Always allow Vimeo on this site** saves the choice in the browser's local storage, so later visits load that provider's videos directly.
 
 The reader can review or revoke saved choices at any time under **Media settings** in the page header. Revoking removes the saved choice and unloads that provider's players on the current page.
 

@@ -5,6 +5,74 @@ namespace Markdown.Renderer.Test;
 public class PdfRendererTest
 {
     [Fact]
+    public void RendersVideoSourcesAsPdfLinksWithoutFallbackText()
+    {
+        const string markdown = """
+            <video controls playsinline preload="none" width="960" height="540">
+              <source src="https://example.com/demo.mp4" type="video/mp4">
+              Your browser does not support embedded videos.
+            </video>
+
+            <video src="https://example.com/direct.mp4" controls>
+              Direct video fallback.
+            </video>
+            """;
+        using var output = new MemoryStream();
+
+        new PdfRenderer(new HtmlRenderer()).WritePdf(output, "Videos",
+        [new PdfSourceSection("Videos", "videos/index.html", markdown)], includeFrontMatter: false);
+
+        var pdf = Encoding.Latin1.GetString(output.ToArray());
+        Assert.Contains("/URI (https://example.com/demo.mp4)", pdf);
+        Assert.Contains("/URI (https://example.com/direct.mp4)", pdf);
+        Assert.DoesNotContain($"<{Convert.ToHexString(Encoding.ASCII.GetBytes("Your browser does not support embedded videos."))}> Tj", pdf);
+        Assert.DoesNotContain($"<{Convert.ToHexString(Encoding.ASCII.GetBytes("Direct video fallback."))}> Tj", pdf);
+    }
+
+    [Fact]
+    public void DoesNotNormalizeBooleanWordsInPdfTextOrCodeBlocks()
+    {
+        const string markdown = """
+            Use the player controls to start the video. Wrap it in a loop for testing.
+            The sound stays muted until you press play.
+
+            ```html
+            <video controls playsinline muted>
+              <!-- then loop forever -->
+            </video>
+            ```
+            """;
+        using var output = new MemoryStream();
+
+        new PdfRenderer(new HtmlRenderer()).WritePdf(output, "Videos",
+        [new PdfSourceSection("Videos", "videos/index.html", markdown)], includeFrontMatter: false);
+
+        var pdf = Encoding.Latin1.GetString(output.ToArray());
+        foreach (var text in new[] { "controls", "playsinline", "muted", "loop" })
+            Assert.Contains(Convert.ToHexString(Encoding.ASCII.GetBytes(text)), pdf);
+        foreach (var text in new[] { "controls=\"controls\"", "loop=\"loop\"", "muted=\"muted\"", "playsinline=\"playsinline\"" })
+            Assert.DoesNotContain(Convert.ToHexString(Encoding.ASCII.GetBytes(text)), pdf);
+    }
+
+    [Fact]
+    public void DoesNotNormalizeBooleanWordsInsideAttributeValues()
+    {
+        const string markdown = """
+            ![Player controls overview](https://example.com/shot.png)
+
+            [Docs](https://example.com/docs "Loop settings")
+            """;
+        using var output = new MemoryStream();
+
+        new PdfRenderer(new HtmlRenderer()).WritePdf(output, "Media",
+        [new PdfSourceSection("Media", "media/index.html", markdown)], includeFrontMatter: false);
+
+        var pdf = Encoding.Latin1.GetString(output.ToArray());
+        Assert.StartsWith("%PDF-1.7", pdf);
+        Assert.Contains("/URI (https://example.com/docs)", pdf);
+    }
+
+    [Fact]
     public void RendersTablesInsideScrollableContainersToPdf()
     {
         using var output = new MemoryStream();

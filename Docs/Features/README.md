@@ -22,7 +22,7 @@ Everything on these pages is written in ordinary Markdown. Each page shows the s
 - [Math](Math.md) - GitHub-compatible formulas as static SVG
 - [Icons and Emojis](Icons-and-Emojis.md) - Thousands of icons, colored logos, and emoji shortcodes
 - [Images](Images.md) - Local and remote images with a lightbox
-- [Media Links](MediaLinks.md) - YouTube and Vimeo players that load only with consent
+- [Media Links](MediaLinks.md) - Direct MP4 playback and YouTube and Vimeo players that load only with consent
 - [Hero Banner](Hero.md) - An animated beach scene for landing pages
 
 ## Organize
