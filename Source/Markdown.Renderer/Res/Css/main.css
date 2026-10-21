@@ -2594,6 +2594,124 @@ th, td {
     display: flow-root;
 }
 
+.markdown-content .openapi-response-control {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    margin: 1.2rem 0 0.5rem;
+    color: var(--text-secondary);
+    font-size: 0.9rem;
+    font-weight: 650;
+}
+
+.markdown-content .openapi-response-select {
+    min-width: 6.5rem;
+    padding: 0.42rem 0.75rem;
+    border: 1px solid var(--openapi-response-border);
+    border-radius: 0.45rem;
+    background: var(--openapi-response-background);
+    color: var(--openapi-response-color);
+    font: inherit;
+    font-weight: 750;
+    cursor: pointer;
+}
+
+.markdown-content .openapi-response-select:focus-visible {
+    outline: 2px solid var(--openapi-response-color);
+    outline-offset: 2px;
+}
+
+.markdown-content .openapi-response-select option {
+    background: var(--page-background);
+    color: var(--text-primary);
+}
+
+.markdown-content .openapi-response-select option.openapi-status-2xx { color: #096b45; }
+.markdown-content .openapi-response-select option.openapi-status-4xx { color: #895500; }
+.markdown-content .openapi-response-select option.openapi-status-5xx { color: #b4232e; }
+
+.markdown-content .openapi-response-panel {
+    margin: 0 0 1rem;
+    padding: 0.1rem 1rem 0.75rem;
+    border-left: 3px solid var(--openapi-response-color);
+    border-radius: 0.25rem 0.6rem 0.6rem 0.25rem;
+    background: color-mix(in srgb, var(--openapi-response-color) 4%, var(--page-background));
+}
+
+.markdown-content .openapi-response-panel[hidden] {
+    display: none;
+}
+
+.markdown-content .openapi-status-2xx {
+    --openapi-response-color: #096b45;
+    --openapi-response-background: #edf8f2;
+    --openapi-response-border: #a5d7ba;
+}
+
+.markdown-content .openapi-status-4xx {
+    --openapi-response-color: #895500;
+    --openapi-response-background: #fff6df;
+    --openapi-response-border: #e6c46c;
+}
+
+.markdown-content .openapi-status-5xx {
+    --openapi-response-color: #b4232e;
+    --openapi-response-background: #fff0f0;
+    --openapi-response-border: #e5a0a3;
+}
+
+.markdown-content .openapi-status-neutral {
+    --openapi-response-color: var(--text-secondary);
+    --openapi-response-background: var(--surface-current);
+    --openapi-response-border: var(--border);
+}
+
+:root[data-theme="dark"] .markdown-content .openapi-status-2xx {
+    --openapi-response-color: #68d39e;
+    --openapi-response-background: #11271c;
+    --openapi-response-border: #326448;
+}
+
+:root[data-theme="dark"] .markdown-content .openapi-status-4xx {
+    --openapi-response-color: #f2bd55;
+    --openapi-response-background: #2a1e00;
+    --openapi-response-border: #84631c;
+}
+
+:root[data-theme="dark"] .markdown-content .openapi-status-5xx {
+    --openapi-response-color: #ff8585;
+    --openapi-response-background: #2e0d0c;
+    --openapi-response-border: #783433;
+}
+
+:root[data-theme="dark"] .markdown-content .openapi-response-select option.openapi-status-2xx { color: #68d39e; }
+:root[data-theme="dark"] .markdown-content .openapi-response-select option.openapi-status-4xx { color: #f2bd55; }
+:root[data-theme="dark"] .markdown-content .openapi-response-select option.openapi-status-5xx { color: #ff8585; }
+
+@media (prefers-color-scheme: dark) {
+    :root[data-theme="auto"] .markdown-content .openapi-status-2xx {
+        --openapi-response-color: #68d39e;
+        --openapi-response-background: #11271c;
+        --openapi-response-border: #326448;
+    }
+
+    :root[data-theme="auto"] .markdown-content .openapi-status-4xx {
+        --openapi-response-color: #f2bd55;
+        --openapi-response-background: #2a1e00;
+        --openapi-response-border: #84631c;
+    }
+
+    :root[data-theme="auto"] .markdown-content .openapi-status-5xx {
+        --openapi-response-color: #ff8585;
+        --openapi-response-background: #2e0d0c;
+        --openapi-response-border: #783433;
+    }
+
+    :root[data-theme="auto"] .markdown-content .openapi-response-select option.openapi-status-2xx { color: #68d39e; }
+    :root[data-theme="auto"] .markdown-content .openapi-response-select option.openapi-status-4xx { color: #f2bd55; }
+    :root[data-theme="auto"] .markdown-content .openapi-response-select option.openapi-status-5xx { color: #ff8585; }
+}
+
 .markdown-content h3.openapi-schema {
     padding-bottom: 0.4rem;
     border-bottom: 1px solid var(--border-subtle);

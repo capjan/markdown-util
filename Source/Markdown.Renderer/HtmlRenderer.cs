@@ -20,6 +20,7 @@ public class HtmlRenderer
         RegexOptions.Compiled | RegexOptions.Singleline);
     private static readonly Regex HeadingIdRegex = new(@"\bid=""(?<id>[^""]+)""", RegexOptions.Compiled);
     private static readonly Regex ClassAttributeRegex = new(@"\bclass=""(?<class>[^""]*)""", RegexOptions.Compiled);
+    private static readonly Regex OpenApiResponseCodeRegex = new(@"^Response\s*<code>(?<status>[^<]+)</code>", RegexOptions.Compiled);
     private static readonly Regex OpenApiPermalinkRegex = new(
         @"<a\b[^>]*\bclass=""headerlink""[^>]*>.*?</a>",
         RegexOptions.Compiled | RegexOptions.Singleline);
@@ -138,6 +139,7 @@ public class HtmlRenderer
         var pageHeading = GetPageHeadingTitle(renderedMarkdown);
         renderedMarkdown = InsertHeadingPermalinks(renderedMarkdown);
         renderedMarkdown = CollapseOpenApiOperations(renderedMarkdown);
+        var hasOpenApiResponses = renderedMarkdown.Contains("class=\"openapi-responses\"", StringComparison.Ordinal);
         renderedMarkdown = InsertEditPageLink(renderedMarkdown, editPageLink, out var editLinkInserted);
         var breadcrumbMarkup = RenderBreadcrumbs(renderedMarkdown, breadcrumbs ?? Array.Empty<BreadcrumbItem>());
         var model = new MainModel
@@ -198,6 +200,7 @@ public class HtmlRenderer
                     ? $"<script defer src=\"{HtmlEncoder.Default.Encode(prefix + "js/" + IconSearch.ScriptFileName)}\"></script>{Environment.NewLine}"
                     : string.Empty)
                 + (providersForSettings.Count > 0 ? $"<script>{MediaLinkEmbedder.Script}</script>{Environment.NewLine}" : string.Empty)
+                + (hasOpenApiResponses ? $"<script>{OpenApiResponseScript}</script>{Environment.NewLine}" : string.Empty)
                 + (hasHero ? $"<script>{Hero.Script}</script>{Environment.NewLine}" : string.Empty)
         };
         var renderedHtml = TemplateTokenRegex.Replace(Resources.HtmlTemplateContent(), match =>
@@ -561,7 +564,7 @@ public class HtmlRenderer
             output.Append(OpenApiPermalinkRegex.Replace(heading.Groups["content"].Value, string.Empty));
             output.AppendLine("</summary>");
             output.AppendLine("<div class=\"openapi-operation-content\">");
-            output.Append(renderedMarkdown, contentStart, contentEnd - contentStart);
+            output.Append(WrapOpenApiResponses(renderedMarkdown[contentStart..contentEnd]));
             output.AppendLine("</div>");
             output.AppendLine("</details>");
             copiedUntil = contentEnd;
@@ -570,6 +573,100 @@ public class HtmlRenderer
         output.Append(renderedMarkdown, copiedUntil, renderedMarkdown.Length - copiedUntil);
         return output.ToString();
     }
+
+    private static string WrapOpenApiResponses(string content)
+    {
+        var responses = HeadingRegex.Matches(content)
+            .Cast<Match>()
+            .Where(match => match.Groups["level"].Value == "5" && HasClass(match, "openapi-response"))
+            .Select(match => new
+            {
+                Heading = match,
+                Code = OpenApiResponseCodeRegex.Match(match.Groups["content"].Value)
+            })
+            .Where(response => response.Code.Success)
+            .Select(response => new
+            {
+                response.Heading,
+                Status = WebUtility.HtmlDecode(response.Code.Groups["status"].Value)
+            })
+            .ToArray();
+        if (responses.Length == 0) return content;
+
+        var output = new StringBuilder(content.Length + responses.Length * 200);
+        var firstResponseStart = responses[0].Heading.Index;
+        output.Append(content, 0, firstResponseStart);
+        output.AppendLine("<div class=\"openapi-responses\">");
+        output.AppendLine("<label class=\"openapi-response-control\">");
+        output.AppendLine("<span>Response</span>");
+        output.Append("<select class=\"openapi-response-select ")
+            .Append(GetOpenApiResponseStatusClass(responses[0].Status))
+            .AppendLine("\" aria-label=\"Response status\">");
+        for (var index = 0; index < responses.Length; index++)
+        {
+            var response = responses[index];
+            var encodedStatus = HtmlEncoder.Default.Encode(response.Status);
+            output.Append("<option value=\"")
+                .Append(encodedStatus)
+                .Append("\" class=\"")
+                .Append(GetOpenApiResponseStatusClass(response.Status))
+                .Append("\"");
+            if (index == 0) output.Append(" selected");
+            output.Append(">").Append(encodedStatus).AppendLine("</option>");
+        }
+        output.AppendLine("</select>");
+        output.AppendLine("</label>");
+
+        for (var index = 0; index < responses.Length; index++)
+        {
+            var response = responses[index];
+            var responseEnd = index + 1 < responses.Length
+                ? responses[index + 1].Heading.Index
+                : content.Length;
+            output.Append("<section class=\"openapi-response-panel ")
+                .Append(GetOpenApiResponseStatusClass(response.Status))
+                .Append("\" data-response-status=\"")
+                .Append(HtmlEncoder.Default.Encode(response.Status))
+                .Append('"');
+            if (index > 0) output.Append(" hidden");
+            output.AppendLine(">");
+            output.Append(content, response.Heading.Index, responseEnd - response.Heading.Index);
+            output.AppendLine("</section>");
+        }
+
+        output.AppendLine("</div>");
+        return output.ToString();
+    }
+
+    private static string GetOpenApiResponseStatusClass(string status)
+    {
+        var normalizedStatus = status.ToUpperInvariant();
+        if (normalizedStatus == "2XX" || IsNumericStatusInFamily(normalizedStatus, '2')) return "openapi-status-2xx";
+        if (normalizedStatus == "4XX" || IsNumericStatusInFamily(normalizedStatus, '4')) return "openapi-status-4xx";
+        if (normalizedStatus == "5XX" || IsNumericStatusInFamily(normalizedStatus, '5')) return "openapi-status-5xx";
+        return "openapi-status-neutral";
+    }
+
+    private static bool IsNumericStatusInFamily(string status, char family) =>
+        status.Length == 3 && status[0] == family && char.IsAsciiDigit(status[1]) && char.IsAsciiDigit(status[2]);
+
+    private const string OpenApiResponseScript = """
+        document.addEventListener("change", event => {
+            const select = event.target;
+            if (!(select instanceof HTMLSelectElement) || !select.matches(".openapi-response-select")) return;
+            const responses = select.closest(".openapi-responses");
+            responses.querySelectorAll(".openapi-response-panel").forEach(panel => {
+                panel.hidden = panel.dataset.responseStatus !== select.value;
+            });
+            select.classList.remove("openapi-status-2xx", "openapi-status-4xx", "openapi-status-5xx", "openapi-status-neutral");
+            const status = select.value.toUpperCase();
+            const statusClass = /^2(?:\d{2}|XX)$/.test(status) ? "openapi-status-2xx"
+                : /^4(?:\d{2}|XX)$/.test(status) ? "openapi-status-4xx"
+                : /^5(?:\d{2}|XX)$/.test(status) ? "openapi-status-5xx"
+                : "openapi-status-neutral";
+            select.classList.add(statusClass);
+        });
+        """;
 
     private static bool HasClass(Match heading, string className)
     {
