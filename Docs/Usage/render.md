@@ -4,23 +4,33 @@ navigation.order: 4
 
 # render
 
-`mdu render` converts the detected Markdown pages into a static HTML site. It writes the result and copied local assets to the output folder, which defaults to `./site`. The command exits after rendering.
+`mdu render` converts the Markdown pages into a static HTML site and exits. It writes the pages and the linked local assets to the output folder, `./site` by default. Your Markdown files stay unchanged.
 
 ## Usage
 
 ```bash
-mdu render [PATH [OUTPATH]]
+mdu render [PATH [OUTPATH]] [options]
 ```
 
-The alias `mdu r` runs the same command. See [Paths and file search](README.md#paths-and-file-search) for the default source and output paths, and [common options](README.md#common-options) for `--pattern` and `--hidden`. Run `mdu render --help` for the current command help.
+The alias `mdu r` runs the same command. See [Paths and file search](README.md#paths-and-file-search) for the default folders and [common options](README.md#common-options) for `--pattern` and `--hidden`.
 
-`--editPageRoot` adds an edit icon beside the first level-one heading on each rendered page. Pages without a level-one heading show an **Edit this page** link in the footer. It also adds a GitHub repository button to the top bar; the button links to the repository root and shows its `owner/repository` name.
+| Option | Effect |
+| --- | --- |
+| `--editPageRoot <url>` | GitHub edit URL of the documentation folder. Adds an edit icon beside each page's level-one heading, or an **Edit this page** link in the footer when there is none, and a repository button with the `owner/repository` name to the header. |
+
+## Examples
+
+```bash
+mdu render
+mdu render ./ProjectDocs ./public/docs
+mdu render ./docs ./site --pattern "*.markdown" --editPageRoot "https://github.com/example/project/edit/main/docs"
+```
 
 ## Site configuration
 
-An optional `mdu.yml` file in the Markdown root configures the site name, light and dark logos and favicons, and theme colors. The configured background color also applies to the header, navigation, sidebar, and dialogs. Secondary text, lines, and code surfaces are mixed from the configured text and background colors, and hover backgrounds from the primary color, so they match a custom palette. Referenced assets are copied into the output folder.
+An optional `mdu.yml` in the documentation folder sets the site name, light and dark logos and favicons, and theme colors. MDU copies the referenced files into the output folder.
 
-```yaml
+```yaml title="docs/mdu.yml"
 site_name: Documentation
 logo:
   light: assets/logo-light.svg
@@ -39,21 +49,33 @@ colors:
     primary: "#2997ff"
 ```
 
-Page front matter supports `title`, `description`, and `icon`. `title` sets the browser and fallback navigation title, `description` becomes the page meta description, and `icon` adds an icon shortcode beside the first-level heading. `navigation.title` overrides the navigation label; `navigation.order`, `navigation.visible`, and `navigation.expanded` control ordering, visibility, and initial sidebar expansion. Set `navigation.placement: top` on a first-level page or section `README.md` to create a [top navigation tab](../Features/Navigation.md#top-navigation). The placement chooses the preferred position for that entry; it does not change the navigation or breadcrumb root.
+The background color also applies to the header, navigation, sidebar, and dialogs. Secondary text, lines, and code surfaces are mixed from the text and background colors, and hover backgrounds from the primary color, so they match a custom palette.
 
-## Examples
+## Page front matter
 
-Render the default documentation folder to `./site`, or choose both folders explicitly:
+YAML front matter at the top of a page controls its title, metadata, and navigation entry:
 
-```bash
-mdu render
-mdu render ./ProjectDocs ./public/docs
+```yaml
+---
+title: Installing MDU
+description: Install the MDU .NET tool globally or per repository.
+icon: material-download
+navigation:
+  title: Setup
+  order: 10
+---
 ```
 
-Render only files matching a custom pattern and add links to their source files in a GitHub repository:
+| Key | Effect |
+| --- | --- |
+| `title` | Browser title and fallback navigation title |
+| `description` | Page meta description |
+| `icon` | Icon shortcode shown beside the level-one heading, such as `material-download` |
+| `navigation.title` | Label in the sidebar, tabs, and breadcrumbs |
+| `navigation.order` | Sort order among sibling pages |
+| `navigation.visible` | `false` hides the entry; the page stays reachable by its URL |
+| `navigation.expanded` | `true` opens the section in the sidebar initially |
+| `navigation.placement` | `top` makes a first-level page or section a [top navigation tab](../Features/Navigation.md#top-navigation) |
+| `pdf.visible` | `false` leaves the page out of [`mdu pdf`](pdf.md) |
 
-```bash
-mdu render ./Docs ./site --pattern "*.markdown" --editPageRoot "https://github.com/example/project/edit/main/Docs"
-```
-
-The Markdown source files are left unchanged.
+Both the nested form shown above and the compact form `navigation.order: 10` work. [Navigation](../Features/Navigation.md) explains the navigation keys in detail.

@@ -144,4 +144,6 @@ Wrap content in an HTML `<details>` element to show it only on demand; the `<sum
 
 ## Related features
 
-For footnotes, see [Footnotes](Footnotes.md). For GitHub-style callouts, see [Callouts](Callouts.md).
+- [Footnotes](Footnotes.md) - Numbered notes with hover previews
+- [Callouts](Callouts.md) - Notes, tips, and warnings
+- [Tables](Tables.md) - Pipe tables with alignment

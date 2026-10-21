@@ -2,7 +2,7 @@
 
 Write diagrams as text; MDU turns supported code blocks into static SVG in the rendered page.
 
-- Rendered as static SVG without JavaScript
+- Rendered at build time, without JavaScript
 - Works offline
 - Follows the light or dark theme
 - Keeps diagram sources portable Markdown
@@ -46,7 +46,7 @@ Use `LR` for a diagram that flows from left to right:
 ```mermaid
 flowchart LR
     accTitle: Rendered site
-    Docs[Docs folder] --> Render[mdu render] --> Site[Static site]
+    Source[docs folder] --> Render[mdu render] --> Site[Static site]
     Render -.-> Search[Search index]
 ```
 ~~~
@@ -54,7 +54,7 @@ flowchart LR
 ```mermaid
 flowchart LR
     accTitle: Rendered site
-    Docs[Docs folder] --> Render[mdu render] --> Site[Static site]
+    Source[docs folder] --> Render[mdu render] --> Site[Static site]
     Render -.-> Search[Search index]
 ```
 

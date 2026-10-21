@@ -4,31 +4,26 @@ navigation.visible: false
 
 # Rule 2
 
-## Summary
+> [!IMPORTANT]
+> The name of a folder that contains a `README.md` must match the title of that `README.md`. Code: `MDU002` DirectoryTitleMatch.
 
-The name of a directory containing a `README.md` file must match the title in that file.
+## Why
 
-## Goal
-
-`README.md` files act as index files that readers open when they enter a directory, so they typically contain
-the most important information about it. However, their titles may not indicate what the directory contains.
-
-When the directory name matches the README title, readers can tell what the index covers while navigating the project.
-
-For example, if a `README.md` file is in a `docs` directory, its title should be `Docs`.
+A `README.md` is the page readers open when they enter a folder. When the folder name matches its title, readers know what the section covers while they browse the repository, and the navigation of the rendered site shows the same name.
 
 ## Example
 
-Assume a `README.md` file with the following content:
-
-```markdown title="Markdown"
-# notes
+```markdown title="notes/README.md"
+# Notes
 
 These are my notes.
 ```
 
-It is good practice to name the directory `notes` as well.
+| Folder | Title | Result |
+| --- | --- | --- |
+| `notes/` | `# Notes` | :material-check: Matches |
+| `Keyboard-Keys/` | `# Keyboard Keys` | :material-check: Matches; case, spaces, hyphens, and underscores are ignored |
+| `Rule2/` | `# Rule 2: Folder names` | :material-check: Matches; only the text before the first colon counts |
+| `docs/` | `# Overview` | :material-close: Rename the folder or the title |
 
-## Notes
-
-Titles such as "Rule 2: This is a following description" are truncated at the colon to avoid long directory names.
+Set `navigation.title` when a section should show a different label in the navigation.

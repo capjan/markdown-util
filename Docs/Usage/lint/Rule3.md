@@ -4,20 +4,17 @@ navigation.visible: false
 
 # Rule 3
 
-## Summary
+> [!IMPORTANT]
+> The casing of a local link must match the casing of its target on disk. Code: `MDU003` LinkCasing.
 
-The casing of internal links must match the casing of their targets on the local file system.
+## Why
 
-## Goal
-
-When documentation is edited on a case-insensitive file system (such as the default file system on Windows), an incorrectly cased internal link may go unnoticed and later fail on a case-sensitive deployment.
+Windows and macOS usually ignore the case of file names, Linux and most web servers do not. A link with the wrong case works while you write, then breaks after you publish.
 
 ## Example
 
-For example, you might link to the parent page that contains an overview:
-
 ```markdown title="Markdown"
-Click [here](../README.md) to return to the overview page.
+Return to the [overview](../README.md).
 ```
 
-If the parent file is actually named `readme.md`, the link may still work on a Windows machine but be broken on Linux, where file name casing matters.
+If the file is actually named `readme.md`, this link works on Windows but fails on a Linux web server. Change the link or rename the file so both use the same case.

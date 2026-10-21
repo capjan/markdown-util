@@ -1,27 +1,20 @@
 # Math
 
-MDU renders GitHub-compatible math syntax to static SVG while building the site. The generated pages contain
-the formulas directly, so browsers need no JavaScript math renderer or external font service.
+MDU renders GitHub-compatible math syntax to static SVG while it builds the site. The pages contain the formulas directly, so browsers need no JavaScript math renderer or font service.
 
 ## Inline math
 
-Wrap an expression in single dollar signs. For example, the area of a circle is $A = \pi r^2$.
-
-**Markdown:**
+Wrap an expression in single dollar signs:
 
 ```markdown title="Markdown"
 The area of a circle is $A = \pi r^2$.
 ```
 
+The area of a circle is $A = \pi r^2$.
+
 ## Display math
 
 Use double dollar signs for a centered formula:
-
-$$
-\int_0^1 x^2\,dx = \frac{1}{3}
-$$
-
-**Markdown:**
 
 ```markdown title="Markdown"
 $$
@@ -29,15 +22,13 @@ $$
 $$
 ```
 
+$$
+\int_0^1 x^2\,dx = \frac{1}{3}
+$$
+
 ## Fenced math
 
-GitHub's `math` code fence renders a display formula:
-
-```math
-\sum_{i=1}^{n} i
-```
-
-**Markdown:**
+GitHub's `math` code fence renders a display formula as well:
 
 ````markdown title="Markdown"
 ```math
@@ -45,15 +36,15 @@ GitHub's `math` code fence renders a display formula:
 ```
 ````
 
+```math
+\sum_{i=1}^{n} i
+```
+
 ## Compatibility
 
-MDU supports the three forms shown above: `$...$`, `$$...$$`, and fenced `math` blocks. GitHub documents an
-additional inline delimiter form; MDU does not currently support that form. Its .NET LaTeX renderer also
-implements a subset of LaTeX math commands rather than a complete LaTeX document engine. If an expression cannot be
-rendered, MDU keeps its TeX source visible in the page.
-
-The formulas are saved as inline SVG with paths and theme-aware colors. They do not add a JavaScript or Java runtime.
-The renderer dependencies and their licenses are listed in the packaged `THIRD-PARTY-NOTICES.md`.
+- MDU supports the three forms shown above: `$...$`, `$$...$$`, and fenced `math` blocks. GitHub's additional inline delimiter form is not supported.
+- The .NET LaTeX renderer implements a subset of LaTeX math commands, not a complete LaTeX engine. If an expression cannot be rendered, the page shows its TeX source.
+- Formulas become inline SVG paths with theme-aware colors. The renderer's licenses are listed in the packaged `THIRD-PARTY-NOTICES.md`.
 
 ## References
 

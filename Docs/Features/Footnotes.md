@@ -22,6 +22,8 @@ Shuri spots vibranium[^vibranium]. Tony checks the repulsor[^repulsor].
 [^repulsor]: Iron Man's energy weapon.
 [^vibranium]: Wakanda's energy-absorbing metal.
 
-Hover over a reference or move keyboard focus to it to preview the footnote. The preview stays open while the pointer is over it.
+## In the rendered site
 
-Footnotes appear at the bottom of the page. Their return arrows appear on hover or keyboard focus. Clicking an arrow returns to the text and outlines every reference to that footnote. Click elsewhere or press Escape to clear the highlighting. The footnote reached by a reference is emphasized while the others remain secondary.
+- Hover over a reference, or focus it with the keyboard, to preview the footnote. The preview stays open while the pointer is over it.
+- Footnotes are listed at the bottom of the page. The footnote you jumped to is emphasized; the others stay in the background.
+- A return arrow appears on hover or focus. It jumps back to the text and outlines every reference to that footnote. Click elsewhere or press ++esc++ to clear the outline.

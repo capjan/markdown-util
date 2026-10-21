@@ -79,7 +79,7 @@ Upload the generated `site` folder to GitHub Pages, GitLab Pages, Netlify, or an
 | `mdu fix`         | Migrates supported MkDocs Markdown and applies automatic fixes. |
 | `mdu tree`        | Prints detected Markdown files as a tree.          |
 
-By default, commands use the only `./docs` or `./Docs` folder in the current directory. Rendering writes to `./site`; PDF export writes to `./documentation.pdf` for a folder or a file named after a single Markdown input; and the preview server uses port `4173`. If neither documentation folder exists or both do, pass the source path explicitly:
+By default, commands use `./docs` as the source folder. Rendering writes to `./site`; PDF export writes to `./documentation.pdf` for a folder or a file named after a single Markdown input; and the preview server uses port `4173`. If the source folder does not exist, pass its path explicitly:
 
 ```bash
 mdu serve ./manual ./public --port 8080 --no-browser

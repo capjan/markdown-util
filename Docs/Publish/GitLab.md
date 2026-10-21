@@ -4,9 +4,7 @@ navigation.order: 2
 
 # GitLab
 
-Use GitLab CI/CD to render and publish your documentation with GitLab Pages.
-
-Add this `.gitlab-ci.yml` to the root of your repository. It publishes when files under `docs/` change on the default branch:
+GitLab CI/CD can render your documentation and publish it with GitLab Pages. Add this `.gitlab-ci.yml` to the root of your repository; it publishes when files under `docs/` change on the default branch:
 
 ```yaml title=".gitlab-ci.yml"
 pages:
@@ -23,8 +21,9 @@ pages:
         - docs/**/*
 ```
 
-Make sure a GitLab Runner is enabled for the project. If your Markdown files are in a folder named `Docs`, change both `docs` and `docs/**/*` to `Docs` and `Docs/**/*`.
+GitLab publishes the generated `public` folder; since GitLab 17.10 it is included as a job artifact automatically. Make sure a GitLab Runner is enabled for the project.
 
-GitLab 17.10 and later automatically includes the published folder as a job artifact.
+> [!NOTE]
+> If your source folder has another name, update both `docs` and `docs/**/*` to match.
 
-GitLab publishes the generated `public` directory. See [GitLab Pages documentation](https://docs.gitlab.com/user/project/pages/).
+[GitLab Pages documentation](https://docs.gitlab.com/user/project/pages/)
