@@ -32,6 +32,12 @@ public static class OpenApiMarkdownRenderer
     {
         var fullSpecPath = ResolveSpecPath(markdownPath, specPath);
         var generatedMarkdown = RenderFile(fullSpecPath);
+        var overviewTitle = Regex.Match(generatedMarkdown,
+            @"\A## API overview \{\.openapi-overview\}\r?\n(?<title>\*\*(?<name>[^\r\n]+)\*\*)\r?\n");
+        if (overviewTitle.Success && Regex.Matches(markdown, @"(?m)^#\s+(.+?)\s*#*\r?$")
+                .Cast<Match>().Any(heading => string.Equals(heading.Groups[1].Value.Trim(),
+                    overviewTitle.Groups["name"].Value.Trim(), StringComparison.OrdinalIgnoreCase)))
+            generatedMarkdown = generatedMarkdown.Remove(overviewTitle.Groups["title"].Index, overviewTitle.Groups["title"].Length);
         return string.IsNullOrWhiteSpace(markdown)
             ? generatedMarkdown
             : $"{markdown.TrimEnd()}\n\n{generatedMarkdown}";

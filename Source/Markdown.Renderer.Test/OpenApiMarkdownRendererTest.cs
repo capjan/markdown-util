@@ -180,6 +180,7 @@ public class OpenApiMarkdownRendererTest
             File.WriteAllText(specPath, ReferencedSpecification("Order"));
             var firstRender = OpenApiMarkdownRenderer.AppendFromFile("# Orders", markdownPath, "orders.json");
             Assert.Contains("#### Path Parameters", firstRender);
+            Assert.DoesNotContain("**Orders**", firstRender);
             Assert.Contains("| <span class=\"openapi-path-parameter openapi-path-parameter-color-1\">id</span><span class=\"openapi-required-marker\" aria-label=\"Required\">*</span> | <span class=\"openapi-type\"><span class=\"openapi-type-keyword\">string</span></span> |", firstRender);
             Assert.Contains("#### Request body", firstRender);
             Assert.Contains("##### Response `201`", firstRender);

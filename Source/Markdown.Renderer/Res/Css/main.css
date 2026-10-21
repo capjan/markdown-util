@@ -2543,10 +2543,57 @@ th, td {
 }
 
 .markdown-content details.openapi-tag-group {
-    margin-top: 3rem;
-    margin-bottom: 1.5rem;
+    margin: 0;
+    padding: 0;
+    border: 0;
+    border-bottom: 1px solid var(--border-subtle);
+    border-radius: 0;
+    background: var(--page-background);
+}
+
+.markdown-content details.openapi-tag-group[hidden],
+.markdown-content details.openapi-endpoint[hidden] {
+    display: none;
+}
+
+.markdown-content .openapi-tag-list {
+    margin-top: 1.5rem;
+}
+
+.markdown-content .openapi-path-filter-label {
+    display: grid;
+    gap: 0.4rem;
+    margin-bottom: 1rem;
+    font-size: 0.9rem;
+    font-weight: 600;
+}
+
+.markdown-content .openapi-path-filter {
+    width: 100%;
+    padding: 0.7rem 0.85rem;
     border: 1px solid var(--border-subtle);
-    border-radius: 0.7rem;
+    border-radius: 0.5rem;
+    background: var(--page-background);
+    color: var(--text-primary);
+    font: inherit;
+    font-weight: 400;
+}
+
+.markdown-content .openapi-path-filter:focus-visible {
+    outline: 2px solid var(--link);
+    outline-offset: 2px;
+}
+
+.markdown-content .openapi-filter-status {
+    color: var(--text-secondary);
+    font-size: 0.9rem;
+}
+
+.markdown-content details.openapi-tag-group > .openapi-tag-body {
+    display: flow-root;
+    margin: 0;
+    padding: 0.75rem;
+    background: var(--page-background);
 }
 
 .markdown-content details.openapi-tag-group > summary.openapi-tag {
@@ -2555,6 +2602,8 @@ th, td {
     font-size: 1.25rem;
     font-weight: 700;
     cursor: pointer;
+    background: var(--surface-current);
+    border-radius: 0;
 }
 
 .markdown-content details.openapi-tag-group > summary.openapi-tag .openapi-tag-summary-main {
@@ -2622,8 +2671,12 @@ th, td {
     border-bottom: 1px solid var(--border-subtle);
 }
 
-.markdown-content details.openapi-tag-group > details.openapi-endpoint {
-    margin: 1rem;
+.markdown-content .openapi-tag-body > details.openapi-endpoint {
+    margin: 0 0 0.75rem;
+}
+
+.markdown-content .openapi-tag-body > details.openapi-endpoint:last-child {
+    margin-bottom: 0;
 }
 
 .markdown-content details.openapi-tag-group > summary.openapi-tag code {

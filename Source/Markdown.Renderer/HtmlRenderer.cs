@@ -150,6 +150,7 @@ public class HtmlRenderer
         renderedMarkdown = CollapseOpenApiOperations(renderedMarkdown);
         renderedMarkdown = CollapseOpenApiTagGroups(renderedMarkdown);
         var hasOpenApiInteractiveContent = renderedMarkdown.Contains("class=\"openapi-responses\"", StringComparison.Ordinal) ||
+                                           renderedMarkdown.Contains("class=\"openapi-tag-list\"", StringComparison.Ordinal) ||
                                            renderedMarkdown.Contains("class=\"openapi-request-body\"", StringComparison.Ordinal);
         renderedMarkdown = InsertEditPageLink(renderedMarkdown, editPageLink, out var editLinkInserted);
         var breadcrumbMarkup = RenderBreadcrumbs(renderedMarkdown, breadcrumbs ?? Array.Empty<BreadcrumbItem>());
@@ -901,6 +902,12 @@ public class HtmlRenderer
             var description = WebUtility.HtmlDecode(Regex.Replace(descriptionMarkup, "<[^>]+>", " "));
             description = Regex.Replace(description, @"\s+", " ").Trim();
             output.Append(renderedMarkdown, copiedUntil, heading.Index - copiedUntil);
+            if (index == 0)
+            {
+                output.AppendLine("<section class=\"openapi-tag-list\" aria-label=\"API endpoints\">");
+                output.AppendLine("<label class=\"openapi-path-filter-label\">Filter endpoints<input type=\"search\" class=\"openapi-path-filter\" placeholder=\"Search endpoint paths…\" autocomplete=\"off\" spellcheck=\"false\"></label>");
+                output.AppendLine("<p class=\"openapi-filter-status\" role=\"status\" hidden></p>");
+            }
             output.AppendLine("<details class=\"openapi-tag-group\">");
             output.Append("<summary id=\"")
                 .Append(HtmlEncoder.Default.Encode(id.Groups["id"].Value))
@@ -915,11 +922,14 @@ public class HtmlRenderer
                     .Append(HtmlEncoder.Default.Encode(description))
                     .AppendLine("</span>");
             output.AppendLine("</summary>");
+            output.AppendLine("<div class=\"openapi-tag-body\">");
             output.Append(endpointContent);
+            output.AppendLine("</div>");
             output.AppendLine("</details>");
             copiedUntil = groupEnd;
         }
 
+        output.AppendLine("</section>");
         output.Append(renderedMarkdown, copiedUntil, renderedMarkdown.Length - copiedUntil);
         return output.ToString();
     }
@@ -974,6 +984,34 @@ public class HtmlRenderer
         status.Length == 3 && status[0] == family && char.IsAsciiDigit(status[1]) && char.IsAsciiDigit(status[2]);
 
     private const string OpenApiResponseScript = """
+        const openApiFilterStates = new WeakMap();
+        document.addEventListener("input", event => {
+            if (!event.target.matches(".openapi-path-filter")) return;
+            const input = event.target;
+            const list = input.closest(".openapi-tag-list");
+            const query = input.value.trim().toLowerCase();
+            const groups = [...list.querySelectorAll(".openapi-tag-group")];
+            if (query && !openApiFilterStates.has(input))
+                openApiFilterStates.set(input, new Map(groups.map(group => [group, group.open])));
+            let matches = 0;
+            groups.forEach(group => {
+                let visible = 0;
+                group.querySelectorAll(".openapi-endpoint").forEach(endpoint => {
+                    const path = endpoint.querySelector(".openapi-path").textContent.toLowerCase();
+                    endpoint.hidden = !path.includes(query);
+                    if (!endpoint.hidden) visible++;
+                });
+                group.hidden = visible === 0;
+                if (query) group.open = visible > 0;
+                else if (openApiFilterStates.has(input)) group.open = openApiFilterStates.get(input).get(group);
+                matches += visible;
+            });
+            if (!query) openApiFilterStates.delete(input);
+            const status = list.querySelector(".openapi-filter-status");
+            status.hidden = !query;
+            status.textContent = matches === 0 ? "No matching endpoints." : `${matches} matching ${matches === 1 ? "endpoint" : "endpoints"}`;
+        });
+
         document.addEventListener("change", event => {
             const select = event.target;
             if (!(select instanceof HTMLSelectElement)) return;
