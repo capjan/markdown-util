@@ -4,13 +4,13 @@
 
 ## Syntax
 
-Place a styled link anywhere in your Markdown and choose its label:
+Place a link anywhere in your Markdown and choose its label:
 
 ```markdown title="Markdown"
 [Download Documentation as PDF](mdu:pdf)
 ```
 
-MDU resolves the link to the generated PDF, including on pages in nested folders.
+MDU resolves the link to the generated PDF, including on pages in nested folders. It renders with the site's normal link styling.
 
 ## Rendered example
 

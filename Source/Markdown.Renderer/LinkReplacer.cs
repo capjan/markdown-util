@@ -1,5 +1,4 @@
 using System.Text.RegularExpressions;
-using Markdig.Renderers.Html;
 using Markdig.Syntax;
 using Markdig.Syntax.Inlines;
 
@@ -26,7 +25,6 @@ public class LinkReplacer
             {
                 if (string.IsNullOrWhiteSpace(pdfDownloadUrl)) continue;
                 link.Url = pdfDownloadUrl;
-                link.GetAttributes().AddClass("pdf-link");
                 continue;
             }
 
