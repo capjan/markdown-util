@@ -2521,25 +2521,93 @@ th, td {
     text-transform: uppercase;
 }
 
-.markdown-content h2.openapi-overview + p {
-    margin: 0 0 0.45rem;
+.markdown-content .openapi-api-title {
+    margin: 0 0 0.5rem;
     font-size: clamp(1.75rem, 4vw, 2.25rem);
     letter-spacing: -0.035em;
     line-height: 1.15;
 }
 
-.markdown-content h2.openapi-overview + p + p {
-    margin-bottom: 1.25rem;
+.markdown-content .openapi-api-version,
+.markdown-content .openapi-operation-id {
+    display: flex;
+    align-items: center;
+    gap: 0.45rem;
     color: var(--text-secondary);
-    font-size: 0.9rem;
+    font-size: 0.8rem;
+    font-weight: 500;
 }
 
-.markdown-content h2.openapi-overview + p + p code {
-    padding: 0.18rem 0.45rem;
+.markdown-content .openapi-api-version {
+    margin: 0 0 1.25rem;
+}
+
+.markdown-content .openapi-api-version code {
+    padding: 0.15rem 0.55rem;
     border: 1px solid var(--border-subtle);
     border-radius: 999px;
     background: var(--surface-current);
     color: var(--text-primary);
+    font-size: 0.78rem;
+}
+
+.markdown-content .openapi-operation-id {
+    margin: 0.85rem 0 0;
+}
+
+.markdown-content .openapi-operation-id code {
+    padding: 0;
+    border: 0;
+    background: transparent;
+    color: var(--text-primary);
+    font-size: 0.8rem;
+}
+
+.markdown-content .openapi-servers {
+    display: grid;
+    gap: 0.45rem;
+    margin: 1.25rem 0 0;
+    padding: 0.8rem 1rem;
+    border: 1px solid var(--border-subtle);
+    border-radius: 0.65rem;
+    background: var(--surface-current);
+}
+
+.markdown-content .openapi-servers-label {
+    color: var(--text-secondary);
+    font-size: 0.7rem;
+    font-weight: 700;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+}
+
+.markdown-content .openapi-servers ul {
+    display: grid;
+    gap: 0.35rem;
+    margin: 0;
+    padding: 0;
+    list-style: none;
+}
+
+.markdown-content .openapi-servers li {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: baseline;
+    gap: 0.25rem 0.6rem;
+    margin: 0;
+}
+
+.markdown-content .openapi-servers code {
+    padding: 0;
+    border: 0;
+    background: transparent;
+    font-size: 0.85rem;
+    overflow-wrap: anywhere;
+}
+
+.markdown-content .openapi-server-description {
+    color: var(--text-secondary);
+    font-size: 0.82rem;
 }
 
 .markdown-content details.openapi-tag-group {
@@ -2574,32 +2642,66 @@ th, td {
 }
 
 .markdown-content .openapi-path-filter-label {
-    display: grid;
-    gap: 0.4rem;
-    margin-bottom: 1rem;
-    font-size: 0.9rem;
-    font-weight: 600;
+    position: relative;
+    display: block;
+    margin-bottom: 0.75rem;
+}
+
+.markdown-content .openapi-path-filter-text {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    overflow: hidden;
+    clip-path: inset(50%);
+    white-space: nowrap;
+}
+
+.markdown-content .openapi-path-filter-icon {
+    position: absolute;
+    top: 50%;
+    left: 0.85rem;
+    width: 1rem;
+    height: 1rem;
+    fill: none;
+    stroke: var(--text-secondary);
+    stroke-linecap: round;
+    stroke-width: 1.6;
+    pointer-events: none;
+    transform: translateY(-50%);
 }
 
 .markdown-content .openapi-path-filter {
+    box-sizing: border-box;
     width: 100%;
-    padding: 0.7rem 0.85rem;
+    padding: 0.65rem 0.85rem 0.65rem 2.4rem;
     border: 1px solid var(--border-subtle);
-    border-radius: 0.5rem;
+    border-radius: 0.65rem;
     background: var(--page-background);
     color: var(--text-primary);
     font: inherit;
+    font-size: 0.92rem;
     font-weight: 400;
+    transition: border-color 120ms ease, box-shadow 120ms ease;
+}
+
+.markdown-content .openapi-path-filter::placeholder {
+    color: var(--text-secondary);
+}
+
+.markdown-content .openapi-path-filter:hover {
+    border-color: var(--border);
 }
 
 .markdown-content .openapi-path-filter:focus-visible {
-    outline: 2px solid var(--link);
-    outline-offset: 2px;
+    border-color: var(--link);
+    outline: none;
+    box-shadow: 0 0 0 3px color-mix(in srgb, var(--link) 22%, transparent);
 }
 
 .markdown-content .openapi-filter-status {
+    margin: -0.25rem 0 0.75rem;
     color: var(--text-secondary);
-    font-size: 0.9rem;
+    font-size: 0.82rem;
 }
 
 .markdown-content details.openapi-tag-group > .openapi-tag-body {
@@ -2612,11 +2714,16 @@ th, td {
 .markdown-content details.openapi-tag-group > summary.openapi-tag {
     padding: 0.8rem 3rem 0.8rem 1rem;
     color: var(--text-primary);
-    font-size: 1.25rem;
-    font-weight: 700;
+    font-size: 1rem;
+    font-weight: 650;
     cursor: pointer;
-    background: var(--surface-current);
+    background: var(--page-background);
     border-radius: 0;
+}
+
+.markdown-content details.openapi-tag-group > summary.openapi-tag:hover,
+.markdown-content details.openapi-tag-group[open] > summary.openapi-tag {
+    background: var(--surface-current);
 }
 
 .markdown-content details.openapi-tag-group > summary.openapi-tag .openapi-tag-summary-main {
@@ -2634,7 +2741,7 @@ th, td {
     display: flex;
     flex: 0 0 auto;
     flex-wrap: wrap;
-    gap: 0.35rem;
+    gap: 0.3rem;
     margin-left: auto;
 }
 
@@ -2642,18 +2749,25 @@ th, td {
     --openapi-method-color: #5a6472;
 
     display: inline-flex;
-    min-width: 1.65rem;
+    min-width: 1.5rem;
+    height: 1.35rem;
+    box-sizing: border-box;
     align-items: center;
     justify-content: center;
-    padding: 0.24rem 0.42rem;
-    border: 1px solid color-mix(in srgb, var(--openapi-method-color) 35%, var(--border-subtle));
-    border-radius: 0.35rem;
-    background: color-mix(in srgb, var(--openapi-method-color) 12%, var(--page-background));
+    padding: 0 0.4rem;
+    border-radius: 999px;
+    background: color-mix(in srgb, var(--openapi-method-color) 14%, transparent);
     color: var(--openapi-method-color);
-    font-size: 0.76rem;
+    font-family: var(--font-mono);
+    font-size: 0.72rem;
     font-variant-numeric: tabular-nums;
-    font-weight: 750;
+    font-weight: 700;
     line-height: 1;
+    cursor: default;
+}
+
+.markdown-content .openapi-tag-method-count[hidden] {
+    display: none;
 }
 
 .markdown-content .openapi-tag-method-count.openapi-method-get { --openapi-method-color: #096b45; }
@@ -2694,44 +2808,100 @@ th, td {
 
 .markdown-content details.openapi-tag-group > summary.openapi-tag code {
     padding: 0;
+    border: 0;
     background: transparent;
     color: var(--text-primary);
+    font-family: inherit;
+    font-size: inherit;
 }
 
 .markdown-content details.openapi-endpoint {
     --openapi-method-color: #096b45;
 
     margin: 1.25rem 0;
-    border-left: 4px solid var(--openapi-method-color);
-    border-radius: 0.7rem;
+    border: 1px solid var(--border-subtle);
+    border-radius: 0.65rem;
+    background: var(--page-background);
+    box-shadow: inset 3px 0 0 var(--openapi-method-color);
+    transition: border-color 120ms ease;
+}
+
+.markdown-content details.openapi-endpoint:hover,
+.markdown-content details.openapi-endpoint[open] {
+    border-color: color-mix(in srgb, var(--openapi-method-color) 30%, var(--border-subtle));
 }
 
 .markdown-content details.openapi-endpoint > summary.openapi-operation {
     display: flex;
     flex-wrap: wrap;
     align-items: center;
-    gap: 0.45rem 0.7rem;
-    padding: 0.85rem 2.75rem 0.85rem 0.95rem;
+    gap: 0.35rem 0.75rem;
+    padding: 0.7rem 2.75rem 0.7rem 1rem;
+    border-radius: 0.65rem;
     color: var(--text-primary);
-    font-size: 1.05rem;
+    font-size: 0.95rem;
+    font-weight: 500;
     overflow-wrap: anywhere;
 }
 
+.markdown-content details.openapi-endpoint > summary.openapi-operation:hover {
+    background: color-mix(in srgb, var(--openapi-method-color) 5%, transparent);
+}
+
+.markdown-content details.openapi-endpoint[open] > summary.openapi-operation {
+    border-bottom-color: var(--border-subtle);
+    border-radius: 0.65rem 0.65rem 0 0;
+}
+
 .markdown-content details.openapi-endpoint > summary.openapi-operation > code:first-child {
-    padding: 0.24rem 0.48rem;
+    box-sizing: border-box;
+    min-width: 4.1rem;
+    padding: 0.28rem 0.5rem;
+    border: 0;
     border-radius: 0.35rem;
-    background: color-mix(in srgb, var(--openapi-method-color) 13%, var(--page-background));
+    background: color-mix(in srgb, var(--openapi-method-color) 14%, transparent);
     color: var(--openapi-method-color);
-    font-family: inherit;
+    font-family: var(--font-mono);
     font-size: 0.72rem;
-    font-weight: 750;
-    letter-spacing: 0.045em;
+    font-weight: 700;
+    letter-spacing: 0.04em;
+    text-align: center;
+}
+
+.markdown-content details.openapi-endpoint > summary.openapi-operation .openapi-operation-summary {
+    flex: 1 1 12rem;
+    min-width: 0;
+    overflow: hidden;
+    color: var(--text-secondary);
+    font-size: 0.85rem;
+    font-weight: 400;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.markdown-content details.openapi-endpoint[open] > summary.openapi-operation .openapi-operation-summary {
+    white-space: normal;
+}
+
+.markdown-content .openapi-operation-content > h4 {
+    margin: 1.5rem 0 0.5rem;
+    color: var(--text-secondary);
+    font-size: 0.72rem;
+    font-weight: 700;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+}
+
+.markdown-content .openapi-operation-content > .openapi-operation-id + h4,
+.markdown-content .openapi-operation-content > h4:first-child {
+    margin-top: 1.1rem;
 }
 
 .markdown-content details.openapi-endpoint > summary.openapi-operation .openapi-path {
     color: var(--text-primary);
     font-family: var(--font-mono);
-    font-size: 0.92em;
+    font-size: 0.9em;
+    font-weight: 600;
     overflow-wrap: anywhere;
 }
 
@@ -2809,18 +2979,25 @@ th, td {
 }
 
 .markdown-content .openapi-response-heading {
-    margin-top: 1.15rem;
-    color: var(--text-primary);
-    font-size: 1rem;
+    margin-top: 1.5rem;
+    color: var(--text-secondary);
+    font-size: 0.72rem;
     font-weight: 700;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
 }
 
 .markdown-content .openapi-response-position,
 .markdown-content .openapi-media-type-position {
     margin-left: 0.35rem;
     color: var(--text-secondary);
-    font-size: 0.86em;
     font-weight: 500;
+    letter-spacing: normal;
+    text-transform: none;
+}
+
+.markdown-content .openapi-media-type-position {
+    font-size: 0.95em;
 }
 
 .markdown-content .openapi-response-control {
@@ -2828,7 +3005,7 @@ th, td {
     align-items: center;
     flex-wrap: wrap;
     gap: 0.75rem;
-    margin: 0.65rem 0 0.65rem;
+    margin: 0.5rem 0 0.75rem;
     color: var(--text-secondary);
     font-size: 0.9rem;
     font-weight: 650;
@@ -2854,9 +3031,9 @@ th, td {
     display: grid;
     width: fit-content;
     gap: 0.35rem;
-    color: var(--text-primary);
-    font-size: 0.9rem;
-    font-weight: 650;
+    color: var(--text-secondary);
+    font-size: 0.8rem;
+    font-weight: 600;
 }
 
 .markdown-content .openapi-media-type-select {
@@ -2996,43 +3173,130 @@ th, td {
     overflow-wrap: anywhere;
 }
 
+/* A drawn asterisk keeps the same weight and position in every monospace font. */
 .markdown-content .openapi-required-marker {
-    display: inline-flex;
-    align-items: center;
-    justify-content: center;
-    width: 1.05em;
-    height: 1.05em;
-    margin-left: 0.25rem;
-    border: 1px solid color-mix(in srgb, var(--alert-caution-accent) 25%, transparent);
-    border-radius: 50%;
-    background: color-mix(in srgb, var(--alert-caution-accent) 10%, transparent);
+    display: inline-block;
+    width: 0.62em;
+    height: 0.62em;
+    margin: 0 0.05em 0 0.12em;
     color: var(--alert-caution-accent);
-    font-size: 0.7em;
-    font-weight: 800;
-    line-height: 1;
-    vertical-align: super;
+    vertical-align: 0.42em;
+    cursor: help;
 }
 
-.markdown-content .openapi-schema-table:not(.descriptions-visible) > table > thead > tr > th:last-child,
+.markdown-content .openapi-required-marker svg {
+    display: block;
+    width: 100%;
+    height: 100%;
+    fill: none;
+    stroke: currentColor;
+    stroke-linecap: round;
+    stroke-width: 1.7;
+}
+
+.markdown-content .openapi-default {
+    color: var(--text-secondary);
+    cursor: help;
+}
+
+.markdown-content .openapi-enum {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.3rem;
+    margin-top: 0.45rem;
+}
+
+.markdown-content .openapi-enum-value {
+    padding: 0.12rem 0.42rem;
+    border: 1px solid var(--border-subtle);
+    border-radius: 0.3rem;
+    background: var(--surface-current);
+    color: var(--text-primary);
+    font-size: 0.74rem;
+    line-height: 1.35;
+}
+
+.content-tooltip {
+    z-index: 40;
+    padding: 0.35rem 0.6rem;
+    border-radius: 0.45rem;
+    box-shadow: 0 6px 20px rgb(0 0 0 / 24%);
+    font-size: 0.78rem;
+    font-weight: 500;
+    line-height: 1.35;
+    pointer-events: none;
+}
+
+/* Collapsed description cells keep their row borders but take no width. */
 .markdown-content .openapi-schema-table:not(.descriptions-visible) > table > tbody > tr > td:last-child {
+    padding-inline: 0;
+    font-size: 0;
+    line-height: 0;
+    visibility: hidden;
+}
+
+.markdown-content .openapi-schema-table:not(.descriptions-visible) .openapi-description-label {
     display: none;
+}
+
+.markdown-content .openapi-schema-table:not(.descriptions-visible) .openapi-description-header {
+    width: 1%;
+    white-space: nowrap;
+}
+
+.markdown-content .openapi-schema-table:not(.descriptions-visible) .openapi-schema-table-header {
+    justify-content: flex-end;
 }
 
 .markdown-content .openapi-schema-table > table {
     width: 100%;
+    margin: 0;
+}
+
+.markdown-content .table-wrapper:has(> .openapi-schema-table) {
+    margin: 0.5rem 0 1.25rem;
+}
+
+.markdown-content .openapi-schema-table-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 0.75rem;
 }
 
 .markdown-content .openapi-description-toggle {
-    display: block;
-    margin: 0 0 0.5rem auto;
-    padding: 0.35rem 0.6rem;
-    border: 1px solid var(--border-subtle);
+    flex: 0 0 auto;
+    margin: -0.25rem -0.4rem;
+    padding: 0.2rem 0.45rem;
+    letter-spacing: normal;
+    text-transform: none;
+    border: 1px solid transparent;
     border-radius: 0.4rem;
-    background: var(--surface-current);
+    background: transparent;
     color: var(--text-secondary);
     font: inherit;
-    font-size: 0.8rem;
+    font-size: 0.78rem;
     cursor: pointer;
+}
+
+.markdown-content .openapi-description-toggle:hover {
+    border-color: var(--border-subtle);
+    background: var(--surface-current);
+}
+
+.markdown-content .openapi-schema-table > table th {
+    padding-block: 0.45rem;
+    color: var(--text-secondary);
+    font-size: 0.72rem;
+    font-weight: 600;
+    letter-spacing: 0.04em;
+    text-transform: uppercase;
+}
+
+.markdown-content .openapi-schema-table > table td {
+    padding-block: 0.55rem;
+    font-size: 0.875rem;
+    vertical-align: top;
 }
 
 .markdown-content .openapi-description-toggle:hover {

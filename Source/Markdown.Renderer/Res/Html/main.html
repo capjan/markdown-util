@@ -495,7 +495,115 @@
         });
     };
 
-    const footnotePreviewClosers = [];
+    const resetFloating = (preview) => {
+        preview.style.maxWidth = "";
+        preview.style.maxHeight = "";
+        preview.style.overflow = "";
+        preview.style.top = "";
+        preview.style.left = "";
+    };
+    // Places a fixed preview above or below its anchor within the content column.
+    // Returns false when the anchor is scrolled out of view.
+    const positionFloating = (preview, anchor, { maxWidth, gap, centered = false }) => {
+        const referenceBounds = anchor.getBoundingClientRect();
+        const contentBounds = content.getBoundingClientRect();
+        const viewportWidth = document.documentElement.clientWidth;
+        const viewportHeight = document.documentElement.clientHeight;
+        if (referenceBounds.bottom <= 0 || referenceBounds.top >= viewportHeight
+            || referenceBounds.right <= 0 || referenceBounds.left >= viewportWidth) {
+            return false;
+        }
+
+        resetFloating(preview);
+        const contentLeft = Math.max(gap, contentBounds.left);
+        const contentRight = Math.min(viewportWidth - gap, contentBounds.right);
+        const availableWidth = Math.max(1, contentRight - contentLeft);
+        preview.style.maxWidth = `${Math.min(maxWidth, availableWidth)}px`;
+
+        const previewBounds = preview.getBoundingClientRect();
+        const spaceAbove = Math.max(0, referenceBounds.top - gap);
+        const spaceBelow = Math.max(0, viewportHeight - referenceBounds.bottom - gap);
+        const showAbove = previewBounds.height <= spaceAbove || spaceAbove >= spaceBelow;
+        const availableHeight = showAbove ? spaceAbove : spaceBelow;
+        if (previewBounds.height > availableHeight) {
+            preview.style.maxHeight = `${availableHeight}px`;
+            preview.style.overflow = "auto";
+        }
+
+        const positionedBounds = preview.getBoundingClientRect();
+        const top = showAbove
+            ? referenceBounds.top - positionedBounds.height - gap
+            : referenceBounds.bottom + gap;
+        const maxLeft = contentRight - positionedBounds.width;
+        let left = centered
+            ? referenceBounds.left + (referenceBounds.width - positionedBounds.width) / 2
+            : referenceBounds.left;
+        if (!centered && left > maxLeft) left = referenceBounds.right - positionedBounds.width;
+        left = Math.max(contentLeft, Math.min(left, maxLeft));
+        preview.style.top = `${Math.max(gap, Math.min(top, viewportHeight - positionedBounds.height - gap))}px`;
+        preview.style.left = `${left}px`;
+        return true;
+    };
+
+    // Short hints on elements with data-tooltip share the footnote preview look and placement,
+    // and appear at once instead of after the browser's native title delay.
+    const tooltip = document.createElement("span");
+    tooltip.className = "footnote-preview content-tooltip";
+    tooltip.id = "content-tooltip";
+    tooltip.setAttribute("role", "tooltip");
+    document.body.append(tooltip);
+    let tooltipAnchor;
+    let tooltipFrame;
+    const scheduleTooltipPosition = () => {
+        if (tooltipFrame !== undefined) return;
+        tooltipFrame = window.requestAnimationFrame(() => {
+            tooltipFrame = undefined;
+            if (tooltipAnchor && !positionFloating(tooltip, tooltipAnchor, { maxWidth: 280, gap: 8, centered: true })) hideTooltip();
+        });
+    };
+    // A short hint belongs to the pointer position, so scrolling or typing dismisses it.
+    const hideTooltip = () => {
+        if (!tooltipAnchor) return;
+        tooltipAnchor.removeAttribute("aria-describedby");
+        tooltipAnchor = undefined;
+        if (tooltipFrame !== undefined) {
+            window.cancelAnimationFrame(tooltipFrame);
+            tooltipFrame = undefined;
+        }
+        tooltip.classList.remove("is-visible");
+        resetFloating(tooltip);
+        window.removeEventListener("resize", scheduleTooltipPosition);
+        window.removeEventListener("scroll", hideTooltip, true);
+    };
+    const showTooltip = (anchor) => {
+        if (tooltipAnchor === anchor) return;
+        hideTooltip();
+        tooltipAnchor = anchor;
+        tooltip.textContent = anchor.dataset.tooltip;
+        anchor.setAttribute("aria-describedby", tooltip.id);
+        tooltip.classList.add("is-visible");
+        if (!positionFloating(tooltip, anchor, { maxWidth: 280, gap: 8, centered: true })) {
+            hideTooltip();
+            return;
+        }
+        window.addEventListener("resize", scheduleTooltipPosition);
+        window.addEventListener("scroll", hideTooltip, true);
+    };
+    const tooltipAnchorOf = (target) => {
+        const anchor = target instanceof Element ? target.closest("[data-tooltip]") : null;
+        return anchor && content.contains(anchor) ? anchor : null;
+    };
+    ["pointerover", "focusin"].forEach((type) => content.addEventListener(type, (event) => {
+        const anchor = tooltipAnchorOf(event.target);
+        if (anchor) showTooltip(anchor);
+    }));
+    ["pointerout", "focusout"].forEach((type) => content.addEventListener(type, (event) => {
+        const anchor = tooltipAnchorOf(event.target);
+        if (anchor && !anchor.contains(event.relatedTarget)) hideTooltip();
+    }));
+    content.addEventListener("input", hideTooltip);
+
+    const footnotePreviewClosers = [hideTooltip];
     const referencesByFootnote = new Map();
     const footnoteReferences = [...content.querySelectorAll("a.footnote-ref")];
     footnoteReferences.forEach((link) => {
@@ -528,45 +636,7 @@
             }
         };
         const positionPreview = () => {
-            const referenceBounds = reference.getBoundingClientRect();
-            const contentBounds = content.getBoundingClientRect();
-            const gap = 12;
-            const viewportWidth = document.documentElement.clientWidth;
-            const viewportHeight = document.documentElement.clientHeight;
-            if (referenceBounds.bottom <= 0 || referenceBounds.top >= viewportHeight
-                || referenceBounds.right <= 0 || referenceBounds.left >= viewportWidth) {
-                hide();
-                return;
-            }
-
-            preview.style.maxWidth = "";
-            preview.style.maxHeight = "";
-            preview.style.overflow = "";
-            const contentLeft = Math.max(gap, contentBounds.left);
-            const contentRight = Math.min(viewportWidth - gap, contentBounds.right);
-            const availableWidth = Math.max(1, contentRight - contentLeft);
-            preview.style.maxWidth = `${Math.min(420, availableWidth)}px`;
-
-            const previewBounds = preview.getBoundingClientRect();
-            const spaceAbove = Math.max(0, referenceBounds.top - gap);
-            const spaceBelow = Math.max(0, viewportHeight - referenceBounds.bottom - gap);
-            const showAbove = previewBounds.height <= spaceAbove || spaceAbove >= spaceBelow;
-            const availableHeight = showAbove ? spaceAbove : spaceBelow;
-            if (previewBounds.height > availableHeight) {
-                preview.style.maxHeight = `${availableHeight}px`;
-                preview.style.overflow = "auto";
-            }
-
-            const positionedBounds = preview.getBoundingClientRect();
-            const top = showAbove
-                ? referenceBounds.top - positionedBounds.height - gap
-                : referenceBounds.bottom + gap;
-            const maxLeft = contentRight - positionedBounds.width;
-            let left = referenceBounds.left;
-            if (left > maxLeft) left = referenceBounds.right - positionedBounds.width;
-            left = Math.max(contentLeft, Math.min(left, maxLeft));
-            preview.style.top = `${Math.max(gap, Math.min(top, viewportHeight - positionedBounds.height - gap))}px`;
-            preview.style.left = `${left}px`;
+            if (!positionFloating(preview, reference, { maxWidth: 420, gap: 12 })) hide();
         };
         const schedulePositionPreview = () => {
             if (positionFrame !== undefined) return;
@@ -592,11 +662,7 @@
             preview.classList.remove("is-visible");
             window.removeEventListener("resize", schedulePositionPreview);
             window.removeEventListener("scroll", schedulePositionPreview, true);
-            preview.style.maxWidth = "";
-            preview.style.maxHeight = "";
-            preview.style.overflow = "";
-            preview.style.top = "";
-            preview.style.left = "";
+            resetFloating(preview);
         };
         const scheduleHide = () => {
             cancelHide();

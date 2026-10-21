@@ -29,6 +29,10 @@ public class HtmlRenderer
     private static readonly Regex OpenApiTagEndpointRegex = new(
         "<details class=\"openapi-endpoint (?<method>openapi-method-[a-z]+)\"",
         RegexOptions.Compiled);
+    private static readonly Regex OpenApiOperationSummaryRegex = new(
+        @"\A\s*<p class=""openapi-operation-summary"">(?<summary>.*?)</p>\s*",
+        RegexOptions.Compiled | RegexOptions.Singleline);
+    private static readonly Regex OpenApiTableHeaderRegex = new(@"<th>(?<label>.*?)</th>", RegexOptions.Compiled | RegexOptions.Singleline);
     private static readonly string[] OpenApiTagMethodOrder = ["GET", "POST", "PUT", "PATCH", "DELETE"];
     private static readonly Regex OpenApiPermalinkRegex = new(
         @"<a\b[^>]*\bclass=""headerlink""[^>]*>.*?</a>",
@@ -586,9 +590,17 @@ public class HtmlRenderer
                 .Append(HtmlEncoder.Default.Encode(id.Groups["id"].Value))
                 .AppendLine("\" class=\"openapi-operation\">");
             output.Append(OpenApiPermalinkRegex.Replace(heading.Groups["content"].Value, string.Empty));
+            // The summary moves into the collapsed row so endpoints can be scanned without opening them.
+            var operationMarkup = renderedMarkdown[contentStart..contentEnd];
+            var summary = OpenApiOperationSummaryRegex.Match(operationMarkup);
+            if (summary.Success)
+            {
+                output.Append("<span class=\"openapi-operation-summary\">").Append(summary.Groups["summary"].Value).Append("</span>");
+                operationMarkup = operationMarkup[(summary.Index + summary.Length)..];
+            }
             output.AppendLine("</summary>");
             output.AppendLine("<div class=\"openapi-operation-content\">");
-            var operationContent = WrapOpenApiRequestBodies(renderedMarkdown[contentStart..contentEnd], operationScopeId);
+            var operationContent = WrapOpenApiRequestBodies(operationMarkup, operationScopeId);
             output.Append(WrapOpenApiDescriptionTables(WrapOpenApiResponses(operationContent, operationScopeId)));
             output.AppendLine("</div>");
             output.AppendLine("</details>");
@@ -606,10 +618,14 @@ public class HtmlRenderer
             var hasDescriptions = Regex.Matches(match.Value, @"<tr>\s*<td>.*?</td>\s*<td>(?<description>.*?)</td>\s*</tr>", RegexOptions.Singleline)
                 .Cast<Match>().Any(row => !string.IsNullOrWhiteSpace(WebUtility.HtmlDecode(
                     Regex.Replace(row.Groups["description"].Value, "<[^>]+>", string.Empty))));
-            var toggle = hasDescriptions
-                ? "<button type=\"button\" class=\"openapi-description-toggle\" aria-expanded=\"false\">Show descriptions</button>"
-                : string.Empty;
-            return $"<div class=\"openapi-schema-table\">{toggle}{match.Value}</div>";
+            if (!hasDescriptions) return $"<div class=\"openapi-schema-table\">{match.Value}</div>";
+            // The toggle sits in the description header cell, which stays visible while the column is collapsed.
+            var headers = OpenApiTableHeaderRegex.Matches(match.Value);
+            var header = headers[^1];
+            var table = match.Value.Remove(header.Index, header.Length).Insert(header.Index,
+                $"<th class=\"openapi-description-header\"><span class=\"openapi-schema-table-header\"><span class=\"openapi-description-label\">{header.Groups["label"].Value}</span>" +
+                "<button type=\"button\" class=\"openapi-description-toggle\" aria-expanded=\"false\">Show descriptions</button></span></th>");
+            return $"<div class=\"openapi-schema-table\">{table}</div>";
         }, RegexOptions.Singleline);
 
     private static string WrapOpenApiResponses(string content, string operationScopeId)
@@ -918,7 +934,7 @@ public class HtmlRenderer
             if (index == 0)
             {
                 output.AppendLine("<section class=\"openapi-tag-list\" aria-label=\"API endpoints\">");
-                output.AppendLine("<label class=\"openapi-path-filter-label\">Filter endpoints<input type=\"search\" class=\"openapi-path-filter\" placeholder=\"Search endpoint paths…\" autocomplete=\"off\" spellcheck=\"false\"></label>");
+                output.AppendLine("<label class=\"openapi-path-filter-label\"><span class=\"openapi-path-filter-text\">Filter endpoints</span><svg class=\"openapi-path-filter-icon\" viewBox=\"0 0 20 20\" aria-hidden=\"true\" focusable=\"false\"><circle cx=\"8.5\" cy=\"8.5\" r=\"5.5\"></circle><path d=\"m12.6 12.6 4.4 4.4\"></path></svg><input type=\"search\" class=\"openapi-path-filter\" placeholder=\"Search endpoint paths…\" autocomplete=\"off\" spellcheck=\"false\"></label>");
                 output.AppendLine("<p class=\"openapi-filter-status\" role=\"status\" hidden></p>");
                 output.AppendLine("<div class=\"openapi-tag-rows\">");
             }
@@ -964,15 +980,18 @@ public class HtmlRenderer
                      .ThenBy(pair => pair.Key, StringComparer.Ordinal))
         {
             var methodName = method["openapi-method-".Length..].ToUpperInvariant();
+            var label = $"{count} {methodName} {(count == 1 ? "endpoint" : "endpoints")}";
             output.Append("<span class=\"openapi-tag-method-count ")
                 .Append(method)
-                .Append("\" title=\"")
-                .Append(methodName)
-                .Append("\" aria-label=\"")
+                .Append("\" data-method=\"")
+                .Append(method)
+                .Append("\" data-count=\"")
                 .Append(count)
-                .Append(' ')
-                .Append(methodName)
-                .Append(count == 1 ? " endpoint\">" : " endpoints\">")
+                .Append("\" data-tooltip=\"")
+                .Append(label)
+                .Append("\" aria-label=\"")
+                .Append(label)
+                .Append("\">")
                 .Append(count)
                 .AppendLine("</span>");
         }
@@ -1010,10 +1029,23 @@ public class HtmlRenderer
             let matches = 0;
             groups.forEach(group => {
                 let visible = 0;
+                const visibleByMethod = new Map();
                 group.querySelectorAll(".openapi-endpoint").forEach(endpoint => {
                     const path = endpoint.querySelector(".openapi-path").textContent.toLowerCase();
                     endpoint.hidden = !path.includes(query);
-                    if (!endpoint.hidden) visible++;
+                    if (endpoint.hidden) return;
+                    visible++;
+                    const method = [...endpoint.classList].find(name => name.startsWith("openapi-method-"));
+                    visibleByMethod.set(method, (visibleByMethod.get(method) ?? 0) + 1);
+                });
+                group.querySelectorAll(".openapi-tag-method-count").forEach(counter => {
+                    const count = query ? visibleByMethod.get(counter.dataset.method) ?? 0 : Number(counter.dataset.count);
+                    const method = counter.dataset.method.slice("openapi-method-".length).toUpperCase();
+                    const label = `${count} ${method} ${count === 1 ? "endpoint" : "endpoints"}`;
+                    counter.hidden = count === 0;
+                    counter.textContent = count;
+                    counter.dataset.tooltip = label;
+                    counter.setAttribute("aria-label", label);
                 });
                 group.hidden = visible === 0;
                 if (query) group.open = visible > 0;
