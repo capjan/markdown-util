@@ -16,10 +16,17 @@ public class GraphBuilderHiddenTest
         var root = Path.Combine(Path.GetTempPath(), Guid.NewGuid().ToString("N"));
         try
         {
-            Directory.CreateDirectory(Path.Combine(root, ".secret"));
+            var hiddenDirectory = Path.Combine(root, ".secret");
+            Directory.CreateDirectory(hiddenDirectory);
             File.WriteAllText(Path.Combine(root, "README.md"), "# Home\n");
-            File.WriteAllText(Path.Combine(root, ".dot.md"), "# Dot\n");
-            File.WriteAllText(Path.Combine(root, ".secret", "README.md"), "# Secret\n");
+            var hiddenFile = Path.Combine(root, ".dot.md");
+            File.WriteAllText(hiddenFile, "# Dot\n");
+            File.WriteAllText(Path.Combine(hiddenDirectory, "README.md"), "# Secret\n");
+            if (OperatingSystem.IsWindows())
+            {
+                File.SetAttributes(hiddenDirectory, File.GetAttributes(hiddenDirectory) | FileAttributes.Hidden);
+                File.SetAttributes(hiddenFile, File.GetAttributes(hiddenFile) | FileAttributes.Hidden);
+            }
 
             var graph = new GraphBuilder(new DataPreparationVisitor(new MarkdownDocumentReader()))
                 .CreateGraph(new VisitorSettings { RootPath = root, SearchPattern = "*.md", IncludeHidden = includeHidden });
