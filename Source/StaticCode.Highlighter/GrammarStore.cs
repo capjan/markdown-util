@@ -71,7 +71,9 @@ public static class GrammarStore
                     startEnd: '"',
                     escapeSequences: "\\\"")
             },
-            lineCommentStart: "//");
+            lineCommentStart: "//",
+            blockCommentStart: "/*",
+            blockCommentEnd: "*/");
     }
     
     private static Grammar Swift()
@@ -90,7 +92,9 @@ public static class GrammarStore
                     startEnd: '"',
                     escapeSequences: "\\\"")
             },
-            lineCommentStart: "//");
+            lineCommentStart: "//",
+            blockCommentStart: "/*",
+            blockCommentEnd: "*/");
     }
 
     private static Grammar TypeScript()
@@ -109,7 +113,9 @@ public static class GrammarStore
             },
             operators: JavaScriptTypeScriptOperators,
             strings: JavaScriptTypeScriptStrings,
-            lineCommentStart: "//");
+            lineCommentStart: "//",
+            blockCommentStart: "/*",
+            blockCommentEnd: "*/");
     }
 
     private static Grammar Python()
@@ -158,9 +164,11 @@ public static class GrammarStore
             strings: new[]
             {
                 new LanguageString('"', "\\\"", "\\\\"),
-                new LanguageString('\'', "\\\'", "\\\\")
+                new LanguageString('\'', true, "\\\'", "\\\\")
             },
-            lineCommentStart: "//");
+            lineCommentStart: "//",
+            blockCommentStart: "/*",
+            blockCommentEnd: "*/");
     }
 
     private static Grammar JavaScript()
@@ -176,7 +184,9 @@ public static class GrammarStore
             },
             operators: JavaScriptTypeScriptOperators,
             strings: JavaScriptTypeScriptStrings,
-            lineCommentStart: "//");
+            lineCommentStart: "//",
+            blockCommentStart: "/*",
+            blockCommentEnd: "*/");
     }
 
     private static Grammar Json()
@@ -220,6 +230,8 @@ public static class GrammarStore
                 new LanguageString('"', "\"\"")
             },
             lineCommentStart: "--",
+            blockCommentStart: "/*",
+            blockCommentEnd: "*/",
             ignoreKeywordCase: true);
     }
 
@@ -283,11 +295,13 @@ public static class GrammarStore
             },
             strings: new[]
             {
+                new LanguageString("\"\"\"", "\\\"", "\\\\"),
                 new LanguageString('"', "\\\"", "\\\\"),
                 new LanguageString('\'', "\\\'", "\\\\")
             },
             lineCommentStart: "//",
-            highlightJavaTextBlocks: true);
+            blockCommentStart: "/*",
+            blockCommentEnd: "*/");
     }
 
     private static Grammar Rust()
@@ -308,10 +322,12 @@ public static class GrammarStore
             },
             strings: new[]
             {
-                new LanguageString('"', "\\\"", "\\\\")
+                new LanguageString('"', "\\\"", "\\\\"),
+                new LanguageString('\'', true, "\\\'", "\\\\")
             },
             lineCommentStart: "//",
-            highlightRustCharLiterals: true);
+            blockCommentStart: "/*",
+            blockCommentEnd: "*/");
     }
 
     private static Grammar Go()
@@ -335,7 +351,9 @@ public static class GrammarStore
                 new LanguageString('\'', "\\\'", "\\\\"),
                 new LanguageString('`')
             },
-            lineCommentStart: "//");
+            lineCommentStart: "//",
+            blockCommentStart: "/*",
+            blockCommentEnd: "*/");
     }
 
     private static Grammar Yaml()

@@ -3,12 +3,30 @@ namespace StaticCode.Highlighter;
 public class LanguageString
 {
     public LanguageString(char startEnd, params string[] escapeSequences)
+        : this(startEnd.ToString(), false, escapeSequences)
     {
-        StartEnd = startEnd;
+    }
+
+    public LanguageString(char startEnd, bool isCharacterLiteral, params string[] escapeSequences)
+        : this(startEnd.ToString(), isCharacterLiteral, escapeSequences)
+    {
+    }
+
+    public LanguageString(string delimiter, params string[] escapeSequences)
+        : this(delimiter, false, escapeSequences)
+    {
+    }
+
+    private LanguageString(string delimiter, bool isCharacterLiteral, string[] escapeSequences)
+    {
+        Delimiter = delimiter;
+        IsCharacterLiteral = isCharacterLiteral;
         EscapeSequences = escapeSequences;
     }
 
-    public char StartEnd { get; }
+    public string Delimiter { get; }
+    public char StartEnd => Delimiter[0];
+    public bool IsCharacterLiteral { get; }
     public IReadOnlyCollection<string> EscapeSequences { get; }
 }
 public class Grammar
@@ -25,9 +43,7 @@ public class Grammar
         bool hyphenatedKeywords = false,
         string? blockCommentStart = null,
         string? blockCommentEnd = null,
-        bool highlightHtml = false,
-        bool highlightJavaTextBlocks = false,
-        bool highlightRustCharLiterals = false)
+        bool highlightHtml = false)
     {
         Keywords = keywords;
         Operators = operators;
@@ -41,8 +57,6 @@ public class Grammar
         BlockCommentStart = blockCommentStart;
         BlockCommentEnd = blockCommentEnd;
         HighlightHtml = highlightHtml;
-        HighlightJavaTextBlocks = highlightJavaTextBlocks;
-        HighlightRustCharLiterals = highlightRustCharLiterals;
     }
 
     public IReadOnlyCollection<string> Keywords { get; }
@@ -67,8 +81,4 @@ public class Grammar
     public string? BlockCommentEnd { get; }
 
     public bool HighlightHtml { get; }
-
-    public bool HighlightJavaTextBlocks { get; }
-
-    public bool HighlightRustCharLiterals { get; }
 }

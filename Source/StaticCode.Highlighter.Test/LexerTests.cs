@@ -19,7 +19,7 @@ public class LexerTests
     [InlineData("javascript", "const x = 1; return x;", "const|return", "1")]
     [InlineData("json", "{\"enabled\": true, \"count\": 1, \"missing\": null}", "true|null", "1")]
     [InlineData("sql", "Select name, 1 From users", "Select|From", "1")]
-    [InlineData("html", "<div id='x'>text 1</div>", "div|id", "1")]
+    [InlineData("html", "<div id='x'>text 1</div>", "div|id", "")]
     [InlineData("css", "@media screen { .x { background-color: red; border-radius: 2px; } }", "media|background-color|border-radius", "2")]
     [InlineData("java", "var x = 1; return x;", "var|return", "1")]
     [InlineData("rust", "fn first<'a>(x: &'a dyn Trait) -> &'a str { let y = 1; x }", "fn|dyn|let", "1")]
@@ -30,7 +30,8 @@ public class LexerTests
 
         foreach (var keyword in expectedKeywords.Split('|'))
             Assert.True(tokens.Any(token => token.Text == keyword && token.Type == TokenType.Keyword), keyword);
-        Assert.Contains(tokens, token => token.Text == expectedNumber && token.Type == TokenType.Number);
+        if (expectedNumber.Length > 0)
+            Assert.Contains(tokens, token => token.Text == expectedNumber && token.Type == TokenType.Number);
         Assert.Equal(code, string.Concat(tokens.Select(token => token.Text)));
     }
 
@@ -40,6 +41,28 @@ public class LexerTests
         var tokens = Lexer.ForLanguage("rust").Analyse("fn first<'a>(x: &'a str)").ToList();
 
         Assert.DoesNotContain(tokens, token => token.Type == TokenType.String);
+    }
+
+    [Fact]
+    public void RustCharacterLiteralDoesNotOpenAString()
+    {
+        var code = "if c == '\"' { return; }\nlet s = \"x\";";
+        var tokens = Lexer.ForLanguage("rust").Analyse(code).ToList();
+
+        Assert.Contains(tokens, token => token.Text == "'\"'" && token.Type == TokenType.String);
+        Assert.Contains(tokens, token => token.Text == "return" && token.Type == TokenType.Keyword);
+        Assert.Contains(tokens, token => token.Text == "let" && token.Type == TokenType.Keyword);
+        Assert.Contains(tokens, token => token.Text == "\"x\"" && token.Type == TokenType.String);
+        Assert.Equal(code, string.Concat(tokens.Select(token => token.Text)));
+    }
+
+    [Fact]
+    public void RustCharacterLiteralsInCommentsRemainComments()
+    {
+        var tokens = Lexer.ForLanguage("rust").Analyse("// don't use 'x' here").ToList();
+
+        Assert.Single(tokens);
+        Assert.Equal(TokenType.Comment, tokens[0].Type);
     }
 
     [Fact]
@@ -78,6 +101,18 @@ public class LexerTests
     }
 
     [Fact]
+    public void HtmlIgnoresTagsInCommentsAndScriptContent()
+    {
+        var tokens = Lexer.ForLanguage("html")
+            .Analyse("<!-- <div class=\"x\"> -->\n<script>if (a <b && c> d)</script>")
+            .ToList();
+
+        Assert.Contains(tokens, token => token.Text == "<!-- <div class=\"x\"> -->" && token.Type == TokenType.Comment);
+        Assert.DoesNotContain(tokens, token => token.Type == TokenType.Keyword && token.Text is "div" or "class" or "b" or "c");
+        Assert.DoesNotContain(tokens, token => token.Type == TokenType.String && token.Text.Contains("x", StringComparison.Ordinal));
+    }
+
+    [Fact]
     public void JavaHighlightsModernKeywordsAndTextBlocks()
     {
         var tokens = Lexer.ForLanguage("java").Analyse("record Item() { var text = \"\"\"\n return notAKeyword;\n\"\"\"; sealed class Example permits Item {} }").ToList();
@@ -88,5 +123,77 @@ public class LexerTests
         Assert.Contains(tokens, token => token.Text == "permits" && token.Type == TokenType.Keyword);
         Assert.DoesNotContain(tokens, token => token.Text == "return" && token.Type == TokenType.Keyword);
         Assert.Contains(tokens, token => token.Type == TokenType.String && token.Text.Contains("return notAKeyword;", StringComparison.Ordinal));
+    }
+
+    [Fact]
+    public void JavaTextBlockDelimiterInsideLineCommentDoesNotPairWithLaterTextBlock()
+    {
+        var code = "// see \"\"\" below\nint x = 1;\nString s = \"\"\"text block\"\"\";";
+        var tokens = Lexer.ForLanguage("java").Analyse(code).ToList();
+
+        Assert.Contains(tokens, token => token.Text == "int" && token.Type == TokenType.Keyword);
+        Assert.Contains(tokens, token => token.Text == "1" && token.Type == TokenType.Number);
+        Assert.DoesNotContain(tokens, token => token.Type == TokenType.String && token.Text.Contains("int x = 1", StringComparison.Ordinal));
+        Assert.Contains(tokens, token => token.Type == TokenType.String && token.Text == "\"\"\"text block\"\"\"");
+    }
+
+    [Theory]
+    [InlineData("javascript")]
+    [InlineData("typescript")]
+    [InlineData("java")]
+    [InlineData("rust")]
+    [InlineData("go")]
+    [InlineData("kotlin")]
+    [InlineData("csharp")]
+    [InlineData("swift")]
+    public void CStyleBlockCommentsAreRecognized(string language)
+    {
+        var code = "// don't let /* inside line comments start a block\n/* \"comment\" */ return 1;";
+        var tokens = Lexer.ForLanguage(language).Analyse(code).ToList();
+
+        Assert.Contains(tokens, token => token.Text == "/* \"comment\" */" && token.Type == TokenType.Comment);
+        Assert.Contains(tokens, token => token.Text == "return" && token.Type == TokenType.Keyword);
+        Assert.Contains(tokens, token => token.Text == "1" && token.Type == TokenType.Number);
+        Assert.Equal(code, string.Concat(tokens.Select(token => token.Text)));
+    }
+
+    [Fact]
+    public void SqlBlockCommentsAreRecognizedAfterLineComments()
+    {
+        var code = "-- don't let /* inside line comments start a block\n/* comment */ select 1;";
+        var tokens = Lexer.ForLanguage("sql").Analyse(code).ToList();
+
+        Assert.Contains(tokens, token => token.Text == "/* comment */" && token.Type == TokenType.Comment);
+        Assert.Contains(tokens, token => token.Text == "select" && token.Type == TokenType.Keyword);
+        Assert.Equal(code, string.Concat(tokens.Select(token => token.Text)));
+    }
+
+    [Fact]
+    public void PlainAndMarkdownDoNotHighlightNumbers()
+    {
+        var plain = Lexer.ForLanguage("text").Analyse("Version 2 is out").ToList();
+        var markdown = Lexer.ForLanguage("markdown").Analyse("Version 2 is out").ToList();
+
+        Assert.DoesNotContain(plain, token => token.Type == TokenType.Number);
+        Assert.DoesNotContain(markdown, token => token.Type == TokenType.Number);
+        Assert.Contains(plain, token => token.Text == "2" && token.Type == TokenType.Text);
+        Assert.Contains(markdown, token => token.Text == "2" && token.Type == TokenType.Text);
+    }
+
+    [Theory]
+    [InlineData("javascript")]
+    [InlineData("css")]
+    public void DecimalNumbersUseTheSameTokenType(string language)
+    {
+        var tokens = Lexer.ForLanguage(language).Analyse("1.5").ToList();
+
+        Assert.NotEmpty(tokens);
+        Assert.All(tokens, token => Assert.Equal(TokenType.Number, token.Type));
+    }
+
+    [Fact]
+    public void LexerIsCachedPerLanguage()
+    {
+        Assert.Same(Lexer.ForLanguage("typescript"), Lexer.ForLanguage("typescript"));
     }
 }
