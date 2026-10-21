@@ -27,7 +27,7 @@ public class HtmlRenderer
         @"^Media type\s*<code>(?<mediaType>[^<]+)</code>",
         RegexOptions.Compiled);
     private static readonly Regex OpenApiTagEndpointRegex = new(
-        "<details class=\"openapi-endpoint (?<method>openapi-method-[a-z]+)[\" ]",
+        "<details class=\"openapi-endpoint (?<method>openapi-method-[a-z]+)(?<deprecated> openapi-endpoint-deprecated)?\"",
         RegexOptions.Compiled);
     private static readonly Regex OpenApiOperationSummaryRegex = new(
         @"\A\s*<p class=""openapi-operation-summary"">(?<summary>.*?)</p>\s*",
@@ -990,6 +990,7 @@ public class HtmlRenderer
             .ToArray();
         if (!groupHeadings.Any(match => HasClass(match, "openapi-tag"))) return renderedMarkdown;
 
+        var deprecatedEndpoints = OpenApiTagEndpointRegex.Matches(renderedMarkdown).Count(match => match.Groups["deprecated"].Success);
         var output = new StringBuilder(renderedMarkdown.Length);
         var copiedUntil = 0;
         for (var index = 0; index < groupHeadings.Length; index++)
@@ -1014,7 +1015,14 @@ public class HtmlRenderer
             if (index == 0)
             {
                 output.AppendLine("<section class=\"openapi-tag-list\" aria-label=\"API endpoints\">");
+                output.AppendLine("<div class=\"openapi-filter-bar\">");
                 output.AppendLine("<label class=\"openapi-path-filter-label\"><span class=\"openapi-path-filter-text\">Filter endpoints</span><svg class=\"openapi-path-filter-icon\" viewBox=\"0 0 20 20\" aria-hidden=\"true\" focusable=\"false\"><circle cx=\"8.5\" cy=\"8.5\" r=\"5.5\"></circle><path d=\"m12.6 12.6 4.4 4.4\"></path></svg><input type=\"search\" class=\"openapi-path-filter\" placeholder=\"Search endpoint paths…\" autocomplete=\"off\" spellcheck=\"false\"></label>");
+                if (deprecatedEndpoints > 0)
+                    output.Append("<label class=\"openapi-deprecated-filter\"><input type=\"checkbox\" class=\"openapi-show-deprecated\" checked>")
+                        .Append("<span class=\"openapi-switch\" aria-hidden=\"true\"></span>Show deprecated <span class=\"openapi-deprecated-filter-count\">")
+                        .Append(deprecatedEndpoints)
+                        .AppendLine("</span></label>");
+                output.AppendLine("</div>");
                 output.AppendLine("<p class=\"openapi-filter-status\" role=\"status\" hidden></p>");
                 output.AppendLine("<div class=\"openapi-tag-rows\">");
             }
@@ -1047,10 +1055,12 @@ public class HtmlRenderer
     private static void AppendOpenApiTagMethodCounts(StringBuilder output, string groupContent)
     {
         var counts = new Dictionary<string, int>(StringComparer.Ordinal);
+        var deprecatedCounts = new Dictionary<string, int>(StringComparer.Ordinal);
         foreach (Match match in OpenApiTagEndpointRegex.Matches(groupContent))
         {
             var method = match.Groups["method"].Value;
             counts[method] = counts.GetValueOrDefault(method) + 1;
+            if (match.Groups["deprecated"].Success) deprecatedCounts[method] = deprecatedCounts.GetValueOrDefault(method) + 1;
         }
 
         if (counts.Count == 0) return;
@@ -1060,13 +1070,17 @@ public class HtmlRenderer
                      .ThenBy(pair => pair.Key, StringComparer.Ordinal))
         {
             var methodName = method["openapi-method-".Length..].ToUpperInvariant();
-            var label = $"{count} {methodName} {(count == 1 ? "endpoint" : "endpoints")}";
+            var deprecated = deprecatedCounts.GetValueOrDefault(method);
+            var label = $"{count} {methodName} {(count == 1 ? "endpoint" : "endpoints")}" +
+                        (deprecated > 0 ? $", {deprecated} deprecated" : string.Empty);
             output.Append("<span class=\"openapi-tag-method-count ")
                 .Append(method)
                 .Append("\" data-method=\"")
                 .Append(method)
                 .Append("\" data-count=\"")
                 .Append(count)
+                .Append("\" data-deprecated=\"")
+                .Append(deprecated)
                 .Append("\" data-tooltip=\"")
                 .Append(label)
                 .Append("\" aria-label=\"")
@@ -1111,35 +1125,42 @@ public class HtmlRenderer
             });
         };
         document.addEventListener("toggle", event => {
-            if (event.target instanceof HTMLDetailsElement && event.target.matches(".openapi-endpoint"))
-                fillSharedContent(event.target);
+            if (!(event.target instanceof HTMLDetailsElement) || !event.target.matches(".openapi-endpoint")) return;
+            fillSharedContent(event.target);
         }, true);
 
         const openApiFilterStates = new WeakMap();
-        document.addEventListener("input", event => {
-            if (!event.target.matches(".openapi-path-filter")) return;
-            const input = event.target;
-            const list = input.closest(".openapi-tag-list");
+        const applyEndpointFilter = list => {
+            const input = list.querySelector(".openapi-path-filter");
             const query = input.value.trim().toLowerCase();
+            const showDeprecated = list.querySelector(".openapi-show-deprecated")?.checked ?? true;
+            const filtered = query.length > 0 || !showDeprecated;
             const groups = [...list.querySelectorAll(".openapi-tag-group")];
             if (query && !openApiFilterStates.has(input))
                 openApiFilterStates.set(input, new Map(groups.map(group => [group, group.open])));
             let matches = 0;
+            let hiddenDeprecated = 0;
             groups.forEach(group => {
                 let visible = 0;
                 const visibleByMethod = new Map();
+                const deprecatedByMethod = new Map();
                 group.querySelectorAll(".openapi-endpoint").forEach(endpoint => {
                     const path = endpoint.querySelector(".openapi-path").textContent.toLowerCase();
-                    endpoint.hidden = !path.includes(query);
+                    const deprecated = endpoint.classList.contains("openapi-endpoint-deprecated");
+                    const matchesQuery = path.includes(query);
+                    endpoint.hidden = !matchesQuery || (deprecated && !showDeprecated);
+                    if (matchesQuery && endpoint.hidden) hiddenDeprecated++;
                     if (endpoint.hidden) return;
                     visible++;
                     const method = [...endpoint.classList].find(name => name.startsWith("openapi-method-"));
                     visibleByMethod.set(method, (visibleByMethod.get(method) ?? 0) + 1);
+                    if (deprecated) deprecatedByMethod.set(method, (deprecatedByMethod.get(method) ?? 0) + 1);
                 });
                 group.querySelectorAll(".openapi-tag-method-count").forEach(counter => {
-                    const count = query ? visibleByMethod.get(counter.dataset.method) ?? 0 : Number(counter.dataset.count);
+                    const count = filtered ? visibleByMethod.get(counter.dataset.method) ?? 0 : Number(counter.dataset.count);
+                    const deprecated = filtered ? deprecatedByMethod.get(counter.dataset.method) ?? 0 : Number(counter.dataset.deprecated);
                     const method = counter.dataset.method.slice("openapi-method-".length).toUpperCase();
-                    const label = `${count} ${method} ${count === 1 ? "endpoint" : "endpoints"}`;
+                    const label = `${count} ${method} ${count === 1 ? "endpoint" : "endpoints"}${deprecated > 0 ? `, ${deprecated} deprecated` : ""}`;
                     counter.hidden = count === 0;
                     counter.textContent = count;
                     counter.dataset.tooltip = label;
@@ -1152,11 +1173,21 @@ public class HtmlRenderer
             });
             if (!query) openApiFilterStates.delete(input);
             const status = list.querySelector(".openapi-filter-status");
-            status.hidden = !query;
-            status.textContent = matches === 0 ? "No matching endpoints." : `${matches} matching ${matches === 1 ? "endpoint" : "endpoints"}`;
+            status.hidden = !filtered;
+            const found = matches === 0
+                ? "No matching endpoints"
+                : `${matches} ${query ? "matching " : ""}${matches === 1 ? "endpoint" : "endpoints"}`;
+            status.textContent = `${found}${hiddenDeprecated > 0 ? `, ${hiddenDeprecated} deprecated hidden` : ""}.`;
+        };
+        document.addEventListener("input", event => {
+            if (event.target.matches(".openapi-path-filter")) applyEndpointFilter(event.target.closest(".openapi-tag-list"));
         });
 
         document.addEventListener("change", event => {
+            if (event.target.matches?.(".openapi-show-deprecated")) {
+                applyEndpointFilter(event.target.closest(".openapi-tag-list"));
+                return;
+            }
             const select = event.target;
             if (!(select instanceof HTMLSelectElement)) return;
             if (select.matches(".openapi-response-select")) {

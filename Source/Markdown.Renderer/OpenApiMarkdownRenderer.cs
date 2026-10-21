@@ -382,7 +382,8 @@ public static class OpenApiMarkdownRenderer
         if (schema is null) return;
         if (anchor is not null)
             output.Append("<span id=\"").Append(HtmlEncoder.Default.Encode(anchor)).AppendLine("\"></span>");
-        output.AppendLine($"**{CodeSpan(SchemaName(schema, components))}**");
+        var deprecatedBadge = ResolveResponseSchemaReference(schema, components).Deprecated ? $" {DeprecatedBadge}" : string.Empty;
+        output.AppendLine($"**{CodeSpan(SchemaName(schema, components))}**{deprecatedBadge}");
         output.AppendLine();
         AppendMarkdown(output, SchemaDescription(schema, components));
     }
@@ -469,7 +470,8 @@ public static class OpenApiMarkdownRenderer
                 continue;
             }
 
-            output.AppendLine($"###### {CodeSpan(name)} {{#{anchors[name]} .openapi-response-reference-schema}}");
+            var deprecatedBadge = resolvedSchema.Deprecated ? $" {DeprecatedBadge}" : string.Empty;
+            output.AppendLine($"###### {CodeSpan(name)}{deprecatedBadge} {{#{anchors[name]} .openapi-response-reference-schema}}");
             AppendMarkdown(output, resolvedSchema.Description);
             AppendSchemaPropertyTable(output, resolvedSchema, anchors, components);
         }

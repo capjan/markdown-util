@@ -2641,10 +2641,84 @@ th, td {
     margin-top: 1.5rem;
 }
 
+.markdown-content .openapi-filter-bar {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 0.5rem 1rem;
+    margin-bottom: 0.75rem;
+}
+
 .markdown-content .openapi-path-filter-label {
     position: relative;
     display: block;
-    margin-bottom: 0.75rem;
+    flex: 1 1 16rem;
+}
+
+/* A switch keeps the deprecated filter compact next to the search field. */
+.markdown-content .openapi-deprecated-filter {
+    position: relative;
+    display: inline-flex;
+    flex: 0 0 auto;
+    align-items: center;
+    gap: 0.5rem;
+    color: var(--text-secondary);
+    font-size: 0.85rem;
+    cursor: pointer;
+    user-select: none;
+}
+
+.markdown-content .openapi-show-deprecated {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    opacity: 0;
+}
+
+.markdown-content .openapi-switch {
+    position: relative;
+    width: 2rem;
+    height: 1.15rem;
+    flex: 0 0 auto;
+    border-radius: 999px;
+    background: var(--border);
+    transition: background-color 120ms ease;
+}
+
+.markdown-content .openapi-switch::after {
+    position: absolute;
+    top: 0.15rem;
+    left: 0.15rem;
+    width: 0.85rem;
+    height: 0.85rem;
+    border-radius: 50%;
+    background: var(--page-background);
+    box-shadow: 0 1px 2px rgb(0 0 0 / 25%);
+    content: "";
+    transition: transform 120ms ease;
+}
+
+.markdown-content .openapi-show-deprecated:checked + .openapi-switch {
+    background: var(--link);
+}
+
+.markdown-content .openapi-show-deprecated:checked + .openapi-switch::after {
+    transform: translateX(0.85rem);
+}
+
+.markdown-content .openapi-show-deprecated:focus-visible + .openapi-switch {
+    outline: 2px solid var(--link);
+    outline-offset: 2px;
+}
+
+.markdown-content .openapi-deprecated-filter-count {
+    padding: 0.05rem 0.4rem;
+    border-radius: 999px;
+    background: color-mix(in srgb, var(--alert-warning-accent) 15%, transparent);
+    color: var(--alert-warning-accent);
+    font-size: 0.72rem;
+    font-variant-numeric: tabular-nums;
+    font-weight: 700;
 }
 
 .markdown-content .openapi-path-filter-text {
@@ -3157,7 +3231,7 @@ th, td {
     margin-top: 0;
 }
 
-.markdown-content .openapi-response-tabpanel > p > strong:only-child > code:only-child,
+.markdown-content .openapi-response-tabpanel > p > strong:first-child > code:only-child,
 .markdown-content .openapi-response-tabpanel > h6 code {
     padding: 0;
     border: 0;
@@ -3245,7 +3319,16 @@ th, td {
 }
 
 .markdown-content details.openapi-endpoint-deprecated > summary.openapi-operation > code:first-child {
-    opacity: 0.7;
+    opacity: 0.65;
+}
+
+/* The method stripe fades so active endpoints keep the stronger visual weight. */
+.markdown-content details.openapi-endpoint.openapi-endpoint-deprecated {
+    box-shadow: inset 3px 0 0 color-mix(in srgb, var(--openapi-method-color) 35%, var(--border-subtle));
+}
+
+.markdown-content details.openapi-endpoint-deprecated > summary.openapi-operation .openapi-operation-summary {
+    opacity: 0.8;
 }
 
 .markdown-content details.openapi-endpoint > summary.openapi-operation .openapi-operation-summary {

@@ -79,7 +79,8 @@ public class OpenApiMarkdownRendererTest
         Assert.Contains("<details class=\"openapi-endpoint openapi-method-get\">", html);
         Assert.Contains("<span class=\"openapi-tag-title\"><code>Orders</code></span>", html);
         Assert.Contains("<span class=\"openapi-tag-description\">Order operations</span>", html);
-        Assert.Contains("class=\"openapi-tag-method-count openapi-method-get\" data-method=\"openapi-method-get\" data-count=\"1\" data-tooltip=\"1 GET endpoint\" aria-label=\"1 GET endpoint\">1", html);
+        Assert.Contains("class=\"openapi-tag-method-count openapi-method-get\" data-method=\"openapi-method-get\" data-count=\"1\" data-deprecated=\"0\" data-tooltip=\"1 GET endpoint\" aria-label=\"1 GET endpoint\">1", html);
+        Assert.DoesNotContain("<input type=\"checkbox\" class=\"openapi-show-deprecated\"", html);
         var operationId = System.Text.RegularExpressions.Regex.Match(
             operationHeading.Groups["attributes"].Value,
             "id=\"(?<id>[^\"]+)\"").Groups["id"].Value;
@@ -319,8 +320,10 @@ public class OpenApiMarkdownRendererTest
                   "password": { "type": "string", "writeOnly": true },
                   "price": { "type": "number", "exclusiveMinimum": 0 },
                   "labels": { "type": "object", "additionalProperties": { "type": "string" } },
-                  "legacyCode": { "type": "string", "deprecated": true }
-                } } }
+                  "legacyCode": { "type": "string", "deprecated": true },
+                  "legacy": { "$ref": "#/components/schemas/Legacy" }
+                } },
+                "Legacy": { "type": "object", "deprecated": true, "properties": { "code": { "type": "string" } } } }
               }
             }
             """);
@@ -328,7 +331,8 @@ public class OpenApiMarkdownRendererTest
         var plain = System.Text.RegularExpressions.Regex.Replace(html, "<[^>]+>", "");
         Assert.Contains("<details class=\"openapi-endpoint openapi-method-delete openapi-endpoint-deprecated\">", html);
         Assert.Contains("This operation is deprecated and should no longer be used.", html);
-        Assert.Contains("data-tooltip=\"1 DELETE endpoint\"", html);
+        Assert.Contains("data-deprecated=\"1\" data-tooltip=\"1 DELETE endpoint, 1 deprecated\"", html);
+        Assert.Contains("<input type=\"checkbox\" class=\"openapi-show-deprecated\" checked><span class=\"openapi-switch\" aria-hidden=\"true\"></span>Show deprecated <span class=\"openapi-deprecated-filter-count\">1</span>", html);
         Assert.Single(System.Text.RegularExpressions.Regex.Matches(html, "class=\"openapi-lock\""));
         Assert.Contains("data-tooltip=\"Requires bearer\"", html);
         Assert.Contains("<span class=\"openapi-security-kind\">Bearer token (JWT)</span>", html);
@@ -343,6 +347,7 @@ public class OpenApiMarkdownRendererTest
         Assert.Contains("X-Rate-Limit: int32", plain);
         Assert.Contains("Response headers", html);
         Assert.Contains("&quot;additionalProp1&quot;", html);
+        Assert.Matches("<h6 id=\"[^\"]+-legacy\" class=\"openapi-response-reference-schema\"><code>Legacy</code> <span class=\"openapi-badge openapi-badge-deprecated\">Deprecated</span>", html);
     }
 
     [Theory]
