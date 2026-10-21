@@ -31,4 +31,4 @@ Everything on these pages is written in ordinary Markdown. Each page shows the s
 
 ## Publish
 
-- [PDF download link](Pdf-Download.md) - Include an up-to-date PDF with the rendered site
+- [PDF Link](Pdf-Link.md) - Place a styled link to the generated PDF anywhere in your pages

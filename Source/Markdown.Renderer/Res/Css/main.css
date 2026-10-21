@@ -348,7 +348,6 @@ body {
 
 .navigation-toggle:focus-visible,
 .search-button:focus-visible,
-.pdf-download-link:focus-visible,
 .repository-link:focus-visible,
 .site-nav-link:focus-visible,
 .theme-toggle:focus-visible,
@@ -377,7 +376,6 @@ body {
 }
 
 .search-button:hover,
-.pdf-download-link:hover,
 .media-settings-toggle:hover,
 .theme-toggle:hover,
 .repository-link:hover {
@@ -409,43 +407,12 @@ body {
 }
 
 .search-button,
-.pdf-download-link,
 .media-settings-toggle,
 .theme-toggle,
 .repository-link {
     color: var(--text-primary);
     font-weight: 500;
     white-space: nowrap;
-}
-
-.pdf-download-link {
-    display: inline-flex;
-    align-items: center;
-    gap: 0.35rem;
-    margin-left: 0.35rem;
-    padding: 0.4rem 0.65rem;
-    border: 1px solid var(--border);
-    border-radius: 999px;
-    color: var(--text-primary);
-    font-size: 0.8125rem;
-    text-decoration: none;
-    transition: border-color 120ms ease, color 120ms ease, background 120ms ease;
-}
-
-.pdf-download-link:hover {
-    border-color: var(--link);
-    background: var(--surface-current);
-}
-
-.pdf-download-link svg {
-    width: 16px;
-    height: 16px;
-    flex: none;
-    fill: none;
-    stroke: currentColor;
-    stroke-linecap: round;
-    stroke-linejoin: round;
-    stroke-width: 1.5;
 }
 
 .repository-link svg {
@@ -1710,6 +1677,33 @@ blockquote {
     border-radius: 2px;
 }
 
+.markdown-content a.pdf-link {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.55rem;
+    padding: 0.55rem 0.9rem;
+    border: 1px solid var(--border);
+    border-radius: 999px;
+    background: var(--surface-current);
+    color: var(--text-primary);
+    font-weight: 600;
+    text-decoration: none;
+    transition: border-color 120ms ease, color 120ms ease, background 120ms ease;
+}
+
+.markdown-content a.pdf-link::before {
+    content: "↓";
+    color: var(--link);
+    font-size: 1.15em;
+    line-height: 1;
+}
+
+.markdown-content a.pdf-link:hover {
+    border-color: var(--link);
+    background: color-mix(in srgb, var(--surface-current) 78%, var(--link));
+    color: var(--link);
+}
+
 /* Icons with light and dark variants contain one SVG per theme. */
 .icon .icon-dark,
 :root[data-theme="dark"] .icon .icon-light {
@@ -2705,13 +2699,6 @@ th, td {
         padding: 0.55rem;
     }
 
-    .pdf-download-link {
-        padding: 0.55rem;
-    }
-
-    .pdf-download-link span {
-        display: none;
-    }
 }
 
 .site-main.has-on-this-page {

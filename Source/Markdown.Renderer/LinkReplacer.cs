@@ -1,4 +1,5 @@
 using System.Text.RegularExpressions;
+using Markdig.Renderers.Html;
 using Markdig.Syntax;
 using Markdig.Syntax.Inlines;
 
@@ -12,11 +13,20 @@ public class LinkReplacer
 {
     private static readonly Regex AbsoluteUrlRegex = new(@"^(?:/|[A-Za-z][A-Za-z0-9+.-]*:)", RegexOptions.Compiled);
     private const string MarkdownExtension = ".md";
+    private const string PdfLinkUrl = "mdu:pdf";
 
-    public void ReplaceAll(MarkdownDocument document)
+    public void ReplaceAll(MarkdownDocument document, string? pdfDownloadUrl = null)
     {
         foreach (var link in document.Descendants<LinkInline>())
         {
+            if (string.Equals(link.Url, PdfLinkUrl, StringComparison.OrdinalIgnoreCase))
+            {
+                if (string.IsNullOrWhiteSpace(pdfDownloadUrl)) continue;
+                link.Url = pdfDownloadUrl;
+                link.GetAttributes().AddClass("pdf-link");
+                continue;
+            }
+
             link.Url = ReplaceUrl(link.Url);
         }
     }
