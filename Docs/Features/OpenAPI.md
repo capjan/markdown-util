@@ -1,6 +1,8 @@
-# OpenAPI
+# OpenAPI Spec
 
 MDU turns a local OpenAPI specification into a static API reference inside a Markdown page. The specification stays in its JSON or YAML file; MDU adds the generated reference when it renders the page.
+
+For a complete short example with the generated output, see [OpenAPI Spec example](openapi-example.md).
 
 ## Add an API reference
 
