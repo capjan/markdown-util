@@ -19,6 +19,33 @@ public class HtmlRenderer
         @"<h(?<level>[1-6])(?<attributes>\s[^>]*)?>(?<content>.*?)</h\k<level>>",
         RegexOptions.Compiled | RegexOptions.Singleline);
     private static readonly Regex HeadingIdRegex = new(@"\bid=""(?<id>[^""]+)""", RegexOptions.Compiled);
+    private static readonly Regex ClassAttributeRegex = new(@"\bclass=""(?<class>[^""]*)""", RegexOptions.Compiled);
+    private static readonly Regex OpenApiResponseCodeRegex = new(
+        @"^Response\s*<code>(?<status>[^<]+)</code>(?<suffix>.*?)$",
+        RegexOptions.Compiled | RegexOptions.Singleline);
+    private static readonly Regex OpenApiMediaTypeCodeRegex = new(
+        @"^Media type\s*<code>(?<mediaType>[^<]+)</code>",
+        RegexOptions.Compiled);
+    private static readonly Regex OpenApiTagEndpointRegex = new(
+        "<details class=\"openapi-endpoint (?<method>openapi-method-[a-z]+)\"",
+        RegexOptions.Compiled);
+    private static readonly Regex OpenApiOperationSummaryRegex = new(
+        @"\A\s*<p class=""openapi-operation-summary"">(?<summary>.*?)</p>\s*",
+        RegexOptions.Compiled | RegexOptions.Singleline);
+    private const string OpenApiSharedStart = "<!--openapi-shared-->";
+    private const string OpenApiSharedEnd = "<!--/openapi-shared-->";
+    private const string OpenApiSharedScopeToken = "openapi-shared-scope";
+    private static readonly Regex OpenApiSharedPanelRegex = new(
+        "<!--openapi-shared-->(?<content>.*?)<!--/openapi-shared-->",
+        RegexOptions.Compiled | RegexOptions.Singleline);
+    private static readonly Regex OpenApiSchemaAnchorPrefixRegex = new(
+        "openapi-response-schema-[0-9a-f]{10}",
+        RegexOptions.Compiled);
+    private static readonly Regex OpenApiTableHeaderRegex = new(@"<th>(?<label>.*?)</th>", RegexOptions.Compiled | RegexOptions.Singleline);
+    private static readonly string[] OpenApiTagMethodOrder = ["GET", "POST", "PUT", "PATCH", "DELETE"];
+    private static readonly Regex OpenApiPermalinkRegex = new(
+        @"<a\b[^>]*\bclass=""headerlink""[^>]*>.*?</a>",
+        RegexOptions.Compiled | RegexOptions.Singleline);
     private static readonly Regex FootnoteReferenceRegex = new(
         @"<a\b[^>]*\bclass=""footnote-ref""[^>]*>.*?</a>",
         RegexOptions.Compiled | RegexOptions.Singleline);
@@ -133,6 +160,12 @@ public class HtmlRenderer
         var tocHeadings = GetTableOfContentsHeadings(renderedMarkdown);
         var pageHeading = GetPageHeadingTitle(renderedMarkdown);
         renderedMarkdown = InsertHeadingPermalinks(renderedMarkdown);
+        renderedMarkdown = CollapseOpenApiOperations(renderedMarkdown);
+        renderedMarkdown = CollapseOpenApiTagGroups(renderedMarkdown);
+        renderedMarkdown = ShareOpenApiTabPanels(renderedMarkdown);
+        var hasOpenApiInteractiveContent = renderedMarkdown.Contains("class=\"openapi-responses\"", StringComparison.Ordinal) ||
+                                           renderedMarkdown.Contains("class=\"openapi-tag-list\"", StringComparison.Ordinal) ||
+                                           renderedMarkdown.Contains("class=\"openapi-request-body\"", StringComparison.Ordinal);
         renderedMarkdown = InsertEditPageLink(renderedMarkdown, editPageLink, out var editLinkInserted);
         var breadcrumbMarkup = RenderBreadcrumbs(renderedMarkdown, breadcrumbs ?? Array.Empty<BreadcrumbItem>());
         var model = new MainModel
@@ -193,6 +226,7 @@ public class HtmlRenderer
                     ? $"<script defer src=\"{HtmlEncoder.Default.Encode(prefix + "js/" + IconSearch.ScriptFileName)}\"></script>{Environment.NewLine}"
                     : string.Empty)
                 + (providersForSettings.Count > 0 ? $"<script>{MediaLinkEmbedder.Script}</script>{Environment.NewLine}" : string.Empty)
+                + (hasOpenApiInteractiveContent ? $"<script>{OpenApiResponseScript}</script>{Environment.NewLine}" : string.Empty)
                 + (hasHero ? $"<script>{Hero.Script}</script>{Environment.NewLine}" : string.Empty)
         };
         var renderedHtml = TemplateTokenRegex.Replace(Resources.HtmlTemplateContent(), match =>
@@ -374,9 +408,21 @@ public class HtmlRenderer
 
     private static IReadOnlyList<TocHeading> GetTableOfContentsHeadings(string renderedMarkdown)
     {
+        var matches = HeadingRegex.Matches(renderedMarkdown).Cast<Match>().ToArray();
+        var isOpenApiPage = matches.Any(match =>
+            HasClass(match, "openapi-overview") ||
+            HasClass(match, "openapi-tag") ||
+            HasClass(match, "openapi-operation"));
         var headings = new List<TocHeading>();
-        foreach (Match match in HeadingRegex.Matches(renderedMarkdown))
+        foreach (var match in matches)
         {
+            if (isOpenApiPage && !HasClass(match, "openapi-tag")) continue;
+            if (HasClass(match, "openapi-response") ||
+                HasClass(match, "openapi-media-type") ||
+                HasClass(match, "openapi-response-example") ||
+                HasClass(match, "openapi-response-schema-table") ||
+                HasClass(match, "openapi-response-schema-json") ||
+                HasClass(match, "openapi-response-reference-schema")) continue;
             var level = match.Groups["level"].Value[0] - '0';
             if (level < 2) continue;
 
@@ -516,6 +562,693 @@ public class HtmlRenderer
             var contentEnd = match.Groups["content"].Index + match.Groups["content"].Length - match.Index;
             return match.Value.Insert(contentEnd, permalink);
         });
+
+    private static string CollapseOpenApiOperations(string renderedMarkdown)
+    {
+        var markerHeadings = HeadingRegex.Matches(renderedMarkdown)
+            .Cast<Match>()
+            .Where(match => HasClass(match, "openapi-operation") ||
+                            HasClass(match, "openapi-tag"))
+            .ToArray();
+        if (!markerHeadings.Any(match => HasClass(match, "openapi-operation"))) return renderedMarkdown;
+
+        var output = new StringBuilder(renderedMarkdown.Length);
+        var copiedUntil = 0;
+        for (var index = 0; index < markerHeadings.Length; index++)
+        {
+            var heading = markerHeadings[index];
+            if (!HasClass(heading, "openapi-operation")) continue;
+
+            var attributes = heading.Groups["attributes"].Value;
+            var id = HeadingIdRegex.Match(attributes);
+            var classAttribute = ClassAttributeRegex.Match(attributes);
+            var methodClass = classAttribute.Success
+                ? classAttribute.Groups["class"].Value.Split(' ').FirstOrDefault(value => value.StartsWith("openapi-method-", StringComparison.Ordinal))
+                : null;
+            if (!id.Success || methodClass is null) continue;
+
+            var contentEnd = index + 1 < markerHeadings.Length
+                ? markerHeadings[index + 1].Index
+                : renderedMarkdown.Length;
+            var contentStart = heading.Index + heading.Length;
+            var operationScopeId = HtmlEncoder.Default.Encode(id.Groups["id"].Value);
+            output.Append(renderedMarkdown, copiedUntil, heading.Index - copiedUntil);
+            output.Append("<details class=\"openapi-endpoint ")
+                .Append(HtmlEncoder.Default.Encode(methodClass))
+                .AppendLine("\">");
+            output.Append("<summary id=\"")
+                .Append(HtmlEncoder.Default.Encode(id.Groups["id"].Value))
+                .AppendLine("\" class=\"openapi-operation\">");
+            output.Append(OpenApiPermalinkRegex.Replace(heading.Groups["content"].Value, string.Empty));
+            // The summary moves into the collapsed row so endpoints can be scanned without opening them.
+            var operationMarkup = renderedMarkdown[contentStart..contentEnd];
+            var summary = OpenApiOperationSummaryRegex.Match(operationMarkup);
+            if (summary.Success)
+            {
+                output.Append("<span class=\"openapi-operation-summary\">").Append(summary.Groups["summary"].Value).Append("</span>");
+                operationMarkup = operationMarkup[(summary.Index + summary.Length)..];
+            }
+            output.AppendLine("</summary>");
+            output.AppendLine("<div class=\"openapi-operation-content\">");
+            // Tables are wrapped first so tab contents are complete before ShareOpenApiTabPanels compares them.
+            var operationContent = WrapOpenApiRequestBodies(WrapOpenApiDescriptionTables(operationMarkup), operationScopeId);
+            output.Append(WrapOpenApiResponses(operationContent, operationScopeId));
+            output.AppendLine("</div>");
+            output.AppendLine("</details>");
+            copiedUntil = contentEnd;
+        }
+
+        output.Append(renderedMarkdown, copiedUntil, renderedMarkdown.Length - copiedUntil);
+        return output.ToString();
+    }
+
+    private static string WrapOpenApiDescriptionTables(string content) =>
+        Regex.Replace(content, @"<table>.*?</table>", match =>
+        {
+            if (!match.Value.Contains("class=\"openapi-declaration\"", StringComparison.Ordinal)) return match.Value;
+            var hasDescriptions = Regex.Matches(match.Value, @"<tr>\s*<td>.*?</td>\s*<td>(?<description>.*?)</td>\s*</tr>", RegexOptions.Singleline)
+                .Cast<Match>().Any(row => !string.IsNullOrWhiteSpace(WebUtility.HtmlDecode(
+                    Regex.Replace(row.Groups["description"].Value, "<[^>]+>", string.Empty))));
+            if (!hasDescriptions) return $"<div class=\"openapi-schema-table\">{match.Value}</div>";
+            // The toggle sits in the description header cell, which stays visible while the column is collapsed.
+            var headers = OpenApiTableHeaderRegex.Matches(match.Value);
+            var header = headers[^1];
+            var table = match.Value.Remove(header.Index, header.Length).Insert(header.Index,
+                $"<th class=\"openapi-description-header\"><span class=\"openapi-schema-table-header\"><span class=\"openapi-description-label\">{header.Groups["label"].Value}</span>" +
+                "<button type=\"button\" class=\"openapi-description-toggle\" aria-expanded=\"false\">Show descriptions</button></span></th>");
+            return $"<div class=\"openapi-schema-table\">{table}</div>";
+        }, RegexOptions.Singleline);
+
+    private static string WrapOpenApiResponses(string content, string operationScopeId)
+    {
+        var responseHeadings = HeadingRegex.Matches(content)
+            .Cast<Match>()
+            .Where(match => match.Groups["level"].Value == "5" && HasClass(match, "openapi-response"))
+            .Select(match => new
+            {
+                Heading = match,
+                Code = OpenApiResponseCodeRegex.Match(match.Groups["content"].Value)
+            })
+            .Where(response => response.Code.Success)
+            .Select(response => new
+            {
+                response.Heading,
+                Status = WebUtility.HtmlDecode(response.Code.Groups["status"].Value),
+                Label = WebUtility.HtmlDecode(response.Code.Groups["status"].Value +
+                    OpenApiPermalinkRegex.Replace(response.Code.Groups["suffix"].Value, string.Empty)).Trim()
+            })
+            .ToArray();
+        if (responseHeadings.Length == 0) return content;
+
+        var responses = new List<OpenApiResponseContent>();
+        for (var index = 0; index < responseHeadings.Length; index++)
+        {
+            var response = responseHeadings[index];
+            var end = index + 1 < responseHeadings.Length
+                ? responseHeadings[index + 1].Heading.Index
+                : content.Length;
+            var bodyStart = response.Heading.Index + response.Heading.Length;
+            var body = content[bodyStart..end];
+            var mediaTypes = HeadingRegex.Matches(body)
+                .Cast<Match>()
+                .Where(match => match.Groups["level"].Value == "6" && HasClass(match, "openapi-media-type"))
+                .Select(match => new
+                {
+                    Heading = match,
+                    Code = OpenApiMediaTypeCodeRegex.Match(match.Groups["content"].Value)
+                })
+                .Where(media => media.Code.Success)
+                .Select(media => new OpenApiMediaTypeHeading(
+                    media.Heading,
+                    WebUtility.HtmlDecode(media.Code.Groups["mediaType"].Value)))
+                .ToArray();
+            responses.Add(new OpenApiResponseContent(response.Status, response.Label, body, mediaTypes));
+        }
+
+        var output = new StringBuilder(content.Length + responses.Count * 200);
+        output.Append(content, 0, responseHeadings[0].Heading.Index);
+        output.AppendLine("<div class=\"openapi-responses\">");
+        output.AppendLine("<div class=\"openapi-response-heading\">Response <span class=\"openapi-response-position\">1 of " + responses.Count + "</span></div>");
+        output.AppendLine("<div class=\"openapi-response-control\">");
+        output.Append("<select class=\"openapi-response-select ")
+            .Append(GetOpenApiResponseStatusClass(responses[0].Status))
+            .AppendLine("\" aria-label=\"Response status\">");
+        for (var index = 0; index < responses.Count; index++)
+        {
+            var response = responses[index];
+            output.Append("<option value=\"")
+                .Append(HtmlEncoder.Default.Encode(response.Status))
+                .Append("\" data-response-position=\"")
+                .Append(index + 1)
+                .Append("\" class=\"")
+                .Append(GetOpenApiResponseStatusClass(response.Status))
+                .Append('"');
+            if (index == 0) output.Append(" selected");
+            output.Append('>').Append(HtmlEncoder.Default.Encode(response.Label)).AppendLine("</option>");
+        }
+        output.AppendLine("</select>");
+        output.AppendLine("</div>");
+
+        for (var index = 0; index < responses.Count; index++)
+        {
+            var response = responses[index];
+            output.Append("<section class=\"openapi-response-panel ")
+                .Append(GetOpenApiResponseStatusClass(response.Status))
+                .Append("\" data-response-status=\"")
+                .Append(HtmlEncoder.Default.Encode(response.Status))
+                .Append('"');
+            if (index > 0) output.Append(" hidden");
+            output.AppendLine(">");
+            var descriptionEnd = response.MediaTypes.Count > 0 ? response.MediaTypes[0].Heading.Index : response.Body.Length;
+            output.AppendLine("<div class=\"openapi-response-description\">");
+            output.Append(response.Body, 0, descriptionEnd);
+            output.AppendLine("</div>");
+            AppendMediaTypeControl(output, response.MediaTypes);
+
+            for (var mediaIndex = 0; mediaIndex < response.MediaTypes.Count; mediaIndex++)
+            {
+                var media = response.MediaTypes[mediaIndex];
+                var mediaEnd = mediaIndex + 1 < response.MediaTypes.Count
+                    ? response.MediaTypes[mediaIndex + 1].Heading.Index
+                    : response.Body.Length;
+                var mediaContentStart = media.Heading.Index + media.Heading.Length;
+                output.Append("<section class=\"openapi-media-panel\" data-media-index=\"")
+                    .Append(mediaIndex)
+                    .Append("\" data-media-type=\"")
+                    .Append(HtmlEncoder.Default.Encode(media.Name))
+                    .Append('"');
+                if (mediaIndex > 0) output.Append(" hidden");
+                output.AppendLine(">");
+                output.Append(WrapOpenApiResponseTabs(
+                    response.Body[mediaContentStart..mediaEnd], $"openapi-{operationScopeId}-response-{index}-media-{mediaIndex}", "Response details"));
+                output.AppendLine("</section>");
+            }
+
+            output.AppendLine("</section>");
+        }
+
+        output.AppendLine("</div>");
+        return output.ToString();
+    }
+
+    private static string WrapOpenApiRequestBodies(string content, string operationScopeId)
+    {
+        var requestHeadings = HeadingRegex.Matches(content)
+            .Cast<Match>()
+            .Where(match => match.Groups["level"].Value == "4" && HasClass(match, "openapi-request-body"))
+            .ToArray();
+        if (requestHeadings.Length == 0) return content;
+
+        var responseHeadings = HeadingRegex.Matches(content)
+            .Cast<Match>()
+            .Where(match => match.Groups["level"].Value == "5" && HasClass(match, "openapi-response"))
+            .ToArray();
+        var output = new StringBuilder(content.Length + requestHeadings.Length * 200);
+        var copiedUntil = 0;
+        for (var index = 0; index < requestHeadings.Length; index++)
+        {
+            var heading = requestHeadings[index];
+            var end = index + 1 < requestHeadings.Length ? requestHeadings[index + 1].Index : content.Length;
+            var responseHeading = responseHeadings.FirstOrDefault(match => match.Index > heading.Index);
+            if (responseHeading is not null) end = Math.Min(end, responseHeading.Index);
+            var bodyStart = heading.Index + heading.Length;
+            var body = content[bodyStart..end];
+            var mediaTypes = HeadingRegex.Matches(body)
+                .Cast<Match>()
+                .Where(match => match.Groups["level"].Value == "6" && HasClass(match, "openapi-request-media-type"))
+                .Select(match => new
+                {
+                    Heading = match,
+                    Code = OpenApiMediaTypeCodeRegex.Match(match.Groups["content"].Value)
+                })
+                .Where(media => media.Code.Success)
+                .Select(media => new OpenApiMediaTypeHeading(
+                    media.Heading,
+                    WebUtility.HtmlDecode(media.Code.Groups["mediaType"].Value)))
+                .ToArray();
+
+            output.Append(content, copiedUntil, heading.Index - copiedUntil);
+            output.AppendLine("<section class=\"openapi-request-body\">");
+            output.AppendLine(heading.Value);
+            var descriptionEnd = mediaTypes.Length > 0 ? mediaTypes[0].Heading.Index : body.Length;
+            output.AppendLine("<div class=\"openapi-request-description\">");
+            output.Append(body, 0, descriptionEnd);
+            output.AppendLine("</div>");
+            AppendMediaTypeControl(output, mediaTypes);
+
+            for (var mediaIndex = 0; mediaIndex < mediaTypes.Length; mediaIndex++)
+            {
+                var media = mediaTypes[mediaIndex];
+                var mediaEnd = mediaIndex + 1 < mediaTypes.Length
+                    ? mediaTypes[mediaIndex + 1].Heading.Index
+                    : body.Length;
+                var mediaContentStart = media.Heading.Index + media.Heading.Length;
+                output.Append("<section class=\"openapi-media-panel\" data-media-index=\"")
+                    .Append(mediaIndex)
+                    .Append("\" data-media-type=\"")
+                    .Append(HtmlEncoder.Default.Encode(media.Name))
+                    .Append('"');
+                if (mediaIndex > 0) output.Append(" hidden");
+                output.AppendLine(">");
+                output.Append(WrapOpenApiResponseTabs(
+                    body[mediaContentStart..mediaEnd], $"openapi-{operationScopeId}-request-{index}-media-{mediaIndex}", "Request body details"));
+                output.AppendLine("</section>");
+            }
+
+            output.AppendLine("</section>");
+            copiedUntil = end;
+        }
+
+        output.Append(content, copiedUntil, content.Length - copiedUntil);
+        return output.ToString();
+    }
+
+    private static void AppendMediaTypeControl(StringBuilder output, IReadOnlyList<OpenApiMediaTypeHeading> mediaTypes)
+    {
+        if (mediaTypes.Count == 0) return;
+        output.AppendLine("<div class=\"openapi-media-type-control\">");
+        output.Append("<label class=\"openapi-media-type-label\"><span class=\"openapi-media-type-heading\">Media Type <span class=\"openapi-media-type-position\">1 of ")
+            .Append(mediaTypes.Count)
+            .AppendLine("</span></span>");
+        output.AppendLine("<select class=\"openapi-media-type-select\" aria-label=\"Media type\">");
+        for (var index = 0; index < mediaTypes.Count; index++)
+        {
+            output.Append("<option value=\"").Append(index).Append('"');
+            if (index == 0) output.Append(" selected");
+            output.Append('>').Append(HtmlEncoder.Default.Encode(mediaTypes[index].Name)).AppendLine("</option>");
+        }
+        output.AppendLine("</select>");
+        output.AppendLine("</label>");
+        output.AppendLine("</div>");
+    }
+
+    private sealed record OpenApiResponseContent(
+        string Status,
+        string Label,
+        string Body,
+        IReadOnlyList<OpenApiMediaTypeHeading> MediaTypes);
+
+    private sealed record OpenApiMediaTypeHeading(Match Heading, string Name);
+
+    private static string WrapOpenApiResponseTabs(string content, string groupId, string tabListLabel)
+    {
+        var tabs = HeadingRegex.Matches(content)
+            .Cast<Match>()
+            .Where(match => match.Groups["level"].Value == "5")
+            .Select(match => new
+            {
+                Heading = match,
+                Name = HasClass(match, "openapi-response-example") ? "Example" :
+                    HasClass(match, "openapi-response-schema-table") ? "Schema" :
+                    HasClass(match, "openapi-response-schema-json") ? "Schema JSON" : null,
+                Key = HasClass(match, "openapi-response-example") ? "example" :
+                    HasClass(match, "openapi-response-schema-table") ? "schema" :
+                    HasClass(match, "openapi-response-schema-json") ? "schema-json" : null
+            })
+            .Where(tab => tab.Name is not null && tab.Key is not null)
+            .ToArray();
+        if (tabs.Length == 0) return content;
+
+        var output = new StringBuilder(content.Length + tabs.Length * 200);
+        output.AppendLine("<div class=\"openapi-response-tabs\">");
+        output.Append("<div class=\"openapi-response-tab-list\" role=\"tablist\" aria-label=\"")
+            .Append(HtmlEncoder.Default.Encode(tabListLabel))
+            .AppendLine("\">");
+        for (var index = 0; index < tabs.Length; index++)
+        {
+            var tabId = $"{groupId}-{tabs[index].Key}-tab";
+            var panelId = $"{groupId}-{tabs[index].Key}-panel";
+            output.Append("<button type=\"button\" class=\"openapi-response-tab\" role=\"tab\" id=\"")
+                .Append(tabId)
+                .Append("\" aria-controls=\"")
+                .Append(panelId)
+                .Append("\" aria-selected=\"")
+                .Append(index == 0 ? "true" : "false")
+                .Append("\" tabindex=\"")
+                .Append(index == 0 ? "0" : "-1")
+                .Append("\">")
+                .Append(tabs[index].Name)
+                .AppendLine("</button>");
+        }
+        output.AppendLine("</div>");
+
+        for (var index = 0; index < tabs.Length; index++)
+        {
+            var tab = tabs[index];
+            var contentEnd = index + 1 < tabs.Length ? tabs[index + 1].Heading.Index : content.Length;
+            var tabContentStart = tab.Heading.Index + tab.Heading.Length;
+            var tabId = $"{groupId}-{tab.Key}-tab";
+            var panelId = $"{groupId}-{tab.Key}-panel";
+            output.Append("<div class=\"openapi-response-tabpanel\" role=\"tabpanel\" id=\"")
+                .Append(panelId)
+                .Append("\" aria-labelledby=\"")
+                .Append(tabId)
+                .Append("\" tabindex=\"0\"");
+            if (index > 0) output.Append(" hidden");
+            output.AppendLine(">");
+            output.Append(OpenApiSharedStart)
+                .Append(content, tabContentStart, contentEnd - tabContentStart)
+                .Append(OpenApiSharedEnd);
+            output.AppendLine("</div>");
+        }
+        output.AppendLine("</div>");
+        return output.ToString();
+    }
+
+    // Large specifications repeat the same examples and schemas across many responses. Tab contents that occur
+    // more than once are emitted once as a template, and the page script copies a template into its tab when the
+    // tab becomes visible. Each media type scopes its schema anchors with its own prefix, so a template stores the
+    // prefix as a token and every copy gets its original anchors back.
+    private static string ShareOpenApiTabPanels(string renderedMarkdown)
+    {
+        var panels = OpenApiSharedPanelRegex.Matches(renderedMarkdown);
+        if (panels.Count == 0) return renderedMarkdown;
+
+        var contents = panels.Select(panel => SharedOpenApiPanelContent.From(panel.Groups["content"].Value)).ToArray();
+        var counts = contents.Where(content => content.Shareable)
+            .GroupBy(content => content.Normalized, StringComparer.Ordinal)
+            .ToDictionary(group => group.Key, group => group.Count(), StringComparer.Ordinal);
+        var templateIds = new Dictionary<string, string>(StringComparer.Ordinal);
+        var templates = new StringBuilder();
+        var output = new StringBuilder(renderedMarkdown.Length);
+        var copiedUntil = 0;
+        for (var index = 0; index < panels.Count; index++)
+        {
+            var panel = panels[index];
+            var content = contents[index];
+            output.Append(renderedMarkdown, copiedUntil, panel.Index - copiedUntil);
+            copiedUntil = panel.Index + panel.Length;
+            if (!content.Shareable || counts[content.Normalized] < 2)
+            {
+                output.Append(content.Original);
+                continue;
+            }
+
+            if (!templateIds.TryGetValue(content.Normalized, out var id))
+            {
+                id = $"openapi-shared-{templateIds.Count + 1}";
+                templateIds.Add(content.Normalized, id);
+                templates.Append("<template data-openapi-shared=\"").Append(id).Append("\">")
+                    .Append(content.Normalized)
+                    .AppendLine("</template>");
+            }
+
+            output.Append("<div class=\"openapi-shared-content\" data-openapi-shared=\"")
+                .Append(id)
+                .Append("\" data-openapi-scope=\"")
+                .Append(content.Scope)
+                .Append("\"></div>");
+        }
+
+        output.Append(renderedMarkdown, copiedUntil, renderedMarkdown.Length - copiedUntil);
+        return output.Append(templates).ToString();
+    }
+
+    private sealed record SharedOpenApiPanelContent(string Original, string Normalized, string Scope, bool Shareable)
+    {
+        public static SharedOpenApiPanelContent From(string content)
+        {
+            var scopes = OpenApiSchemaAnchorPrefixRegex.Matches(content)
+                .Select(match => match.Value)
+                .Distinct(StringComparer.Ordinal)
+                .ToArray();
+            return scopes.Length switch
+            {
+                0 => new SharedOpenApiPanelContent(content, content, string.Empty, true),
+                1 => new SharedOpenApiPanelContent(content, content.Replace(scopes[0], OpenApiSharedScopeToken, StringComparison.Ordinal), scopes[0], true),
+                _ => new SharedOpenApiPanelContent(content, content, string.Empty, false)
+            };
+        }
+    }
+
+    private static string CollapseOpenApiTagGroups(string renderedMarkdown)
+    {
+        var groupHeadings = HeadingRegex.Matches(renderedMarkdown)
+            .Cast<Match>()
+            .Where(match => HasClass(match, "openapi-tag"))
+            .ToArray();
+        if (!groupHeadings.Any(match => HasClass(match, "openapi-tag"))) return renderedMarkdown;
+
+        var output = new StringBuilder(renderedMarkdown.Length);
+        var copiedUntil = 0;
+        for (var index = 0; index < groupHeadings.Length; index++)
+        {
+            var heading = groupHeadings[index];
+            if (!HasClass(heading, "openapi-tag")) continue;
+
+            var id = HeadingIdRegex.Match(heading.Groups["attributes"].Value);
+            if (!id.Success) continue;
+
+            var groupEnd = index + 1 < groupHeadings.Length
+                ? groupHeadings[index + 1].Index
+                : renderedMarkdown.Length;
+            var contentStart = heading.Index + heading.Length;
+            var groupContent = renderedMarkdown[contentStart..groupEnd];
+            var firstEndpoint = groupContent.IndexOf("<details class=\"openapi-endpoint ", StringComparison.Ordinal);
+            var descriptionMarkup = firstEndpoint < 0 ? groupContent : groupContent[..firstEndpoint];
+            var endpointContent = firstEndpoint < 0 ? string.Empty : groupContent[firstEndpoint..];
+            var description = WebUtility.HtmlDecode(Regex.Replace(descriptionMarkup, "<[^>]+>", " "));
+            description = Regex.Replace(description, @"\s+", " ").Trim();
+            output.Append(renderedMarkdown, copiedUntil, heading.Index - copiedUntil);
+            if (index == 0)
+            {
+                output.AppendLine("<section class=\"openapi-tag-list\" aria-label=\"API endpoints\">");
+                output.AppendLine("<label class=\"openapi-path-filter-label\"><span class=\"openapi-path-filter-text\">Filter endpoints</span><svg class=\"openapi-path-filter-icon\" viewBox=\"0 0 20 20\" aria-hidden=\"true\" focusable=\"false\"><circle cx=\"8.5\" cy=\"8.5\" r=\"5.5\"></circle><path d=\"m12.6 12.6 4.4 4.4\"></path></svg><input type=\"search\" class=\"openapi-path-filter\" placeholder=\"Search endpoint paths…\" autocomplete=\"off\" spellcheck=\"false\"></label>");
+                output.AppendLine("<p class=\"openapi-filter-status\" role=\"status\" hidden></p>");
+                output.AppendLine("<div class=\"openapi-tag-rows\">");
+            }
+            output.AppendLine("<details class=\"openapi-tag-group\">");
+            output.Append("<summary id=\"")
+                .Append(HtmlEncoder.Default.Encode(id.Groups["id"].Value))
+                .AppendLine("\" class=\"openapi-tag\">");
+            output.Append("<span class=\"openapi-tag-summary-main\"><span class=\"openapi-tag-title\">")
+                .Append(OpenApiPermalinkRegex.Replace(heading.Groups["content"].Value, string.Empty))
+                .Append("</span>");
+            AppendOpenApiTagMethodCounts(output, groupContent);
+            output.AppendLine("</span>");
+            if (description.Length > 0)
+                output.Append("<span class=\"openapi-tag-description\">")
+                    .Append(HtmlEncoder.Default.Encode(description))
+                    .AppendLine("</span>");
+            output.AppendLine("</summary>");
+            output.AppendLine("<div class=\"openapi-tag-body\">");
+            output.Append(endpointContent);
+            output.AppendLine("</div>");
+            output.AppendLine("</details>");
+            copiedUntil = groupEnd;
+        }
+
+        output.AppendLine("</div></section>");
+        output.Append(renderedMarkdown, copiedUntil, renderedMarkdown.Length - copiedUntil);
+        return output.ToString();
+    }
+
+    private static void AppendOpenApiTagMethodCounts(StringBuilder output, string groupContent)
+    {
+        var counts = new Dictionary<string, int>(StringComparer.Ordinal);
+        foreach (Match match in OpenApiTagEndpointRegex.Matches(groupContent))
+        {
+            var method = match.Groups["method"].Value;
+            counts[method] = counts.GetValueOrDefault(method) + 1;
+        }
+
+        if (counts.Count == 0) return;
+        output.Append("<span class=\"openapi-tag-method-counts\">");
+        foreach (var (method, count) in counts
+                     .OrderBy(pair => TagMethodOrder(pair.Key["openapi-method-".Length..]))
+                     .ThenBy(pair => pair.Key, StringComparer.Ordinal))
+        {
+            var methodName = method["openapi-method-".Length..].ToUpperInvariant();
+            var label = $"{count} {methodName} {(count == 1 ? "endpoint" : "endpoints")}";
+            output.Append("<span class=\"openapi-tag-method-count ")
+                .Append(method)
+                .Append("\" data-method=\"")
+                .Append(method)
+                .Append("\" data-count=\"")
+                .Append(count)
+                .Append("\" data-tooltip=\"")
+                .Append(label)
+                .Append("\" aria-label=\"")
+                .Append(label)
+                .Append("\">")
+                .Append(count)
+                .AppendLine("</span>");
+        }
+        output.AppendLine("</span>");
+    }
+
+    private static int TagMethodOrder(string method)
+    {
+        var index = Array.IndexOf(OpenApiTagMethodOrder, method.ToUpperInvariant());
+        return index < 0 ? OpenApiTagMethodOrder.Length : index;
+    }
+
+    private static string GetOpenApiResponseStatusClass(string status)
+    {
+        var normalizedStatus = status.ToUpperInvariant();
+        if (normalizedStatus == "2XX" || IsNumericStatusInFamily(normalizedStatus, '2')) return "openapi-status-2xx";
+        if (normalizedStatus == "4XX" || IsNumericStatusInFamily(normalizedStatus, '4')) return "openapi-status-4xx";
+        if (normalizedStatus == "5XX" || IsNumericStatusInFamily(normalizedStatus, '5')) return "openapi-status-5xx";
+        return "openapi-status-neutral";
+    }
+
+    private static bool IsNumericStatusInFamily(string status, char family) =>
+        status.Length == 3 && status[0] == family && char.IsAsciiDigit(status[1]) && char.IsAsciiDigit(status[2]);
+
+    private const string OpenApiResponseScript = """
+        // Repeated tab contents arrive as templates; copy one in once its tab is visible in an open endpoint.
+        const fillSharedContent = endpoint => {
+            if (!endpoint?.open) return;
+            endpoint.querySelectorAll(".openapi-shared-content").forEach(placeholder => {
+                for (let element = placeholder; element && element !== endpoint; element = element.parentElement)
+                    if (element.hidden) return;
+                const template = document.querySelector(`template[data-openapi-shared="${placeholder.dataset.openapiShared}"]`);
+                if (!template) return;
+                const container = document.createElement("div");
+                container.innerHTML = template.innerHTML.replaceAll("openapi-shared-scope", placeholder.dataset.openapiScope);
+                placeholder.replaceWith(...container.childNodes);
+            });
+        };
+        document.addEventListener("toggle", event => {
+            if (event.target instanceof HTMLDetailsElement && event.target.matches(".openapi-endpoint"))
+                fillSharedContent(event.target);
+        }, true);
+
+        const openApiFilterStates = new WeakMap();
+        document.addEventListener("input", event => {
+            if (!event.target.matches(".openapi-path-filter")) return;
+            const input = event.target;
+            const list = input.closest(".openapi-tag-list");
+            const query = input.value.trim().toLowerCase();
+            const groups = [...list.querySelectorAll(".openapi-tag-group")];
+            if (query && !openApiFilterStates.has(input))
+                openApiFilterStates.set(input, new Map(groups.map(group => [group, group.open])));
+            let matches = 0;
+            groups.forEach(group => {
+                let visible = 0;
+                const visibleByMethod = new Map();
+                group.querySelectorAll(".openapi-endpoint").forEach(endpoint => {
+                    const path = endpoint.querySelector(".openapi-path").textContent.toLowerCase();
+                    endpoint.hidden = !path.includes(query);
+                    if (endpoint.hidden) return;
+                    visible++;
+                    const method = [...endpoint.classList].find(name => name.startsWith("openapi-method-"));
+                    visibleByMethod.set(method, (visibleByMethod.get(method) ?? 0) + 1);
+                });
+                group.querySelectorAll(".openapi-tag-method-count").forEach(counter => {
+                    const count = query ? visibleByMethod.get(counter.dataset.method) ?? 0 : Number(counter.dataset.count);
+                    const method = counter.dataset.method.slice("openapi-method-".length).toUpperCase();
+                    const label = `${count} ${method} ${count === 1 ? "endpoint" : "endpoints"}`;
+                    counter.hidden = count === 0;
+                    counter.textContent = count;
+                    counter.dataset.tooltip = label;
+                    counter.setAttribute("aria-label", label);
+                });
+                group.hidden = visible === 0;
+                if (query) group.open = visible > 0;
+                else if (openApiFilterStates.has(input)) group.open = openApiFilterStates.get(input).get(group);
+                matches += visible;
+            });
+            if (!query) openApiFilterStates.delete(input);
+            const status = list.querySelector(".openapi-filter-status");
+            status.hidden = !query;
+            status.textContent = matches === 0 ? "No matching endpoints." : `${matches} matching ${matches === 1 ? "endpoint" : "endpoints"}`;
+        });
+
+        document.addEventListener("change", event => {
+            const select = event.target;
+            if (!(select instanceof HTMLSelectElement)) return;
+            if (select.matches(".openapi-response-select")) {
+                const responses = select.closest(".openapi-responses");
+                const activeResponse = [...responses.querySelectorAll(".openapi-response-panel")]
+                    .find(panel => panel.dataset.responseStatus === select.value);
+                responses.querySelectorAll(".openapi-response-panel").forEach(panel => {
+                    panel.hidden = panel !== activeResponse;
+                });
+                const position = select.selectedOptions[0].dataset.responsePosition;
+                responses.querySelector(".openapi-response-position").textContent = `${position} of ${select.options.length}`;
+                select.classList.remove("openapi-status-2xx", "openapi-status-4xx", "openapi-status-5xx", "openapi-status-neutral");
+                const status = select.value.toUpperCase();
+                const statusClass = /^2(?:\d{2}|XX)$/.test(status) ? "openapi-status-2xx"
+                    : /^4(?:\d{2}|XX)$/.test(status) ? "openapi-status-4xx"
+                    : /^5(?:\d{2}|XX)$/.test(status) ? "openapi-status-5xx"
+                    : "openapi-status-neutral";
+                select.classList.add(statusClass);
+                fillSharedContent(select.closest(".openapi-endpoint"));
+                return;
+            }
+            if (select.matches(".openapi-media-type-select")) {
+                const content = select.closest(".openapi-response-panel, .openapi-request-body");
+                content.querySelectorAll(".openapi-media-panel").forEach(panel => {
+                    panel.hidden = panel.dataset.mediaIndex !== select.value;
+                });
+                select.closest(".openapi-media-type-control").querySelector(".openapi-media-type-position").textContent = `${select.selectedIndex + 1} of ${select.options.length}`;
+                fillSharedContent(select.closest(".openapi-endpoint"));
+            }
+        });
+
+        const activateResponseTab = tab => {
+            const tabs = tab.closest(".openapi-response-tabs");
+            tabs.querySelectorAll(".openapi-response-tab").forEach(button => {
+                const selected = button === tab;
+                button.setAttribute("aria-selected", selected ? "true" : "false");
+                button.tabIndex = selected ? 0 : -1;
+            });
+            tabs.querySelectorAll(".openapi-response-tabpanel").forEach(panel => {
+                panel.hidden = panel.id !== tab.getAttribute("aria-controls");
+            });
+            fillSharedContent(tab.closest(".openapi-endpoint"));
+        };
+
+        document.addEventListener("click", event => {
+            const descriptionToggle = event.target.closest(".openapi-description-toggle");
+            if (descriptionToggle) {
+                const expanded = descriptionToggle.getAttribute("aria-expanded") !== "true";
+                descriptionToggle.setAttribute("aria-expanded", String(expanded));
+                descriptionToggle.textContent = expanded ? "Hide descriptions" : "Show descriptions";
+                descriptionToggle.closest(".openapi-schema-table").classList.toggle("descriptions-visible", expanded);
+            }
+            const tab = event.target.closest(".openapi-response-tab");
+            if (tab) activateResponseTab(tab);
+            const reference = event.target.closest("a.openapi-type-reference");
+            if (!reference) return;
+            const target = document.getElementById(reference.hash.slice(1));
+            if (!target) return;
+            const color = getComputedStyle(target).getPropertyValue("--link").trim();
+            const highlight = `color-mix(in srgb, ${color} 16%, transparent)`;
+            const reducedMotion = matchMedia("(prefers-reduced-motion: reduce)").matches;
+            for (let element = target; element; element = element.nextElementSibling) {
+                if (element !== target && (element.matches("h6") || element.id)) break;
+                element.getAnimations().filter(animation => animation.id === "openapi-schema-highlight")
+                    .forEach(animation => animation.cancel());
+                element.animate([
+                    { backgroundColor: highlight },
+                    { backgroundColor: reducedMotion ? highlight : "transparent" }
+                ], { id: "openapi-schema-highlight", duration: 1600, easing: "ease-out" });
+            }
+        });
+
+        document.addEventListener("keydown", event => {
+            const tab = event.target.closest(".openapi-response-tab");
+            if (!tab || !["ArrowLeft", "ArrowRight", "Home", "End"].includes(event.key)) return;
+            const tabs = [...tab.closest(".openapi-response-tabs").querySelectorAll(".openapi-response-tab")];
+            const index = tabs.indexOf(tab);
+            const nextIndex = event.key === "Home" ? 0
+                : event.key === "End" ? tabs.length - 1
+                : (index + (event.key === "ArrowRight" ? 1 : -1) + tabs.length) % tabs.length;
+            event.preventDefault();
+            tabs[nextIndex].focus();
+            activateResponseTab(tabs[nextIndex]);
+        });
+        """;
+
+    private static bool HasClass(Match heading, string className)
+    {
+        var attribute = ClassAttributeRegex.Match(heading.Groups["attributes"].Value);
+        return attribute.Success && attribute.Groups["class"].Value
+            .Split(' ', StringSplitOptions.RemoveEmptyEntries)
+            .Contains(className, StringComparer.Ordinal);
+    }
 
     private static string InsertEditPageLink(string renderedMarkdown, string editPageLink, out bool inserted)
     {

@@ -35,6 +35,12 @@
     --syntax-keyword: #0550ae;
     --syntax-string: #a31515;
     --syntax-operator: #0550ae;
+    --openapi-path-color-1: #0550ae;
+    --openapi-path-color-2: #8250df;
+    --openapi-path-color-3: #9a6700;
+    --openapi-path-color-4: #1a7f5a;
+    --openapi-path-color-5: #bf3989;
+    --openapi-path-color-6: #596c00;
     --alert-note-accent: #0066cc;
     --alert-note-background: #f0f6fd;
     --alert-tip-accent: #1a7f5a;
@@ -91,6 +97,12 @@
     --syntax-keyword: #79c0ff;
     --syntax-string: #ce9f89;
     --syntax-operator: #79c0ff;
+    --openapi-path-color-1: #79c0ff;
+    --openapi-path-color-2: #d2a8ff;
+    --openapi-path-color-3: #f2cc60;
+    --openapi-path-color-4: #56d4dd;
+    --openapi-path-color-5: #ff9bce;
+    --openapi-path-color-6: #a5d46a;
     --alert-note-accent: #6cb4ff;
     --alert-note-background: #001b33;
     --alert-tip-accent: #64e3c4;
@@ -144,6 +156,12 @@
         --syntax-keyword: #79c0ff;
         --syntax-string: #ce9f89;
         --syntax-operator: #79c0ff;
+        --openapi-path-color-1: #79c0ff;
+        --openapi-path-color-2: #d2a8ff;
+        --openapi-path-color-3: #f2cc60;
+        --openapi-path-color-4: #56d4dd;
+        --openapi-path-color-5: #ff9bce;
+        --openapi-path-color-6: #a5d46a;
         --alert-note-accent: #6cb4ff;
         --alert-note-background: #001b33;
         --alert-tip-accent: #64e3c4;
@@ -2491,6 +2509,913 @@ th, td {
     .page-pagination-link.is-next {
         grid-column: 1;
     }
+}
+
+/* OpenAPI references: endpoint labels and groups take visual cues from API reference tools. */
+.markdown-content h2.openapi-overview {
+    margin: 2rem 0 0.35rem;
+    color: var(--text-secondary);
+    font-size: 0.78rem;
+    font-weight: 700;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+}
+
+.markdown-content .openapi-api-title {
+    margin: 0 0 0.5rem;
+    font-size: clamp(1.75rem, 4vw, 2.25rem);
+    letter-spacing: -0.035em;
+    line-height: 1.15;
+}
+
+.markdown-content .openapi-api-version,
+.markdown-content .openapi-operation-id {
+    display: flex;
+    align-items: center;
+    gap: 0.45rem;
+    color: var(--text-secondary);
+    font-size: 0.8rem;
+    font-weight: 500;
+}
+
+.markdown-content .openapi-api-version {
+    margin: 0 0 1.25rem;
+}
+
+.markdown-content .openapi-api-version code {
+    padding: 0.15rem 0.55rem;
+    border: 1px solid var(--border-subtle);
+    border-radius: 999px;
+    background: var(--surface-current);
+    color: var(--text-primary);
+    font-size: 0.78rem;
+}
+
+.markdown-content .openapi-operation-id {
+    margin: 0.85rem 0 0;
+}
+
+.markdown-content .openapi-operation-id code {
+    padding: 0;
+    border: 0;
+    background: transparent;
+    color: var(--text-primary);
+    font-size: 0.8rem;
+}
+
+.markdown-content .openapi-servers {
+    display: grid;
+    gap: 0.45rem;
+    margin: 1.25rem 0 0;
+    padding: 0.8rem 1rem;
+    border: 1px solid var(--border-subtle);
+    border-radius: 0.65rem;
+    background: var(--surface-current);
+}
+
+.markdown-content .openapi-servers-label {
+    color: var(--text-secondary);
+    font-size: 0.7rem;
+    font-weight: 700;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+}
+
+.markdown-content .openapi-servers ul {
+    display: grid;
+    gap: 0.35rem;
+    margin: 0;
+    padding: 0;
+    list-style: none;
+}
+
+.markdown-content .openapi-servers li {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: baseline;
+    gap: 0.25rem 0.6rem;
+    margin: 0;
+}
+
+.markdown-content .openapi-servers code {
+    padding: 0;
+    border: 0;
+    background: transparent;
+    font-size: 0.85rem;
+    overflow-wrap: anywhere;
+}
+
+.markdown-content .openapi-server-description {
+    color: var(--text-secondary);
+    font-size: 0.82rem;
+}
+
+.markdown-content details.openapi-tag-group {
+    margin: 0;
+    padding: 0;
+    border: 0;
+    border-radius: 0;
+    background: var(--page-background);
+}
+
+.markdown-content .openapi-tag-rows {
+    border: 1px solid var(--border-subtle);
+    border-radius: 0.75rem;
+    overflow: hidden;
+}
+
+.markdown-content .openapi-tag-rows:not(:has(> details:not([hidden]))) {
+    display: none;
+}
+
+.markdown-content details.openapi-tag-group:not([hidden]) ~ details.openapi-tag-group:not([hidden]) {
+    border-top: 1px solid var(--border-subtle);
+}
+
+.markdown-content details.openapi-tag-group[hidden],
+.markdown-content details.openapi-endpoint[hidden] {
+    display: none;
+}
+
+.markdown-content .openapi-tag-list {
+    margin-top: 1.5rem;
+}
+
+.markdown-content .openapi-path-filter-label {
+    position: relative;
+    display: block;
+    margin-bottom: 0.75rem;
+}
+
+.markdown-content .openapi-path-filter-text {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    overflow: hidden;
+    clip-path: inset(50%);
+    white-space: nowrap;
+}
+
+.markdown-content .openapi-path-filter-icon {
+    position: absolute;
+    top: 50%;
+    left: 0.85rem;
+    width: 1rem;
+    height: 1rem;
+    fill: none;
+    stroke: var(--text-secondary);
+    stroke-linecap: round;
+    stroke-width: 1.6;
+    pointer-events: none;
+    transform: translateY(-50%);
+}
+
+.markdown-content .openapi-path-filter {
+    box-sizing: border-box;
+    width: 100%;
+    padding: 0.65rem 0.85rem 0.65rem 2.4rem;
+    border: 1px solid var(--border-subtle);
+    border-radius: 0.65rem;
+    background: var(--page-background);
+    color: var(--text-primary);
+    font: inherit;
+    font-size: 0.92rem;
+    font-weight: 400;
+    transition: border-color 120ms ease, box-shadow 120ms ease;
+}
+
+.markdown-content .openapi-path-filter::placeholder {
+    color: var(--text-secondary);
+}
+
+.markdown-content .openapi-path-filter:hover {
+    border-color: var(--border);
+}
+
+.markdown-content .openapi-path-filter:focus-visible {
+    border-color: var(--link);
+    outline: none;
+    box-shadow: 0 0 0 3px color-mix(in srgb, var(--link) 22%, transparent);
+}
+
+.markdown-content .openapi-filter-status {
+    margin: -0.25rem 0 0.75rem;
+    color: var(--text-secondary);
+    font-size: 0.82rem;
+}
+
+.markdown-content details.openapi-tag-group > .openapi-tag-body {
+    display: flow-root;
+    margin: 0;
+    padding: 0.75rem;
+    background: var(--page-background);
+}
+
+.markdown-content details.openapi-tag-group > summary.openapi-tag {
+    padding: 0.8rem 3rem 0.8rem 1rem;
+    color: var(--text-primary);
+    font-size: 1rem;
+    font-weight: 650;
+    cursor: pointer;
+    background: var(--page-background);
+    border-radius: 0;
+}
+
+.markdown-content details.openapi-tag-group > summary.openapi-tag:hover,
+.markdown-content details.openapi-tag-group[open] > summary.openapi-tag {
+    background: var(--surface-current);
+}
+
+.markdown-content details.openapi-tag-group > summary.openapi-tag .openapi-tag-summary-main {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 1rem;
+}
+
+.markdown-content .openapi-tag-title {
+    min-width: 0;
+}
+
+.markdown-content .openapi-tag-method-counts {
+    display: flex;
+    flex: 0 0 auto;
+    flex-wrap: wrap;
+    gap: 0.3rem;
+    margin-left: auto;
+}
+
+.markdown-content .openapi-tag-method-count {
+    --openapi-method-color: #5a6472;
+
+    display: inline-flex;
+    min-width: 1.5rem;
+    height: 1.35rem;
+    box-sizing: border-box;
+    align-items: center;
+    justify-content: center;
+    padding: 0 0.4rem;
+    border-radius: 999px;
+    background: color-mix(in srgb, var(--openapi-method-color) 14%, transparent);
+    color: var(--openapi-method-color);
+    font-family: var(--font-mono);
+    font-size: 0.72rem;
+    font-variant-numeric: tabular-nums;
+    font-weight: 700;
+    line-height: 1;
+    cursor: default;
+}
+
+.markdown-content .openapi-tag-method-count[hidden] {
+    display: none;
+}
+
+.markdown-content .openapi-tag-method-count.openapi-method-get { --openapi-method-color: #096b45; }
+.markdown-content .openapi-tag-method-count.openapi-method-post { --openapi-method-color: #075e9c; }
+.markdown-content .openapi-tag-method-count.openapi-method-put { --openapi-method-color: #895500; }
+.markdown-content .openapi-tag-method-count.openapi-method-patch,
+.markdown-content .openapi-tag-method-count.openapi-method-query { --openapi-method-color: #7040a0; }
+.markdown-content .openapi-tag-method-count.openapi-method-delete { --openapi-method-color: #b4232e; }
+.markdown-content .openapi-tag-method-count.openapi-method-options { --openapi-method-color: #087c83; }
+.markdown-content .openapi-tag-method-count.openapi-method-head,
+.markdown-content .openapi-tag-method-count.openapi-method-trace { --openapi-method-color: #5a6472; }
+
+.markdown-content details.openapi-tag-group > summary.openapi-tag .openapi-tag-description {
+    display: block;
+    margin-top: 0.25rem;
+    color: var(--text-secondary);
+    font-size: 0.82rem;
+    font-weight: 400;
+    line-height: 1.45;
+}
+
+.markdown-content details.openapi-tag-group > summary.openapi-tag::marker {
+    color: var(--text-secondary);
+    font-size: 0.85rem;
+}
+
+.markdown-content details.openapi-tag-group[open] > summary.openapi-tag {
+    border-bottom: 1px solid var(--border-subtle);
+}
+
+.markdown-content .openapi-tag-body > details.openapi-endpoint {
+    margin: 0 0 0.75rem;
+}
+
+.markdown-content .openapi-tag-body > details.openapi-endpoint:last-child {
+    margin-bottom: 0;
+}
+
+.markdown-content details.openapi-tag-group > summary.openapi-tag code {
+    padding: 0;
+    border: 0;
+    background: transparent;
+    color: var(--text-primary);
+    font-family: inherit;
+    font-size: inherit;
+}
+
+.markdown-content details.openapi-endpoint {
+    --openapi-method-color: #096b45;
+
+    margin: 1.25rem 0;
+    border: 1px solid var(--border-subtle);
+    border-radius: 0.65rem;
+    background: var(--page-background);
+    box-shadow: inset 3px 0 0 var(--openapi-method-color);
+    transition: border-color 120ms ease;
+}
+
+.markdown-content details.openapi-endpoint:hover,
+.markdown-content details.openapi-endpoint[open] {
+    border-color: color-mix(in srgb, var(--openapi-method-color) 30%, var(--border-subtle));
+}
+
+.markdown-content details.openapi-endpoint > summary.openapi-operation {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 0.35rem 0.75rem;
+    padding: 0.7rem 2.75rem 0.7rem 1rem;
+    border-radius: 0.65rem;
+    color: var(--text-primary);
+    font-size: 0.95rem;
+    font-weight: 500;
+    overflow-wrap: anywhere;
+}
+
+.markdown-content details.openapi-endpoint > summary.openapi-operation:hover {
+    background: color-mix(in srgb, var(--openapi-method-color) 5%, transparent);
+}
+
+.markdown-content details.openapi-endpoint[open] > summary.openapi-operation {
+    border-bottom-color: var(--border-subtle);
+    border-radius: 0.65rem 0.65rem 0 0;
+}
+
+.markdown-content details.openapi-endpoint > summary.openapi-operation > code:first-child {
+    box-sizing: border-box;
+    min-width: 4.1rem;
+    padding: 0.28rem 0.5rem;
+    border: 0;
+    border-radius: 0.35rem;
+    background: color-mix(in srgb, var(--openapi-method-color) 14%, transparent);
+    color: var(--openapi-method-color);
+    font-family: var(--font-mono);
+    font-size: 0.72rem;
+    font-weight: 700;
+    letter-spacing: 0.04em;
+    text-align: center;
+}
+
+.markdown-content details.openapi-endpoint > summary.openapi-operation .openapi-operation-summary {
+    flex: 1 1 12rem;
+    min-width: 0;
+    overflow: hidden;
+    color: var(--text-secondary);
+    font-size: 0.85rem;
+    font-weight: 400;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.markdown-content details.openapi-endpoint[open] > summary.openapi-operation .openapi-operation-summary {
+    white-space: normal;
+}
+
+.markdown-content .openapi-operation-content > h4 {
+    margin: 1.5rem 0 0.5rem;
+    color: var(--text-secondary);
+    font-size: 0.72rem;
+    font-weight: 700;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+}
+
+.markdown-content .openapi-operation-content > .openapi-operation-id + h4,
+.markdown-content .openapi-operation-content > h4:first-child {
+    margin-top: 1.1rem;
+}
+
+.markdown-content details.openapi-endpoint > summary.openapi-operation .openapi-path {
+    color: var(--text-primary);
+    font-family: var(--font-mono);
+    font-size: 0.9em;
+    font-weight: 600;
+    overflow-wrap: anywhere;
+}
+
+.markdown-content .openapi-path-parameter {
+    font-family: var(--font-mono);
+}
+
+.markdown-content .openapi-path-parameter-color-1 { color: var(--openapi-path-color-1); }
+.markdown-content .openapi-path-parameter-color-2 { color: var(--openapi-path-color-2); }
+.markdown-content .openapi-path-parameter-color-3 { color: var(--openapi-path-color-3); }
+.markdown-content .openapi-path-parameter-color-4 { color: var(--openapi-path-color-4); }
+.markdown-content .openapi-path-parameter-color-5 { color: var(--openapi-path-color-5); }
+.markdown-content .openapi-path-parameter-color-6 { color: var(--openapi-path-color-6); }
+
+.markdown-content .openapi-type {
+    font-family: var(--font-mono);
+    white-space: normal;
+}
+
+.markdown-content .openapi-type-keyword {
+    color: var(--text-secondary);
+}
+
+.markdown-content .openapi-declaration {
+    font-family: var(--font-mono);
+    overflow-wrap: anywhere;
+}
+
+.markdown-content .openapi-declaration-name {
+    font-weight: 600;
+}
+
+.markdown-content .openapi-declaration-colon {
+    color: var(--text-secondary);
+}
+
+.markdown-content .openapi-type-reference {
+    color: var(--text-secondary);
+    text-decoration: underline;
+    text-decoration-color: var(--border-subtle);
+    text-underline-offset: 0.2em;
+}
+
+.markdown-content .openapi-type-reference:hover,
+.markdown-content .openapi-type-reference:focus-visible {
+    text-decoration-color: currentColor;
+}
+
+@media (max-width: 640px) {
+    .markdown-content .openapi-declaration-type {
+        display: block;
+        margin-top: 0.25rem;
+    }
+}
+
+.markdown-content .openapi-type-optional {
+    color: var(--text-primary);
+}
+
+.markdown-content .openapi-parameter-location-path {
+    color: var(--link);
+}
+
+.markdown-content details.openapi-endpoint.openapi-method-post { --openapi-method-color: #075e9c; }
+.markdown-content details.openapi-endpoint.openapi-method-put { --openapi-method-color: #895500; }
+.markdown-content details.openapi-endpoint.openapi-method-patch { --openapi-method-color: #7040a0; }
+.markdown-content details.openapi-endpoint.openapi-method-delete { --openapi-method-color: #b4232e; }
+.markdown-content details.openapi-endpoint.openapi-method-options { --openapi-method-color: #087c83; }
+.markdown-content details.openapi-endpoint.openapi-method-head { --openapi-method-color: #5a6472; }
+.markdown-content details.openapi-endpoint.openapi-method-trace { --openapi-method-color: #5a6472; }
+.markdown-content details.openapi-endpoint.openapi-method-query { --openapi-method-color: #7040a0; }
+
+.markdown-content .openapi-operation-content {
+    display: flow-root;
+}
+
+.markdown-content .openapi-response-heading {
+    margin-top: 1.5rem;
+    color: var(--text-secondary);
+    font-size: 0.72rem;
+    font-weight: 700;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+}
+
+.markdown-content .openapi-response-position,
+.markdown-content .openapi-media-type-position {
+    margin-left: 0.35rem;
+    color: var(--text-secondary);
+    font-weight: 500;
+    letter-spacing: normal;
+    text-transform: none;
+}
+
+.markdown-content .openapi-media-type-position {
+    font-size: 0.95em;
+}
+
+.markdown-content .openapi-response-control {
+    display: flex;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 0.75rem;
+    margin: 0.5rem 0 0.75rem;
+    color: var(--text-secondary);
+    font-size: 0.9rem;
+    font-weight: 650;
+}
+
+.markdown-content .openapi-response-select {
+    min-width: 6.5rem;
+    padding: 0.42rem 0.75rem;
+    border: 1px solid var(--openapi-response-border);
+    border-radius: 0.45rem;
+    background: var(--openapi-response-background);
+    color: var(--openapi-response-color);
+    font: inherit;
+    font-weight: 750;
+    cursor: pointer;
+}
+
+.markdown-content .openapi-media-type-control {
+    margin: 0.85rem 0 0.35rem;
+}
+
+.markdown-content .openapi-media-type-label {
+    display: grid;
+    width: fit-content;
+    gap: 0.35rem;
+    color: var(--text-secondary);
+    font-size: 0.8rem;
+    font-weight: 600;
+}
+
+.markdown-content .openapi-media-type-select {
+    min-width: 12rem;
+    max-width: min(100%, 34rem);
+    padding: 0.42rem 0.75rem;
+    border: 1px solid var(--border-subtle);
+    border-radius: 0.45rem;
+    background: var(--page-background);
+    color: var(--text-primary);
+    font: inherit;
+    font-weight: 500;
+    cursor: pointer;
+}
+
+.markdown-content .openapi-response-select:focus-visible {
+    outline: 2px solid var(--openapi-response-color);
+    outline-offset: 2px;
+}
+
+.markdown-content .openapi-media-type-select:focus-visible {
+    outline: 2px solid var(--border);
+    outline-offset: 2px;
+}
+
+.markdown-content .openapi-response-select option,
+.markdown-content .openapi-media-type-select option {
+    background: var(--page-background);
+    color: var(--text-primary);
+}
+
+.markdown-content .openapi-response-select option.openapi-status-2xx { color: #096b45; }
+.markdown-content .openapi-response-select option.openapi-status-4xx { color: #895500; }
+.markdown-content .openapi-response-select option.openapi-status-5xx { color: #b4232e; }
+
+.markdown-content .openapi-response-panel {
+    margin: 0 0 1rem;
+    padding: 0.1rem 1rem 0.75rem;
+    border-left: 2px solid var(--openapi-response-color);
+    border-radius: 0.25rem 0.6rem 0.6rem 0.25rem;
+    background: color-mix(in srgb, var(--openapi-response-color) 2%, var(--surface-current));
+}
+
+.markdown-content .openapi-response-panel[hidden] {
+    display: none;
+}
+
+.markdown-content .openapi-response-description > :first-child {
+    margin-top: 0.5rem;
+}
+
+.markdown-content section.openapi-request-body {
+    --openapi-response-color: var(--link);
+    margin: 1.25rem 0 1.5rem;
+    padding: 0.1rem 1rem 0.75rem;
+    border-left: 2px solid var(--border-subtle);
+    border-radius: 0.25rem 0.6rem 0.6rem 0.25rem;
+    background: var(--surface-current);
+}
+
+.markdown-content .openapi-request-body > h4:first-child {
+    margin-top: 0.75rem;
+    margin-bottom: 1rem;
+    font-size: 1rem;
+}
+
+.markdown-content .openapi-request-description > :first-child {
+    margin-top: 0.5rem;
+}
+
+.markdown-content .openapi-media-panel[hidden],
+.markdown-content .openapi-response-tabpanel[hidden] {
+    display: none;
+}
+
+.markdown-content .openapi-response-tab-list {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.35rem;
+    margin-top: 1rem;
+    border-bottom: 1px solid var(--border-subtle);
+}
+
+.markdown-content .openapi-response-tab {
+    flex: 0 0 auto;
+    padding: 0.65rem 0.9rem;
+    border: 0;
+    border-bottom: 2px solid transparent;
+    margin-bottom: -1px;
+    background: transparent;
+    color: var(--text-secondary);
+    font: inherit;
+    font-size: 0.9rem;
+    font-weight: 600;
+    cursor: pointer;
+}
+
+.markdown-content .openapi-response-tab[aria-selected="true"] {
+    border-bottom-color: var(--openapi-response-color);
+    color: var(--text-primary);
+    font-weight: 600;
+}
+
+.markdown-content .openapi-response-tab:focus-visible {
+    outline: 2px solid var(--openapi-response-color);
+    outline-offset: -2px;
+}
+
+.markdown-content .openapi-response-tabpanel {
+    padding: 1rem 0 0.25rem;
+}
+
+.markdown-content .openapi-response-tabpanel > p:first-child {
+    margin-top: 0;
+}
+
+.markdown-content .openapi-response-tabpanel > p > strong:only-child > code:only-child,
+.markdown-content .openapi-response-tabpanel > h6 code {
+    padding: 0;
+    border: 0;
+    background: transparent;
+    font-size: 0.9rem;
+    overflow-wrap: anywhere;
+}
+
+.markdown-content .openapi-response-tabpanel > p + p {
+    color: var(--text-secondary);
+    line-height: 1.6;
+}
+
+.markdown-content .openapi-response-tabpanel .code-block {
+    margin: 1rem 0 0.5rem;
+}
+
+.markdown-content .openapi-response-tabpanel pre code {
+    white-space: pre-wrap;
+    overflow-wrap: anywhere;
+}
+
+/* A drawn asterisk keeps the same weight and position in every monospace font. */
+.markdown-content .openapi-required-marker {
+    display: inline-block;
+    width: 0.62em;
+    height: 0.62em;
+    margin: 0 0.05em 0 0.12em;
+    color: var(--alert-caution-accent);
+    vertical-align: 0.42em;
+    cursor: help;
+}
+
+.markdown-content .openapi-required-marker svg {
+    display: block;
+    width: 100%;
+    height: 100%;
+    fill: none;
+    stroke: currentColor;
+    stroke-linecap: round;
+    stroke-width: 1.7;
+}
+
+.markdown-content .openapi-default {
+    color: var(--text-secondary);
+    cursor: help;
+}
+
+.markdown-content .openapi-enum {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.3rem;
+    margin-top: 0.45rem;
+}
+
+.markdown-content .openapi-enum-value {
+    padding: 0.12rem 0.42rem;
+    border: 1px solid var(--border-subtle);
+    border-radius: 0.3rem;
+    background: var(--surface-current);
+    color: var(--text-primary);
+    font-size: 0.74rem;
+    line-height: 1.35;
+}
+
+.content-tooltip {
+    z-index: 40;
+    padding: 0.35rem 0.6rem;
+    border-radius: 0.45rem;
+    box-shadow: 0 6px 20px rgb(0 0 0 / 24%);
+    font-size: 0.78rem;
+    font-weight: 500;
+    line-height: 1.35;
+    pointer-events: none;
+}
+
+/* Collapsed description cells keep their row borders but take no width. */
+.markdown-content .openapi-schema-table:not(.descriptions-visible) > table > tbody > tr > td:last-child {
+    padding-inline: 0;
+    font-size: 0;
+    line-height: 0;
+    visibility: hidden;
+}
+
+.markdown-content .openapi-schema-table:not(.descriptions-visible) .openapi-description-label {
+    display: none;
+}
+
+.markdown-content .openapi-schema-table:not(.descriptions-visible) .openapi-description-header {
+    width: 1%;
+    white-space: nowrap;
+}
+
+.markdown-content .openapi-schema-table:not(.descriptions-visible) .openapi-schema-table-header {
+    justify-content: flex-end;
+}
+
+.markdown-content .openapi-schema-table > table {
+    width: 100%;
+    margin: 0;
+}
+
+.markdown-content .table-wrapper:has(> .openapi-schema-table) {
+    margin: 0.5rem 0 1.25rem;
+}
+
+.markdown-content .openapi-schema-table-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 0.75rem;
+}
+
+.markdown-content .openapi-description-toggle {
+    flex: 0 0 auto;
+    margin: -0.25rem -0.4rem;
+    padding: 0.2rem 0.45rem;
+    letter-spacing: normal;
+    text-transform: none;
+    border: 1px solid transparent;
+    border-radius: 0.4rem;
+    background: transparent;
+    color: var(--text-secondary);
+    font: inherit;
+    font-size: 0.78rem;
+    cursor: pointer;
+}
+
+.markdown-content .openapi-description-toggle:hover {
+    border-color: var(--border-subtle);
+    background: var(--surface-current);
+}
+
+.markdown-content .openapi-schema-table > table th {
+    padding-block: 0.45rem;
+    color: var(--text-secondary);
+    font-size: 0.72rem;
+    font-weight: 600;
+    letter-spacing: 0.04em;
+    text-transform: uppercase;
+}
+
+.markdown-content .openapi-schema-table > table td {
+    padding-block: 0.55rem;
+    font-size: 0.875rem;
+    vertical-align: top;
+}
+
+.markdown-content .openapi-description-toggle:hover {
+    color: var(--text-primary);
+}
+
+.markdown-content .openapi-description-toggle:focus-visible {
+    outline: 2px solid var(--link);
+    outline-offset: 2px;
+}
+
+.markdown-content .openapi-status-2xx {
+    --openapi-response-color: #096b45;
+    --openapi-response-background: #edf8f2;
+    --openapi-response-border: #a5d7ba;
+}
+
+.markdown-content .openapi-status-4xx {
+    --openapi-response-color: #895500;
+    --openapi-response-background: #fff6df;
+    --openapi-response-border: #e6c46c;
+}
+
+.markdown-content .openapi-status-5xx {
+    --openapi-response-color: #b4232e;
+    --openapi-response-background: #fff0f0;
+    --openapi-response-border: #e5a0a3;
+}
+
+.markdown-content .openapi-status-neutral {
+    --openapi-response-color: var(--text-secondary);
+    --openapi-response-background: var(--surface-current);
+    --openapi-response-border: var(--border);
+}
+
+:root[data-theme="dark"] .markdown-content .openapi-status-2xx {
+    --openapi-response-color: #68d39e;
+    --openapi-response-background: #11271c;
+    --openapi-response-border: #326448;
+}
+
+:root[data-theme="dark"] .markdown-content .openapi-status-4xx {
+    --openapi-response-color: #f2bd55;
+    --openapi-response-background: #2a1e00;
+    --openapi-response-border: #84631c;
+}
+
+:root[data-theme="dark"] .markdown-content .openapi-status-5xx {
+    --openapi-response-color: #ff8585;
+    --openapi-response-background: #2e0d0c;
+    --openapi-response-border: #783433;
+}
+
+:root[data-theme="dark"] .markdown-content .openapi-response-select option.openapi-status-2xx { color: #68d39e; }
+:root[data-theme="dark"] .markdown-content .openapi-response-select option.openapi-status-4xx { color: #f2bd55; }
+:root[data-theme="dark"] .markdown-content .openapi-response-select option.openapi-status-5xx { color: #ff8585; }
+
+@media (prefers-color-scheme: dark) {
+    :root[data-theme="auto"] .markdown-content .openapi-status-2xx {
+        --openapi-response-color: #68d39e;
+        --openapi-response-background: #11271c;
+        --openapi-response-border: #326448;
+    }
+
+    :root[data-theme="auto"] .markdown-content .openapi-status-4xx {
+        --openapi-response-color: #f2bd55;
+        --openapi-response-background: #2a1e00;
+        --openapi-response-border: #84631c;
+    }
+
+    :root[data-theme="auto"] .markdown-content .openapi-status-5xx {
+        --openapi-response-color: #ff8585;
+        --openapi-response-background: #2e0d0c;
+        --openapi-response-border: #783433;
+    }
+
+    :root[data-theme="auto"] .markdown-content .openapi-response-select option.openapi-status-2xx { color: #68d39e; }
+    :root[data-theme="auto"] .markdown-content .openapi-response-select option.openapi-status-4xx { color: #f2bd55; }
+    :root[data-theme="auto"] .markdown-content .openapi-response-select option.openapi-status-5xx { color: #ff8585; }
+}
+
+:root[data-theme="dark"] .markdown-content details.openapi-method-get { --openapi-method-color: #57d49a; }
+:root[data-theme="dark"] .markdown-content details.openapi-method-post { --openapi-method-color: #73c0ff; }
+:root[data-theme="dark"] .markdown-content details.openapi-method-put { --openapi-method-color: #f2bd55; }
+:root[data-theme="dark"] .markdown-content details.openapi-method-patch,
+:root[data-theme="dark"] .markdown-content details.openapi-method-query { --openapi-method-color: #d0a0ff; }
+:root[data-theme="dark"] .markdown-content details.openapi-method-delete { --openapi-method-color: #ff8585; }
+:root[data-theme="dark"] .markdown-content details.openapi-method-options { --openapi-method-color: #65d4d9; }
+:root[data-theme="dark"] .markdown-content details.openapi-method-head,
+:root[data-theme="dark"] .markdown-content details.openapi-method-trace { --openapi-method-color: #bec5d0; }
+:root[data-theme="dark"] .markdown-content .openapi-tag-method-count.openapi-method-get { --openapi-method-color: #57d49a; }
+:root[data-theme="dark"] .markdown-content .openapi-tag-method-count.openapi-method-post { --openapi-method-color: #73c0ff; }
+:root[data-theme="dark"] .markdown-content .openapi-tag-method-count.openapi-method-put { --openapi-method-color: #f2bd55; }
+:root[data-theme="dark"] .markdown-content .openapi-tag-method-count.openapi-method-patch,
+:root[data-theme="dark"] .markdown-content .openapi-tag-method-count.openapi-method-query { --openapi-method-color: #d0a0ff; }
+:root[data-theme="dark"] .markdown-content .openapi-tag-method-count.openapi-method-delete { --openapi-method-color: #ff8585; }
+:root[data-theme="dark"] .markdown-content .openapi-tag-method-count.openapi-method-options { --openapi-method-color: #65d4d9; }
+:root[data-theme="dark"] .markdown-content .openapi-tag-method-count.openapi-method-head,
+:root[data-theme="dark"] .markdown-content .openapi-tag-method-count.openapi-method-trace { --openapi-method-color: #bec5d0; }
+
+@media (prefers-color-scheme: dark) {
+    :root[data-theme="auto"] .markdown-content details.openapi-method-get { --openapi-method-color: #57d49a; }
+    :root[data-theme="auto"] .markdown-content details.openapi-method-post { --openapi-method-color: #73c0ff; }
+    :root[data-theme="auto"] .markdown-content details.openapi-method-put { --openapi-method-color: #f2bd55; }
+    :root[data-theme="auto"] .markdown-content details.openapi-method-patch,
+    :root[data-theme="auto"] .markdown-content details.openapi-method-query { --openapi-method-color: #d0a0ff; }
+    :root[data-theme="auto"] .markdown-content details.openapi-method-delete { --openapi-method-color: #ff8585; }
+    :root[data-theme="auto"] .markdown-content details.openapi-method-options { --openapi-method-color: #65d4d9; }
+    :root[data-theme="auto"] .markdown-content details.openapi-method-head,
+    :root[data-theme="auto"] .markdown-content details.openapi-method-trace { --openapi-method-color: #bec5d0; }
+    :root[data-theme="auto"] .markdown-content .openapi-tag-method-count.openapi-method-get { --openapi-method-color: #57d49a; }
+    :root[data-theme="auto"] .markdown-content .openapi-tag-method-count.openapi-method-post { --openapi-method-color: #73c0ff; }
+    :root[data-theme="auto"] .markdown-content .openapi-tag-method-count.openapi-method-put { --openapi-method-color: #f2bd55; }
+    :root[data-theme="auto"] .markdown-content .openapi-tag-method-count.openapi-method-patch,
+    :root[data-theme="auto"] .markdown-content .openapi-tag-method-count.openapi-method-query { --openapi-method-color: #d0a0ff; }
+    :root[data-theme="auto"] .markdown-content .openapi-tag-method-count.openapi-method-delete { --openapi-method-color: #ff8585; }
+    :root[data-theme="auto"] .markdown-content .openapi-tag-method-count.openapi-method-options { --openapi-method-color: #65d4d9; }
+    :root[data-theme="auto"] .markdown-content .openapi-tag-method-count.openapi-method-head,
+    :root[data-theme="auto"] .markdown-content .openapi-tag-method-count.openapi-method-trace { --openapi-method-color: #bec5d0; }
 }
 
 .footnotes > ol {
