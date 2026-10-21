@@ -32,6 +32,15 @@ public class HtmlRenderer
     private static readonly Regex OpenApiOperationSummaryRegex = new(
         @"\A\s*<p class=""openapi-operation-summary"">(?<summary>.*?)</p>\s*",
         RegexOptions.Compiled | RegexOptions.Singleline);
+    private const string OpenApiSharedStart = "<!--openapi-shared-->";
+    private const string OpenApiSharedEnd = "<!--/openapi-shared-->";
+    private const string OpenApiSharedScopeToken = "openapi-shared-scope";
+    private static readonly Regex OpenApiSharedPanelRegex = new(
+        "<!--openapi-shared-->(?<content>.*?)<!--/openapi-shared-->",
+        RegexOptions.Compiled | RegexOptions.Singleline);
+    private static readonly Regex OpenApiSchemaAnchorPrefixRegex = new(
+        "openapi-response-schema-[0-9a-f]{10}",
+        RegexOptions.Compiled);
     private static readonly Regex OpenApiTableHeaderRegex = new(@"<th>(?<label>.*?)</th>", RegexOptions.Compiled | RegexOptions.Singleline);
     private static readonly string[] OpenApiTagMethodOrder = ["GET", "POST", "PUT", "PATCH", "DELETE"];
     private static readonly Regex OpenApiPermalinkRegex = new(
@@ -153,6 +162,7 @@ public class HtmlRenderer
         renderedMarkdown = InsertHeadingPermalinks(renderedMarkdown);
         renderedMarkdown = CollapseOpenApiOperations(renderedMarkdown);
         renderedMarkdown = CollapseOpenApiTagGroups(renderedMarkdown);
+        renderedMarkdown = ShareOpenApiTabPanels(renderedMarkdown);
         var hasOpenApiInteractiveContent = renderedMarkdown.Contains("class=\"openapi-responses\"", StringComparison.Ordinal) ||
                                            renderedMarkdown.Contains("class=\"openapi-tag-list\"", StringComparison.Ordinal) ||
                                            renderedMarkdown.Contains("class=\"openapi-request-body\"", StringComparison.Ordinal);
@@ -600,8 +610,9 @@ public class HtmlRenderer
             }
             output.AppendLine("</summary>");
             output.AppendLine("<div class=\"openapi-operation-content\">");
-            var operationContent = WrapOpenApiRequestBodies(operationMarkup, operationScopeId);
-            output.Append(WrapOpenApiDescriptionTables(WrapOpenApiResponses(operationContent, operationScopeId)));
+            // Tables are wrapped first so tab contents are complete before ShareOpenApiTabPanels compares them.
+            var operationContent = WrapOpenApiRequestBodies(WrapOpenApiDescriptionTables(operationMarkup), operationScopeId);
+            output.Append(WrapOpenApiResponses(operationContent, operationScopeId));
             output.AppendLine("</div>");
             output.AppendLine("</details>");
             copiedUntil = contentEnd;
@@ -895,11 +906,79 @@ public class HtmlRenderer
                 .Append("\" tabindex=\"0\"");
             if (index > 0) output.Append(" hidden");
             output.AppendLine(">");
-            output.Append(content, tabContentStart, contentEnd - tabContentStart);
+            output.Append(OpenApiSharedStart)
+                .Append(content, tabContentStart, contentEnd - tabContentStart)
+                .Append(OpenApiSharedEnd);
             output.AppendLine("</div>");
         }
         output.AppendLine("</div>");
         return output.ToString();
+    }
+
+    // Large specifications repeat the same examples and schemas across many responses. Tab contents that occur
+    // more than once are emitted once as a template, and the page script copies a template into its tab when the
+    // tab becomes visible. Each media type scopes its schema anchors with its own prefix, so a template stores the
+    // prefix as a token and every copy gets its original anchors back.
+    private static string ShareOpenApiTabPanels(string renderedMarkdown)
+    {
+        var panels = OpenApiSharedPanelRegex.Matches(renderedMarkdown);
+        if (panels.Count == 0) return renderedMarkdown;
+
+        var contents = panels.Select(panel => SharedOpenApiPanelContent.From(panel.Groups["content"].Value)).ToArray();
+        var counts = contents.Where(content => content.Shareable)
+            .GroupBy(content => content.Normalized, StringComparer.Ordinal)
+            .ToDictionary(group => group.Key, group => group.Count(), StringComparer.Ordinal);
+        var templateIds = new Dictionary<string, string>(StringComparer.Ordinal);
+        var templates = new StringBuilder();
+        var output = new StringBuilder(renderedMarkdown.Length);
+        var copiedUntil = 0;
+        for (var index = 0; index < panels.Count; index++)
+        {
+            var panel = panels[index];
+            var content = contents[index];
+            output.Append(renderedMarkdown, copiedUntil, panel.Index - copiedUntil);
+            copiedUntil = panel.Index + panel.Length;
+            if (!content.Shareable || counts[content.Normalized] < 2)
+            {
+                output.Append(content.Original);
+                continue;
+            }
+
+            if (!templateIds.TryGetValue(content.Normalized, out var id))
+            {
+                id = $"openapi-shared-{templateIds.Count + 1}";
+                templateIds.Add(content.Normalized, id);
+                templates.Append("<template data-openapi-shared=\"").Append(id).Append("\">")
+                    .Append(content.Normalized)
+                    .AppendLine("</template>");
+            }
+
+            output.Append("<div class=\"openapi-shared-content\" data-openapi-shared=\"")
+                .Append(id)
+                .Append("\" data-openapi-scope=\"")
+                .Append(content.Scope)
+                .Append("\"></div>");
+        }
+
+        output.Append(renderedMarkdown, copiedUntil, renderedMarkdown.Length - copiedUntil);
+        return output.Append(templates).ToString();
+    }
+
+    private sealed record SharedOpenApiPanelContent(string Original, string Normalized, string Scope, bool Shareable)
+    {
+        public static SharedOpenApiPanelContent From(string content)
+        {
+            var scopes = OpenApiSchemaAnchorPrefixRegex.Matches(content)
+                .Select(match => match.Value)
+                .Distinct(StringComparer.Ordinal)
+                .ToArray();
+            return scopes.Length switch
+            {
+                0 => new SharedOpenApiPanelContent(content, content, string.Empty, true),
+                1 => new SharedOpenApiPanelContent(content, content.Replace(scopes[0], OpenApiSharedScopeToken, StringComparison.Ordinal), scopes[0], true),
+                _ => new SharedOpenApiPanelContent(content, content, string.Empty, false)
+            };
+        }
     }
 
     private static string CollapseOpenApiTagGroups(string renderedMarkdown)
@@ -1017,6 +1096,24 @@ public class HtmlRenderer
         status.Length == 3 && status[0] == family && char.IsAsciiDigit(status[1]) && char.IsAsciiDigit(status[2]);
 
     private const string OpenApiResponseScript = """
+        // Repeated tab contents arrive as templates; copy one in once its tab is visible in an open endpoint.
+        const fillSharedContent = endpoint => {
+            if (!endpoint?.open) return;
+            endpoint.querySelectorAll(".openapi-shared-content").forEach(placeholder => {
+                for (let element = placeholder; element && element !== endpoint; element = element.parentElement)
+                    if (element.hidden) return;
+                const template = document.querySelector(`template[data-openapi-shared="${placeholder.dataset.openapiShared}"]`);
+                if (!template) return;
+                const container = document.createElement("div");
+                container.innerHTML = template.innerHTML.replaceAll("openapi-shared-scope", placeholder.dataset.openapiScope);
+                placeholder.replaceWith(...container.childNodes);
+            });
+        };
+        document.addEventListener("toggle", event => {
+            if (event.target instanceof HTMLDetailsElement && event.target.matches(".openapi-endpoint"))
+                fillSharedContent(event.target);
+        }, true);
+
         const openApiFilterStates = new WeakMap();
         document.addEventListener("input", event => {
             if (!event.target.matches(".openapi-path-filter")) return;
@@ -1077,6 +1174,7 @@ public class HtmlRenderer
                     : /^5(?:\d{2}|XX)$/.test(status) ? "openapi-status-5xx"
                     : "openapi-status-neutral";
                 select.classList.add(statusClass);
+                fillSharedContent(select.closest(".openapi-endpoint"));
                 return;
             }
             if (select.matches(".openapi-media-type-select")) {
@@ -1085,6 +1183,7 @@ public class HtmlRenderer
                     panel.hidden = panel.dataset.mediaIndex !== select.value;
                 });
                 select.closest(".openapi-media-type-control").querySelector(".openapi-media-type-position").textContent = `${select.selectedIndex + 1} of ${select.options.length}`;
+                fillSharedContent(select.closest(".openapi-endpoint"));
             }
         });
 
@@ -1098,6 +1197,7 @@ public class HtmlRenderer
             tabs.querySelectorAll(".openapi-response-tabpanel").forEach(panel => {
                 panel.hidden = panel.id !== tab.getAttribute("aria-controls");
             });
+            fillSharedContent(tab.closest(".openapi-endpoint"));
         };
 
         document.addEventListener("click", event => {

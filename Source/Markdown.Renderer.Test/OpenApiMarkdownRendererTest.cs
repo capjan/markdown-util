@@ -250,6 +250,40 @@ public class OpenApiMarkdownRendererTest
         Assert.Contains("<div class=\"openapi-servers\"><span class=\"openapi-servers-label\">Server</span><ul><li><code>https://api.example.com</code><span class=\"openapi-server-description\">Production</span></li></ul></div>", html);
     }
 
+    [Fact]
+    public async Task EmitsRepeatedTabContentsOnceWithScopedAnchors()
+    {
+        var html = await RenderHtml("""
+            {
+              "openapi": "3.1.0",
+              "info": { "title": "Orders", "version": "1" },
+              "paths": { "/orders": { "get": { "responses": {
+                "200": { "description": "Found", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/Order" } } } },
+                "400": { "description": "Bad", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/Problem" } } } },
+                "500": { "description": "Error", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/Problem" } } } }
+              } } } },
+              "components": { "schemas": {
+                "Order": { "type": "object", "properties": { "id": { "type": "string" } } },
+                "Problem": { "type": "object", "properties": { "detail": { "$ref": "#/components/schemas/Detail" } } },
+                "Detail": { "type": "object", "properties": { "title": { "type": "string" } } }
+              } }
+            }
+            """);
+
+        var templates = System.Text.RegularExpressions.Regex.Matches(html, "<template data-openapi-shared=\"(?<id>[^\"]+)\">");
+        Assert.Equal(3, templates.Count);
+        var placeholders = System.Text.RegularExpressions.Regex.Matches(html,
+            "<div class=\"openapi-shared-content\" data-openapi-shared=\"(?<id>[^\"]+)\" data-openapi-scope=\"(?<scope>[^\"]*)\"></div>");
+        Assert.Equal(6, placeholders.Count);
+        var schemaScopes = placeholders.Select(match => match.Groups["scope"].Value).Where(scope => scope.Length > 0).Distinct().ToArray();
+        Assert.Equal(2, schemaScopes.Length);
+        Assert.All(schemaScopes, scope => Assert.StartsWith("openapi-response-schema-", scope));
+        Assert.Contains("href=\"#openapi-shared-scope-detail\"", html);
+        Assert.DoesNotContain("openapi-shared-->", html);
+        Assert.Contains("<td><span class=\"openapi-declaration\"><span class=\"openapi-declaration-name\">id</span>", html);
+        Assert.Contains("template[data-openapi-shared=", html);
+    }
+
     private static async Task<string> RenderHtml(string specification)
     {
         var directory = Path.Combine(Path.GetTempPath(), $"mdu-openapi-html-{Guid.NewGuid():N}");

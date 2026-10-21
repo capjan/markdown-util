@@ -6,7 +6,7 @@ navigation.order: 3
 
 `Markdown.Renderer` turns the Markdown of one page into a complete HTML page, or into PDF content. The page tree supplies everything around the content, such as navigation and breadcrumbs; the renderer supplies the content itself and the page frame.
 
-Pages with an `openapi` front matter entry have a generated API reference appended to their Markdown before rendering. `OpenApiMarkdownRenderer` reads the local JSON or YAML file, then the normal HTML and PDF renderers process the combined content. See the [OpenAPI feature](../Features/OpenAPI.md) for its usage and supported content.
+Pages with an `openapi` front matter entry have a generated API reference appended to their Markdown before rendering. `OpenApiMarkdownRenderer` reads the local JSON or YAML file, then the normal HTML and PDF renderers process the combined content. Large specifications repeat the same examples and schemas across many responses, so the HTML renderer emits a tab content that occurs more than once only once as a `<template>`. The page script copies it into an Example, Schema, or Schema JSON tab when that tab becomes visible in an open endpoint, and restores the schema anchor prefix of each media type in the copy. See the [OpenAPI feature](../Features/OpenAPI.md) for its usage and supported content.
 
 ## From Markdown to HTML
 

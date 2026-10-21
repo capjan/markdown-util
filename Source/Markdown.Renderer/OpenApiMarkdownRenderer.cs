@@ -457,7 +457,8 @@ public static class OpenApiMarkdownRenderer
         foreach (var (name, referencedSchema) in GetReferencedResponseSchemas(schema, components))
         {
             var resolvedSchema = ResolveResponseSchemaReference(referencedSchema, components);
-            output.AppendLine($"###### {CodeSpan(name)}");
+            // A paragraph instead of a heading keeps automatic heading ids out, so repeated tabs stay identical.
+            AppendParagraph(output, $"**{CodeSpan(name)}**");
             AppendMarkdown(output, resolvedSchema.Description);
             AppendExample(output, SerializeSchema(resolvedSchema));
         }
