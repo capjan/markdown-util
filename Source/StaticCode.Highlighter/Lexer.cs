@@ -14,6 +14,7 @@ public class Lexer
     private static readonly Regex NumberRegex = new(
         @"(?<![\p{L}\p{N}_$])\d+(?:\.\d+)?",
         RegexOptions.Compiled);
+    private static readonly string[] CssAtRules = { "font-face", "import", "keyframes", "media", "supports" };
     private static readonly Regex HtmlTagRegex = new(
         """</?(?<tag>[A-Za-z][A-Za-z0-9:-]*)(?:[^>"']|"[^"]*"|'[^']*')*>""",
         RegexOptions.Compiled);
@@ -58,16 +59,16 @@ public class Lexer
             LazyThreadSafetyMode.ExecutionAndPublication)).Value;
     }
     private readonly Regex? _keywordRegex;
-    private readonly IParserInputPredicate _whitespacePredicate;
-    private readonly IParserInputPredicate _newLinePredicate;
+    private readonly Regex? _cssPropertyRegex;
+    private readonly Regex? _cssAtRuleRegex;
     private readonly LanguageString[] _strings;
-    private readonly IParserInputPredicate _operatorPredicate;
     private readonly string _lineCommentStart;
     private readonly bool _highlightKeys;
     private readonly bool _highlightShellTokens;
     private readonly bool _highlightMarkdown;
     private readonly bool _highlightHtml;
     private readonly bool _hyphenatedKeywords;
+    private readonly bool _highlightNumbers;
     private readonly string? _blockCommentStart;
     private readonly string? _blockCommentEnd;
 
@@ -81,9 +82,23 @@ public class Lexer
         _lineCommentStart = settings.LineCommentStart;
         _blockCommentStart = settings.BlockCommentStart;
         _blockCommentEnd = settings.BlockCommentEnd;
-        if (settings.Keywords.Count > 0)
+        _highlightNumbers = settings.Keywords.Count > 0;
+        if (settings.Keywords.Count > 0 && _hyphenatedKeywords)
         {
-            var boundary = _hyphenatedKeywords ? @"[\p{L}\p{N}_$\-]" : @"[\p{L}\p{N}_$]";
+            var properties = settings.Keywords.Except(CssAtRules, StringComparer.OrdinalIgnoreCase)
+                .OrderByDescending(keyword => keyword.Length)
+                .Select(Regex.Escape);
+            var atRules = string.Join("|", CssAtRules.OrderByDescending(keyword => keyword.Length).Select(Regex.Escape));
+            _cssPropertyRegex = new Regex(
+                $@"(?:^|[;{{])\s*(?<keyword>{string.Join("|", properties)})\s*:",
+                RegexOptions.Compiled | RegexOptions.IgnoreCase | RegexOptions.CultureInvariant | RegexOptions.Multiline);
+            _cssAtRuleRegex = new Regex(
+                $@"@(?<keyword>{atRules})(?![\p{{L}}\p{{N}}_-])",
+                RegexOptions.Compiled | RegexOptions.IgnoreCase | RegexOptions.CultureInvariant);
+        }
+        else if (settings.Keywords.Count > 0)
+        {
+            const string boundary = @"[\p{L}\p{N}_$]";
             var keywords = string.Join("|", settings.Keywords
                 .OrderByDescending(keyword => keyword.Length)
                 .Select(Regex.Escape));
@@ -92,18 +107,11 @@ public class Lexer
                 options |= RegexOptions.IgnoreCase | RegexOptions.CultureInvariant;
             _keywordRegex = new Regex($@"(?<!{boundary})(?:{keywords})(?!{boundary})", options);
         }
-        _whitespacePredicate = ParserInput.Predicate()
-            .Equals(new [] {' ', '\t'}, Repetition.OneOrMore)
-            .Predicate;
-        _newLinePredicate = ParserInput.Predicate()
-            .Equals('\r', Repetition.ZeroOrOne)
-            .Equals('\n')
-            .Predicate;
         _strings = settings.Strings.OrderByDescending(rule => rule.Delimiter.Length).ToArray();
-        _operatorPredicate = ParserInput.Predicate()
-            .EqualsAny(settings.Operators)
-            .Predicate;
+        _operators = settings.Operators.ToArray();
     }
+
+    private readonly string[] _operators;
 
     public IEnumerable<LanguageToken> Analyse(TextReader reader)
     {
@@ -221,7 +229,7 @@ public class Lexer
             }
 
             end = position;
-            return false;
+            continue;
         }
 
         end = position;
@@ -417,11 +425,18 @@ public class Lexer
     private List<(int Start, int End, TokenType Type)> FindKeywordAndNumberRanges(string source)
     {
         var ranges = new List<(int Start, int End, TokenType Type)>();
-        if (_keywordRegex is not null)
+        if (_cssPropertyRegex is not null && _cssAtRuleRegex is not null)
         {
-            ranges.AddRange(FindRegexRanges(_keywordRegex, source, TokenType.Keyword));
-            ranges.AddRange(FindRegexRanges(NumberRegex, source, TokenType.Number));
+            ranges.AddRange(FindRegexGroupRanges(_cssPropertyRegex, source, "keyword", TokenType.Keyword));
+            ranges.AddRange(FindRegexGroupRanges(_cssAtRuleRegex, source, "keyword", TokenType.Keyword));
         }
+        else if (_keywordRegex is not null)
+            ranges.AddRange(FindRegexRanges(_keywordRegex, source, TokenType.Keyword));
+
+        if (_highlightNumbers)
+            ranges.AddRange(FindRegexRanges(NumberRegex, source, TokenType.Number)
+                .Where(range => !_hyphenatedKeywords || range.Start == 0 || source[range.Start - 1] != '#'));
+
         return ranges;
     }
 
@@ -429,6 +444,19 @@ public class Lexer
     {
         return regex.Matches(source)
             .Select(match => (match.Index, match.Index + match.Length, type))
+            .ToList();
+    }
+
+    private static List<(int Start, int End, TokenType Type)> FindRegexGroupRanges(
+        Regex regex,
+        string source,
+        string groupName,
+        TokenType type)
+    {
+        return regex.Matches(source)
+            .Select(match => match.Groups[groupName])
+            .Where(group => group.Success)
+            .Select(group => (group.Index, group.Index + group.Length, type))
             .ToList();
     }
 
@@ -539,13 +567,23 @@ public class Lexer
     private IEnumerable<LanguageToken> AnalyseCore(TextReader reader)
     {
         var input = new ParserInput(reader);
+        var whitespacePredicate = ParserInput.Predicate()
+            .Equals(new[] { ' ', '\t' }, Repetition.OneOrMore)
+            .Predicate;
+        var newLinePredicate = ParserInput.Predicate()
+            .Equals('\r', Repetition.ZeroOrOne)
+            .Equals('\n')
+            .Predicate;
+        var operatorPredicate = ParserInput.Predicate()
+            .EqualsAny(_operators)
+            .Predicate;
         var otherTextBuilder = new StringBuilder();
 
         var done = false;
         while (!done)
         {
             // Whitespace
-            if (input.TryReadMatch(_whitespacePredicate, out var whitespace))
+            if (input.TryReadMatch(whitespacePredicate, out var whitespace))
             {
                 if (otherTextBuilder.Length != 0)
                 {
@@ -558,7 +596,7 @@ public class Lexer
             }
             
             // NewLine
-            if (input.TryReadMatch(_newLinePredicate, out var newLine))
+            if (input.TryReadMatch(newLinePredicate, out var newLine))
             {
                 if (otherTextBuilder.Length != 0)
                 {
@@ -571,7 +609,7 @@ public class Lexer
             }
             
             // Operator
-            if (input.TryReadMatch(_operatorPredicate, out var operatorString))
+            if (input.TryReadMatch(operatorPredicate, out var operatorString))
             {
                 if (otherTextBuilder.Length != 0)
                 {

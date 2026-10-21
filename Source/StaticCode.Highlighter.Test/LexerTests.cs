@@ -137,6 +137,15 @@ public class LexerTests
         Assert.Contains(tokens, token => token.Type == TokenType.String && token.Text == "\"\"\"text block\"\"\"");
     }
 
+    [Fact]
+    public void UnclosedJavaTextBlockFallsBackToShorterStringDelimiter()
+    {
+        var tokens = Lexer.ForLanguage("java").Analyse("String s = \"\"\"").ToList();
+
+        Assert.Contains(tokens, token => token.Text == "\"\"" && token.Type == TokenType.String);
+        Assert.Equal("String s = \"\"\"", string.Concat(tokens.Select(token => token.Text)));
+    }
+
     [Theory]
     [InlineData("javascript")]
     [InlineData("typescript")]
@@ -189,6 +198,46 @@ public class LexerTests
 
         Assert.NotEmpty(tokens);
         Assert.All(tokens, token => Assert.Equal(TokenType.Number, token.Type));
+    }
+
+    [Fact]
+    public void CssHighlightsPropertiesOnlyInDeclarationsAndKeepsHexColorsConsistent()
+    {
+        var tokens = Lexer.ForLanguage("css")
+            .Analyse(".color { color: #000; background-color: #fff; } @media screen {}")
+            .ToList();
+        var colorTokens = tokens.Where(token => token.Text == "color").ToList();
+
+        Assert.Collection(colorTokens,
+            token => Assert.Equal(TokenType.Text, token.Type),
+            token => Assert.Equal(TokenType.Keyword, token.Type));
+        Assert.Contains(tokens, token => token.Text == "background-color" && token.Type == TokenType.Keyword);
+        Assert.Contains(tokens, token => token.Text == "media" && token.Type == TokenType.Keyword);
+        Assert.DoesNotContain(tokens, token => token.Text is "000" or "fff" && token.Type == TokenType.Number);
+        Assert.Equal(".color { color: #000; background-color: #fff; } @media screen {}",
+            string.Concat(tokens.Select(token => token.Text)));
+    }
+
+    [Theory]
+    [InlineData("typescript", "const x = 1; return x;")]
+    [InlineData("rust", "fn f() { let x = 1; return x; }")]
+    [InlineData("html", "<p title=\"x\">return 1</p>")]
+    [InlineData("bash", "echo x | grep x")]
+    [InlineData("sql", "select x from t where id = 1;")]
+    public void CachedLexerCanAnalyseConcurrently(string language, string code)
+    {
+        var lexer = Lexer.ForLanguage(language);
+        var expected = lexer.Analyse(code).Select(token => (token.Text, token.Type)).ToArray();
+        var mismatches = 0;
+
+        Parallel.For(0, 20_000, new ParallelOptions { MaxDegreeOfParallelism = 16 }, _ =>
+        {
+            var actual = lexer.Analyse(code).Select(token => (token.Text, token.Type));
+            if (!expected.SequenceEqual(actual))
+                Interlocked.Increment(ref mismatches);
+        });
+
+        Assert.Equal(0, mismatches);
     }
 
     [Fact]
