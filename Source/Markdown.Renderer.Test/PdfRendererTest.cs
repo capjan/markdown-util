@@ -54,6 +54,24 @@ public class PdfRendererTest
     }
 
     [Fact]
+    public void DoesNotNormalizeBooleanWordsInsideAttributeValues()
+    {
+        const string markdown = """
+            ![Player controls overview](https://example.com/shot.png)
+
+            [Docs](https://example.com/docs "Loop settings")
+            """;
+        using var output = new MemoryStream();
+
+        new PdfRenderer(new HtmlRenderer()).WritePdf(output, "Media",
+        [new PdfSourceSection("Media", "media/index.html", markdown)], includeFrontMatter: false);
+
+        var pdf = Encoding.Latin1.GetString(output.ToArray());
+        Assert.StartsWith("%PDF-1.7", pdf);
+        Assert.Contains("/URI (https://example.com/docs)", pdf);
+    }
+
+    [Fact]
     public void RendersTablesInsideScrollableContainersToPdf()
     {
         using var output = new MemoryStream();
