@@ -6,6 +6,19 @@ namespace Markdown.Renderer.Test;
 public class OpenApiMarkdownRendererTest
 {
     [Fact]
+    public void ResolveSpecPathRejectsPathsOutsideAnAllowedRoot()
+    {
+        var root = Path.Combine(Path.GetTempPath(), $"mdu-openapi-root-{Guid.NewGuid():N}");
+        var repository = Path.Combine(root, "repository");
+        var pagePath = Path.Combine(repository, "Docs", "page.md");
+
+        var exception = Assert.Throws<InvalidOperationException>(() =>
+            OpenApiMarkdownRenderer.ResolveSpecPath(pagePath, "../../../../outside.yaml", repository));
+
+        Assert.Contains("inside the imported repository", exception.Message);
+    }
+
+    [Fact]
     public async Task RendersNullableArrayItemsAsLinkedCompactTypes()
     {
         var html = await RenderHtml("""

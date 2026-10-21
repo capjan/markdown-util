@@ -34,12 +34,21 @@ public class LintCommand
 
         // JSON output must stay a single document.
         if (format != LintFormat.Json) Console.WriteLine("Running Linter");
-        var graph = _graphBuilder.CreateGraph(new VisitorSettings
+        MarkdownUtil.Model.MarkdownFile[] graph;
+        try
         {
-            RootPath = rootPath,
-            SearchPattern = settings.SearchPattern,
-            IncludeHidden = settings.IncludeHidden
-        });
+            graph = _graphBuilder.CreateGraph(new VisitorSettings
+            {
+                RootPath = rootPath,
+                SearchPattern = settings.SearchPattern,
+                IncludeHidden = settings.IncludeHidden
+            });
+        }
+        catch (Exception exception) when (exception is IOException or UnauthorizedAccessException or InvalidOperationException or ArgumentException)
+        {
+            Console.Error.WriteLine($"Could not resolve Markdown sources: {exception.Message}");
+            return 1;
+        }
         _linterVisitor.Prepare(graph, rootPath);
         graph.Visit(_linterVisitor);
         return format == LintFormat.Text

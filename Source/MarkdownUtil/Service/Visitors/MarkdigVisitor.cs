@@ -49,12 +49,18 @@ public class MarkdigVisitor : BaseVisitor
     {
         Console.WriteLine($"{io.InputRelativeFilePathToRootDirectory} => {io.OutputRelativeFilePathToRootDirectory}");
 
-        var markdown = RemoveFrontMatter(io.ReadAllText(), entity.FrontMatter);
+        var markdown = RemoveFrontMatter(entity.ReadMarkdown(), entity.FrontMatter);
         if (!string.IsNullOrWhiteSpace(entity.OpenApiSpec))
-            markdown = OpenApiMarkdownRenderer.AppendFromFile(markdown, entity.FileInfo.FullName, entity.OpenApiSpec);
+            markdown = OpenApiMarkdownRenderer.AppendFromFile(
+                markdown,
+                entity.OpenApiSpecBasePath ?? entity.FileInfo.FullName,
+                entity.OpenApiSpec,
+                entity.OpenApiSpecBasePath is null ? entity.SourceRootPath : null);
         io.CreateOutputDirectory();    // ensures that the output directory exits
 
-        var editPageLink = string.IsNullOrEmpty(_editPageRoot) ? string.Empty : GetEditPageLink(io.InputRelativeFilePathToRootDirectory);
+        var editPageLink = entity.EditPageLink ?? (string.IsNullOrEmpty(_editPageRoot)
+            ? string.Empty
+            : GetEditPageLink(io.InputRelativeFilePathToRootDirectory));
         var nestingDeep = Path.GetDirectoryName(io.OutputRelativeFilePathToRootDirectory)?
             .Split(Path.DirectorySeparatorChar, StringSplitOptions.RemoveEmptyEntries).Length ?? 0;
         
@@ -106,6 +112,13 @@ public class MarkdigVisitor : BaseVisitor
 
     private void WriteAliasPage(MarkdownFile page, string outputFileName)
     {
+        if (!string.IsNullOrWhiteSpace(page.AliasRelativePath))
+        {
+            var importAliasPath = Path.GetFullPath(Path.Combine(_outPath, page.AliasRelativePath));
+            WriteRedirect(importAliasPath, outputFileName);
+            return;
+        }
+
         if (page.FileInfo.Name.Equals("README.md", StringComparison.OrdinalIgnoreCase)) return;
         var aliasDirectory = Path.Combine(page.FileInfo.DirectoryName!, Path.GetFileNameWithoutExtension(page.FileInfo.Name));
         if (Directory.Exists(aliasDirectory) && Directory.EnumerateFiles(aliasDirectory).Any(filePath =>
@@ -113,15 +126,23 @@ public class MarkdigVisitor : BaseVisitor
                 Path.GetFileName(filePath).Equals("index.md", StringComparison.OrdinalIgnoreCase))) return;
 
         var aliasPath = Path.Combine(Path.GetDirectoryName(outputFileName)!, Path.GetFileNameWithoutExtension(outputFileName), "index.html");
-        Directory.CreateDirectory(Path.GetDirectoryName(aliasPath)!);
-        var relativeTarget = "../" + Uri.EscapeDataString(Path.GetFileName(outputFileName));
+        WriteRedirect(aliasPath, outputFileName);
+    }
+
+    private static void WriteRedirect(string aliasPath, string outputFileName)
+    {
+        var relativeTarget = Path.GetRelativePath(Path.GetDirectoryName(aliasPath)!, outputFileName)
+            .Replace(Path.DirectorySeparatorChar, '/');
+        relativeTarget = string.Join('/', relativeTarget.Split('/').Select(segment => segment == ".." ? segment : Uri.EscapeDataString(segment)));
         var encodedTarget = HtmlEncoder.Default.Encode(relativeTarget);
+        Directory.CreateDirectory(Path.GetDirectoryName(aliasPath)!);
         File.WriteAllText(aliasPath,
             $"<!doctype html><html><head><meta charset=\"utf-8\"><meta http-equiv=\"refresh\" content=\"0; url={encodedTarget}\"><link rel=\"canonical\" href=\"{encodedTarget}\"><title>Moved</title></head><body><a href=\"{encodedTarget}\">Continue to the page</a></body></html>");
     }
 
     private DateTimeOffset? GetLastModified(MarkdownFile page)
     {
+        if (page.SourceRootPath is not null) return null;
         var relativePath = Path.GetRelativePath(_rootPath, page.FileInfo.FullName).Replace(Path.DirectorySeparatorChar, '/');
         return _lastModifiedDates.TryGetValue(relativePath, out var date) ? date : null;
     }
@@ -131,7 +152,7 @@ public class MarkdigVisitor : BaseVisitor
         var providers = new HashSet<string>(StringComparer.Ordinal);
         foreach (var page in Flatten(_navigationRoots))
         {
-            var markdown = RemoveFrontMatter(File.ReadAllText(page.FileInfo.FullName), page.FrontMatter);
+            var markdown = RemoveFrontMatter(page.ReadMarkdown(), page.FrontMatter);
             providers.UnionWith(_htmlFoundation.FindMediaProviders(markdown));
         }
 
@@ -204,8 +225,7 @@ public class MarkdigVisitor : BaseVisitor
             .ThenBy(GetNavigationTitle, StringComparer.OrdinalIgnoreCase)
             .Select(candidate =>
             {
-                var candidatePath = GetOutputPagePath(FilePathInfo.CreateRenderFileInfo(_rootPath, _outPath,
-                    candidate.FileInfo, ".html").OutputFullFilePath);
+                var candidatePath = GetOutputPagePath(GetRenderPath(candidate));
                 var isCurrentPage = string.Equals(candidatePath, currentPath, PathComparison);
                 return new NavigationItem
                 {
@@ -230,8 +250,7 @@ public class MarkdigVisitor : BaseVisitor
             {
                 if (page.NavigationVisible)
                 {
-                    var pagePath = GetOutputPagePath(FilePathInfo.CreateRenderFileInfo(_rootPath, _outPath, page.FileInfo, ".html")
-                        .OutputFullFilePath);
+                    var pagePath = GetOutputPagePath(GetRenderPath(page));
                     entries.Add(new NavigationEntry(page, GetNavigationTitle(page), pagePath, GetSiteRelativeSegments(pagePath), depth,
                         page.NavigationExpanded == true));
                 }
@@ -287,19 +306,19 @@ public class MarkdigVisitor : BaseVisitor
     private bool IsTopNavigationPage(MarkdownFile page) =>
         page.NavigationVisible &&
         page.NavigationPlacement == NavigationPlacement.Top &&
-        IsTopLevelNavigationPage(page.FileInfo);
+        IsTopLevelNavigationPage(page);
 
-    private bool IsTopLevelNavigationPage(FileInfo file)
+    private bool IsTopLevelNavigationPage(MarkdownFile page)
     {
-        var relativePath = Path.GetRelativePath(_rootPath, file.FullName);
+        var relativePath = page.SiteRelativePath ?? Path.GetRelativePath(_rootPath, page.FileInfo.FullName);
         if (Path.IsPathRooted(relativePath) || relativePath == ".." ||
             relativePath.StartsWith(".." + Path.DirectorySeparatorChar, StringComparison.Ordinal)) return false;
 
         var segments = relativePath.Split(Path.DirectorySeparatorChar, Path.AltDirectorySeparatorChar);
         if (segments.Length == 1) return true;
         return segments.Length == 2 &&
-               (file.Name.Equals("README.md", StringComparison.OrdinalIgnoreCase) ||
-                file.Name.Equals("index.md", StringComparison.OrdinalIgnoreCase));
+               (page.FileInfo.Name.Equals("README.md", StringComparison.OrdinalIgnoreCase) ||
+                page.FileInfo.Name.Equals("index.md", StringComparison.OrdinalIgnoreCase));
     }
 
     private IReadOnlyList<BreadcrumbItem> BuildBreadcrumbs(MarkdownFile page, string currentOutputPath)
@@ -313,8 +332,7 @@ public class MarkdigVisitor : BaseVisitor
         var currentDirectory = Path.GetDirectoryName(Path.GetFullPath(currentOutputPath))!;
         foreach (var ancestor in ancestors.Where(ancestor => ancestor.NavigationVisible))
         {
-            var ancestorPath = FilePathInfo.CreateRenderFileInfo(_rootPath, _outPath, ancestor.FileInfo, ".html")
-                .OutputFullFilePath;
+            var ancestorPath = GetRenderPath(ancestor);
             breadcrumbs.Add(new BreadcrumbItem(
                 GetNavigationTitle(ancestor),
                 GetRelativeUrl(currentDirectory, GetOutputPagePath(ancestorPath))));
@@ -332,6 +350,10 @@ public class MarkdigVisitor : BaseVisitor
 
         return Path.GetFullPath(pagePath);
     }
+
+    private string GetRenderPath(MarkdownFile page) =>
+        FilePathInfo.CreateRenderFileInfo(_rootPath, _outPath, page.FileInfo, ".html", page.SiteRelativePath)
+            .OutputFullFilePath;
 
     private static string GetRelativeUrl(string currentDirectory, string pagePath)
     {

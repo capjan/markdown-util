@@ -29,6 +29,10 @@ Everything on these pages is written in ordinary Markdown. Each page shows the s
 
 - [Navigation](Navigation.md) - Sidebar, top tabs, breadcrumbs, ordering, and the page footer
 
+## Compose
+
+- [Repository Imports](Repository-Imports.md) - Combine Markdown pages from multiple GitHub repositories
+
 ## Document APIs
 
 - [OpenAPI Spec](OpenAPI.md) - Add a static API reference from a local OpenAPI specification

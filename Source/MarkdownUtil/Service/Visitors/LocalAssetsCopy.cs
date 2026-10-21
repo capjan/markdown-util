@@ -21,7 +21,7 @@ public class LocalAssetsCopy : BaseVisitor
 
     protected override bool ProcessFile(MarkdownFile entity, int graphDepth, FilePathInfo io)
     {
-        var fileContent = io.ReadAllText();
+        var fileContent = entity.ReadMarkdown();
 
         var assetPaths = GetLinkedAssetPaths(fileContent, io.InputFullDirectoryPath).ToArray();
         if (assetPaths.Length > 0)
@@ -29,15 +29,31 @@ public class LocalAssetsCopy : BaseVisitor
             Console.WriteLine($"Found {assetPaths.Length} Assets in {io.InputFullFilePath}");
             foreach (var fullPath in assetPaths)
             {
+                var assetRootPath = entity.SourceRootPath ?? io.RootDirectoryPath;
+                if (!IsInsideDirectory(assetRootPath, fullPath)) continue;
+
                 var fileInfo = new FileInfo(fullPath);
                 if (!fileInfo.Exists)
                 {
                     Console.WriteLine($"Missing File: {fullPath}");
                     continue;
                 }
+                if (fileInfo.LinkTarget is not null)
+                {
+                    Console.WriteLine($"Skipping symbolic link asset: {fullPath}");
+                    continue;
+                }
                 
-                var assetIO = FilePathInfo.CreateRenderFileInfo(io.RootDirectoryPath, io.OutputRootDirectoryPath,
-                    new FileInfo(fullPath));
+                var outputAssetPath = Path.GetFullPath(Path.Combine(
+                    io.OutputFullDirectoryPath,
+                    Path.GetRelativePath(io.InputFullDirectoryPath, fullPath)));
+                if (!IsInsideDirectory(io.OutputRootDirectoryPath, outputAssetPath)) continue;
+                var relativeOutputAssetPath = Path.GetRelativePath(io.OutputRootDirectoryPath, outputAssetPath);
+                var assetIO = FilePathInfo.CreateRenderFileInfo(
+                    io.RootDirectoryPath,
+                    io.OutputRootDirectoryPath,
+                    fileInfo,
+                    siteRelativePath: relativeOutputAssetPath);
                 assetIO.CopyFile();
                 Console.WriteLine($"Copied: {assetIO.InputRelativeFilePathToRootDirectory}");
             }
@@ -69,5 +85,15 @@ public class LocalAssetsCopy : BaseVisitor
         {
             return null;
         }
+    }
+
+    private static bool IsInsideDirectory(string directory, string path)
+    {
+        var relativePath = Path.GetRelativePath(directory, path);
+        return relativePath == "." ||
+               !Path.IsPathRooted(relativePath) &&
+               relativePath != ".." &&
+               !relativePath.StartsWith(".." + Path.DirectorySeparatorChar, StringComparison.Ordinal) &&
+               !relativePath.StartsWith(".." + Path.AltDirectorySeparatorChar, StringComparison.Ordinal);
     }
 }

@@ -22,7 +22,12 @@ public abstract class BaseVisitor : IVisitor<MarkdownFile>
     
     public bool Process(MarkdownFile entity, int graphDepth)
     {
-        var pathInfo = FilePathInfo.CreateRenderFileInfo(_rootPath, _outPath, entity.FileInfo, _outputFileExtension);
+        var pathInfo = FilePathInfo.CreateRenderFileInfo(
+            _rootPath,
+            _outPath,
+            entity.FileInfo,
+            _outputFileExtension,
+            entity.SiteRelativePath);
         return ProcessFile(entity, graphDepth, pathInfo);
     }
 

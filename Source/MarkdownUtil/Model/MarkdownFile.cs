@@ -15,6 +15,17 @@ public class MarkdownFile: INode<MarkdownFile>
     public MarkdownFile? Parent { get; set; }
     public MarkdownFile[] Children { get; set; } = Array.Empty<MarkdownFile>();
 
+    public string? SiteRelativePath { get; set; }
+    public string? MarkdownContent { get; set; }
+    public string? ImportSource { get; set; }
+    public string? EditPageLink { get; set; }
+    public string? AliasRelativePath { get; set; }
+    public string? SourceRootPath { get; set; }
+    public string? ImportMarkerPath { get; set; }
+    public string? OpenApiSpecBasePath { get; set; }
+
+    public string ReadMarkdown() => MarkdownContent ?? File.ReadAllText(FileInfo.FullName);
+
     public string Title { get; set; } = string.Empty;
     public string HeadingTitle { get; set; } = string.Empty;
     public string Description { get; set; } = string.Empty;
