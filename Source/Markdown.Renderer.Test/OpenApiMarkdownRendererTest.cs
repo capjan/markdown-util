@@ -154,7 +154,7 @@ public class OpenApiMarkdownRendererTest
             Assert.Contains("#### Request body", firstRender);
             Assert.Contains("##### Response `201`", firstRender);
             Assert.Contains("**`Order`**", firstRender);
-            Assert.Contains("| id<span class=\"openapi-required-marker\" aria-label=\"Required\">*</span> | string | Identifier |", firstRender);
+            Assert.Contains("| id<span class=\"openapi-required-marker\" aria-label=\"Required\">*</span> | `string` | Identifier |", firstRender);
             Assert.DoesNotContain("## Schemas", firstRender);
 
             File.WriteAllText(specPath, ReferencedSpecification("UpdatedOrder"));
