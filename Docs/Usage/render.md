@@ -4,7 +4,7 @@ navigation.order: 4
 
 # render
 
-`mdu render` converts the Markdown pages into a static HTML site and exits. It writes the pages, linked local assets, and a combined `documentation.pdf` to the output folder, `./site` by default. Add `[Download the PDF](mdu:pdf)` anywhere in a page to place a styled link to that file. Your Markdown files stay unchanged.
+`mdu render` converts the Markdown pages into a static HTML site and exits. It writes the pages and linked local assets to the output folder, `./site` by default. If any page contains `[Download the PDF](mdu:pdf)`, MDU also generates a combined `documentation.pdf` there and turns the link into a styled button. Your Markdown files stay unchanged.
 
 ## Usage
 

@@ -36,8 +36,8 @@ The tree is the single source for the sidebar, the top navigation, breadcrumbs, 
 | `tree` | `PrintTreeVisitor` | Indented page titles |
 | `lint` | `LinterVisitor`, then `LintResultRenderer` | Diagnostics as text, JSON, or GitHub annotations |
 | `fix` | `LinterVisitor`, then `MarkdownCompatibility` and `MarkdownLinks` | Converted syntax, moved pages, and updated links |
-| `render` | `LocalAssetsCopy`, `PdfCommand`, `MarkdigVisitor` | Static site and `documentation.pdf` in `./site` |
-| `serve` | Same as `render`, then a file watcher | Preview site and refreshed `documentation.pdf` |
+| `render` | `LocalAssetsCopy`, `PdfCommand`, `MarkdigVisitor` | Static site and, when a PDF Link is present, `documentation.pdf` |
+| `serve` | Same as `render`, then a file watcher | Preview site and a refreshed PDF when a PDF Link is present |
 | `pdf` | The tree in navigation order, then `PdfRenderer` | One PDF file |
 
 `mdu page move` and `mdu page links` need no page tree. They read every Markdown file below the documentation folder with `MarkdownLinks`, so they also see pages that are hidden from navigation.
@@ -53,8 +53,10 @@ flowchart TD
     Config --> Prepare[Write stylesheet and search script]
     Prepare --> Tree[Build the page tree]
     Tree --> Assets[Copy linked local assets]
-    Assets --> Pdf[Write documentation.pdf]
-    Pdf --> Pages[[Render every page]]
+    Assets --> PdfLink{PDF Link present?}
+    PdfLink -->|Yes| Pdf[Write documentation.pdf]
+    PdfLink -->|No| Pages[[Render every page]]
+    Pdf --> Pages
     Pages --> Index[Write search-index.json]
     click Config href "../Usage/render.md#site-configuration"
     click Tree href "#page-tree"
@@ -96,7 +98,7 @@ sequenceDiagram
 
 `serve` remembers which assets each page links to. When an image changes, it copies the new file and reloads only the pages that show it. Files that disappear from the site are removed from the output folder.
 
-When Markdown content changes, `serve` also rewrites `documentation.pdf` from the current page tree.
+When Markdown content changes, `serve` refreshes `documentation.pdf` if a PDF Link remains in the project. Adding the first link creates the file; removing the last link deletes it.
 
 ## PDF export
 

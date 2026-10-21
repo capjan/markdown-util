@@ -52,6 +52,20 @@ public sealed class PdfCommand(GraphBuilder graphBuilder, PdfRenderer pdfRendere
     public int WriteSitePdf(string rootPath, string outputPath, IEnumerable<MarkdownFile> graph) =>
         WritePdf(rootPath, outputPath, Flatten(graph), includeFrontMatter: true);
 
+    public int WriteSitePdfIfLinked(string rootPath, string outputPath, IEnumerable<MarkdownFile> graph)
+    {
+        var files = Flatten(graph).ToArray();
+        var containsPdfLink = files.Any(item => pdfRenderer.ContainsPdfLink(
+            RemoveFrontMatter(File.ReadAllText(item.File.FileInfo.FullName), item.File.FrontMatter)));
+        if (!containsPdfLink)
+        {
+            if (File.Exists(outputPath)) File.Delete(outputPath);
+            return 0;
+        }
+
+        return WritePdf(rootPath, outputPath, files, includeFrontMatter: true);
+    }
+
     private int WritePdf(
         string rootPath,
         string outputPath,

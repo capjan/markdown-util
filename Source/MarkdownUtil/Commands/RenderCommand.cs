@@ -73,7 +73,7 @@ public class RenderCommand
         CopyAssets(rootPath, outPath, graph);
         SiteConfigurationReader.CopyAssets(rootPath, outPath, siteConfiguration);
 
-        if (_pdfCommand.WriteSitePdf(rootPath, Path.Combine(outPath, "documentation.pdf"), graph) != 0)
+        if (_pdfCommand.WriteSitePdfIfLinked(rootPath, Path.Combine(outPath, "documentation.pdf"), graph) != 0)
             return 1;
         
         Console.WriteLine($"Rendering {nodeCount} Files");
