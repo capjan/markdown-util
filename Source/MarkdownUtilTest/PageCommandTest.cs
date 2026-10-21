@@ -174,6 +174,16 @@ public class PageCommandTest : IDisposable
     }
 
     [Fact]
+    public void RenamesFoldersInPlaceWhenRelativeSymbolicLinksKeepTheirTarget()
+    {
+        File.CreateSymbolicLink(Path.Combine(_root, "Guide", "logo.svg"), "../assets/logo.svg");
+
+        Assert.Equal(0, Move("Guide", "Manual").Exit);
+
+        Assert.Equal("<svg />", File.ReadAllText(Path.Combine(_root, "Manual", "logo.svg")));
+    }
+
+    [Fact]
     public void ListsTheLinksThatPointToAPage()
     {
         var output = new StringWriter();

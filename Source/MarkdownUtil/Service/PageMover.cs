@@ -45,7 +45,7 @@ public static class PageMover
         var movedPaths = new Dictionary<string, string>(comparer);
         if (isDirectory)
         {
-            RejectBrokenRelativeLinks(rootPath, sourcePath);
+            RejectRedirectedRelativeLinks(rootPath, sourcePath, targetPath);
             // Symbolic links inside the folder move as links; the files they point to stay where they are.
             var options = new EnumerationOptions { RecurseSubdirectories = true, AttributesToSkip = FileAttributes.ReparsePoint };
             foreach (var file in Directory.EnumerateFiles(sourcePath, "*", options))
@@ -111,14 +111,22 @@ public static class PageMover
         }
     }
 
-    // A moved folder takes its symbolic links along unchanged. A relative link that points out of the folder would
-    // then point somewhere else, so such folders are refused; links inside the folder and absolute links stay valid.
-    private static void RejectBrokenRelativeLinks(string rootPath, string folder)
+    // A moved folder takes its symbolic links along unchanged, so a relative link points from its new place. The move
+    // is refused only when that changes what a link points to; links inside the folder, absolute links, and links of a
+    // folder renamed in place keep their target.
+    private static void RejectRedirectedRelativeLinks(string rootPath, string folder, string newFolder)
     {
         foreach (var link in EnumerateLinks(new DirectoryInfo(folder)))
         {
             var target = link.LinkTarget!;
-            if (Path.IsPathRooted(target) || IsInside(folder, Path.GetFullPath(target, Path.GetDirectoryName(link.FullName)!)))
+            if (Path.IsPathRooted(target)) continue;
+
+            var linkDirectory = Path.GetDirectoryName(link.FullName)!;
+            var newLinkDirectory = Path.Combine(newFolder, Path.GetRelativePath(folder, linkDirectory));
+            var before = Path.GetFullPath(target, linkDirectory);
+            var after = Path.GetFullPath(target, newLinkDirectory);
+            var expected = IsInside(folder, before) ? Path.Combine(newFolder, Path.GetRelativePath(folder, before)) : before;
+            if (string.Equals(Path.TrimEndingDirectorySeparator(after), Path.TrimEndingDirectorySeparator(expected), StringComparison.Ordinal))
                 continue;
 
             throw new InvalidOperationException(

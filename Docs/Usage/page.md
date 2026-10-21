@@ -35,7 +35,7 @@ Updated 5 links in 3 pages:
 Run 'mdu lint' to check the new page structure.
 ```
 
-Add `--dry-run` to see the same report without changing any file. MDU refuses a move when the target already exists, lies outside the documentation folder, is inside the moved folder itself, or when the source or target path goes through a symbolic link. Pages reached through symbolic links are never rewritten. A folder moves together with its symbolic links; MDU refuses the move when a relative link inside it points out of the folder, because the link would point somewhere else afterward.
+Add `--dry-run` to see the same report without changing any file. MDU refuses a move when the target already exists, lies outside the documentation folder, is inside the moved folder itself, or when the source or target path goes through a symbolic link. Pages reached through symbolic links are never rewritten. A folder moves together with its symbolic links; MDU refuses the move when a relative link inside it would point to a different file afterward, for example `../Shared` in a folder that moves one level deeper. Renaming a folder in place keeps such links working.
 
 > [!TIP]
 > A new place can change the navigation: a folder needs a `README.md` page, and the [title of a section page](lint/Rule2.md) should match its folder name. Run `mdu lint` after a move.
