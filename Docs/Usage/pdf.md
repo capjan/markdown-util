@@ -6,7 +6,7 @@ navigation.order: 45
 
 `mdu pdf` combines the Markdown pages of a folder into one PDF file. It uses the same Markdown pipeline as `mdu render`, so code highlighting, icons, keyboard keys, math, callouts, and supported diagrams appear in the PDF too. MDU writes the file itself, without a PDF library, browser, or network service.
 
-For automatic PDF generation and styled links inside rendered pages, see the [PDF Link feature](../Features/Pdf-Link.md).
+For automatic PDF generation when a page contains a PDF Link, and for styled links inside rendered pages, see the [PDF Link feature](../Features/Pdf-Link.md).
 
 ## Usage
 

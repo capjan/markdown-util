@@ -36,6 +36,7 @@ public sealed class ServeCommand
     private RenderCommandSettings _settings = new();
     private string _rootPath = string.Empty;
     private string _outputPath = string.Empty;
+    private bool _hasPdfLink;
 
     public ServeCommand(
         GraphBuilder graphBuilder,
@@ -178,8 +179,10 @@ public sealed class ServeCommand
         SearchClientAsset.WriteTo(_outputPath);
         _searchIndexBuilder.Clear();
         graph.Visit(new LocalAssetsCopy(_rootPath, _outputPath));
-        if (_pdfCommand.WriteSitePdf(_rootPath, Path.Combine(_outputPath, "documentation.pdf"), graph) != 0)
+        var pdfOutputPath = Path.Combine(_outputPath, "documentation.pdf");
+        if (_pdfCommand.WriteSitePdfIfLinked(_rootPath, pdfOutputPath, graph) != 0)
             throw new InvalidOperationException("Could not render the documentation PDF.");
+        _hasPdfLink = File.Exists(pdfOutputPath);
         var rendererVisitor = new MarkdigVisitor(
             _rootPath,
             _outputPath,
@@ -371,7 +374,10 @@ public sealed class ServeCommand
         if (changedPages.Length > 0)
         {
             _searchIndexBuilder.WriteIndex(_outputPath);
-            _pdfCommand.WriteSitePdf(_rootPath, Path.Combine(_outputPath, "documentation.pdf"), _navigationRoots);
+            var pdfOutputPath = Path.Combine(_outputPath, "documentation.pdf");
+            if (_pdfCommand.WriteSitePdfIfLinked(_rootPath, pdfOutputPath, _navigationRoots) != 0)
+                throw new InvalidOperationException("Could not render the documentation PDF.");
+            _hasPdfLink = File.Exists(pdfOutputPath);
         }
 
         var assetChanges = relevantChanges
@@ -451,9 +457,9 @@ public sealed class ServeCommand
         {
             Path.Combine(_outputPath, "css", "main.css"),
             Path.Combine(_outputPath, "js", "search.js"),
-            Path.Combine(_outputPath, "search-index.json"),
-            Path.Combine(_outputPath, "documentation.pdf")
+            Path.Combine(_outputPath, "search-index.json")
         };
+        if (_hasPdfLink) currentFiles.Add(Path.Combine(_outputPath, "documentation.pdf"));
         currentFiles.UnionWith(_renderer.IconSearchAssets);
 
         foreach (var page in _pages.Values)

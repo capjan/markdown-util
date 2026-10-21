@@ -11,6 +11,8 @@ public sealed record PdfSourceSection(string Title, string RelativeHtmlPath, str
 /// <summary>Writes a paginated PDF from the HTML fragment produced by MDU's Markdown pipeline.</summary>
 public sealed class PdfRenderer(HtmlRenderer htmlRenderer)
 {
+    public bool ContainsPdfLink(string markdown) => htmlRenderer.ContainsPdfLink(markdown);
+
     public void WritePdf(Stream output, string title, IReadOnlyList<PdfSourceSection> sections, bool includeFrontMatter = true)
     {
         var layout = new PdfLayout(htmlRenderer);

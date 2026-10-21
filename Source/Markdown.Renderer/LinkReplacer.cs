@@ -15,11 +15,14 @@ public class LinkReplacer
     private const string MarkdownExtension = ".md";
     private const string PdfLinkUrl = "mdu:pdf";
 
+    public static bool IsPdfLink(string? url) =>
+        string.Equals(url, PdfLinkUrl, StringComparison.OrdinalIgnoreCase);
+
     public void ReplaceAll(MarkdownDocument document, string? pdfDownloadUrl = null)
     {
         foreach (var link in document.Descendants<LinkInline>())
         {
-            if (string.Equals(link.Url, PdfLinkUrl, StringComparison.OrdinalIgnoreCase))
+            if (IsPdfLink(link.Url))
             {
                 if (string.IsNullOrWhiteSpace(pdfDownloadUrl)) continue;
                 link.Url = pdfDownloadUrl;

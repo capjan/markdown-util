@@ -4,7 +4,7 @@ navigation.order: 5
 
 # serve
 
-`mdu serve` renders the site and its `documentation.pdf`, starts a local preview server, and opens it in your browser. While it runs, it watches the documentation folder: when you save a page or a linked image, the affected pages are rendered again and the browser reloads them. Markdown changes also refresh the PDF. Press ++ctrl+c++ to stop.
+`mdu serve` renders the site, starts a local preview server, and opens it in your browser. It generates `documentation.pdf` only if a page contains `[Download the PDF](mdu:pdf)`. While it runs, it watches the documentation folder: when you save a page or a linked image, the affected pages are rendered again and the browser reloads them. Markdown changes refresh the PDF when a PDF Link is present; adding the first link creates the PDF, and removing the last link removes it. Press ++ctrl+c++ to stop.
 
 ## Usage
 

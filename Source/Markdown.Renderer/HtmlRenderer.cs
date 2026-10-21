@@ -6,6 +6,7 @@ using System.Text.RegularExpressions;
 using Markdig;
 using Markdig.Renderers.Html;
 using Markdig.Syntax;
+using Markdig.Syntax.Inlines;
 using Markdown.Renderer.MarkdigExtension;
 using Markdown.Renderer.Res.Model;
 
@@ -63,6 +64,11 @@ public class HtmlRenderer
         _linkReplacer.ReplaceAll(document, pdfDownloadUrl);
         return document;
     }
+
+    public bool ContainsPdfLink(string markdown) =>
+        Markdig.Markdown.Parse(markdown, _pipeline)
+            .Descendants<LinkInline>()
+            .Any(link => LinkReplacer.IsPdfLink(link.Url));
 
     public IReadOnlyCollection<string> FindMediaProviders(string markdown)
     {
