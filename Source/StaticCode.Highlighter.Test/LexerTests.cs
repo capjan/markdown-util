@@ -189,6 +189,28 @@ public class LexerTests
         Assert.Contains(markdown, token => token.Text == "2" && token.Type == TokenType.Text);
     }
 
+    [Fact]
+    public void MarkdownHighlightsFrontMatterKeys()
+    {
+        const string markdown = """
+            ---
+            title: Orders API
+            description: Reference for the Orders service.
+            openapi: ./orders.yaml
+            ---
+
+            # Orders API
+            """;
+
+        var tokens = Lexer.ForLanguage("markdown").Analyse(markdown).ToList();
+
+        Assert.Equal(markdown, string.Concat(tokens.Select(token => token.Text)));
+        Assert.Contains(tokens, token => token.Text == "title" && token.Type == TokenType.Key);
+        Assert.Contains(tokens, token => token.Text == "description" && token.Type == TokenType.Key);
+        Assert.Contains(tokens, token => token.Text == "openapi" && token.Type == TokenType.Key);
+        Assert.Contains(tokens, token => token.Text == "Orders" && token.Type == TokenType.MarkdownHeading);
+    }
+
     [Theory]
     [InlineData("javascript")]
     [InlineData("css")]

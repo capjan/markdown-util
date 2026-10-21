@@ -47,6 +47,9 @@ public class Lexer
     private static readonly Regex MarkdownCodeRegex = new(
         @"(?<marker>`+)(?<content>[^`\r\n]+?)\k<marker>",
         RegexOptions.Compiled);
+    private static readonly Regex MarkdownFrontMatterRegex = new(
+        @"\A---[ \t]*\r?\n(?:(?<body>[\s\S]*?)\r?\n)?---[ \t]*(?=\r?\n|\z)",
+        RegexOptions.Compiled);
     private static readonly Regex MarkdownAlertRegex = new(
         @"\[!(?<kind>NOTE|TIP|IMPORTANT|WARNING|CAUTION)\]",
         RegexOptions.Compiled | RegexOptions.IgnoreCase);
@@ -140,7 +143,10 @@ public class Lexer
         if (_highlightShellTokens)
             tokens = ApplyTokenRanges(tokens, source.Length, FindShellTokenRanges(source));
         if (_highlightMarkdown)
+        {
             tokens = ApplyTokenRanges(tokens, source.Length, FindMarkdownRanges(source));
+            tokens = ApplyTokenRanges(tokens, source.Length, FindFrontMatterKeyRanges(source));
+        }
 
         return tokens;
     }
@@ -551,6 +557,17 @@ public class Lexer
         }
 
         return ranges;
+    }
+
+    private static List<(int Start, int End, TokenType Type)> FindFrontMatterKeyRanges(string source)
+    {
+        var frontMatter = MarkdownFrontMatterRegex.Match(source);
+        if (!frontMatter.Success)
+            return [];
+
+        return FindYamlKeyRanges(source[..frontMatter.Length])
+            .Select(range => (range.Start, range.End, TokenType.Key))
+            .ToList();
     }
 
     private static void AddDelimitedRanges(
