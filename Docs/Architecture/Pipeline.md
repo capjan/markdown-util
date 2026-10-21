@@ -18,7 +18,10 @@ Most commands follow the same pattern: find the Markdown files, build a page tre
 ```text
 docs/
 ├── README.md          → root page
-├── Setup.md           → child of README.md
+├── Setup/
+│   ├── README.md      → child of README.md, parent of the pages below
+│   ├── DotNet-Tool-Installation.md
+│   └── Portable-Installation.md
 └── Usage/
     ├── README.md      → child of README.md, parent of the pages below
     ├── render.md

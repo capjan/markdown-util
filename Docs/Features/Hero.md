@@ -26,7 +26,7 @@ title: Plain Markdown, beautifully published
 text: Lint, inspect, and render your Markdown files into a fast static documentation site.
 actions:
   - text: Get started
-    link: Setup.md
+    link: Setup/README.md
   - text: Browse features
     link: ./Features/README.md
 ```

@@ -4,7 +4,7 @@ navigation.order: 3
 
 # Custom
 
-[Install MDU](../Setup.md), then render your documentation:
+[Install MDU](../Setup/README.md), then render your documentation:
 
 ```bash
 mdu render

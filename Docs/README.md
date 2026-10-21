@@ -6,7 +6,7 @@ text: Lint, inspect, and render your Markdown files into a fast static documenta
 time: auto
 actions:
   - text: Get started
-    link: Setup.md
+    link: Setup/README.md
   - text: Browse features
     link: ./Features/README.md
 ```
@@ -15,7 +15,7 @@ MDU is a .NET tool that turns a folder of ordinary Markdown files into a documen
 
 ## Get started
 
-- [Setup](Setup.md) - Install the .NET tool globally or in a repository
+- [Setup](Setup/README.md) - Choose a .NET tool or portable installation
 - [Usage](./Usage/README.md) - Run the commands and preview your site
 - [Publish](./Publish/README.md) - Host the generated site on GitHub, GitLab, or any web server
 
