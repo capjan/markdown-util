@@ -2,7 +2,7 @@
 
 MDU turns a local OpenAPI specification into a static API reference inside a Markdown page. The specification stays in its JSON or YAML file; MDU adds the generated reference when it renders the page.
 
-For a complete short example with the generated output, see [OpenAPI Spec example](openapi-example.md).
+For a complete short example with the generated output, see [OpenAPI Spec example](openapi-example.md). The [Swagger Petstore example](openapi-petstore.md) shows a larger reference generated from the public Swagger Petstore specification.
 
 ## Add an API reference
 
@@ -20,7 +20,7 @@ openapi: ./orders.yaml
 This introduction appears before the generated reference.
 ```
 
-`mdu render`, `mdu serve`, and `mdu pdf` support `.json`, `.yaml`, and `.yml` specifications. The reference follows the page's Markdown content. `mdu serve` also watches the folders containing referenced specifications and refreshes the page when a specification changes.
+`mdu render`, `mdu serve`, and `mdu pdf` support `.json`, `.yaml`, and `.yml` specifications in the OpenAPI 3 and Swagger 2.0 formats. The reference follows the page's Markdown content. `mdu serve` also watches the folders containing referenced specifications and refreshes the page when a specification changes.
 
 ## Generated reference
 
