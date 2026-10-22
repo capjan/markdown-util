@@ -256,6 +256,24 @@ public class PageCommandTest : IDisposable
         Assert.Contains("Setup.md:3: ![Logo](assets/logo.svg)", image.ToString());
     }
 
+    [Fact]
+    public void ListsLinksToOpenApiSpecificationsInCodeBlocks()
+    {
+        Write("api/orders.yaml", "openapi: 3.1.0\n");
+        Write("Reference.md", "# Orders\n\n```openapi\napi/orders.yaml\n```\n");
+        Write("Guide/Overview.md", "# Overview\n\n```openapi\nspec: ../api/orders.yaml\n```\n");
+        var output = new StringWriter();
+
+        var exit = new PageCommand().Links(_root, Path.Combine(_root, "api", "orders.yaml"), includeHidden: true, output);
+
+        Assert.Equal(0, exit);
+        Assert.Equal(
+            "Guide/Overview.md:4: ../api/orders.yaml\n" +
+            "Reference.md:4: api/orders.yaml\n" +
+            "2 links in 2 pages point to api/orders.yaml.\n",
+            output.ToString().ReplaceLineEndings("\n"));
+    }
+
     private (int Exit, string Output) Move(string source, string target, bool dryRun = false)
     {
         var output = new StringWriter();

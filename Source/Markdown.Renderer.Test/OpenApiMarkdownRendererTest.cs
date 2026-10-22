@@ -264,6 +264,8 @@ public class OpenApiMarkdownRendererTest
             const string markdown = """
                 # Spaceport Guide
 
+                ## API overview
+
                 ## Launch control
 
                 ```openapi
@@ -298,6 +300,8 @@ public class OpenApiMarkdownRendererTest
             Assert.Equal(2, specPages.Count);
             Assert.Equal("guide-launches-spec.html", specPages[0].FileName);
             Assert.Equal("guide-beacon-api-spec.html", specPages[1].FileName);
+            Assert.Contains("[← Back to API reference](guide.html#openapi-overview-1)", specPages[0].Markdown);
+            Assert.Contains("[← Back to API reference](guide.html#openapi-overview-2)", specPages[1].Markdown);
 
             var output = new StringBuilder();
             using var writer = new StringWriter(output);
@@ -305,10 +309,46 @@ public class OpenApiMarkdownRendererTest
             var html = output.ToString();
 
             Assert.Equal(2, System.Text.RegularExpressions.Regex.Matches(html, "<section class=\"openapi-tag-list\"").Count);
+            Assert.Contains("<h2 id=\"api-overview\">API overview", html);
+            Assert.Contains("<h2 id=\"openapi-overview-1\" class=\"openapi-overview\">API overview", html);
+            Assert.Contains("<h2 id=\"openapi-overview-2\" class=\"openapi-overview\">API overview", html);
             Assert.Contains("href=\"guide-launches-spec.html\">OpenAPI specification</a>", html);
             Assert.Contains("href=\"guide-beacon-api-spec.html\">OpenAPI specification</a>", html);
             Assert.Contains("<h2 id=\"next-steps\">Next steps", html);
             Assert.True(html.LastIndexOf("</section>", StringComparison.Ordinal) < html.IndexOf("<h2 id=\"next-steps\">", StringComparison.Ordinal));
+        }
+        finally
+        {
+            Directory.Delete(directory, recursive: true);
+        }
+    }
+
+    [Fact]
+    public void SpecificationPageFileNamesAvoidCollidingWithSiblingMarkdownPages()
+    {
+        var directory = Path.Combine(Path.GetTempPath(), $"mdu-openapi-collision-{Guid.NewGuid():N}");
+        Directory.CreateDirectory(directory);
+        try
+        {
+            var markdownPath = Path.Combine(directory, "guide.md");
+            File.WriteAllText(markdownPath, "# Guide\n\n```openapi\n./orders.yaml\n```\n");
+            File.WriteAllText(Path.Combine(directory, "guide-orders-spec.md"), "# Existing Spec Page\n");
+            File.WriteAllText(Path.Combine(directory, "orders.yaml"), """
+                openapi: 3.1.0
+                info:
+                  title: Orders API
+                  version: 1.0.0
+                paths: {}
+                """);
+
+            var expanded = OpenApiMarkdownRenderer.ExpandCodeBlocks(
+                File.ReadAllText(markdownPath),
+                markdownPath,
+                out var specPages);
+
+            Assert.Single(specPages);
+            Assert.Equal("guide-orders-spec-2.html", specPages[0].FileName);
+            Assert.Contains("href=\"guide-orders-spec-2.html\">OpenAPI specification</a>", expanded);
         }
         finally
         {

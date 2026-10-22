@@ -127,6 +127,20 @@ public static class MarkdownLinks
             Add(link.Line, link.Span, link.Url);
         foreach (var definition in document.GetLinkReferenceDefinitions(true).OfType<LinkReferenceDefinition>())
             Add(definition.Line, definition.Span, definition.Url);
+        foreach (var openApiSpec in OpenApiMarkdownRenderer.FindSpecPathSpans(content))
+        {
+            try
+            {
+                var targetPath = OpenApiMarkdownRenderer.ResolveSpecPath(sourcePath, openApiSpec.Value);
+                if (!File.Exists(targetPath)) continue;
+                var line = 1 + content.AsSpan(0, openApiSpec.Start).Count('\n');
+                var markdown = content.Substring(openApiSpec.Start, openApiSpec.Length);
+                links.Add(new LocalLink(line, markdown, targetPath));
+            }
+            catch (Exception exception) when (exception is ArgumentException or InvalidOperationException or NotSupportedException or PathTooLongException)
+            {
+            }
+        }
         return links.OrderBy(link => link.Line).ToList();
 
         void Add(int line, SourceSpan span, string? destination)

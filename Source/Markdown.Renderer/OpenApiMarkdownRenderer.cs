@@ -86,12 +86,13 @@ public static class OpenApiMarkdownRenderer
         string markdown,
         string markdownPath,
         string? allowedRootPath = null,
-        string? pageOutputFileName = null)
+        string? pageOutputFileName = null,
+        IEnumerable<string>? reservedFileNames = null)
     {
         if (!markdown.Contains(CodeBlockLanguage, StringComparison.OrdinalIgnoreCase))
             return Array.Empty<string>();
 
-        ExpandCodeBlocks(markdown, markdownPath, out var pages, allowedRootPath, pageOutputFileName);
+        ExpandCodeBlocks(markdown, markdownPath, out var pages, allowedRootPath, pageOutputFileName, reservedFileNames);
         return pages.Select(page => page.FileName).ToArray();
     }
 
@@ -99,15 +100,17 @@ public static class OpenApiMarkdownRenderer
         string markdown,
         string markdownPath,
         string? allowedRootPath = null,
-        string? pageOutputFileName = null) =>
-        ExpandCodeBlocks(markdown, markdownPath, out _, allowedRootPath, pageOutputFileName);
+        string? pageOutputFileName = null,
+        IEnumerable<string>? reservedFileNames = null) =>
+        ExpandCodeBlocks(markdown, markdownPath, out _, allowedRootPath, pageOutputFileName, reservedFileNames);
 
     public static string ExpandCodeBlocks(
         string markdown,
         string markdownPath,
         out IReadOnlyList<OpenApiSpecificationPage> specificationPages,
         string? allowedRootPath = null,
-        string? pageOutputFileName = null)
+        string? pageOutputFileName = null,
+        IEnumerable<string>? reservedFileNames = null)
     {
         if (!markdown.Contains(CodeBlockLanguage, StringComparison.OrdinalIgnoreCase))
         {
@@ -131,7 +134,7 @@ public static class OpenApiMarkdownRenderer
 
         var parentHtmlFileName = GetParentHtmlFileName(markdownPath, pageOutputFileName);
         var pageStem = Path.GetFileNameWithoutExtension(parentHtmlFileName);
-        var usedFileNames = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+        var usedFileNames = CollectReservedHtmlFileNames(markdownPath, parentHtmlFileName, pageStem, reservedFileNames);
         var generatedPages = new List<OpenApiSpecificationPage>(blocks.Length);
         var replacements = new (int Start, int Length, string Content)[blocks.Length];
 
@@ -298,6 +301,57 @@ public static class OpenApiMarkdownRenderer
             : Path.ChangeExtension(fileName, ".html");
     }
 
+    private static HashSet<string> CollectReservedHtmlFileNames(
+        string markdownPath,
+        string parentHtmlFileName,
+        string pageStem,
+        IEnumerable<string>? reservedFileNames)
+    {
+        var usedFileNames = new HashSet<string>(StringComparer.OrdinalIgnoreCase)
+        {
+            parentHtmlFileName
+        };
+
+        void ReservePageHtmlFileName(string htmlFileName)
+        {
+            var fileName = Path.GetFileName(htmlFileName);
+            if (string.IsNullOrWhiteSpace(fileName)) return;
+            usedFileNames.Add(fileName);
+            var stem = Path.GetFileNameWithoutExtension(fileName);
+            if (!string.Equals(stem, pageStem, StringComparison.OrdinalIgnoreCase))
+                usedFileNames.Add($"{stem}-spec.html");
+        }
+
+        var markdownDirectory = Path.GetDirectoryName(markdownPath);
+        if (!string.IsNullOrEmpty(markdownDirectory) && Directory.Exists(markdownDirectory))
+        {
+            foreach (var file in Directory.EnumerateFiles(markdownDirectory))
+            {
+                var extension = Path.GetExtension(file);
+                if (!extension.Equals(".md", StringComparison.OrdinalIgnoreCase) &&
+                    !extension.Equals(".markdown", StringComparison.OrdinalIgnoreCase))
+                    continue;
+
+                var fileName = Path.GetFileName(file);
+                var htmlFileName = fileName.Equals("README.md", StringComparison.OrdinalIgnoreCase)
+                    ? "index.html"
+                    : Path.ChangeExtension(fileName, ".html");
+                ReservePageHtmlFileName(htmlFileName);
+            }
+        }
+
+        if (reservedFileNames is not null)
+        {
+            foreach (var reserved in reservedFileNames)
+                ReservePageHtmlFileName(reserved);
+        }
+
+        return usedFileNames;
+    }
+
+    private static string GetOverviewAnchorId(int blockIndex) =>
+        $"openapi-overview-{blockIndex + 1}";
+
     private static string BuildSpecificationPageMarkdown(
         string headingTitle,
         string sourceLabel,
@@ -306,8 +360,7 @@ public static class OpenApiMarkdownRenderer
         string parentHtmlFileName,
         int blockIndex)
     {
-        var backAnchor = blockIndex == 0 ? "#api-overview" : $"#api-overview-{blockIndex}";
-        var backUrl = $"{Uri.EscapeDataString(parentHtmlFileName)}{backAnchor}";
+        var backUrl = $"{Uri.EscapeDataString(parentHtmlFileName)}#{GetOverviewAnchorId(blockIndex)}";
         var fence = new string('`', Math.Max(3, LongestBacktickRun(rawSpecification) + 1));
         var safeTitle = sourceLabel.Replace("\"", "\\\"", StringComparison.Ordinal);
         var output = new StringBuilder(rawSpecification.Length + 256);
@@ -399,7 +452,7 @@ public static class OpenApiMarkdownRenderer
         output.AppendLine(BlockStartMarker);
         output.AppendLine();
         var info = document.Info;
-        output.AppendLine("## API overview {.openapi-overview}");
+        output.AppendLine($"## API overview {{#{GetOverviewAnchorId(blockIndex)} .openapi-overview}}");
         if (!omitTitle && !string.IsNullOrWhiteSpace(info?.Title))
             AppendParagraph(output, $"<p class=\"openapi-api-title\"><strong>{HtmlEncoder.Default.Encode(info.Title)}</strong></p>");
         if (!string.IsNullOrWhiteSpace(info?.Version))
