@@ -13,7 +13,7 @@ navigation:
 ---
 ```
 
-Copy the repository URL that points to the folder. MDU supports the common browse URL formats used by GitHub and GitHub Enterprise (`/tree/<revision>/<folder>`), GitLab (`/-/tree/<revision>/<folder>`), Bitbucket (`/src/<revision>/<folder>`), and Gitea or Forgejo (`/src/branch/<branch>/<folder>`). Hosts that use the GitHub-style `/tree/` or source-style `/src/` route also work, including self-hosted instances. For a host with a different browser URL, use its HTTPS clone URL and append `#<revision>/<folder>`, for example `https://git.example.net/team/api.git#main/Docs`. GitLab URLs may include `?ref_type=heads` or `?ref_type=tags`.
+Copy the repository URL that points to the folder. MDU supports the common browse URL formats used by GitHub and GitHub Enterprise (`/tree/<revision>/<folder>`), GitLab (`/-/tree/<revision>/<folder>`), Bitbucket Cloud (`/src/<revision>/<folder>`), and Gitea or Forgejo (`/src/branch/<branch>/<folder>` or `/src/tag/<tag>/<folder>`). Hosts that use the GitHub-style `/tree/` route also work, including self-hosted instances. For a host with a different browser URL, use its HTTPS clone URL and append `#<revision>/<folder>`, for example `https://git.example.net/team/api.git#feature/docs/Docs`. MDU resolves slash-containing branch and tag names against the repository's refs. GitLab tree URLs may include `?ref_type=heads` or `?ref_type=tags`.
 
 The revision may be omitted. In that case MDU uses the `main` branch. A repository URL without a folder imports the repository root; a folder can be specified without a revision, for example `https://github.com/example/api-docs/tree/Docs`.
 
@@ -21,4 +21,4 @@ MDU imports the folder's page tree at the declaration's position. The imported f
 
 Edit links on imported pages point to the matching file in the source repository. GitHub-style URLs use their edit route, GitLab URLs use GitLab's edit route, and source-style hosts open the source file page where their edit action is available.
 
-Git must be installed. MDU retrieves repositories with the Git command-line tool, so public repositories work without credentials and private repositories use the authentication already configured for Git. Do not put credentials in the source URL.
+Git must be installed. MDU retrieves repositories with the Git command-line tool, so public repositories work without credentials and private repositories use the authentication already configured for Git. Do not put credentials in the source URL. Rendering an import contacts the HTTPS host named in its front matter, so only render imports from repositories you trust.

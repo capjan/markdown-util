@@ -26,7 +26,7 @@ public sealed class GitTreeSourceResolver : IGitTreeSourceResolver
             Path.Combine(
                 Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData),
                 "mdu",
-                "GitImports"))
+                "GitHubImports"))
     {
     }
 
@@ -42,6 +42,7 @@ public sealed class GitTreeSourceResolver : IGitTreeSourceResolver
         var remoteRefs = ReadRemoteRefs(parsedSource.RepositoryUrl);
         RemoteRef? match;
         string sourcePath;
+        var usedDefaultMainFallback = false;
         var requestedRefs = parsedSource.RequestedRefType is null
             ? remoteRefs
             : remoteRefs.Where(reference => reference.IsBranch == (parsedSource.RequestedRefType == RefType.Branch));
@@ -65,8 +66,11 @@ public sealed class GitTreeSourceResolver : IGitTreeSourceResolver
             if (match is null)
             {
                 sourcePath = parsedSource.RequestedTreePath;
-                if (parsedSource.RequestedRefType != RefType.Tag)
+                if (parsedSource.RequestedRefType is null)
+                {
                     match = remoteRefs.FirstOrDefault(reference => reference.IsBranch && reference.Name == "main");
+                    usedDefaultMainFallback = match is not null;
+                }
             }
             else
             {
@@ -77,7 +81,13 @@ public sealed class GitTreeSourceResolver : IGitTreeSourceResolver
         }
 
         if (match is null)
+        {
+            if (parsedSource.RequestedRefType == RefType.Tag && string.IsNullOrEmpty(parsedSource.RequestedTreePath))
+                throw new InvalidOperationException($"Imported source '{sourceUrl}' must include a tag revision in the tree or source URL.");
+            if (parsedSource.RequestedRefType is { } requestedRefType)
+                throw new InvalidOperationException($"Could not find a matching {requestedRefType.ToString().ToLowerInvariant()} in imported source '{sourceUrl}'. Include a valid revision before the folder path.");
             throw new InvalidOperationException($"Could not resolve a branch or tag in imported source '{sourceUrl}', and the default 'main' branch is unavailable.");
+        }
 
         if (!string.IsNullOrWhiteSpace(sourcePath) && sourcePath.Split('/').Any(segment =>
                 segment is "." or ".." || segment.Contains('\\') || Path.IsPathRooted(segment)))
@@ -88,7 +98,12 @@ public sealed class GitTreeSourceResolver : IGitTreeSourceResolver
             ? repositoryPath
             : Path.GetFullPath(Path.Combine(repositoryPath, sourcePath.Replace('/', Path.DirectorySeparatorChar)));
         if (!IsInsideDirectory(repositoryPath, sourceFolder) || !Directory.Exists(sourceFolder))
-            throw new InvalidOperationException($"The imported folder '{sourcePath}' does not exist in '{sourceUrl}'.");
+        {
+            var fallbackHint = usedDefaultMainFallback
+                ? " The URL did not match a branch or tag, so MDU checked this folder on the default 'main' branch; include a valid revision if you intended a branch or tag."
+                : string.Empty;
+            throw new InvalidOperationException($"The imported folder '{sourcePath}' does not exist in '{sourceUrl}'.{fallbackHint}");
+        }
 
         return new ResolvedGitTreeSource(
             parsedSource.RepositoryUrl,
@@ -108,8 +123,6 @@ public sealed class GitTreeSourceResolver : IGitTreeSourceResolver
             !string.IsNullOrEmpty(uri.UserInfo))
             throw new InvalidOperationException("Imported sources must be HTTPS Git repository or tree URLs without embedded credentials.");
 
-        var requestedRefType = ParseRequestedRefType(uri.Query);
-
         var path = uri.GetComponents(UriComponents.Path, UriFormat.UriEscaped)
             .Split('/', StringSplitOptions.RemoveEmptyEntries)
             .Select(Uri.UnescapeDataString)
@@ -121,29 +134,35 @@ public sealed class GitTreeSourceResolver : IGitTreeSourceResolver
             {
                 if (!string.IsNullOrEmpty(uri.Fragment))
                     throw new InvalidOperationException("Imported tree URLs must not contain a fragment.");
-                return CreateTreeSource(uri, path, index, index + 2, EditLinkStyle.GitLab, requestedRefType);
+                return CreateTreeSource(uri, path, index, index + 2, EditLinkStyle.GitLab, ParseGitLabRefType(uri.Query));
+            }
+
+            if (path[index] == "-" && IsUnsupportedBrowseRoute(path[index + 1]))
+            {
+                throw new InvalidOperationException($"Imported source URL '{sourceUrl}' points to a GitLab page, not a repository tree. Use a /-/tree/<revision>/<folder> URL.");
             }
         }
 
         for (var index = 2; index < path.Length; index++)
         {
-            if (path[index].Equals("tree", StringComparison.OrdinalIgnoreCase))
+            if (!IsGitLabHost(uri) && path[index].Equals("tree", StringComparison.OrdinalIgnoreCase))
             {
                 if (!string.IsNullOrEmpty(uri.Fragment))
                     throw new InvalidOperationException("Imported tree URLs must not contain a fragment.");
-                return CreateTreeSource(uri, path, index, index + 1, EditLinkStyle.Tree, requestedRefType);
+                return CreateTreeSource(uri, path, index, index + 1, EditLinkStyle.Tree, null);
             }
 
-            if (path[index].Equals("src", StringComparison.OrdinalIgnoreCase))
+            if (!IsGitLabHost(uri) && path[index].Equals("src", StringComparison.OrdinalIgnoreCase))
             {
-                if (!string.IsNullOrEmpty(uri.Fragment))
-                    throw new InvalidOperationException("Imported source URLs must not contain a fragment.");
                 var hasRefType = index + 1 < path.Length &&
                                  (path[index + 1].Equals("branch", StringComparison.OrdinalIgnoreCase) ||
                                   path[index + 1].Equals("tag", StringComparison.OrdinalIgnoreCase));
-                var sourceRefType = hasRefType
+                if (!hasRefType && !(IsBitbucketHost(uri) && index == 2)) continue;
+                if (!string.IsNullOrEmpty(uri.Fragment))
+                    throw new InvalidOperationException("Imported source URLs must not contain a fragment.");
+                RefType? sourceRefType = hasRefType
                     ? path[index + 1].Equals("branch", StringComparison.OrdinalIgnoreCase) ? RefType.Branch : RefType.Tag
-                    : requestedRefType;
+                    : null;
                 return CreateTreeSource(
                     uri,
                     path,
@@ -152,13 +171,16 @@ public sealed class GitTreeSourceResolver : IGitTreeSourceResolver
                     hasRefType ? EditLinkStyle.SourceWithRefType : EditLinkStyle.Source,
                     sourceRefType);
             }
+
+            if (index == 2 && !IsGitLabHost(uri) && IsUnsupportedBrowseRoute(path[index]))
+                throw new InvalidOperationException($"Imported source URL '{sourceUrl}' points to a repository page, not a repository tree. Use a repository root or supported tree URL.");
         }
 
         var (repositoryUrl, webRepositoryUrl) = BuildRepositoryUrls(uri, path);
         var requestedTreePath = string.IsNullOrEmpty(uri.Fragment)
             ? string.Empty
             : Uri.UnescapeDataString(uri.Fragment[1..]).Trim('/');
-        return new ParsedSource(repositoryUrl, webRepositoryUrl, requestedTreePath, EditLinkStyle.Tree, requestedRefType);
+        return new ParsedSource(repositoryUrl, webRepositoryUrl, requestedTreePath, EditLinkStyle.Tree, null);
     }
 
     private static ParsedSource CreateTreeSource(
@@ -196,30 +218,41 @@ public sealed class GitTreeSourceResolver : IGitTreeSourceResolver
             $"{authority}/{string.Join('/', webSegments.Select(Uri.EscapeDataString))}");
     }
 
-    private static RefType? ParseRequestedRefType(string query)
+    private static RefType? ParseGitLabRefType(string query)
     {
         if (string.IsNullOrWhiteSpace(query)) return null;
         RefType? requestedRefType = null;
         foreach (var parameter in query.TrimStart('?').Split('&', StringSplitOptions.RemoveEmptyEntries))
         {
             var pair = parameter.Split('=', 2);
-            var value = pair.Length == 2 ? Uri.UnescapeDataString(pair[1]) : string.Empty;
             var key = pair.Length == 2 ? Uri.UnescapeDataString(pair[0]) : string.Empty;
-            var refType = key.Equals("ref_type", StringComparison.OrdinalIgnoreCase)
-                ? value.ToLowerInvariant() switch
-                {
-                    "heads" or "branches" => RefType.Branch,
-                    "tags" => RefType.Tag,
-                    _ => (RefType?)null
-                }
-                : null;
+            if (!key.Equals("ref_type", StringComparison.OrdinalIgnoreCase)) continue;
+
+            var value = pair.Length == 2 ? Uri.UnescapeDataString(pair[1]) : string.Empty;
+            var refType = value.ToLowerInvariant() switch
+            {
+                "heads" or "branches" => RefType.Branch,
+                "tags" => RefType.Tag,
+                _ => (RefType?)null
+            };
             if (refType is null || requestedRefType is not null && requestedRefType != refType)
-                throw new InvalidOperationException("Imported source URLs only support the GitLab ref_type query parameter with heads, branches, or tags.");
+                throw new InvalidOperationException("GitLab tree URLs support ref_type=heads, ref_type=branches, or ref_type=tags.");
             requestedRefType = refType;
         }
 
         return requestedRefType;
     }
+
+    private static bool IsGitLabHost(Uri uri) =>
+        uri.Host.Equals("gitlab.com", StringComparison.OrdinalIgnoreCase) ||
+        uri.Host.Contains("gitlab", StringComparison.OrdinalIgnoreCase);
+
+    private static bool IsBitbucketHost(Uri uri) =>
+        uri.Host.Equals("bitbucket.org", StringComparison.OrdinalIgnoreCase) ||
+        uri.Host.EndsWith(".bitbucket.org", StringComparison.OrdinalIgnoreCase);
+
+    private static bool IsUnsupportedBrowseRoute(string segment) => segment.ToLowerInvariant() is
+        "blob" or "raw" or "issues" or "pull" or "pulls" or "pull-requests" or "merge_requests" or "commit" or "commits" or "branches" or "tags" or "releases" or "settings" or "actions" or "pipelines" or "wiki";
 
     private static string BuildEditPageLinkPrefix(ParsedSource source, RemoteRef reference)
     {

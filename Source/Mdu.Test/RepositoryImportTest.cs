@@ -228,6 +228,7 @@ public class RepositoryImportTest
     [Theory]
     [InlineData("https://gitlab.com/group/subgroup/project/-/tree/feature/docs/Docs?ref_type=heads", "feature/docs", "https://gitlab.com/group/subgroup/project.git", "https://gitlab.com/group/subgroup/project/-/edit/feature/docs")]
     [InlineData("https://bitbucket.org/workspace/project/src/main/Docs", "main", "https://bitbucket.org/workspace/project.git", "https://bitbucket.org/workspace/project/src/main")]
+    [InlineData("https://bitbucket.org/workspace/project/src/branch/main/Docs", "main", "https://bitbucket.org/workspace/project.git", "https://bitbucket.org/workspace/project/src/branch/main")]
     [InlineData("https://gitea.example.net/team/project/src/branch/main/Docs", "main", "https://gitea.example.net/team/project.git", "https://gitea.example.net/team/project/src/branch/main")]
     [InlineData("https://git.example.net/scm/team/project/tree/main/Docs", "main", "https://git.example.net/scm/team/project.git", "https://git.example.net/scm/team/project/edit/main")]
     public void ResolvesCommonGitHostingTreeUrls(
@@ -266,6 +267,116 @@ public class RepositoryImportTest
 
             Assert.False(source.IsBranch);
             Assert.Equal(editPageLinkPrefix, source.EditPageLinkPrefix);
+        }
+        finally
+        {
+            Directory.Delete(root, recursive: true);
+        }
+    }
+
+    [Fact]
+    public void DoesNotTreatGitLabNamespaceSegmentsAsHostingRoutes()
+    {
+        var root = CreateTemporaryDirectory();
+        try
+        {
+            var resolver = new GitTreeSourceResolver(new FixtureGitCommandRunner("main"), Path.Combine(root, "cache"));
+            var source = resolver.Resolve("https://gitlab.com/acme/tools/src/docs-repo");
+
+            Assert.Equal("https://gitlab.com/acme/tools/src/docs-repo.git", source.RepositoryUrl);
+            Assert.Equal(string.Empty, source.SourcePath);
+            Assert.Equal("main", source.ReferenceName);
+        }
+        finally
+        {
+            Directory.Delete(root, recursive: true);
+        }
+    }
+
+    [Fact]
+    public void RejectsGitHubBlobFileUrlsWithAGuidanceMessage()
+    {
+        var root = CreateTemporaryDirectory();
+        try
+        {
+            var resolver = new GitTreeSourceResolver(new FixtureGitCommandRunner("main"), Path.Combine(root, "cache"));
+            var exception = Assert.Throws<InvalidOperationException>(() =>
+                resolver.Resolve("https://github.com/example/project/blob/main/Docs/README.md"));
+
+            Assert.Contains("not a repository tree", exception.Message);
+        }
+        finally
+        {
+            Directory.Delete(root, recursive: true);
+        }
+    }
+
+    [Fact]
+    public void RejectsFragmentsOnHostedTreeUrls()
+    {
+        var root = CreateTemporaryDirectory();
+        try
+        {
+            var resolver = new GitTreeSourceResolver(new FixtureGitCommandRunner("main"), Path.Combine(root, "cache"));
+            var exception = Assert.Throws<InvalidOperationException>(() =>
+                resolver.Resolve("https://github.com/example/project/tree/main/Docs#other"));
+
+            Assert.Contains("must not contain a fragment", exception.Message);
+        }
+        finally
+        {
+            Directory.Delete(root, recursive: true);
+        }
+    }
+
+    [Fact]
+    public void IgnoresGitHubBrowseQueryParameters()
+    {
+        var root = CreateTemporaryDirectory();
+        try
+        {
+            var resolver = new GitTreeSourceResolver(new FixtureGitCommandRunner("main"), Path.Combine(root, "cache"));
+            var source = resolver.Resolve("https://github.com/example/project/tree/main/Docs?tab=readme");
+
+            Assert.Equal("main", source.ReferenceName);
+            Assert.Equal("Docs", source.SourcePath);
+        }
+        finally
+        {
+            Directory.Delete(root, recursive: true);
+        }
+    }
+
+    [Fact]
+    public void ReportsWhenARevisionIsActuallyTreatedAsAFolderOnMain()
+    {
+        var root = CreateTemporaryDirectory();
+        try
+        {
+            var resolver = new GitTreeSourceResolver(new FixtureGitCommandRunner("main"), Path.Combine(root, "cache"));
+            var exception = Assert.Throws<InvalidOperationException>(() =>
+                resolver.Resolve("https://github.com/example/project/tree/missing/Docs"));
+
+            Assert.Contains("default 'main' branch", exception.Message);
+            Assert.Contains("include a valid revision", exception.Message);
+        }
+        finally
+        {
+            Directory.Delete(root, recursive: true);
+        }
+    }
+
+    [Fact]
+    public void GivesATagSpecificErrorWhenRefTypeIsUsedAtRepositoryRoot()
+    {
+        var root = CreateTemporaryDirectory();
+        try
+        {
+            var resolver = new GitTreeSourceResolver(new FixtureGitCommandRunner("main", "v1"), Path.Combine(root, "cache"));
+            var exception = Assert.Throws<InvalidOperationException>(() =>
+                resolver.Resolve("https://gitlab.com/group/project/-/tree?ref_type=tags"));
+
+            Assert.Contains("must include a tag revision", exception.Message);
         }
         finally
         {
