@@ -17,6 +17,8 @@ Copy the repository URL that points to the folder. MDU supports the common brows
 
 The revision may be omitted. In that case MDU uses the `main` branch. A repository URL without a folder imports the repository root; a folder can be specified without a revision, for example `https://github.com/example/api-docs/tree/Docs`.
 
+When a tree URL's remaining path does not match a branch or tag, MDU treats the whole path as a folder on `main`. This supports revision-less folder URLs, but means a misspelled revision can be interpreted as a folder; if that folder does not exist, the error explains the fallback.
+
 MDU imports the folder's page tree at the declaration's position. The imported folder must contain a `README.md` or `index.md` at its root. The declaration page's front matter controls the root page metadata; keep the declaration page's body empty and put its content in the imported root page instead. Front matter on imported child pages is preserved. Imports declared on local child pages are expanded recursively; imports declared inside the imported repository are rejected.
 
 Edit links on imported pages point to the matching file in the source repository. GitHub-style URLs use their edit route, GitLab URLs use GitLab's edit route, and source-style hosts open the source file page where their edit action is available.
