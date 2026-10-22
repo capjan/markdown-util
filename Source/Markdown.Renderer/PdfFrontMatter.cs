@@ -125,7 +125,7 @@ internal static class PdfFrontMatter
         var size = section.Depth == 0 ? 10.5 : 9.5;
         var font = section.Depth == 0 ? PdfFont.HelveticaBold : PdfFont.Helvetica;
         var x = Left + section.Depth * 14;
-        var lines = PdfLayout.WrapText(section.Title, size, PageWidth - Right - x - 54, font).ToArray();
+        var lines = PdfLayout.WrapText(PdfEncoding.PrintableEmojiText(section.Title), size, PageWidth - Right - x - 54, font).ToArray();
         if (lines.Length == 0) lines = [string.Empty];
         return new TocRow(section, lines, Math.Max(22, lines.Length * 14 + 7));
     }

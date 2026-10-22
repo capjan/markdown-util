@@ -1,4 +1,6 @@
+using System.Globalization;
 using System.Text;
+using System.Text.RegularExpressions;
 
 namespace Markdown.Renderer.Test;
 
@@ -116,15 +118,111 @@ public class PdfRendererTest
         const string markdown = """
             A note[^source].
 
-            [^source]: The source for this note.
+            [^source]: FootnoteContentQ7
             """;
+        var filler = string.Join("\n\n", Enumerable.Repeat("Filler paragraph before the footnote destination.", 35));
+        var section = new PdfSourceSection("Footnotes", "footnotes/index.html", $"{filler}\n\n{markdown}");
+        var layout = new PdfLayout(new HtmlRenderer(), "Footnotes");
+        layout.RenderSection(section);
+        var result = layout.Complete();
+        var contentHex = Convert.ToHexString(Encoding.ASCII.GetBytes("FootnoteContentQ7"));
+        var contentPageIndex = result.Pages.Select((page, index) => (page, index))
+            .Single(item => item.page.Content.ToString().Contains($"<{contentHex}> Tj", StringComparison.Ordinal)).index;
+        var destination = Assert.Single(result.Destinations.Where(pair =>
+            pair.Key.Contains("#fn:", StringComparison.Ordinal) &&
+            !pair.Key.Contains("fnref:", StringComparison.Ordinal))).Value;
+
+        Assert.True(contentPageIndex > 0);
+        Assert.Equal(contentPageIndex, destination.PageIndex);
+
+        PdfLayout.AddFooters(result.Pages);
         using var output = new MemoryStream();
-
-        new PdfRenderer(new HtmlRenderer()).WritePdf(output, "Footnotes",
-        [new PdfSourceSection("Footnotes", "footnotes/index.html", markdown)], includeFrontMatter: false);
-
+        PdfFileWriter.Write(output, "Footnotes", result.Pages, result.Destinations);
         var pdf = Encoding.Latin1.GetString(output.ToArray());
         Assert.Contains("/Dest [", pdf);
+    }
+
+    [Fact]
+    public void PreservesDirectionArrowsInPdfText()
+    {
+        using var output = new MemoryStream();
+
+        new PdfRenderer(new HtmlRenderer()).WritePdf(output, "Arrows",
+        [new PdfSourceSection("Arrows", "arrows/index.html", "Move → right and ← left.")], includeFrontMatter: false);
+
+        var pdf = Encoding.Latin1.GetString(output.ToArray());
+        Assert.Contains("<2D3E> Tj", pdf);
+        Assert.Contains("<3C2D> Tj", pdf);
+        Assert.DoesNotContain(Convert.ToHexString(Encoding.ASCII.GetBytes(":custom_arrow_right:")), pdf);
+        Assert.DoesNotContain(Convert.ToHexString(Encoding.ASCII.GetBytes(":custom_arrow_left:")), pdf);
+    }
+
+    [Fact]
+    public void HandlesEmojiAtParagraphAndCodeWrappingBoundaries()
+    {
+        var paragraph = new string('p', 120) + "🚀";
+        var code = new string('a', 93) + "🚀" + new string('b', 100);
+        var markdown = $"{paragraph}\n\n```text\n{code}\n```";
+        using var output = new MemoryStream();
+
+        new PdfRenderer(new HtmlRenderer()).WritePdf(output, "Wrapped emoji",
+        [new PdfSourceSection("Wrapped emoji", "wrapped-emoji/index.html", markdown)], includeFrontMatter: false);
+
+        var pdf = Encoding.Latin1.GetString(output.ToArray());
+        Assert.Contains(Convert.ToHexString(Encoding.ASCII.GetBytes(":rocket:")), pdf);
+        Assert.Equal("?", PdfEncoding.PrintableEmojiText("\ud83d"));
+        Assert.Equal("3F", PdfEncoding.Hex("\ud83d"));
+        var codeText = string.Concat(Regex.Matches(pdf,
+                @"BT /F5 8\.5 Tf 1 0 0 1 [\d.]+ [\d.]+ Tm <(?<hex>[0-9A-F]*)> Tj ET")
+            .Select(match => Encoding.Latin1.GetString(Convert.FromHexString(match.Groups["hex"].Value))));
+        Assert.DoesNotContain(":rocket:", codeText);
+        Assert.Contains("??", codeText);
+    }
+
+    [Fact]
+    public void KeepsWrappedCodeTextInsideThePageMargins()
+    {
+        var code = new string('a', 90) + "→🚀" + new string('b', 110);
+        using var output = new MemoryStream();
+
+        new PdfRenderer(new HtmlRenderer()).WritePdf(output, "Code width",
+        [new PdfSourceSection("Code width", "code-width/index.html", $"```text\n{code}\n```")], includeFrontMatter: false);
+
+        var pdf = Encoding.Latin1.GetString(output.ToArray());
+        var codeOperations = Regex.Matches(pdf,
+            @"BT /F5 8\.5 Tf 1 0 0 1 (?<x>[\d.]+) [\d.]+ Tm <(?<hex>[0-9A-F]*)> Tj ET");
+        Assert.NotEmpty(codeOperations);
+        foreach (Match operation in codeOperations)
+        {
+            var x = double.Parse(operation.Groups["x"].Value, CultureInfo.InvariantCulture);
+            var encodedLength = Convert.FromHexString(operation.Groups["hex"].Value).Length;
+            var right = x + encodedLength * 8.5 * 0.6;
+            Assert.True(right <= PdfLayout.PageWidth - PdfLayout.Right - 8 + 0.01,
+                $"Code text reached {right:0.###} pt past the right edge.");
+        }
+    }
+
+    [Fact]
+    public void PlacesTableAnchorAtItsCellRow()
+    {
+        const string markdown = """
+            <table>
+            <tr><th>Header</th></tr>
+            <tr><td>First row</td></tr>
+            <tr><td><span id="later-row"></span>TargetTableCellQ7</td></tr>
+            </table>
+            """;
+        var layout = new PdfLayout(new HtmlRenderer(), "Table anchors");
+        layout.RenderSection(new PdfSourceSection("Table anchors", "table-anchors/index.html", markdown));
+        var result = layout.Complete();
+        var anchor = result.Destinations.Single(pair => pair.Key.EndsWith("#later-row", StringComparison.Ordinal)).Value;
+        var contentHex = Convert.ToHexString(Encoding.ASCII.GetBytes("TargetTableCellQ7"));
+        var content = result.Pages[anchor.PageIndex].Content.ToString();
+        var contentOperation = Regex.Match(content,
+            $@"1 0 0 1 [\d.]+ (?<y>[\d.]+) Tm <{contentHex}> Tj ET");
+        Assert.True(contentOperation.Success);
+        var textBaseline = double.Parse(contentOperation.Groups["y"].Value, CultureInfo.InvariantCulture);
+        Assert.InRange(anchor.Top - textBaseline, 9.9, 10.1);
     }
 
     [Fact]

@@ -16,13 +16,13 @@ public sealed class PdfRenderer(HtmlRenderer htmlRenderer)
 
     public void WritePdf(Stream output, string title, IReadOnlyList<PdfSourceSection> sections, bool includeFrontMatter = true)
     {
-        var coverTitle = sections.FirstOrDefault()?.Title ?? title;
+        var coverTitle = PdfEncoding.PrintableEmojiText(sections.FirstOrDefault()?.Title ?? title);
         var layout = new PdfLayout(htmlRenderer, coverTitle);
         foreach (var section in sections)
             layout.RenderSection(section);
 
         var result = layout.Complete();
-        var description = sections.Count == 0 ? string.Empty : GetDescription(sections[0].Markdown);
+        var description = sections.Count == 0 ? string.Empty : PdfEncoding.PrintableEmojiText(GetDescription(sections[0].Markdown));
         var frontMatter = includeFrontMatter ? PdfFrontMatter.Create(coverTitle, description, sections, result) :
             new PdfFrontMatterResult([]);
         var pages = frontMatter.Pages.Concat(result.Pages).ToArray();
@@ -189,7 +189,7 @@ internal sealed class PdfLayout
         if (node is XmlText text)
         {
             if (!string.IsNullOrWhiteSpace(text.Value))
-                WriteParagraph([new PdfRun(CollapseWhitespace(text.Value!), PdfTextStyle.Body)], 10.5, indent, 4, 8);
+                WriteParagraph([new PdfRun(PdfEncoding.PrintableEmojiText(CollapseWhitespace(text.Value!)), PdfTextStyle.Body)], 10.5, indent, 4, 8);
             return;
         }
 
@@ -200,8 +200,11 @@ internal sealed class PdfLayout
             case "h1": case "h2": case "h3": case "h4": case "h5": case "h6":
                 var headingSize = HeadingSize(element);
                 EnsureRoom(headingSize * 1.35 + 11);
-                if (element.HasAttribute("id")) MarkAnchor(element.GetAttribute("id"));
-                WriteParagraph(ReadInlineRuns(element.ChildNodes.Cast<XmlNode>(), PdfTextStyle.Heading(headingSize), _sectionPath), headingSize, indent, 11, 5);
+                var headingStyle = PdfTextStyle.Heading(headingSize);
+                var headingRuns = ReadInlineRuns(element.ChildNodes.Cast<XmlNode>(), headingStyle, _sectionPath);
+                if (element.HasAttribute("id"))
+                    headingRuns.Insert(0, new PdfRun(string.Empty, headingStyle, Anchor: element.GetAttribute("id")));
+                WriteParagraph(headingRuns, headingSize, indent, 11, 5);
                 return;
             case "p":
                 WriteParagraph(ReadInlineRuns(element.ChildNodes.Cast<XmlNode>(), PdfTextStyle.Body, _sectionPath), 10.5, indent, 4, 8);
@@ -297,9 +300,11 @@ internal sealed class PdfLayout
         foreach (XmlNode child in list.ChildNodes)
         {
             if (child is not XmlElement { LocalName: "li" } item) continue;
-            if (item.HasAttribute("id")) MarkAnchor(item.GetAttribute("id"));
             var prefix = numbered ? $"{number++}. " : "• ";
-            var runs = new List<PdfRun> { new(prefix, PdfTextStyle.Body) };
+            var runs = new List<PdfRun>();
+            if (item.HasAttribute("id"))
+                runs.Add(new PdfRun(string.Empty, PdfTextStyle.Body, Anchor: item.GetAttribute("id")));
+            runs.Add(new PdfRun(prefix, PdfTextStyle.Body));
             foreach (XmlNode itemChild in item.ChildNodes)
             {
                 if (itemChild is XmlElement { LocalName: "ul" or "ol" } nested)
@@ -346,18 +351,31 @@ internal sealed class PdfLayout
                 var remaining = segment.Text;
                 while (remaining.Length > 0)
                 {
-                    if (x >= codeLeft + maxWidth)
+                    var previousPage = _pages.Count - 1;
+                    EnsureRoom(lineHeight + 5);
+                    if (_pages.Count - 1 != previousPage)
                     {
-                        _y += lineHeight;
                         x = codeLeft;
                         hasDrawnLine = false;
                     }
-                    EnsureRoom(lineHeight + 5);
+                    var availableWidth = Math.Max(0, codeLeft + maxWidth - x);
+                    var take = GetTextLengthWithinWidth(remaining, fontSize, availableWidth, PdfFont.Courier);
+                    if (take == 0)
+                    {
+                        if (x > codeLeft)
+                        {
+                            _y += lineHeight;
+                            x = codeLeft;
+                            hasDrawnLine = false;
+                            continue;
+                        }
+                        take = TextElementLength(remaining, 0);
+                    }
                     if (!hasDrawnLine)
                         FillRect(codeLeft - 5, _y - 2, maxWidth + 10, lineHeight + 3, PdfColor.CodeBackground);
-                    var take = Math.Max(1, Math.Min(remaining.Length, (int)((codeLeft + maxWidth - x) / (fontSize * 0.6))));
-                    DrawText(remaining[..take], x, _y + fontSize, fontSize, PdfFont.Courier, segment.Color);
-                    x += take * fontSize * 0.6;
+                    var text = remaining[..take];
+                    DrawText(text, x, _y + fontSize, fontSize, PdfFont.Courier, segment.Color);
+                    x += TextWidth(text, fontSize, PdfFont.Courier);
                     remaining = remaining[take..];
                     hasDrawnLine = true;
                 }
@@ -428,7 +446,7 @@ internal sealed class PdfLayout
             {
                 var cell = column < row.Length ? row[column] : new TableCell([], false);
                 for (var line = 0; line < wrapped[column].Length; line++)
-                    DrawTableRuns(wrapped[column][line], x, _y, line, cell.Header);
+                    DrawTableRuns(wrapped[column][line], x, _y, line, cell.Header, 8.5);
                 x += columnWidths[column];
             }
             _y += rowHeight;
@@ -443,10 +461,12 @@ internal sealed class PdfLayout
         foreach (var run in runs)
         {
             var style = TableStyle(run.Style, header);
+            if (run.Anchor is not null)
+                lines[^1].Add(new PdfRun(string.Empty, style, Anchor: run.Anchor));
             if (run.Svg is not null)
             {
                 var dimensions = PdfSvgRenderer.Measure(run.Svg);
-                var iconHeight = fontSize * 0.9;
+                var iconHeight = InlineIconHeight(fontSize);
                 var iconWidth = iconHeight * dimensions.Width / Math.Max(1, dimensions.Height);
                 if (width > 0 && width + iconWidth > maxWidth) NewLine();
                 lines[^1].Add(new PdfRun(string.Empty, style, run.Svg));
@@ -454,7 +474,7 @@ internal sealed class PdfLayout
                 continue;
             }
 
-            foreach (var token in Regex.Split(run.Text, "(\\s+)").Where(token => token.Length > 0))
+            foreach (var token in SplitInlineTokens(run.Text))
             {
                 if (token.Contains('\n'))
                 {
@@ -520,38 +540,24 @@ internal sealed class PdfLayout
         }
     }
 
-    private void DrawTableRuns(IReadOnlyList<PdfRun> runs, double x, double rowTop, int line, bool header)
+    private void DrawTableRuns(IReadOnlyList<PdfRun> runs, double x, double rowTop, int line, bool header, double fontSize)
     {
         var top = rowTop + line * 10.5;
         var baseline = top + 10;
         foreach (var run in runs)
         {
             var style = TableStyle(run.Style, header);
+            if (run.Anchor is not null) MarkAnchor(run.Anchor, top);
             if (run.Svg is not null)
             {
                 var dimensions = PdfSvgRenderer.Measure(run.Svg);
-                var iconHeight = 8.5;
-                var iconWidth = iconHeight * dimensions.Width / Math.Max(1, dimensions.Height);
-                PdfSvgRenderer.Draw(run.Svg, _page.Content, x, top + (10.5 - iconHeight) / 2,
-                    iconWidth, iconHeight, PageHeight, AddSvgLink);
-                x += iconWidth + 2;
+                x += DrawInlineSvg(run.Svg, dimensions, x, top, 10.5, InlineIconHeight(fontSize));
                 continue;
             }
 
             if (run.Text.Length == 0) continue;
             var size = style.Size ?? 8.5;
-            var textWidth = TextWidth(run.Text, size, style.Font);
-            if (style.Background is { } background)
-                FillRect(x - 1, top + 1, textWidth + 2, 9.5, background);
-            DrawText(run.Text, x, baseline, size, style.Font, style.Color);
-            if (style.Underline) DrawLine(x, baseline + 1.4, x + textWidth, baseline + 1.4, style.Color, 0.45);
-            if (style.Strike) DrawLine(x, baseline - size * 0.3, x + textWidth, baseline - size * 0.3, style.Color, 0.45);
-            if (style.Link is { Length: > 0 } link)
-            {
-                var pdfLink = CreateLink(link, x, PageHeight - (top + 10.5), x + textWidth, PageHeight - top);
-                if (pdfLink is not null) _page.Links.Add(pdfLink);
-            }
-            x += textWidth;
+            x += DrawStyledText(run.Text, style, x, top, baseline, size, 10.5, 9.5);
         }
     }
 
@@ -610,11 +616,13 @@ internal sealed class PdfLayout
     {
         if (node is XmlText text)
         {
-            if (text.Value?.Length > 0) runs.Add(new PdfRun(NormalizeInlineWhitespace(text.Value), style));
+            if (text.Value?.Length > 0)
+                runs.Add(new PdfRun(PdfEncoding.PrintableEmojiText(NormalizeInlineWhitespace(text.Value)), style));
             return;
         }
         if (node is not XmlElement element) return;
-        if (element.HasAttribute("id")) MarkAnchor(element.GetAttribute("id"));
+        if (element.HasAttribute("id"))
+            runs.Add(new PdfRun(string.Empty, style, Anchor: element.GetAttribute("id")));
         var name = element.LocalName.ToLowerInvariant();
         if (name == "br")
         {
@@ -643,8 +651,7 @@ internal sealed class PdfLayout
         }
         if (name == "span" && HasClass(element, "emoji"))
         {
-            var shortcode = element.GetAttribute("title");
-            runs.Add(new PdfRun(shortcode.Length == 0 ? CollapseWhitespace(element.InnerText) : shortcode, style));
+            runs.Add(new PdfRun(PdfEncoding.PrintableEmojiText(CollapseWhitespace(element.InnerText)), style));
             return;
         }
 
@@ -671,21 +678,21 @@ internal sealed class PdfLayout
         var lineTop = _y;
         var hasContent = false;
         var lastWasSpace = false;
+        var pendingAnchors = new List<string>();
         foreach (var run in runs)
         {
+            if (run.Anchor is not null) pendingAnchors.Add(run.Anchor);
             if (run.Svg is not null)
             {
                 var dimensions = PdfSvgRenderer.Measure(run.Svg);
-                var iconHeight = fontSize * 0.9;
-                var iconWidth = iconHeight * dimensions.Width / Math.Max(1, dimensions.Height);
+                var iconWidth = InlineIconHeight(fontSize) * dimensions.Width / Math.Max(1, dimensions.Height);
                 if (x > startX && x + iconWidth > right) NewLine();
-                PdfSvgRenderer.Draw(run.Svg, _page.Content, x, lineTop + (lineHeight - iconHeight) / 2,
-                    iconWidth, iconHeight, PageHeight, AddSvgLink);
-                x += iconWidth + 2;
+                MarkPendingAnchors();
+                x += DrawInlineSvg(run.Svg, dimensions, x, lineTop, lineHeight, InlineIconHeight(fontSize));
                 hasContent = true;
                 continue;
             }
-            foreach (var token in Regex.Split(run.Text, "(\\s+)").Where(token => token.Length > 0))
+            foreach (var token in SplitInlineTokens(run.Text))
             {
                 if (token.Contains('\n'))
                 {
@@ -724,6 +731,7 @@ internal sealed class PdfLayout
                 }
             }
         }
+        if (pendingAnchors.Count > 0) MarkPendingAnchors();
         if (hasContent) _y = lineTop + lineHeight;
         _y += after;
 
@@ -731,21 +739,18 @@ internal sealed class PdfLayout
         {
             if (string.IsNullOrEmpty(text)) return;
             if (x == startX && string.IsNullOrWhiteSpace(text)) return;
+            if (!string.IsNullOrWhiteSpace(text)) MarkPendingAnchors();
             var size = style.Size ?? fontSize;
-            var width = TextWidth(text, size, style.Font);
-            if (style.Background is { } background)
-                FillRect(x - 1, lineTop + 1, width + 2, lineHeight - 2, background);
             var baseline = lineTop + size * 0.95;
-            DrawText(text, x, baseline, size, style.Font, style.Color);
-            if (style.Underline) DrawLine(x, baseline + 1.4, x + width, baseline + 1.4, style.Color, 0.45);
-            if (style.Strike) DrawLine(x, baseline - size * 0.3, x + width, baseline - size * 0.3, style.Color, 0.45);
-            if (style.Link is { Length: > 0 } link)
-            {
-                var pdfLink = CreateLink(link, x, PageHeight - (lineTop + lineHeight), x + width, PageHeight - lineTop);
-                if (pdfLink is not null) _page.Links.Add(pdfLink);
-            }
+            var width = DrawStyledText(text, style, x, lineTop, baseline, size, lineHeight);
             x += width;
             hasContent = true;
+        }
+
+        void MarkPendingAnchors()
+        {
+            foreach (var anchor in pendingAnchors) MarkAnchor(anchor, lineTop);
+            pendingAnchors.Clear();
         }
 
         void NewLine()
@@ -759,8 +764,45 @@ internal sealed class PdfLayout
         }
     }
 
-    private void MarkAnchor(string id) =>
-        _destinations[$"{_sectionPath}#{id}"] = new PdfDestination(_pages.Count - 1, PageHeight - _y);
+    private double DrawStyledText(
+        string text,
+        PdfTextStyle style,
+        double x,
+        double top,
+        double baseline,
+        double size,
+        double lineHeight,
+        double? backgroundHeight = null)
+    {
+        var width = TextWidth(text, size, style.Font);
+        if (style.Background is { } background)
+            FillRect(x - 1, top + 1, width + 2, backgroundHeight ?? lineHeight - 2, background);
+        DrawText(text, x, baseline, size, style.Font, style.Color);
+        if (style.Underline) DrawLine(x, baseline + 1.4, x + width, baseline + 1.4, style.Color, 0.45);
+        if (style.Strike) DrawLine(x, baseline - size * 0.3, x + width, baseline - size * 0.3, style.Color, 0.45);
+        if (style.Link is { Length: > 0 } link)
+        {
+            var pdfLink = CreateLink(link, x, PageHeight - (top + lineHeight), x + width, PageHeight - top);
+            if (pdfLink is not null) _page.Links.Add(pdfLink);
+        }
+        return width;
+    }
+
+    private double DrawInlineSvg(XmlElement svg, SvgDimensions dimensions, double x, double top, double lineHeight, double iconHeight)
+    {
+        var iconWidth = iconHeight * dimensions.Width / Math.Max(1, dimensions.Height);
+        PdfSvgRenderer.Draw(svg, _page.Content, x, top + (lineHeight - iconHeight) / 2,
+            iconWidth, iconHeight, PageHeight, AddSvgLink);
+        return iconWidth + 2;
+    }
+
+    private static double InlineIconHeight(double fontSize) => fontSize * 0.9;
+
+    private static IEnumerable<string> SplitInlineTokens(string text) =>
+        Regex.Split(text, "(\\s+)").Where(token => token.Length > 0);
+
+    private void MarkAnchor(string id, double? top = null) =>
+        _destinations[$"{_sectionPath}#{id}"] = new PdfDestination(_pages.Count - 1, PageHeight - (top ?? _y));
 
     private PdfLink? CreateLink(string href, double left, double bottom, double right, double top)
     {
@@ -871,7 +913,8 @@ internal sealed class PdfLayout
             }
             while (word.Length > 0 && TextWidth(line.ToString() + word, size, font) > maxWidth)
             {
-                var take = Math.Max(1, (int)(word.Length * maxWidth / TextWidth(word, size, font)));
+                var take = GetTextLengthWithinWidth(word, size, maxWidth, font);
+                if (take == 0) take = TextElementLength(word, 0);
                 yield return word[..take];
                 word = word[take..];
             }
@@ -882,17 +925,48 @@ internal sealed class PdfLayout
 
     internal static double TextWidth(string text, double size, PdfFont font)
     {
-        text = PdfEncoding.PrintableText(text);
-        if (font is PdfFont.Courier or PdfFont.CourierBold) return text.Length * size * 0.6;
         var widths = font is PdfFont.HelveticaBold or PdfFont.HelveticaBoldItalic
             ? HelveticaBoldWidths
             : HelveticaWidths;
-        return text.Sum(character =>
+        var width = 0.0;
+        foreach (var character in text)
         {
+            if (PdfEncoding.FallbackText(character) is { } fallback)
+            {
+                foreach (var fallbackCharacter in fallback) width += CharacterWidth(fallbackCharacter);
+            }
+            else
+            {
+                width += CharacterWidth(character);
+            }
+        }
+        return width * size;
+
+        double CharacterWidth(char character)
+        {
+            if (font is PdfFont.Courier or PdfFont.CourierBold) return 0.6;
             var baseCharacter = ToBaseCharacter(character);
             return (baseCharacter is >= ' ' and <= '~' ? widths[baseCharacter - ' '] : widths['?' - ' ']) / 1000.0;
-        }) * size;
+        }
     }
+
+    private static int GetTextLengthWithinWidth(string text, double size, double maxWidth, PdfFont font)
+    {
+        var width = 0.0;
+        var length = 0;
+        while (length < text.Length)
+        {
+            var elementLength = TextElementLength(text, length);
+            var elementWidth = TextWidth(text.Substring(length, elementLength), size, font);
+            if (width + elementWidth > maxWidth) break;
+            width += elementWidth;
+            length += elementLength;
+        }
+        return length;
+    }
+
+    private static int TextElementLength(string text, int index) =>
+        char.IsHighSurrogate(text[index]) && index + 1 < text.Length && char.IsLowSurrogate(text[index + 1]) ? 2 : 1;
 
     private static char ToBaseCharacter(char character) => character switch
     {
@@ -946,9 +1020,9 @@ internal sealed record PdfDestination(int PageIndex, double Top);
 internal sealed record PdfLayoutResult(IReadOnlyList<PdfPageContent> Pages, IReadOnlyDictionary<string, PdfDestination> Destinations);
 internal sealed record TableCell(IReadOnlyList<PdfRun> Runs, bool Header)
 {
-    public string Text => string.Concat(Runs.Select(run => run.Svg is null ? run.Text : "icon"));
+    public string Text { get; } = string.Concat(Runs.Select(run => run.Svg is null ? run.Text : "icon"));
 }
-internal sealed record PdfRun(string Text, PdfTextStyle Style, XmlElement? Svg = null);
+internal sealed record PdfRun(string Text, PdfTextStyle Style, XmlElement? Svg = null, string? Anchor = null);
 internal sealed record PdfTextStyle(PdfFont Font, PdfColor Color, double? Size = null, PdfColor? Background = null, bool Underline = false, bool Strike = false, string? Link = null)
 {
     public static PdfTextStyle Body { get; } = new(PdfFont.Helvetica, PdfColor.Text);
@@ -975,7 +1049,8 @@ internal static class PdfEncoding
         ShortcodeExtension.Emojis
             .GroupBy(pair => pair.Value, StringComparer.Ordinal)
             .Select(group => (Unicode: group.Key, Shortcode: group.First().Key))
-            .GroupBy(emoji => Rune.GetRuneAt(emoji.Unicode, 0).Value)
+            .Where(emoji => IsEmoji(emoji.Unicode))
+            .GroupBy(emoji => FirstRuneValue(emoji.Unicode))
             .ToDictionary(group => group.Key, group => group.OrderByDescending(emoji => emoji.Unicode.Length).ToArray());
     private static readonly Dictionary<char, byte> SpecialCharacters = new()
     {
@@ -987,34 +1062,47 @@ internal static class PdfEncoding
     public static string Hex(string value)
     {
         var bytes = new List<byte>();
-        foreach (var character in PrintableText(value))
+        foreach (var character in value)
         {
             if (character <= 0xff && !char.IsControl(character)) bytes.Add((byte)character);
             else if (SpecialCharacters.TryGetValue(character, out var encoded)) bytes.Add(encoded);
-            else if (character == '\u2192') { bytes.AddRange(Encoding.ASCII.GetBytes("->")); }
-            else if (character == '\u2190') { bytes.AddRange(Encoding.ASCII.GetBytes("<-")); }
-            else if (character == '\u2191') { bytes.AddRange(Encoding.ASCII.GetBytes("Up")); }
-            else if (character == '\u2193') { bytes.AddRange(Encoding.ASCII.GetBytes("Down")); }
-            else if (character == '\u2318') { bytes.AddRange(Encoding.ASCII.GetBytes("Cmd")); }
-            else if (character == '\u2325') { bytes.AddRange(Encoding.ASCII.GetBytes("Opt")); }
-            else if (character == '\u2303') { bytes.AddRange(Encoding.ASCII.GetBytes("Ctrl")); }
-            else if (character == '\u21e7') { bytes.AddRange(Encoding.ASCII.GetBytes("Shift")); }
-            else if (character == '\u21a9') { bytes.AddRange(Encoding.ASCII.GetBytes("Return")); }
-            else if (character == '\u232b') { bytes.AddRange(Encoding.ASCII.GetBytes("Backspace")); }
-            else if (character == '\u2326') { bytes.AddRange(Encoding.ASCII.GetBytes("Delete")); }
-            else if (character == '\u2713' || character == '\u2714') bytes.AddRange(Encoding.ASCII.GetBytes("[x]"));
-            else if (character == '\u2610') bytes.AddRange(Encoding.ASCII.GetBytes("[ ]"));
+            else if (FallbackText(character) is { } fallback)
+                foreach (var fallbackCharacter in fallback) bytes.Add((byte)fallbackCharacter);
             else if (!char.IsControl(character)) bytes.Add((byte)'?');
         }
         return Convert.ToHexString(bytes.ToArray());
     }
 
-    internal static string PrintableText(string value)
+    internal static string? FallbackText(char character) => character switch
+    {
+        '\u2013' or '\u2014' or '\u2011' => "-",
+        '\u2192' => "->",
+        '\u2190' => "<-",
+        '\u2191' => "Up",
+        '\u2193' => "Down",
+        '\u2318' => "Cmd",
+        '\u2325' => "Opt",
+        '\u2303' => "Ctrl",
+        '\u21e7' => "Shift",
+        '\u21a9' => "Return",
+        '\u232b' => "Backspace",
+        '\u2326' => "Delete",
+        '\u2713' or '\u2714' => "[x]",
+        '\u2610' => "[ ]",
+        _ => null
+    };
+
+    internal static string PrintableEmojiText(string value)
     {
         var result = new StringBuilder(value.Length);
         for (var index = 0; index < value.Length;)
         {
-            var rune = Rune.GetRuneAt(value, index);
+            if (!Rune.TryGetRuneAt(value, index, out var rune))
+            {
+                result.Append('?');
+                index++;
+                continue;
+            }
             if (EmojiByFirstRune.TryGetValue(rune.Value, out var candidates))
             {
                 var emoji = candidates.FirstOrDefault(candidate => value.AsSpan(index).StartsWith(candidate.Unicode, StringComparison.Ordinal));
@@ -1026,12 +1114,41 @@ internal static class PdfEncoding
                 }
             }
 
-            if (rune.Value > 0xffff) result.Append('?');
-            else result.Append(rune.ToString());
+            result.Append(rune.ToString());
             index += rune.Utf16SequenceLength;
         }
         return result.ToString();
     }
+
+    private static bool IsEmoji(string value)
+    {
+        if (value.Contains('\ufe0f') || value.Contains('\u20e3')) return true;
+        if (!Rune.TryGetRuneAt(value, 0, out var rune)) return false;
+        // Keep text-presentation arrows and other symbols unchanged while mapping emoji glyphs.
+        return rune.Value is >= 0x1f000 and <= 0x1faff or
+            >= 0x231a and <= 0x231b or
+            >= 0x23e9 and <= 0x23ec or
+            0x23f0 or 0x23f3 or
+            >= 0x25fd and <= 0x25fe or
+            >= 0x2614 and <= 0x2615 or
+            >= 0x2648 and <= 0x2653 or
+            0x267f or 0x2693 or 0x26a1 or
+            >= 0x26aa and <= 0x26ab or
+            >= 0x26bd and <= 0x26be or
+            >= 0x26c4 and <= 0x26c5 or
+            0x26ce or 0x26d4 or 0x26ea or
+            >= 0x26f2 and <= 0x26f3 or
+            0x26f5 or 0x26fa or 0x26fd or 0x2705 or
+            >= 0x270a and <= 0x270b or
+            0x2728 or 0x274c or 0x274e or
+            >= 0x2753 and <= 0x2755 or
+            0x2757 or
+            >= 0x2795 and <= 0x2797 or
+            0x27b0 or 0x27bf;
+    }
+
+    private static int FirstRuneValue(string value) =>
+        Rune.TryGetRuneAt(value, 0, out var rune) ? rune.Value : 0;
 }
 
 internal static class PdfFileWriter
