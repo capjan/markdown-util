@@ -56,6 +56,49 @@ public class PageCommandTest : IDisposable
     }
 
     [Fact]
+    public void LeavesRemoteOpenApiUrlsAloneAndRewritesBlocksInListsAndBlockquotesWhenPageMoves()
+    {
+        Write("api/orders.yaml", "openapi: 3.1.0\n");
+        Write("Reference.md", """
+            # Orders
+
+            ```openapi
+            https://example.com/openapi.yaml
+            ```
+
+            > ```openapi
+            > spec: api/orders.yaml
+            > ```
+
+            - Item:
+
+              ```openapi
+              api/orders.yaml
+              ```
+            """);
+
+        Assert.Equal(0, Move("Reference.md", "Guide/Reference.md").Exit);
+
+        Assert.Equal("""
+            # Orders
+
+            ```openapi
+            https://example.com/openapi.yaml
+            ```
+
+            > ```openapi
+            > spec: ../api/orders.yaml
+            > ```
+
+            - Item:
+
+              ```openapi
+              ../api/orders.yaml
+              ```
+            """, Read("Guide/Reference.md").ReplaceLineEndings("\n"));
+    }
+
+    [Fact]
     public void MovesAFolderWithItsFilesAndKeepsLinksBetweenThem()
     {
         var result = Move("Guide", "Handbook/Guide");

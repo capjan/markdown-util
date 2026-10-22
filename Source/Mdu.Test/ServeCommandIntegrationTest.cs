@@ -167,14 +167,17 @@ public class ServeCommandIntegrationTest
         using var process = StartServer(docs, site, port);
         using var client = new HttpClient { Timeout = TimeSpan.FromSeconds(2) };
         var pageUrl = $"http://127.0.0.1:{port}/index.html";
+        var specPageUrl = $"http://127.0.0.1:{port}/index-orders-spec.html";
 
         try
         {
             await WaitUntilAsync(async () => await PageContainsAsync(client, pageUrl, "API Before"), process);
+            await WaitUntilAsync(async () => await PageContainsAsync(client, specPageUrl, "API Before"), process);
 
             File.WriteAllText(specificationPath, OpenApiSpecification("API After"));
 
             await WaitUntilAsync(async () => await PageContainsAsync(client, pageUrl, "API After"), process);
+            await WaitUntilAsync(async () => await PageContainsAsync(client, specPageUrl, "API After"), process);
 
             var secondApi = Path.Combine(root, "second-api");
             Directory.CreateDirectory(secondApi);
@@ -185,6 +188,15 @@ public class ServeCommandIntegrationTest
 
             File.WriteAllText(secondSpecificationPath, OpenApiSpecification("API Latest"));
             await WaitUntilAsync(async () => await PageContainsAsync(client, pageUrl, "API Latest"), process);
+
+            // Removing the openapi block in a single-page edit reconciles and deletes the generated spec page.
+            File.WriteAllText(Path.Combine(docs, "README.md"), "# Orders\n\nPlain page without OpenAPI.\n");
+            await WaitUntilAsync(async () => await PageContainsAsync(client, pageUrl, "Plain page without OpenAPI."), process);
+            await WaitUntilAsync(async () =>
+            {
+                using var response = await client.GetAsync(specPageUrl);
+                return response.StatusCode == HttpStatusCode.NotFound;
+            }, process);
         }
         finally
         {

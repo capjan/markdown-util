@@ -77,10 +77,10 @@ public static class OpenApiMarkdownRenderer
         var spans = new List<(string Value, int Start, int Length)>();
         foreach (var block in document.Descendants<FencedCodeBlock>().Where(IsOpenApiCodeBlock))
         {
-            if (TryGetBlockBodySpan(block, out var bodyStart, out var bodyLength) &&
-                TryParseSpecReferenceSpan(markdown.Substring(bodyStart, bodyLength), out var relativeStart, out var length, out var specPath))
+            if (TryExtractBlockBody(block, out var bodyText, out var lineOffsets) &&
+                TryParseSpecReferenceSpan(bodyText, out var relativeStart, out var length, out var specPath))
             {
-                spans.Add((specPath, bodyStart + relativeStart, length));
+                spans.Add((specPath, MapToSourceOffset(relativeStart, lineOffsets), length));
             }
         }
 
@@ -97,8 +97,25 @@ public static class OpenApiMarkdownRenderer
         if (!markdown.Contains(CodeBlockLanguage, StringComparison.OrdinalIgnoreCase))
             return Array.Empty<string>();
 
-        ExpandCodeBlocks(markdown, markdownPath, out var pages, allowedRootPath, pageOutputFileName, siblingPages);
-        return pages.Select(page => page.FileName).ToArray();
+        var parsed = Markdig.Markdown.Parse(markdown, CodeBlockPipeline);
+        var blocks = parsed.Descendants<FencedCodeBlock>().Where(IsOpenApiCodeBlock).ToArray();
+        if (blocks.Length == 0)
+            return Array.Empty<string>();
+
+        var parentHtmlFileName = GetParentHtmlFileName(markdownPath, pageOutputFileName);
+        var pageStem = Path.GetFileNameWithoutExtension(parentHtmlFileName);
+        var usedFileNames = CollectReservedHtmlFileNames(markdownPath, parentHtmlFileName, allowedRootPath, siblingPages);
+        var fileNames = new List<string>(blocks.Length);
+        foreach (var block in blocks)
+        {
+            var bodyText = TryExtractBlockBody(block, out var extracted, out _)
+                ? extracted
+                : string.Empty;
+            var slug = ResolveBlockSlug(bodyText, markdownPath, allowedRootPath);
+            fileNames.Add(AllocateSpecFileName(pageStem, slug, usedFileNames));
+        }
+
+        return fileNames;
     }
 
     public static string ExpandCodeBlocks(
@@ -146,8 +163,8 @@ public static class OpenApiMarkdownRenderer
         for (var index = 0; index < blocks.Length; index++)
         {
             var block = blocks[index];
-            var bodyText = TryGetBlockBodySpan(block, out var bodyStart, out var bodyLength)
-                ? markdown.Substring(bodyStart, bodyLength)
+            var bodyText = TryExtractBlockBody(block, out var extracted, out _)
+                ? extracted
                 : string.Empty;
 
             LoadedSpecification loaded;
@@ -178,7 +195,10 @@ public static class OpenApiMarkdownRenderer
                                 loaded.Document.Info.Title.Trim(),
                                 StringComparison.OrdinalIgnoreCase));
 
-            var renderedMarkdown = Render(loaded.Document, index, specFileName, omitTitle);
+            var renderedMarkdown = ApplyContainerPrefix(
+                markdown,
+                block.Span.Start,
+                Render(loaded.Document, index, specFileName, omitTitle));
             var specPageTitle = string.IsNullOrWhiteSpace(loaded.Document.Info?.Title)
                 ? $"OpenAPI Specification ({sourceLabel})"
                 : $"{loaded.Document.Info.Title.Trim()} — OpenAPI Specification";
@@ -214,17 +234,75 @@ public static class OpenApiMarkdownRenderer
     private static bool IsOpenApiCodeBlock(FencedCodeBlock block) =>
         string.Equals(block.Info?.Trim(), CodeBlockLanguage, StringComparison.OrdinalIgnoreCase);
 
-    private static bool TryGetBlockBodySpan(FencedCodeBlock block, out int start, out int length)
+    private static bool TryExtractBlockBody(
+        FencedCodeBlock block,
+        out string bodyText,
+        out (int TextOffset, int SourceOffset)[] lineOffsets)
     {
-        start = 0;
-        length = 0;
-        if (block.Lines.Count == 0) return false;
-        var first = block.Lines.Lines[0].Slice;
-        var last = block.Lines.Lines[block.Lines.Count - 1].Slice;
-        if (first.Start < 0 || last.End < first.Start) return false;
-        start = first.Start;
-        length = last.End - first.Start + 1;
-        return true;
+        if (block.Lines.Count == 0)
+        {
+            bodyText = string.Empty;
+            lineOffsets = Array.Empty<(int TextOffset, int SourceOffset)>();
+            return false;
+        }
+
+        var builder = new StringBuilder();
+        var offsets = new (int TextOffset, int SourceOffset)[block.Lines.Count];
+        for (var index = 0; index < block.Lines.Count; index++)
+        {
+            var slice = block.Lines.Lines[index].Slice;
+            offsets[index] = (builder.Length, slice.Start);
+            if (slice.Text is not null && slice.Start >= 0 && slice.Length > 0)
+                builder.Append(slice.Text, slice.Start, slice.Length);
+            if (index + 1 < block.Lines.Count)
+                builder.Append('\n');
+        }
+
+        bodyText = builder.ToString();
+        lineOffsets = offsets;
+        return bodyText.Length > 0;
+    }
+
+    private static int MapToSourceOffset(int textOffset, (int TextOffset, int SourceOffset)[] lineOffsets)
+    {
+        for (var index = lineOffsets.Length - 1; index >= 0; index--)
+        {
+            if (textOffset >= lineOffsets[index].TextOffset)
+                return lineOffsets[index].SourceOffset + (textOffset - lineOffsets[index].TextOffset);
+        }
+
+        return lineOffsets[0].SourceOffset + textOffset;
+    }
+
+    private static string ApplyContainerPrefix(string markdown, int blockStart, string renderedMarkdown)
+    {
+        var lineStart = blockStart > 0 ? markdown.LastIndexOf('\n', blockStart - 1) + 1 : 0;
+        if (lineStart >= blockStart) return renderedMarkdown;
+
+        var prefixChars = new char[blockStart - lineStart];
+        for (var index = 0; index < prefixChars.Length; index++)
+        {
+            var character = markdown[lineStart + index];
+            prefixChars[index] = character is '>' or '\t' ? character : ' ';
+        }
+
+        var continuationPrefix = new string(prefixChars);
+        var normalized = renderedMarkdown.ReplaceLineEndings("\n").TrimEnd('\n');
+        return normalized.Replace("\n", "\n" + continuationPrefix, StringComparison.Ordinal);
+    }
+
+    private static string ResolveBlockSlug(string bodyText, string markdownPath, string? allowedRootPath)
+    {
+        if (TryParseSpecReferenceSpan(bodyText, out _, out _, out var referencedSpecPath))
+        {
+            var fullSpecPath = ResolveSpecPath(markdownPath, referencedSpecPath, allowedRootPath);
+            return SlugifySchemaName(Path.GetFileNameWithoutExtension(fullSpecPath));
+        }
+
+        var loaded = LoadInline(bodyText, markdownPath);
+        return !string.IsNullOrWhiteSpace(loaded.Document.Info?.Title)
+            ? SlugifySchemaName(loaded.Document.Info.Title)
+            : "openapi";
     }
 
     private static bool TryParseSpecReferenceSpan(string bodyText, out int start, out int length, out string specPath)
@@ -417,25 +495,14 @@ public static class OpenApiMarkdownRenderer
         var siblingStem = Path.GetFileNameWithoutExtension(siblingHtmlFileName);
         foreach (var block in blocks)
         {
-            var bodyText = TryGetBlockBodySpan(block, out var bodyStart, out var bodyLength)
-                ? siblingMarkdown.Substring(bodyStart, bodyLength)
+            var bodyText = TryExtractBlockBody(block, out var extracted, out _)
+                ? extracted
                 : string.Empty;
 
             string slug;
             try
             {
-                if (TryParseSpecReferenceSpan(bodyText, out _, out _, out var referencedSpecPath))
-                {
-                    var fullSpecPath = ResolveSpecPath(siblingMarkdownPath, referencedSpecPath, allowedRootPath);
-                    slug = SlugifySchemaName(Path.GetFileNameWithoutExtension(fullSpecPath));
-                }
-                else
-                {
-                    var loaded = LoadInline(bodyText, siblingMarkdownPath);
-                    slug = !string.IsNullOrWhiteSpace(loaded.Document.Info?.Title)
-                        ? SlugifySchemaName(loaded.Document.Info.Title)
-                        : "openapi";
-                }
+                slug = ResolveBlockSlug(bodyText, siblingMarkdownPath, allowedRootPath);
             }
             catch (InvalidOperationException)
             {

@@ -28,6 +28,8 @@ public sealed class ServeCommand
     private readonly Dictionary<string, MarkdownFile> _pages = new(PathComparer);
     private readonly Dictionary<string, HashSet<string>> _assetsByPage = new(PathComparer);
     private readonly Dictionary<string, HashSet<string>> _pagesByAsset = new(PathComparer);
+    private readonly Dictionary<string, IReadOnlyList<string>> _openApiSpecsByPage = new(PathComparer);
+    private readonly Dictionary<string, IReadOnlyList<string>> _openApiSpecPagesByPage = new(PathComparer);
     private readonly HashSet<string> _generatedFiles = new(PathComparer);
     private readonly HashSet<string> _configurationAssets = new(PathComparer);
     private FileWatcherSet? _watchers;
@@ -121,7 +123,7 @@ public sealed class ServeCommand
         var changes = Channel.CreateUnbounded<FileChange>();
         using var watcher = new FileWatcherSet(_rootPath, changes.Writer);
         _watchers = watcher;
-        watcher.UpdateOpenApiSpecs(_pages.Values);
+        watcher.UpdateOpenApiSpecs(_openApiSpecsByPage.Values.SelectMany(paths => paths));
         if (!noBrowser) OpenBrowser(url);
 
         using var cancellation = new CancellationTokenSource();
@@ -208,15 +210,19 @@ public sealed class ServeCommand
         _pages.Clear();
         _assetsByPage.Clear();
         _pagesByAsset.Clear();
+        _openApiSpecsByPage.Clear();
+        _openApiSpecPagesByPage.Clear();
 
         foreach (var page in Flatten(graph))
         {
             var pagePath = GetPageKey(page);
             _pages[pagePath] = page;
-            UpdatePageAssets(pagePath, page);
         }
 
-        _watchers?.UpdateOpenApiSpecs(_pages.Values);
+        foreach (var (pagePath, page) in _pages)
+            UpdatePageAssets(pagePath, page);
+
+        _watchers?.UpdateOpenApiSpecs(_openApiSpecsByPage.Values.SelectMany(paths => paths));
     }
 
     private static IEnumerable<MarkdownFile> Flatten(IEnumerable<MarkdownFile> pages)
@@ -253,6 +259,38 @@ public sealed class ServeCommand
         }
 
         _assetsByPage[pagePath] = pageAssets;
+        UpdatePageOpenApiDependencies(pagePath, page, markdown);
+    }
+
+    private void UpdatePageOpenApiDependencies(string pagePath, MarkdownFile page, string markdown)
+    {
+        var body = RemoveFrontMatter(markdown, page.FrontMatter);
+        var referencedSpecs = OpenApiMarkdownRenderer.FindReferencedSpecPaths(body)
+            .Select(specPath => OpenApiMarkdownRenderer.ResolveSpecPath(
+                page.FileInfo.FullName,
+                specPath,
+                page.SourceRootPath))
+            .ToArray();
+        _openApiSpecsByPage[pagePath] = referencedSpecs;
+
+        var pageOutputPath = GetPageOutputPath(page);
+        var outputDirectory = Path.GetDirectoryName(pageOutputPath)!;
+        var outputSiblings = _pages.Values
+            .Select(candidate => (Page: candidate, OutputPath: GetPageOutputPath(candidate)))
+            .Where(candidate => PathComparer.Equals(Path.GetDirectoryName(candidate.OutputPath), outputDirectory))
+            .Select(candidate => new OpenApiSiblingPage(
+                candidate.Page.FileInfo.FullName,
+                Path.GetFileName(candidate.OutputPath),
+                candidate.Page.SourceRootPath));
+        var specPages = OpenApiMarkdownRenderer.GetSpecificationPageFileNames(
+                body,
+                page.FileInfo.FullName,
+                page.SourceRootPath,
+                Path.GetFileName(pageOutputPath),
+                outputSiblings)
+            .Select(specFileName => Path.Combine(outputDirectory, specFileName))
+            .ToArray();
+        _openApiSpecPagesByPage[pagePath] = specPages;
     }
 
     private void RemovePageAssets(string pagePath)
@@ -366,7 +404,6 @@ public sealed class ServeCommand
             var previousNavigationPlacement = page.NavigationPlacement;
             var previousInvalidNavigationPlacement = page.InvalidNavigationPlacement;
             _dataPreparationVisitor.Process(page, depth);
-            _watchers?.UpdateOpenApiSpecs(_pages.Values);
             if (!previousTitle.Equals(page.Title, StringComparison.Ordinal) ||
                 !previousNavigationTitle.Equals(page.NavigationTitle, StringComparison.Ordinal) ||
                 previousNavigationOrder != page.NavigationOrder ||
@@ -381,6 +418,7 @@ public sealed class ServeCommand
             }
 
             UpdatePageAssets(pagePath, page);
+            _watchers?.UpdateOpenApiSpecs(_openApiSpecsByPage.Values.SelectMany(paths => paths));
             new LocalAssetsCopy(_rootPath, _outputPath).Process(page, depth);
             var rendererVisitor = new MarkdigVisitor(
                 _rootPath,
@@ -442,16 +480,10 @@ public sealed class ServeCommand
 
     private bool IsOpenApiSpecChange(FileChange change)
     {
-        foreach (var page in _pages.Values)
+        foreach (var specPaths in _openApiSpecsByPage.Values)
         {
-            if (!File.Exists(page.FileInfo.FullName)) continue;
-            var body = RemoveFrontMatter(page.ReadMarkdown(), page.FrontMatter);
-            foreach (var referencedPath in OpenApiMarkdownRenderer.FindReferencedSpecPaths(body))
+            foreach (var specPath in specPaths)
             {
-                var specPath = OpenApiMarkdownRenderer.ResolveSpecPath(
-                    page.FileInfo.FullName,
-                    referencedPath,
-                    page.SourceRootPath);
                 if (PathComparer.Equals(specPath, change.Path) ||
                     change.OldPath is not null && PathComparer.Equals(specPath, change.OldPath)) return true;
             }
@@ -510,35 +542,15 @@ public sealed class ServeCommand
         if (_hasPdfLink) currentFiles.Add(Path.Combine(_outputPath, "documentation.pdf"));
         currentFiles.UnionWith(_renderer.IconSearchAssets);
 
-        var pageOutputs = _pages.Values
-            .Select(page => (Page: page, OutputPath: GetPageOutputPath(page)))
-            .ToArray();
-        foreach (var (_, pageOutputPath) in pageOutputs)
-            currentFiles.Add(pageOutputPath);
-
-        foreach (var (page, pageOutputPath) in pageOutputs)
+        foreach (var page in _pages.Values)
         {
+            currentFiles.Add(GetPageOutputPath(page));
             var aliasPath = GetAliasOutputPath(page);
             if (aliasPath is not null) currentFiles.Add(aliasPath);
-            if (!File.Exists(page.FileInfo.FullName)) continue;
-            var outputDirectory = Path.GetDirectoryName(pageOutputPath)!;
-            var outputSiblings = pageOutputs
-                .Where(candidate => PathComparer.Equals(Path.GetDirectoryName(candidate.OutputPath), outputDirectory))
-                .Select(candidate => new OpenApiSiblingPage(
-                    candidate.Page.FileInfo.FullName,
-                    Path.GetFileName(candidate.OutputPath),
-                    candidate.Page.SourceRootPath));
-            var body = RemoveFrontMatter(page.ReadMarkdown(), page.FrontMatter);
-            foreach (var specFileName in OpenApiMarkdownRenderer.GetSpecificationPageFileNames(
-                         body,
-                         page.FileInfo.FullName,
-                         page.SourceRootPath,
-                         Path.GetFileName(pageOutputPath),
-                         outputSiblings))
-            {
-                currentFiles.Add(Path.Combine(outputDirectory, specFileName));
-            }
         }
+
+        foreach (var specPages in _openApiSpecPagesByPage.Values)
+            currentFiles.UnionWith(specPages);
 
         foreach (var assetPath in _configurationAssets)
             if (File.Exists(assetPath)) currentFiles.Add(GetAssetOutputPath(assetPath));
@@ -665,16 +677,9 @@ public sealed class ServeCommand
             _rootWatcher = Create(_rootPath, includeSubdirectories: true);
         }
 
-        public void UpdateOpenApiSpecs(IEnumerable<MarkdownFile> pages)
+        public void UpdateOpenApiSpecs(IEnumerable<string> specPaths)
         {
-            var directories = pages
-                .Where(page => File.Exists(page.FileInfo.FullName))
-                .SelectMany(page => OpenApiMarkdownRenderer
-                    .FindReferencedSpecPaths(RemoveFrontMatter(page.ReadMarkdown(), page.FrontMatter))
-                    .Select(specPath => OpenApiMarkdownRenderer.ResolveSpecPath(
-                        page.FileInfo.FullName,
-                        specPath,
-                        page.SourceRootPath)))
+            var directories = specPaths
                 .Where(path => !IsInsideDirectory(_rootPath, path))
                 .Select(path => Path.GetDirectoryName(path)!)
                 .Where(Directory.Exists)

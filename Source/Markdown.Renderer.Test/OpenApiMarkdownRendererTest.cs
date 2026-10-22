@@ -480,6 +480,90 @@ public class OpenApiMarkdownRendererTest
     }
 
     [Fact]
+    public async Task ExpandsOpenApiBlocksInsideBlockquotesAndListItems()
+    {
+        var directory = Path.Combine(Path.GetTempPath(), $"mdu-openapi-containers-{Guid.NewGuid():N}");
+        Directory.CreateDirectory(directory);
+        try
+        {
+            var markdownPath = Path.Combine(directory, "guide.md");
+            File.WriteAllText(Path.Combine(directory, "orders.yaml"), """
+                openapi: 3.1.0
+                info:
+                  title: Orders API
+                  version: 1.0.0
+                paths:
+                  /orders:
+                    get:
+                      tags: [Orders]
+                      summary: List orders
+                      responses:
+                        '200':
+                          description: OK
+                """);
+
+            const string markdown = """
+                # Container Guide
+
+                > Quoted intro
+                >
+                > ```openapi
+                > ./orders.yaml
+                > ```
+                >
+                > Quoted outro
+
+                - List item intro
+
+                  ```openapi
+                  openapi: 3.1.0
+                  info:
+                    title: Inline List API
+                    version: 2.0.0
+                  paths:
+                    /status:
+                      get:
+                        tags: [Status]
+                        summary: Check status
+                        responses:
+                          '204':
+                            description: Healthy
+                  ```
+
+                  List item outro
+                """;
+
+            var expanded = OpenApiMarkdownRenderer.ExpandCodeBlocks(markdown, markdownPath, out var specPages);
+            Assert.Equal(2, specPages.Count);
+
+            var output = new StringBuilder();
+            using var writer = new StringWriter(output);
+            await new HtmlRenderer().WriteHtml(writer, "Container Guide", string.Empty, 0, expanded, string.Empty);
+            var html = output.ToString();
+
+            var blockquoteStart = html.IndexOf("<blockquote>", StringComparison.Ordinal);
+            var blockquoteEnd = html.IndexOf("</blockquote>", blockquoteStart, StringComparison.Ordinal);
+            Assert.True(blockquoteStart >= 0 && blockquoteEnd > blockquoteStart, html);
+            var blockquoteHtml = html[blockquoteStart..blockquoteEnd];
+            Assert.Contains("Quoted intro", blockquoteHtml);
+            Assert.Contains("<section class=\"openapi-tag-list\"", blockquoteHtml);
+            Assert.Contains("Quoted outro", blockquoteHtml);
+
+            var listStart = html.IndexOf("<ul>", blockquoteEnd, StringComparison.Ordinal);
+            var listEnd = html.IndexOf("</ul>", listStart, StringComparison.Ordinal);
+            Assert.True(listStart >= 0 && listEnd > listStart, html);
+            var listHtml = html[listStart..listEnd];
+            Assert.Contains("List item intro", listHtml);
+            Assert.Contains("<section class=\"openapi-tag-list\"", listHtml);
+            Assert.Contains("List item outro", listHtml);
+        }
+        finally
+        {
+            Directory.Delete(directory, recursive: true);
+        }
+    }
+
+    [Fact]
     public async Task ListsEnumValuesAndDefaultsOnTheRowsThatUseThem()
     {
         var html = await RenderHtml("""

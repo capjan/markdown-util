@@ -60,7 +60,19 @@ public static class MarkdownLinks
 
         foreach (var openApiSpec in OpenApiMarkdownRenderer.FindSpecPathSpans(content))
         {
-            var specPath = OpenApiMarkdownRenderer.ResolveSpecPath(sourcePath, openApiSpec.Value);
+            string specPath;
+            try
+            {
+                specPath = OpenApiMarkdownRenderer.ResolveSpecPath(sourcePath, openApiSpec.Value);
+            }
+            catch (Exception exception) when (exception is ArgumentException or InvalidOperationException or NotSupportedException or PathTooLongException)
+            {
+                continue;
+            }
+
+            if (!File.Exists(specPath) && !movedPaths.ContainsKey(specPath))
+                continue;
+
             var movedSpecPath = movedPaths.GetValueOrDefault(specPath, specPath);
             if (!pathComparer.Equals(sourcePath, newSourcePath) || !pathComparer.Equals(specPath, movedSpecPath))
             {
