@@ -13,8 +13,8 @@ Most commands follow the same pattern: find the Markdown files, build a page tre
 1. It lists the files that match the search pattern, `*.md` by default, folder by folder.
 2. A folder's `README.md`, or else its `index.md`, becomes the parent of the other pages in that folder and of the pages in its subfolders.
 3. A folder without such a page adds its pages to the nearest parent above it.
-4. `DataPreparationVisitor` reads each page's level-one heading and front matter: `title`, `description`, `icon`, `mdu.import.source`, and the `navigation.*` settings.
-5. `GraphBuilder` resolves GitHub imports and mounts each imported folder's page tree at the import page's position. Each imported page keeps its repository source path and its site-relative path.
+4. `DataPreparationVisitor` reads each page's level-one heading and front matter: `title`, `description`, `icon`, `openapi`, `mdu.import.source`, and the `navigation.*` settings.
+5. `GraphBuilder` resolves Git repository imports and mounts each imported folder's page tree at the import page's position. Each imported page keeps its repository source path and its site-relative path.
 
 ```text
 docs/
@@ -55,7 +55,7 @@ flowchart TD
     accTitle: Steps of mdu render
     Paths[Resolve source and output folders] --> Config[Read mdu.yml]
     Config --> Prepare[Write stylesheet and search script]
-    Prepare --> Tree[Build the page tree and resolve GitHub imports]
+    Prepare --> Tree[Build the page tree and resolve Git repository imports]
     Tree --> Assets[Copy linked local assets]
     Assets --> PdfLink{PDF Link present?}
     PdfLink -->|Yes| Pdf[Write documentation.pdf]

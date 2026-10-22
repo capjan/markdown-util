@@ -51,6 +51,7 @@ public class RepositoryImportTest
             Assert.Equal("Combined API", rootPage.Title);
             Assert.Contains("Remote introduction.", rootPage.ReadMarkdown());
             Assert.Equal("README.md", rootPage.SiteRelativePath);
+            Assert.Equal("https://github.com/example/first/edit/main/Docs/README.md", rootPage.EditPageLink);
 
             var nestedPage = Assert.Single(rootPage.Children);
             Assert.Equal("Nested API", nestedPage.Title);
@@ -207,7 +208,7 @@ public class RepositoryImportTest
 
         try
         {
-            var resolver = new GitHubTreeSourceResolver(
+            var resolver = new GitTreeSourceResolver(
                 new LocalRepositoryGitRunner(sourceRepository, commit, "feature/docs"),
                 Path.Combine(root, "cache"));
             var resolved = resolver.Resolve("https://github.com/example/repository/tree/feature/docs/Docs");
@@ -224,17 +225,107 @@ public class RepositoryImportTest
         }
     }
 
-    private static GraphBuilder CreateGraphBuilder(IGitHubTreeSourceResolver resolver) =>
+    [Theory]
+    [InlineData("https://gitlab.com/group/subgroup/project/-/tree/feature/docs/Docs?ref_type=heads", "feature/docs", "https://gitlab.com/group/subgroup/project.git", "https://gitlab.com/group/subgroup/project/-/edit/feature/docs")]
+    [InlineData("https://bitbucket.org/workspace/project/src/main/Docs", "main", "https://bitbucket.org/workspace/project.git", "https://bitbucket.org/workspace/project/src/main")]
+    [InlineData("https://gitea.example.net/team/project/src/branch/main/Docs", "main", "https://gitea.example.net/team/project.git", "https://gitea.example.net/team/project/src/branch/main")]
+    [InlineData("https://git.example.net/scm/team/project/tree/main/Docs", "main", "https://git.example.net/scm/team/project.git", "https://git.example.net/scm/team/project/edit/main")]
+    public void ResolvesCommonGitHostingTreeUrls(
+        string sourceUrl,
+        string referenceName,
+        string repositoryUrl,
+        string editPageLinkPrefix)
+    {
+        var root = CreateTemporaryDirectory();
+        try
+        {
+            var resolver = new GitTreeSourceResolver(new FixtureGitCommandRunner(referenceName), Path.Combine(root, "cache"));
+            var source = resolver.Resolve(sourceUrl);
+
+            Assert.Equal(repositoryUrl, source.RepositoryUrl);
+            Assert.Equal(referenceName, source.ReferenceName);
+            Assert.Equal("Docs", source.SourcePath);
+            Assert.Equal(editPageLinkPrefix, source.EditPageLinkPrefix);
+        }
+        finally
+        {
+            Directory.Delete(root, recursive: true);
+        }
+    }
+
+    [Theory]
+    [InlineData("https://gitlab.com/group/project/-/tree/main/Docs?ref_type=tags", "https://gitlab.com/group/project/-/edit/main")]
+    [InlineData("https://gitea.example.net/team/project/src/tag/main/Docs", "https://gitea.example.net/team/project/src/tag/main")]
+    public void HonorsExplicitTagReferencesWhenBranchHasTheSameName(string sourceUrl, string editPageLinkPrefix)
+    {
+        var root = CreateTemporaryDirectory();
+        try
+        {
+            var resolver = new GitTreeSourceResolver(new FixtureGitCommandRunner("main", "main"), Path.Combine(root, "cache"));
+            var source = resolver.Resolve(sourceUrl);
+
+            Assert.False(source.IsBranch);
+            Assert.Equal(editPageLinkPrefix, source.EditPageLinkPrefix);
+        }
+        finally
+        {
+            Directory.Delete(root, recursive: true);
+        }
+    }
+
+    [Fact]
+    public void DefaultsToMainForRepositoryAndFolderUrlsWithoutARevision()
+    {
+        var root = CreateTemporaryDirectory();
+        try
+        {
+            var resolver = new GitTreeSourceResolver(new FixtureGitCommandRunner("main"), Path.Combine(root, "cache"));
+            var repositoryRoot = resolver.Resolve("https://git.example.net/team/project.git");
+            var folder = resolver.Resolve("https://git.example.net/team/project/tree/Docs");
+
+            Assert.Equal("main", repositoryRoot.ReferenceName);
+            Assert.Equal(string.Empty, repositoryRoot.SourcePath);
+            Assert.Equal("main", folder.ReferenceName);
+            Assert.Equal("Docs", folder.SourcePath);
+        }
+        finally
+        {
+            Directory.Delete(root, recursive: true);
+        }
+    }
+
+    [Fact]
+    public void ResolvesGenericGitCloneUrlsWithAnExplicitRevisionAndFolder()
+    {
+        var root = CreateTemporaryDirectory();
+        try
+        {
+            var resolver = new GitTreeSourceResolver(new FixtureGitCommandRunner("feature/docs"), Path.Combine(root, "cache"));
+            var source = resolver.Resolve("https://git.example.net/team/project.git#feature/docs/Docs");
+
+            Assert.Equal("https://git.example.net/team/project.git", source.RepositoryUrl);
+            Assert.Equal("feature/docs", source.ReferenceName);
+            Assert.Equal("Docs", source.SourcePath);
+        }
+        finally
+        {
+            Directory.Delete(root, recursive: true);
+        }
+    }
+
+    private static GraphBuilder CreateGraphBuilder(IGitTreeSourceResolver resolver) =>
         new(new DataPreparationVisitor(new MarkdownDocumentReader()), resolver);
 
-    private static ResolvedGitHubTreeSource CreateResolvedSource(string repositoryPath, string repositoryName) =>
+    private static ResolvedGitTreeSource CreateResolvedSource(string repositoryPath, string repositoryName) =>
         new(
             $"https://github.com/example/{repositoryName}.git",
             $"https://github.com/example/{repositoryName}",
             "main",
+            true,
             "Docs",
             repositoryPath,
-            Path.Combine(repositoryPath, "Docs"));
+            Path.Combine(repositoryPath, "Docs"),
+            $"https://github.com/example/{repositoryName}/edit/main");
 
     private static string CreateTemporaryDirectory()
     {
@@ -255,18 +346,48 @@ public class RepositoryImportTest
         return output;
     }
 
-    private sealed class FakeSourceResolver(params (string Url, ResolvedGitHubTreeSource Source)[] sources)
-        : IGitHubTreeSourceResolver
+    private sealed class FakeSourceResolver(params (string Url, ResolvedGitTreeSource Source)[] sources)
+        : IGitTreeSourceResolver
     {
-        private readonly Dictionary<string, ResolvedGitHubTreeSource> _sources =
+        private readonly Dictionary<string, ResolvedGitTreeSource> _sources =
             sources.ToDictionary(source => source.Url, source => source.Source, StringComparer.Ordinal);
 
         public int ResolveCount { get; private set; }
 
-        public ResolvedGitHubTreeSource Resolve(string sourceUrl)
+        public ResolvedGitTreeSource Resolve(string sourceUrl)
         {
             ResolveCount++;
             return _sources[sourceUrl];
+        }
+    }
+
+    private sealed class FixtureGitCommandRunner(string branch, string? tag = null) : IGitCommandRunner
+    {
+        private const string Commit = "0123456789abcdef0123456789abcdef01234567";
+
+        public string Run(string? workingDirectory, IReadOnlyList<string> arguments)
+        {
+            if (arguments[0] == "ls-remote")
+                return $"{Commit}\trefs/heads/{branch}\n" +
+                       (tag is null ? string.Empty : $"{Commit}\trefs/tags/{tag}\n");
+
+            if (arguments[0] == "clone")
+            {
+                Directory.CreateDirectory(arguments[^1]);
+                return string.Empty;
+            }
+
+            if (arguments[0] == "-c")
+            {
+                var repository = workingDirectory!;
+                Directory.CreateDirectory(Path.Combine(repository, "Docs"));
+                File.WriteAllText(Path.Combine(repository, "README.md"), "# Repository\n");
+                File.WriteAllText(Path.Combine(repository, "Docs", "README.md"), "# Docs\n");
+                return string.Empty;
+            }
+
+            if (arguments[0] == "rev-parse") return Commit;
+            throw new InvalidOperationException($"Unexpected git command: {string.Join(' ', arguments)}");
         }
     }
 

@@ -35,7 +35,7 @@ MDU is a .NET tool that turns a folder of ordinary Markdown files into a documen
 
 - [Features](./Features/README.md) - Callouts, diagrams, math, icons, keyboard keys, and more
 - [Navigation](./Features/Navigation.md) - Order pages, add top tabs, and hide entries
-- [Repository Imports](./Features/Repository-Imports.md) - Combine Markdown pages from multiple GitHub repositories
+- [Repository Imports](./Features/Repository-Imports.md) - Combine Markdown pages from multiple Git repositories
 
 ## About MDU
 
