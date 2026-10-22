@@ -1,37 +1,90 @@
 # OpenAPI Spec
 
-MDU turns a local OpenAPI specification into a static API reference inside a Markdown page. The specification stays in its JSON or YAML file; MDU adds the generated reference when it renders the page.
+Embed interactive static API references anywhere in a Markdown page with an `openapi` code block. MDU supports OpenAPI 3.1, 3.0, and 2.0 specifications in `.yaml`, `.yml`, and `.json`.
 
-For a complete short example with the generated output, see [OpenAPI Spec example](openapi-example.md). The public Swagger Petstore specification shows a larger reference in both formats: the [OpenAPI 3.0 example](openapi-petstore-v3.md) and the [Swagger 2.0 example](openapi-petstore.md).
+## Reference a specification file
 
-## Add an API reference
+Point an `openapi` code block at a local specification file (relative to the Markdown page):
 
-Set `openapi` in the page's front matter. Its path is relative to the Markdown file:
+````markdown title="Markdown"
+```openapi
+./orbital-spaceport.yaml
+```
+````
 
-```markdown
----
-title: Orders API
-description: Reference for the Orders service.
-openapi: ./orders.yaml
----
+MDU renders the interactive reference in place and generates a static **OpenAPI specification** page (linked right in the overview below) with syntax highlighting and a copy button:
 
-# Orders API
-
-This introduction appears before the generated reference.
+```openapi
+./orbital-spaceport.yaml
 ```
 
-`mdu render`, `mdu serve`, and `mdu pdf` support `.json`, `.yaml`, and `.yml` specifications in the OpenAPI 3 and Swagger 2.0 formats. The reference follows the page's Markdown content. `mdu serve` also watches the folders containing referenced specifications and refreshes the page when a specification changes.
+## Inline specification
 
-## Generated reference
+You can also write an OpenAPI specification directly inside an `openapi` code block — and place multiple specifications on the same page:
 
-Operations are grouped by their first tag in a compact list. Tag groups and endpoints start collapsed; expand a tag to browse its endpoints, then expand an endpoint to inspect its method and path, parameters, request body, and responses. Each endpoint row shows the operation summary next to its path. Deprecated operations carry a **Deprecated** badge, a struck-through path, and a faded method stripe, and an expanded deprecated operation starts with a notice; a lock marks operations that require authorization; hover the lock to see the required security schemes. The method counts beside a tag name the HTTP method on hover and say how many of those endpoints are deprecated. When the API has deprecated operations, a **Show deprecated** switch next to the search field hides or shows them. The search field above the tags filters endpoint paths without regard to case. Nonmatching endpoints and empty tags disappear, and the method counts show only the matching endpoints; clearing the search restores the full list, the counts, and the tags' previous expanded state.
+````markdown title="Markdown"
+```openapi
+openapi: 3.1.0
+info:
+  title: Solar Weather Beacon API
+  version: 1.0.0
+  description: Real-time solar flare alerts for orbital crew safety.
+paths:
+  /alerts/current:
+    get:
+      tags: [Solar Weather]
+      summary: Get current solar storm index
+      responses:
+        '200':
+          description: Active geomagnetic and X-ray flux reading.
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [kpIndex, stormLevel, updatedAt]
+                properties:
+                  kpIndex: { type: integer, minimum: 0, maximum: 9, default: 2 }
+                  stormLevel: { type: string, enum: [quiet, moderate, severe, extreme] }
+                  updatedAt: { type: string, format: date-time, readOnly: true }
+```
+````
 
-The overview lists the API's license, contact, and terms of service, its servers, and its security schemes. An expanded endpoint names the schemes it requires, with OAuth scopes, and repeats no description that only restates the summary. A required request body carries a **Required** badge.
+Rendered output:
 
-The response and media type selectors open a list that works with the mouse and the keyboard: arrow keys move, Enter or Space chooses, Escape closes, and typing jumps to a matching entry. The response selector shows the status code and name, followed by response headers when the response declares any, and by a media type selector when the response has content. Responses and request bodies provide Example, Schema, and Schema JSON tabs. Schema descriptions appear below their names, and referenced schemas are linked and displayed inline. Response and media type selectors show their position as `1 of N`. 2xx statuses are green, 4xx are yellow, and 5xx are red.
+```openapi
+openapi: 3.1.0
+info:
+  title: Solar Weather Beacon API
+  version: 1.0.0
+  description: Real-time solar flare alerts for orbital crew safety.
+paths:
+  /alerts/current:
+    get:
+      tags: [Solar Weather]
+      summary: Get current solar storm index
+      responses:
+        '200':
+          description: Active geomagnetic and X-ray flux reading.
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [kpIndex, stormLevel, updatedAt]
+                properties:
+                  kpIndex: { type: integer, minimum: 0, maximum: 9, default: 2 }
+                  stormLevel: { type: string, enum: [quiet, moderate, severe, extreme] }
+                  updatedAt: { type: string, format: date-time, readOnly: true }
+```
 
-Parameter and schema tables combine names and types as `name: Type`. Primitive types with a format show the format instead, such as `uuid`, `int64`, or `dateTime`. Maps from `additionalProperties` read like arrays, for example `[string: Type]`. Required fields carry a red asterisk, and default values follow the type as `= value`. Deprecated fields carry a **Deprecated** badge. Below a field, MDU lists its access mode and constraints, such as `read-only`, `length 3–64`, `≥ 1`, or a pattern, and the example of a parameter. The allowed values of an enum appear below the field that uses it, so enums need no separate schema table. Table descriptions start hidden; use **Show descriptions** in the table header to reveal them. Tables without description text omit this control.
+## Highlights
 
-Generated examples use typical values for common string formats, such as a UUID or a UTC timestamp, when the specification provides no example. Generated numbers respect declared minimums, request examples leave out read-only properties, and response examples leave out write-only properties.
+| Area | Behavior |
+| --- | --- |
+| **Overview & spec page** | Version, license, contact, server URLs, security schemes, and an automatic **OpenAPI specification** link to a static page with the full syntax-highlighted source. |
+| **Tags & filter** | Collapsible tag groups with HTTP method counters, instant path search, auth locks with OAuth scopes, and a **Show deprecated** switch. |
+| **Requests & responses** | Status-colored response picker (`2xx` green, `4xx` yellow, `5xx` red), response headers, media-type switcher, and **Example**, **Schema**, and **Schema JSON** tabs. |
+| **Schemas & examples** | Compact `name: Type` rows with required markers (`*`), inline enums, maps (`[string: Type]`), bounds, defaults, collapsible descriptions, and auto-generated examples respecting `readOnly` / `writeOnly`. |
+| **Tooling** | `mdu serve` watches referenced spec files for live reload, `mdu page move` updates relative paths in `openapi` blocks, and `mdu pdf` includes the reference in the PDF export. |
 
-The generated reference gives each HTTP method a distinct label, highlights endpoint paths, and separates API groups and schemas. It follows the site's light or dark theme and is published as static HTML and CSS without making API requests. References within the specification are resolved; external `$ref` files are not loaded.
+> [!NOTE]
+> Local `$ref` pointers within a specification are resolved and linked inline. External `$ref` files and remote `http(s)` specification URLs are not loaded so builds stay fast and reproducible offline.

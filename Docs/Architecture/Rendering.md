@@ -6,7 +6,7 @@ navigation.order: 3
 
 `Markdown.Renderer` turns the Markdown of one page into a complete HTML page, or into PDF content. The page tree supplies everything around the content, such as navigation and breadcrumbs; the renderer supplies the content itself and the page frame.
 
-Pages with an `openapi` front matter entry have a generated API reference appended to their Markdown before rendering. `OpenApiMarkdownRenderer` reads the local JSON or YAML file, then the normal HTML and PDF renderers process the combined content. Large specifications repeat the same examples and schemas across many responses, so the HTML renderer emits a tab content that occurs more than once only once as a `<template>`. The page script copies it into an Example, Schema, or Schema JSON tab when that tab becomes visible in an open endpoint, and restores the schema anchor prefix of each media type in the copy. See the [OpenAPI feature](../Features/OpenAPI.md) for its usage and supported content.
+Pages with `openapi` fenced code blocks have each block expanded into a generated API reference before rendering. `OpenApiMarkdownRenderer` reads a local JSON or YAML specification file or parses an inline specification, emits a companion static specification page with the full syntax-highlighted source, and hands the combined content to the normal HTML and PDF renderers. Large specifications repeat the same examples and schemas across many responses, so the HTML renderer emits a tab content that occurs more than once only once as a `<template>`. The page script copies it into an Example, Schema, or Schema JSON tab when that tab becomes visible in an open endpoint, and restores the schema anchor prefix of each media type in the copy. See the [OpenAPI feature](../Features/OpenAPI.md) for its usage and supported content.
 
 ## From Markdown to HTML
 
@@ -47,6 +47,7 @@ flowchart TD
     Block[Fenced code block] --> Lang{Language}
     Lang -->|icon-search| Search[Icon search widget]
     Lang -->|hero| Hero[Animated hero banner]
+    Lang -->|openapi| OpenApi[API reference and spec page]
     Lang -->|math| Math[Formula as SVG]
     Lang -->|mermaid, plantuml, context| Diagram{Supported syntax?}
     Diagram -->|Yes| Svg[Diagram as SVG]
@@ -54,6 +55,7 @@ flowchart TD
     Lang -->|anything else| Code[Highlighted code with copy button]
     click Search href "../Features/Icons-and-Emojis.md#search"
     click Hero href "../Features/Hero.md"
+    click OpenApi href "../Features/OpenAPI.md"
     click Math href "../Features/Math.md"
     click Svg href "../Features/Diagrams.md"
     click Code href "../Features/CodeBlocks.md"

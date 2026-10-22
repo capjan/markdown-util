@@ -30,7 +30,6 @@ public class DataPreparationVisitor: IVisitor<MarkdownFile>
         entity.Title = navigationSettings.Title ?? header.Title;
         entity.Description = navigationSettings.Description ?? string.Empty;
         entity.Icon = navigationSettings.Icon ?? string.Empty;
-        entity.OpenApiSpec = navigationSettings.OpenApiSpec ?? string.Empty;
         entity.ImportSource = navigationSettings.ImportSource;
         entity.NavigationTitle = navigationSettings.NavigationTitle ?? string.Empty;
         entity.NavigationOrder = navigationSettings.Order;
@@ -60,7 +59,6 @@ public class DataPreparationVisitor: IVisitor<MarkdownFile>
             var title = ReadScalar(metadata, "title");
             var description = ReadScalar(metadata, "description");
             var icon = ReadScalar(metadata, "icon");
-            var openApiSpec = ReadScalar(metadata, "openapi");
             var importSource = ReadImportSource(metadata);
             YamlMappingNode? navigation = null;
             if (metadata.Children.TryGetValue(new YamlScalarNode("navigation"), out var navigationNode))
@@ -130,7 +128,7 @@ public class DataPreparationVisitor: IVisitor<MarkdownFile>
                 ? placementValue ?? "(must be a string)"
                 : null;
 
-            return new FrontMatterSettings(title, description, icon, openApiSpec, importSource, navigationTitle, order, visible, expanded,
+            return new FrontMatterSettings(title, description, icon, importSource, navigationTitle, order, visible, expanded,
                 placement, invalidPlacement);
         }
         catch (YamlException)
@@ -164,7 +162,6 @@ public class DataPreparationVisitor: IVisitor<MarkdownFile>
         string? Title = null,
         string? Description = null,
         string? Icon = null,
-        string? OpenApiSpec = null,
         string? ImportSource = null,
         string? NavigationTitle = null,
         int? Order = null,

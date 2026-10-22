@@ -115,7 +115,7 @@ public class RepositoryImportTest
         var sourceUrl = "https://github.com/example/repository/tree/main/Docs";
         File.WriteAllText(Path.Combine(root, "README.md"), $"---\nmdu:\n  import:\n    source: {sourceUrl}\n---\n");
         File.WriteAllText(Path.Combine(docs, "README.md"), "# Remote API\n");
-        File.WriteAllText(Path.Combine(docs, "Details.md"), "---\nopenapi: ../../../../outside.yaml\n---\n# Details\n");
+        File.WriteAllText(Path.Combine(docs, "Details.md"), "# Details\n\n```openapi\n../../../../outside.yaml\n```\n");
 
         try
         {

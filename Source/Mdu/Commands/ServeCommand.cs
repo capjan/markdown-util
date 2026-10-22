@@ -28,6 +28,8 @@ public sealed class ServeCommand
     private readonly Dictionary<string, MarkdownFile> _pages = new(PathComparer);
     private readonly Dictionary<string, HashSet<string>> _assetsByPage = new(PathComparer);
     private readonly Dictionary<string, HashSet<string>> _pagesByAsset = new(PathComparer);
+    private readonly Dictionary<string, IReadOnlyList<string>> _openApiSpecsByPage = new(PathComparer);
+    private readonly Dictionary<string, IReadOnlyList<string>> _openApiSpecPagesByPage = new(PathComparer);
     private readonly HashSet<string> _generatedFiles = new(PathComparer);
     private readonly HashSet<string> _configurationAssets = new(PathComparer);
     private FileWatcherSet? _watchers;
@@ -121,7 +123,7 @@ public sealed class ServeCommand
         var changes = Channel.CreateUnbounded<FileChange>();
         using var watcher = new FileWatcherSet(_rootPath, changes.Writer);
         _watchers = watcher;
-        watcher.UpdateOpenApiSpecs(_pages.Values);
+        watcher.UpdateOpenApiSpecs(_openApiSpecsByPage.Values.SelectMany(paths => paths));
         if (!noBrowser) OpenBrowser(url);
 
         using var cancellation = new CancellationTokenSource();
@@ -208,15 +210,19 @@ public sealed class ServeCommand
         _pages.Clear();
         _assetsByPage.Clear();
         _pagesByAsset.Clear();
+        _openApiSpecsByPage.Clear();
+        _openApiSpecPagesByPage.Clear();
 
         foreach (var page in Flatten(graph))
         {
             var pagePath = GetPageKey(page);
             _pages[pagePath] = page;
-            UpdatePageAssets(pagePath, page);
         }
 
-        _watchers?.UpdateOpenApiSpecs(_pages.Values);
+        foreach (var (pagePath, page) in _pages)
+            UpdatePageAssets(pagePath, page);
+
+        _watchers?.UpdateOpenApiSpecs(_openApiSpecsByPage.Values.SelectMany(paths => paths));
     }
 
     private static IEnumerable<MarkdownFile> Flatten(IEnumerable<MarkdownFile> pages)
@@ -253,6 +259,34 @@ public sealed class ServeCommand
         }
 
         _assetsByPage[pagePath] = pageAssets;
+        UpdatePageOpenApiDependencies(pagePath, page, markdown);
+    }
+
+    private void UpdatePageOpenApiDependencies(string pagePath, MarkdownFile page, string markdown)
+    {
+        var body = RemoveFrontMatter(markdown, page.FrontMatter);
+        var referencedSpecs = OpenApiMarkdownRenderer.FindReferencedSpecPaths(body)
+            .Select(specPath => OpenApiMarkdownRenderer.ResolveSpecPath(
+                page.FileInfo.FullName,
+                specPath,
+                page.SourceRootPath))
+            .ToArray();
+        _openApiSpecsByPage[pagePath] = referencedSpecs;
+
+        var pageOutputPath = GetPageOutputPath(page);
+        var outputDirectory = Path.GetDirectoryName(pageOutputPath)!;
+        var outputSiblings = MarkdigVisitor.GetOutputSiblings(
+            _pages.Values.Select(candidate => (Page: candidate, OutputPath: GetPageOutputPath(candidate))),
+            outputDirectory);
+        var specPages = OpenApiMarkdownRenderer.GetSpecificationPageFileNames(
+                body,
+                page.FileInfo.FullName,
+                page.SourceRootPath,
+                Path.GetFileName(pageOutputPath),
+                outputSiblings)
+            .Select(specFileName => Path.Combine(outputDirectory, specFileName))
+            .ToArray();
+        _openApiSpecPagesByPage[pagePath] = specPages;
     }
 
     private void RemovePageAssets(string pagePath)
@@ -366,7 +400,6 @@ public sealed class ServeCommand
             var previousNavigationPlacement = page.NavigationPlacement;
             var previousInvalidNavigationPlacement = page.InvalidNavigationPlacement;
             _dataPreparationVisitor.Process(page, depth);
-            _watchers?.UpdateOpenApiSpecs(_pages.Values);
             if (!previousTitle.Equals(page.Title, StringComparison.Ordinal) ||
                 !previousNavigationTitle.Equals(page.NavigationTitle, StringComparison.Ordinal) ||
                 previousNavigationOrder != page.NavigationOrder ||
@@ -380,7 +413,10 @@ public sealed class ServeCommand
                 return;
             }
 
+            var previousSpecPages = _openApiSpecPagesByPage.GetValueOrDefault(pagePath) ?? Array.Empty<string>();
             UpdatePageAssets(pagePath, page);
+            var specPagesChanged = !previousSpecPages.SequenceEqual(_openApiSpecPagesByPage[pagePath], PathComparer);
+            _watchers?.UpdateOpenApiSpecs(_openApiSpecsByPage.Values.SelectMany(paths => paths));
             new LocalAssetsCopy(_rootPath, _outputPath).Process(page, depth);
             var rendererVisitor = new MarkdigVisitor(
                 _rootPath,
@@ -398,6 +434,34 @@ public sealed class ServeCommand
 
             rendererVisitor.Process(page, depth);
             affectedPageUrls.Add(PreviewServer.ToUrlPath(_outputPath, GetPageOutputPath(page)));
+
+            if (specPagesChanged)
+            {
+                var outputDirectory = Path.GetDirectoryName(GetPageOutputPath(page))!;
+                foreach (var (siblingKey, siblingPage) in _pages)
+                {
+                    if (PathComparer.Equals(siblingKey, pagePath) || !File.Exists(siblingPage.FileInfo.FullName))
+                        continue;
+                    var siblingOutputPath = GetPageOutputPath(siblingPage);
+                    if (!PathComparer.Equals(Path.GetDirectoryName(siblingOutputPath), outputDirectory))
+                        continue;
+
+                    var previousSiblingSpecPages = _openApiSpecPagesByPage.GetValueOrDefault(siblingKey) ?? Array.Empty<string>();
+                    try
+                    {
+                        UpdatePageOpenApiDependencies(siblingKey, siblingPage, siblingPage.ReadMarkdown());
+                        if (previousSiblingSpecPages.SequenceEqual(_openApiSpecPagesByPage[siblingKey], PathComparer))
+                            continue;
+
+                        rendererVisitor.Process(siblingPage, siblingPage.CountDepth());
+                        affectedPageUrls.Add(PreviewServer.ToUrlPath(_outputPath, siblingOutputPath));
+                    }
+                    catch (Exception exception) when (exception is IOException or UnauthorizedAccessException or ArgumentException or InvalidOperationException or YamlDotNet.Core.YamlException)
+                    {
+                        Console.Error.WriteLine($"Could not update the site: {exception.Message}");
+                    }
+                }
+            }
         }
 
         if (changedPages.Length > 0)
@@ -442,15 +506,13 @@ public sealed class ServeCommand
 
     private bool IsOpenApiSpecChange(FileChange change)
     {
-        foreach (var page in _pages.Values)
+        foreach (var specPaths in _openApiSpecsByPage.Values)
         {
-            if (string.IsNullOrWhiteSpace(page.OpenApiSpec)) continue;
-            var specPath = OpenApiMarkdownRenderer.ResolveSpecPath(
-                page.OpenApiSpecBasePath ?? page.FileInfo.FullName,
-                page.OpenApiSpec,
-                page.OpenApiSpecBasePath is null ? page.SourceRootPath : null);
-            if (PathComparer.Equals(specPath, change.Path) ||
-                change.OldPath is not null && PathComparer.Equals(specPath, change.OldPath)) return true;
+            foreach (var specPath in specPaths)
+            {
+                if (PathComparer.Equals(specPath, change.Path) ||
+                    change.OldPath is not null && PathComparer.Equals(specPath, change.OldPath)) return true;
+            }
         }
         return false;
     }
@@ -512,6 +574,9 @@ public sealed class ServeCommand
             var aliasPath = GetAliasOutputPath(page);
             if (aliasPath is not null) currentFiles.Add(aliasPath);
         }
+
+        foreach (var specPages in _openApiSpecPagesByPage.Values)
+            currentFiles.UnionWith(specPages);
 
         foreach (var assetPath in _configurationAssets)
             if (File.Exists(assetPath)) currentFiles.Add(GetAssetOutputPath(assetPath));
@@ -608,6 +673,11 @@ public sealed class ServeCommand
         }
     }
 
+    private static string RemoveFrontMatter(string markdown, string frontMatter) =>
+        !string.IsNullOrEmpty(frontMatter) && markdown.StartsWith(frontMatter, StringComparison.Ordinal)
+            ? markdown[frontMatter.Length..].TrimStart('\r', '\n')
+            : markdown;
+
     private sealed record FileChange(string Path, string? OldPath, FileChangeKind Kind);
 
     private enum FileChangeKind
@@ -633,14 +703,9 @@ public sealed class ServeCommand
             _rootWatcher = Create(_rootPath, includeSubdirectories: true);
         }
 
-        public void UpdateOpenApiSpecs(IEnumerable<MarkdownFile> pages)
+        public void UpdateOpenApiSpecs(IEnumerable<string> specPaths)
         {
-            var directories = pages
-                .Where(page => !string.IsNullOrWhiteSpace(page.OpenApiSpec))
-                .Select(page => OpenApiMarkdownRenderer.ResolveSpecPath(
-                    page.OpenApiSpecBasePath ?? page.FileInfo.FullName,
-                    page.OpenApiSpec,
-                    page.OpenApiSpecBasePath is null ? page.SourceRootPath : null))
+            var directories = specPaths
                 .Where(path => !IsInsideDirectory(_rootPath, path))
                 .Select(path => Path.GetDirectoryName(path)!)
                 .Where(Directory.Exists)

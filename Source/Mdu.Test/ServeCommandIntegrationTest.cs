@@ -159,7 +159,7 @@ public class ServeCommandIntegrationTest
         var site = Path.Combine(root, "site");
         Directory.CreateDirectory(docs);
         Directory.CreateDirectory(api);
-        File.WriteAllText(Path.Combine(docs, "README.md"), "---\nopenapi: ../api/orders.json\n---\n# Orders\n");
+        File.WriteAllText(Path.Combine(docs, "README.md"), "# Orders\n\n```openapi\n../api/orders.json\n```\n");
         var specificationPath = Path.Combine(api, "orders.json");
         File.WriteAllText(specificationPath, OpenApiSpecification("API Before"));
 
@@ -167,24 +167,49 @@ public class ServeCommandIntegrationTest
         using var process = StartServer(docs, site, port);
         using var client = new HttpClient { Timeout = TimeSpan.FromSeconds(2) };
         var pageUrl = $"http://127.0.0.1:{port}/index.html";
+        var specPageUrl = $"http://127.0.0.1:{port}/index-orders-spec.html";
 
         try
         {
             await WaitUntilAsync(async () => await PageContainsAsync(client, pageUrl, "API Before"), process);
+            await WaitUntilAsync(async () => await PageContainsAsync(client, specPageUrl, "API Before"), process);
 
             File.WriteAllText(specificationPath, OpenApiSpecification("API After"));
 
             await WaitUntilAsync(async () => await PageContainsAsync(client, pageUrl, "API After"), process);
+            await WaitUntilAsync(async () => await PageContainsAsync(client, specPageUrl, "API After"), process);
 
             var secondApi = Path.Combine(root, "second-api");
             Directory.CreateDirectory(secondApi);
             var secondSpecificationPath = Path.Combine(secondApi, "orders.json");
             File.WriteAllText(secondSpecificationPath, OpenApiSpecification("API Switched"));
-            File.WriteAllText(Path.Combine(docs, "README.md"), "---\nopenapi: ../second-api/orders.json\n---\n# Orders\n");
+            File.WriteAllText(Path.Combine(docs, "README.md"), "# Orders\n\n```openapi\n../second-api/orders.json\n```\n");
             await WaitUntilAsync(async () => await PageContainsAsync(client, pageUrl, "API Switched"), process);
 
             File.WriteAllText(secondSpecificationPath, OpenApiSpecification("API Latest"));
             await WaitUntilAsync(async () => await PageContainsAsync(client, pageUrl, "API Latest"), process);
+
+            // Removing the openapi block in a single-page edit reconciles and deletes the generated spec page.
+            File.WriteAllText(Path.Combine(docs, "README.md"), "# Orders\n\nPlain page without OpenAPI.\n");
+            await WaitUntilAsync(async () => await PageContainsAsync(client, pageUrl, "Plain page without OpenAPI."), process);
+            await WaitUntilAsync(async () =>
+            {
+                using var response = await client.GetAsync(specPageUrl);
+                return response.StatusCode == HttpStatusCode.NotFound;
+            }, process);
+
+            // Creating a sibling page that claims index-orders-spec.html, then editing README.md to claim
+            // index-orders-spec.html, re-renders the sibling page so its link shifts to index-orders-spec-2.html.
+            File.WriteAllText(Path.Combine(docs, "index-orders.md"), $"# Sibling\n\n```openapi\n{OpenApiSpecification("index-orders")}\n```\n");
+            var siblingPageUrl = $"http://127.0.0.1:{port}/index-orders.html";
+            var siblingShiftedSpecUrl = $"http://127.0.0.1:{port}/index-orders-spec-2.html";
+            await WaitUntilAsync(async () => await PageContainsAsync(client, siblingPageUrl, "href=\"index-orders-spec.html\""), process);
+
+            File.WriteAllText(Path.Combine(docs, "README.md"), "# Orders\n\n```openapi\n../second-api/orders.json\n```\n");
+            await WaitUntilAsync(async () => await PageContainsAsync(client, pageUrl, "href=\"index-orders-spec.html\""), process);
+            await WaitUntilAsync(async () => await PageContainsAsync(client, siblingPageUrl, "href=\"index-orders-spec-2.html\""), process);
+            await WaitUntilAsync(async () => await PageContainsAsync(client, specPageUrl, "API Latest"), process);
+            await WaitUntilAsync(async () => await PageContainsAsync(client, siblingShiftedSpecUrl, "index-orders"), process);
         }
         finally
         {

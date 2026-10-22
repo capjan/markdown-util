@@ -108,7 +108,9 @@ public class HtmlRenderer
     public string RenderMarkdownFragment(string markdown)
     {
         var document = ParseMarkdown(markdown);
-        var html = document.ToHtml(_pipeline);
+        var html = document.ToHtml(_pipeline)
+            .Replace(OpenApiMarkdownRenderer.BlockStartMarker, string.Empty, StringComparison.Ordinal)
+            .Replace(OpenApiMarkdownRenderer.BlockEndMarker, string.Empty, StringComparison.Ordinal);
         return MediaLinkEmbedder.ReplaceStandaloneLinks(html, out _);
     }
 
@@ -160,8 +162,7 @@ public class HtmlRenderer
         var tocHeadings = GetTableOfContentsHeadings(renderedMarkdown);
         var pageHeading = GetPageHeadingTitle(renderedMarkdown);
         renderedMarkdown = InsertHeadingPermalinks(renderedMarkdown);
-        renderedMarkdown = CollapseOpenApiOperations(renderedMarkdown);
-        renderedMarkdown = CollapseOpenApiTagGroups(renderedMarkdown);
+        renderedMarkdown = CollapseOpenApiBlocks(renderedMarkdown);
         renderedMarkdown = ShareOpenApiTabPanels(renderedMarkdown);
         var hasOpenApiInteractiveContent = renderedMarkdown.Contains("class=\"openapi-responses\"", StringComparison.Ordinal) ||
                                            renderedMarkdown.Contains("class=\"openapi-tag-list\"", StringComparison.Ordinal) ||
@@ -408,15 +409,18 @@ public class HtmlRenderer
 
     private static IReadOnlyList<TocHeading> GetTableOfContentsHeadings(string renderedMarkdown)
     {
+        var openApiRanges = GetOpenApiBlockRanges(renderedMarkdown);
         var matches = HeadingRegex.Matches(renderedMarkdown).Cast<Match>().ToArray();
-        var isOpenApiPage = matches.Any(match =>
+        var isUnmarkedOpenApiPage = openApiRanges.Count == 0 && matches.Any(match =>
             HasClass(match, "openapi-overview") ||
             HasClass(match, "openapi-tag") ||
             HasClass(match, "openapi-operation"));
         var headings = new List<TocHeading>();
         foreach (var match in matches)
         {
-            if (isOpenApiPage && !HasClass(match, "openapi-tag")) continue;
+            var inOpenApiBlock = isUnmarkedOpenApiPage ||
+                                 openApiRanges.Any(range => match.Index >= range.Start && match.Index < range.End);
+            if (inOpenApiBlock && !HasClass(match, "openapi-tag")) continue;
             if (HasClass(match, "openapi-response") ||
                 HasClass(match, "openapi-media-type") ||
                 HasClass(match, "openapi-response-example") ||
@@ -436,6 +440,45 @@ public class HtmlRenderer
         }
 
         return headings;
+    }
+
+    private static IReadOnlyList<(int Start, int End)> GetOpenApiBlockRanges(string renderedMarkdown)
+    {
+        var ranges = new List<(int Start, int End)>();
+        var position = 0;
+        while (position < renderedMarkdown.Length)
+        {
+            var start = renderedMarkdown.IndexOf(OpenApiMarkdownRenderer.BlockStartMarker, position, StringComparison.Ordinal);
+            if (start < 0) break;
+            var end = renderedMarkdown.IndexOf(OpenApiMarkdownRenderer.BlockEndMarker, start + OpenApiMarkdownRenderer.BlockStartMarker.Length, StringComparison.Ordinal);
+            if (end < 0) break;
+            ranges.Add((start, end + OpenApiMarkdownRenderer.BlockEndMarker.Length));
+            position = end + OpenApiMarkdownRenderer.BlockEndMarker.Length;
+        }
+
+        return ranges;
+    }
+
+    private static string CollapseOpenApiBlocks(string renderedMarkdown)
+    {
+        var ranges = GetOpenApiBlockRanges(renderedMarkdown);
+        if (ranges.Count == 0)
+            return CollapseOpenApiTagGroups(CollapseOpenApiOperations(renderedMarkdown));
+
+        var output = new StringBuilder(renderedMarkdown.Length);
+        var copiedUntil = 0;
+        foreach (var (start, end) in ranges)
+        {
+            output.Append(renderedMarkdown, copiedUntil, start - copiedUntil);
+            var innerStart = start + OpenApiMarkdownRenderer.BlockStartMarker.Length;
+            var innerEnd = end - OpenApiMarkdownRenderer.BlockEndMarker.Length;
+            var block = renderedMarkdown[innerStart..innerEnd];
+            output.Append(CollapseOpenApiTagGroups(CollapseOpenApiOperations(block)));
+            copiedUntil = end;
+        }
+
+        output.Append(renderedMarkdown, copiedUntil, renderedMarkdown.Length - copiedUntil);
+        return output.ToString();
     }
 
     private static string RenderOnThisPage(IReadOnlyList<TocHeading> headings)

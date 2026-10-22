@@ -23,8 +23,16 @@ public class MarkdigVisitor : BaseVisitor
         _searchIndexBuilder = searchIndexBuilder;
         _navigationRoots = navigationRoots ?? Array.Empty<MarkdownFile>();
         _topNavigationItems = new Dictionary<MarkdownFile, MarkdownFile?>();
-        foreach (var page in Flatten(_navigationRoots))
+        _pageOutputs = Flatten(_navigationRoots)
+            .Select(page => (Page: page, OutputPath: GetOutputPagePath(GetRenderPath(page))))
+            .ToArray();
+        _pageOutputPaths = _pageOutputs
+            .Select(item => item.OutputPath)
+            .ToHashSet(PathComparer);
+        foreach (var (page, _) in _pageOutputs)
+        {
             _topNavigationItems.Add(page, FindTopNavigationItem(page));
+        }
         _siteMediaProviders = FindSiteMediaProviders();
         _lastModifiedDates = GitLastModified.Read(rootPath);
     }
@@ -36,6 +44,8 @@ public class MarkdigVisitor : BaseVisitor
     private readonly string _outPath;
     private readonly MarkdownFile[] _navigationRoots;
     private readonly Dictionary<MarkdownFile, MarkdownFile?> _topNavigationItems;
+    private readonly (MarkdownFile Page, string OutputPath)[] _pageOutputs;
+    private readonly HashSet<string> _pageOutputPaths;
     private readonly IReadOnlyCollection<string> _siteMediaProviders;
     private readonly IReadOnlyDictionary<string, DateTimeOffset> _lastModifiedDates;
 
@@ -45,17 +55,24 @@ public class MarkdigVisitor : BaseVisitor
         ? StringComparison.OrdinalIgnoreCase
         : StringComparison.Ordinal;
 
+    private static readonly StringComparer PathComparer = OperatingSystem.IsWindows() || OperatingSystem.IsMacOS()
+        ? StringComparer.OrdinalIgnoreCase
+        : StringComparer.Ordinal;
+
+    public static IEnumerable<OpenApiSiblingPage> GetOutputSiblings(
+        IEnumerable<(MarkdownFile Page, string OutputPath)> pageOutputs,
+        string outputDirectory) =>
+        pageOutputs
+            .Where(item => string.Equals(Path.GetDirectoryName(item.OutputPath), outputDirectory, PathComparison))
+            .Select(item => new OpenApiSiblingPage(
+                item.Page.FileInfo.FullName,
+                Path.GetFileName(item.OutputPath),
+                item.Page.SourceRootPath));
+
     protected override bool ProcessFile(MarkdownFile entity, int _, FilePathInfo io)
     {
         Console.WriteLine($"{io.InputRelativeFilePathToRootDirectory} => {io.OutputRelativeFilePathToRootDirectory}");
 
-        var markdown = RemoveFrontMatter(entity.ReadMarkdown(), entity.FrontMatter);
-        if (!string.IsNullOrWhiteSpace(entity.OpenApiSpec))
-            markdown = OpenApiMarkdownRenderer.AppendFromFile(
-                markdown,
-                entity.OpenApiSpecBasePath ?? entity.FileInfo.FullName,
-                entity.OpenApiSpec,
-                entity.OpenApiSpecBasePath is null ? entity.SourceRootPath : null);
         io.CreateOutputDirectory();    // ensures that the output directory exits
 
         var editPageLink = entity.EditPageLink ?? (string.IsNullOrEmpty(_editPageRoot)
@@ -72,10 +89,27 @@ public class MarkdigVisitor : BaseVisitor
             outputFileName = outputFileName.Substring(0, outputFileName.Length - 11) + "index.html";
         }
 
+        var outputDirectory = Path.GetDirectoryName(Path.GetFullPath(outputFileName))!;
+        var outputSiblings = GetOutputSiblings(_pageOutputs, outputDirectory);
+        var markdown = OpenApiMarkdownRenderer.ExpandCodeBlocks(
+            RemoveFrontMatter(entity.ReadMarkdown(), entity.FrontMatter),
+            entity.FileInfo.FullName,
+            out var specificationPages,
+            entity.SourceRootPath,
+            Path.GetFileName(outputFileName),
+            outputSiblings);
+
         _searchIndexBuilder.AddPage(
             GetNavigationTitle(entity),
             GetSiteRelativeUrl(outputFileName),
             markdown);
+
+        var navigation = BuildNavigation(entity, outputFileName);
+        var breadcrumbs = BuildBreadcrumbs(entity, outputFileName);
+        var topNavigation = BuildTopNavigation(entity, outputFileName);
+        var pdfUrl = GetRelativeUrl(
+            GetSiteRelativeSegments(Path.GetDirectoryName(Path.GetFullPath(outputFileName))!),
+            ["documentation.pdf"]);
 
         var temporaryPath = outputFileName + "." + Guid.NewGuid().ToString("N") + ".tmp";
         try
@@ -89,18 +123,17 @@ public class MarkdigVisitor : BaseVisitor
                     nestingDeep,
                     markdown,
                     editPageLink,
-                    BuildNavigation(entity, outputFileName),
-                    BuildBreadcrumbs(entity, outputFileName),
+                    navigation,
+                    breadcrumbs,
                     _siteMediaProviders,
                     entity.Icon,
-                    BuildTopNavigation(entity, outputFileName),
+                    topNavigation,
                     GetLastModified(entity),
-                    GetRelativeUrl(
-                        GetSiteRelativeSegments(Path.GetDirectoryName(Path.GetFullPath(outputFileName))!),
-                        ["documentation.pdf"])).GetAwaiter().GetResult();
+                    pdfUrl).GetAwaiter().GetResult();
 
             File.Move(temporaryPath, outputFileName, true);
             WriteAliasPage(entity, outputFileName);
+            WriteSpecificationPages(entity, outputFileName, nestingDeep, navigation, breadcrumbs, topNavigation, pdfUrl, specificationPages);
         }
         finally
         {
@@ -108,6 +141,59 @@ public class MarkdigVisitor : BaseVisitor
         }
 
         return true;
+    }
+
+    private void WriteSpecificationPages(
+        MarkdownFile entity,
+        string outputFileName,
+        int nestingDeep,
+        IReadOnlyList<NavigationItem> navigation,
+        IReadOnlyList<BreadcrumbItem> pageBreadcrumbs,
+        IReadOnlyList<NavigationItem> topNavigation,
+        string pdfUrl,
+        IReadOnlyList<OpenApiSpecificationPage> specificationPages)
+    {
+        if (specificationPages.Count == 0) return;
+
+        var parentDirectory = Path.GetDirectoryName(outputFileName)!;
+        var parentFile = Path.GetFileName(outputFileName);
+        var specBreadcrumbs = pageBreadcrumbs
+            .Where(item => item.Url is not null)
+            .Append(new BreadcrumbItem(GetNavigationTitle(entity), parentFile))
+            .Append(new BreadcrumbItem("OpenAPI Specification", null))
+            .ToArray();
+
+        foreach (var specPage in specificationPages)
+        {
+            var specOutputPath = Path.GetFullPath(Path.Combine(parentDirectory, specPage.FileName));
+            if (_pageOutputPaths.Contains(specOutputPath)) continue;
+            var temporaryPath = specOutputPath + "." + Guid.NewGuid().ToString("N") + ".tmp";
+            try
+            {
+                using (var fs = new FileStream(temporaryPath, FileMode.CreateNew, FileAccess.Write))
+                using (var sw = new StreamWriter(fs))
+                    _htmlFoundation.WriteHtml(
+                        sw,
+                        specPage.Title,
+                        string.Empty,
+                        nestingDeep,
+                        specPage.Markdown,
+                        string.Empty,
+                        navigation,
+                        specBreadcrumbs,
+                        _siteMediaProviders,
+                        string.Empty,
+                        topNavigation,
+                        GetLastModified(entity),
+                        pdfUrl).GetAwaiter().GetResult();
+
+                File.Move(temporaryPath, specOutputPath, true);
+            }
+            finally
+            {
+                if (File.Exists(temporaryPath)) File.Delete(temporaryPath);
+            }
+        }
     }
 
     private void WriteAliasPage(MarkdownFile page, string outputFileName)
