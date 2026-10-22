@@ -8,6 +8,10 @@
     </PropertyGroup>
 
     <ItemGroup>
+        <InternalsVisibleTo Include="Markdown.Renderer.Test" />
+    </ItemGroup>
+
+    <ItemGroup>
       <None Remove="Res\Css\main.css" />
       <EmbeddedResource Include="Res\Css\main.css" />
       <None Remove="Res\Css\hero.css" />

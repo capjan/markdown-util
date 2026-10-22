@@ -32,7 +32,9 @@ mdu pdf ./ProjectDocs/Features/Math.md ./build/math.pdf
 - Pages are A4 and follow the order of the documentation navigation.
 - A folder export starts with a title page and a linked table of contents; a single file has neither.
 - Headings stay with the start of the following block when a page break is needed.
-- Links between included pages, links on diagram nodes, and external links stay clickable.
+- Content pages repeat the document title in a small header. The footer shows the current page and the total page count.
+- Links between included pages, links on diagram nodes, links in tables, and external links stay clickable.
+- Tables retain inline emphasis, code, icons, and keyboard shortcuts. Light fills distinguish code and table headers while keeping pages readable on a monochrome printer.
 
 ## Exclude pages
 
@@ -52,5 +54,5 @@ The PDF contains only what MDU can draw without downloading anything:
 
 - Images appear as their alt text; remote image URLs stay clickable.
 - Embedded videos appear as their link.
-- Emoji shortcodes stay text, because the built-in PDF fonts have no emoji glyphs.
+- Emoji appear as their shortcodes, because the built-in PDF fonts have no emoji glyphs.
 - The interactive icon search and the animated hero exist only in HTML; the hero's title, text, and button labels appear as plain text.
