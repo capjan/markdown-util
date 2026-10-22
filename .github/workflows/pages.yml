@@ -40,7 +40,7 @@ jobs:
         uses: actions/configure-pages@v6
 
       - name: Render documentation
-        run: dotnet run --project Source/MarkdownUtil/MarkdownUtil.csproj --configuration Release -- render Docs site --editPageRoot https://github.com/capjan/mdu/edit/main/Docs
+        run: dotnet run --project Source/Mdu/Mdu.csproj --configuration Release -- render Docs site --editPageRoot https://github.com/capjan/mdu/edit/main/Docs
 
       - name: Add demo video assets
         run: |

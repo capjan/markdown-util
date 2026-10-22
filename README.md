@@ -3,7 +3,7 @@
 ### Markdown Documentation Utility
 
 [![.NET 10](https://github.com/capjan/mdu/actions/workflows/dotnet.yml/badge.svg)](https://github.com/capjan/mdu/actions/workflows/dotnet.yml)
-[![NuGet](https://img.shields.io/nuget/v/MarkdownUtil)](https://www.nuget.org/packages/MarkdownUtil)
+[![NuGet](https://img.shields.io/nuget/v/mdu)](https://www.nuget.org/packages/mdu)
 [![License: MIT](https://img.shields.io/badge/license-MIT-blue)](https://opensource.org/licenses/MIT)
 
 **Turn a folder of Markdown files into a documentation website. One command, zero configuration.**
@@ -16,10 +16,10 @@ MDU (`mdu`) turns a `docs` folder into a static HTML site with top navigation, a
 
 ## From Markdown to website in a minute
 
-**1. Install the `MarkdownUtil` .NET tool package** (requires the [.NET 10 SDK](https://dotnet.microsoft.com/download)):
+**1. Install the `mdu` .NET tool package** (requires the [.NET 10 SDK](https://dotnet.microsoft.com/download)):
 
 ```bash
-dotnet tool install --global MarkdownUtil
+dotnet tool install --global mdu
 ```
 
 Prefer a standalone executable? Download one for Windows x64, Linux x64, macOS Intel, or Apple silicon from the [GitHub Releases](https://github.com/capjan/mdu/releases/latest). These downloads do not require the .NET SDK or runtime. Linux x64 requires glibc 2.35 or newer; Alpine Linux and other musl-based distributions are not supported.
@@ -100,7 +100,7 @@ To pin the tool to a repository instead of installing it globally:
 
 ```bash
 dotnet new tool-manifest
-dotnet tool install --local MarkdownUtil
+dotnet tool install --local mdu
 ```
 
 Skip the first command if `.config/dotnet-tools.json` already exists. Run the local tool with `dotnet mdu`, for example `dotnet mdu serve`.

@@ -1,7 +1,7 @@
 using Markdown.Linter.Rules.Rule2;
 using Markdown.Linter;
 
-namespace MarkdownUtilTest;
+namespace Mdu.Test;
 
 public class Rule2Test
 {
