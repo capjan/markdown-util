@@ -22,6 +22,11 @@ public sealed record OpenApiSpecificationPage(
     string Language,
     string Markdown);
 
+public sealed record OpenApiSiblingPage(
+    string MarkdownPath,
+    string HtmlFileName,
+    string? AllowedRootPath = null);
+
 public static class OpenApiMarkdownRenderer
 {
     public const string CodeBlockLanguage = "openapi";
@@ -87,12 +92,12 @@ public static class OpenApiMarkdownRenderer
         string markdownPath,
         string? allowedRootPath = null,
         string? pageOutputFileName = null,
-        IEnumerable<string>? reservedFileNames = null)
+        IEnumerable<OpenApiSiblingPage>? siblingPages = null)
     {
         if (!markdown.Contains(CodeBlockLanguage, StringComparison.OrdinalIgnoreCase))
             return Array.Empty<string>();
 
-        ExpandCodeBlocks(markdown, markdownPath, out var pages, allowedRootPath, pageOutputFileName, reservedFileNames);
+        ExpandCodeBlocks(markdown, markdownPath, out var pages, allowedRootPath, pageOutputFileName, siblingPages);
         return pages.Select(page => page.FileName).ToArray();
     }
 
@@ -101,8 +106,8 @@ public static class OpenApiMarkdownRenderer
         string markdownPath,
         string? allowedRootPath = null,
         string? pageOutputFileName = null,
-        IEnumerable<string>? reservedFileNames = null) =>
-        ExpandCodeBlocks(markdown, markdownPath, out _, allowedRootPath, pageOutputFileName, reservedFileNames);
+        IEnumerable<OpenApiSiblingPage>? siblingPages = null) =>
+        ExpandCodeBlocks(markdown, markdownPath, out _, allowedRootPath, pageOutputFileName, siblingPages);
 
     public static string ExpandCodeBlocks(
         string markdown,
@@ -110,7 +115,7 @@ public static class OpenApiMarkdownRenderer
         out IReadOnlyList<OpenApiSpecificationPage> specificationPages,
         string? allowedRootPath = null,
         string? pageOutputFileName = null,
-        IEnumerable<string>? reservedFileNames = null)
+        IEnumerable<OpenApiSiblingPage>? siblingPages = null)
     {
         if (!markdown.Contains(CodeBlockLanguage, StringComparison.OrdinalIgnoreCase))
         {
@@ -134,7 +139,7 @@ public static class OpenApiMarkdownRenderer
 
         var parentHtmlFileName = GetParentHtmlFileName(markdownPath, pageOutputFileName);
         var pageStem = Path.GetFileNameWithoutExtension(parentHtmlFileName);
-        var usedFileNames = CollectReservedHtmlFileNames(markdownPath, parentHtmlFileName, allowedRootPath, reservedFileNames);
+        var usedFileNames = CollectReservedHtmlFileNames(markdownPath, parentHtmlFileName, allowedRootPath, siblingPages);
         var generatedPages = new List<OpenApiSpecificationPage>(blocks.Length);
         var replacements = new (int Start, int Length, string Content)[blocks.Length];
 
@@ -315,21 +320,25 @@ public static class OpenApiMarkdownRenderer
         string markdownPath,
         string parentHtmlFileName,
         string? allowedRootPath,
-        IEnumerable<string>? reservedFileNames)
+        IEnumerable<OpenApiSiblingPage>? siblingPages)
     {
         var usedFileNames = new HashSet<string>(StringComparer.OrdinalIgnoreCase)
         {
             parentHtmlFileName
         };
 
-        void ReservePageHtmlFileName(string htmlFileName)
+        var siblingMarkdownFiles = new Dictionary<string, OpenApiSiblingPage>(StringComparer.OrdinalIgnoreCase);
+        void AddSiblingPage(string filePath, string htmlFileName, string? siblingAllowedRootPath)
         {
-            var fileName = Path.GetFileName(htmlFileName);
-            if (!string.IsNullOrWhiteSpace(fileName))
-                usedFileNames.Add(fileName);
+            var normalizedHtmlFileName = Path.GetFileName(htmlFileName);
+            if (string.IsNullOrWhiteSpace(normalizedHtmlFileName)) return;
+            usedFileNames.Add(normalizedHtmlFileName);
+            if (string.IsNullOrWhiteSpace(filePath)) return;
+            var fullFilePath = Path.GetFullPath(filePath);
+            var key = $"{fullFilePath}|{normalizedHtmlFileName}";
+            siblingMarkdownFiles.TryAdd(key, new OpenApiSiblingPage(fullFilePath, normalizedHtmlFileName, siblingAllowedRootPath));
         }
 
-        var siblingMarkdownFiles = new List<(string FilePath, string HtmlFileName)>();
         var markdownDirectory = Path.GetDirectoryName(markdownPath);
         if (!string.IsNullOrEmpty(markdownDirectory) && Directory.Exists(markdownDirectory))
         {
@@ -344,33 +353,42 @@ public static class OpenApiMarkdownRenderer
                 var htmlFileName = fileName.Equals("README.md", StringComparison.OrdinalIgnoreCase)
                     ? "index.html"
                     : Path.ChangeExtension(fileName, ".html");
-                ReservePageHtmlFileName(htmlFileName);
-                siblingMarkdownFiles.Add((Path.GetFullPath(file), htmlFileName));
+                AddSiblingPage(file, htmlFileName, allowedRootPath);
             }
         }
 
-        if (reservedFileNames is not null)
+        if (siblingPages is not null)
         {
-            foreach (var reserved in reservedFileNames)
-                ReservePageHtmlFileName(reserved);
+            foreach (var sibling in siblingPages)
+                AddSiblingPage(sibling.MarkdownPath, sibling.HtmlFileName, sibling.AllowedRootPath);
         }
 
-        var fullMarkdownPath = Path.GetFullPath(markdownPath);
-        var currentStem = Path.GetFileNameWithoutExtension(parentHtmlFileName);
-        foreach (var sibling in siblingMarkdownFiles
-                     .OrderBy(item => Path.GetFileNameWithoutExtension(item.HtmlFileName), StringComparer.OrdinalIgnoreCase)
-                     .ThenBy(item => item.FilePath, StringComparer.OrdinalIgnoreCase))
-        {
-            if (string.Equals(sibling.FilePath, fullMarkdownPath, StringComparison.OrdinalIgnoreCase))
-                break;
-            var siblingStem = Path.GetFileNameWithoutExtension(sibling.HtmlFileName);
-            if (StringComparer.OrdinalIgnoreCase.Compare(siblingStem, currentStem) >= 0)
-                continue;
+        var current = (FilePath: Path.GetFullPath(markdownPath), HtmlFileName: parentHtmlFileName);
+        var precedingSiblings = siblingMarkdownFiles.Values
+            .Where(sibling => CompareSiblingOrder((sibling.MarkdownPath, sibling.HtmlFileName), current) < 0)
+            .ToList();
+        precedingSiblings.Sort((left, right) =>
+            CompareSiblingOrder((left.MarkdownPath, left.HtmlFileName), (right.MarkdownPath, right.HtmlFileName)));
 
-            ReserveSiblingSpecFileNames(sibling.FilePath, sibling.HtmlFileName, allowedRootPath, usedFileNames);
-        }
+        foreach (var sibling in precedingSiblings)
+            ReserveSiblingSpecFileNames(sibling.MarkdownPath, sibling.HtmlFileName, sibling.AllowedRootPath, usedFileNames);
 
         return usedFileNames;
+
+        static int CompareSiblingOrder(
+            (string FilePath, string HtmlFileName) left,
+            (string FilePath, string HtmlFileName) right)
+        {
+            var stemComparison = StringComparer.OrdinalIgnoreCase.Compare(
+                Path.GetFileNameWithoutExtension(left.HtmlFileName),
+                Path.GetFileNameWithoutExtension(right.HtmlFileName));
+            if (stemComparison != 0) return stemComparison;
+
+            var htmlComparison = StringComparer.OrdinalIgnoreCase.Compare(left.HtmlFileName, right.HtmlFileName);
+            if (htmlComparison != 0) return htmlComparison;
+
+            return StringComparer.OrdinalIgnoreCase.Compare(left.FilePath, right.FilePath);
+        }
     }
 
     private static void ReserveSiblingSpecFileNames(

@@ -510,29 +510,31 @@ public sealed class ServeCommand
         if (_hasPdfLink) currentFiles.Add(Path.Combine(_outputPath, "documentation.pdf"));
         currentFiles.UnionWith(_renderer.IconSearchAssets);
 
-        var pageOutputPaths = _pages.Values
-            .Select(GetPageOutputPath)
+        var pageOutputs = _pages.Values
+            .Select(page => (Page: page, OutputPath: GetPageOutputPath(page)))
             .ToArray();
-        foreach (var pageOutputPath in pageOutputPaths)
+        foreach (var (_, pageOutputPath) in pageOutputs)
             currentFiles.Add(pageOutputPath);
 
-        foreach (var page in _pages.Values)
+        foreach (var (page, pageOutputPath) in pageOutputs)
         {
-            var pageOutputPath = GetPageOutputPath(page);
             var aliasPath = GetAliasOutputPath(page);
             if (aliasPath is not null) currentFiles.Add(aliasPath);
             if (!File.Exists(page.FileInfo.FullName)) continue;
             var outputDirectory = Path.GetDirectoryName(pageOutputPath)!;
-            var reservedSiblingFileNames = pageOutputPaths
-                .Where(candidate => PathComparer.Equals(Path.GetDirectoryName(candidate), outputDirectory))
-                .Select(candidate => Path.GetFileName(candidate));
+            var outputSiblings = pageOutputs
+                .Where(candidate => PathComparer.Equals(Path.GetDirectoryName(candidate.OutputPath), outputDirectory))
+                .Select(candidate => new OpenApiSiblingPage(
+                    candidate.Page.FileInfo.FullName,
+                    Path.GetFileName(candidate.OutputPath),
+                    candidate.Page.SourceRootPath));
             var body = RemoveFrontMatter(page.ReadMarkdown(), page.FrontMatter);
             foreach (var specFileName in OpenApiMarkdownRenderer.GetSpecificationPageFileNames(
                          body,
                          page.FileInfo.FullName,
                          page.SourceRootPath,
                          Path.GetFileName(pageOutputPath),
-                         reservedSiblingFileNames))
+                         outputSiblings))
             {
                 currentFiles.Add(Path.Combine(outputDirectory, specFileName));
             }

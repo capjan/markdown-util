@@ -23,11 +23,15 @@ public class MarkdigVisitor : BaseVisitor
         _searchIndexBuilder = searchIndexBuilder;
         _navigationRoots = navigationRoots ?? Array.Empty<MarkdownFile>();
         _topNavigationItems = new Dictionary<MarkdownFile, MarkdownFile?>();
-        _pageOutputPaths = new HashSet<string>(PathComparer);
-        foreach (var page in Flatten(_navigationRoots))
+        _pageOutputs = Flatten(_navigationRoots)
+            .Select(page => (Page: page, OutputPath: GetOutputPagePath(GetRenderPath(page))))
+            .ToArray();
+        _pageOutputPaths = _pageOutputs
+            .Select(item => item.OutputPath)
+            .ToHashSet(PathComparer);
+        foreach (var (page, _) in _pageOutputs)
         {
             _topNavigationItems.Add(page, FindTopNavigationItem(page));
-            _pageOutputPaths.Add(GetOutputPagePath(GetRenderPath(page)));
         }
         _siteMediaProviders = FindSiteMediaProviders();
         _lastModifiedDates = GitLastModified.Read(rootPath);
@@ -40,6 +44,7 @@ public class MarkdigVisitor : BaseVisitor
     private readonly string _outPath;
     private readonly MarkdownFile[] _navigationRoots;
     private readonly Dictionary<MarkdownFile, MarkdownFile?> _topNavigationItems;
+    private readonly (MarkdownFile Page, string OutputPath)[] _pageOutputs;
     private readonly HashSet<string> _pageOutputPaths;
     private readonly IReadOnlyCollection<string> _siteMediaProviders;
     private readonly IReadOnlyDictionary<string, DateTimeOffset> _lastModifiedDates;
@@ -75,16 +80,19 @@ public class MarkdigVisitor : BaseVisitor
         }
 
         var outputDirectory = Path.GetDirectoryName(Path.GetFullPath(outputFileName))!;
-        var reservedSiblingFileNames = _pageOutputPaths
-            .Where(pagePath => string.Equals(Path.GetDirectoryName(pagePath), outputDirectory, PathComparison))
-            .Select(pagePath => Path.GetFileName(pagePath));
+        var outputSiblings = _pageOutputs
+            .Where(item => string.Equals(Path.GetDirectoryName(item.OutputPath), outputDirectory, PathComparison))
+            .Select(item => new OpenApiSiblingPage(
+                item.Page.FileInfo.FullName,
+                Path.GetFileName(item.OutputPath),
+                item.Page.SourceRootPath));
         var markdown = OpenApiMarkdownRenderer.ExpandCodeBlocks(
             RemoveFrontMatter(entity.ReadMarkdown(), entity.FrontMatter),
             entity.FileInfo.FullName,
             out var specificationPages,
             entity.SourceRootPath,
             Path.GetFileName(outputFileName),
-            reservedSiblingFileNames);
+            outputSiblings);
 
         _searchIndexBuilder.AddPage(
             GetNavigationTitle(entity),

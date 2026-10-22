@@ -411,6 +411,75 @@ public class OpenApiMarkdownRendererTest
     }
 
     [Fact]
+    public void SpecificationPageFileNamesAvoidCollidingAcrossOutputSiblingsInDifferentSourceFolders()
+    {
+        var root = Path.Combine(Path.GetTempPath(), $"mdu-openapi-cross-folder-{Guid.NewGuid():N}");
+        var importedDirectory = Path.Combine(root, "imported");
+        var localDirectory = Path.Combine(root, "local");
+        Directory.CreateDirectory(importedDirectory);
+        Directory.CreateDirectory(localDirectory);
+        try
+        {
+            var importedPage = Path.Combine(importedDirectory, "a.md");
+            var localPage = Path.Combine(localDirectory, "a-b.md");
+            File.WriteAllText(importedPage, """
+                # Imported Page A
+
+                ```openapi
+                openapi: 3.1.0
+                info:
+                  title: B C
+                  version: 1.0.0
+                paths: {}
+                ```
+                """);
+            File.WriteAllText(localPage, """
+                # Local Page A-B
+
+                ```openapi
+                openapi: 3.1.0
+                info:
+                  title: C
+                  version: 1.0.0
+                paths: {}
+                ```
+                """);
+
+            var outputSiblings = new[]
+            {
+                new OpenApiSiblingPage(importedPage, "a.html", importedDirectory),
+                new OpenApiSiblingPage(localPage, "a-b.html", null)
+            };
+
+            var expandedLocal = OpenApiMarkdownRenderer.ExpandCodeBlocks(
+                File.ReadAllText(localPage),
+                localPage,
+                out var localSpecPages,
+                allowedRootPath: null,
+                pageOutputFileName: "a-b.html",
+                siblingPages: outputSiblings);
+            var expandedImported = OpenApiMarkdownRenderer.ExpandCodeBlocks(
+                File.ReadAllText(importedPage),
+                importedPage,
+                out var importedSpecPages,
+                allowedRootPath: importedDirectory,
+                pageOutputFileName: "a.html",
+                siblingPages: outputSiblings);
+
+            Assert.Single(importedSpecPages);
+            Assert.Single(localSpecPages);
+            Assert.Equal("a-b-c-spec.html", importedSpecPages[0].FileName);
+            Assert.Equal("a-b-c-spec-2.html", localSpecPages[0].FileName);
+            Assert.Contains("href=\"a-b-c-spec.html\">OpenAPI specification</a>", expandedImported);
+            Assert.Contains("href=\"a-b-c-spec-2.html\">OpenAPI specification</a>", expandedLocal);
+        }
+        finally
+        {
+            Directory.Delete(root, recursive: true);
+        }
+    }
+
+    [Fact]
     public async Task ListsEnumValuesAndDefaultsOnTheRowsThatUseThem()
     {
         var html = await RenderHtml("""
