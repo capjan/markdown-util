@@ -4,7 +4,7 @@ navigation.order: 1
 
 # GitHub
 
-The [mdu GitHub Pages Action](https://github.com/capjan/markdown-util-action) renders your documentation and publishes it to GitHub Pages.
+The [mdu GitHub Pages Action](https://github.com/capjan/mdu-action) renders your documentation and publishes it to GitHub Pages using the Docker image.
 
 1. In your repository, open **Settings → Pages** and set **Build and deployment → Source** to **GitHub Actions**.
 2. Add this workflow. It runs whenever files under `docs/` change on `main`:
@@ -29,7 +29,9 @@ jobs:
     environment:
       name: github-pages
     steps:
-      - uses: capjan/markdown-util-action@v1
+      - uses: capjan/mdu-action@v1
 ```
 
-[Action inputs and details](https://github.com/capjan/markdown-util-action#readme)
+The job must run on a Linux runner with Docker installed; GitHub-hosted `ubuntu-latest` runners meet this requirement.
+
+[Action inputs and details](https://github.com/capjan/mdu-action#readme)
