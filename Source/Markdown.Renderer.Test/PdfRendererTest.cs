@@ -88,6 +88,59 @@ public class PdfRendererTest
     }
 
     [Fact]
+    public void PreservesInlineFormattingLinksAndKeysInsideTables()
+    {
+        const string markdown = """
+            | Shortcut | Details |
+            | --- | --- |
+            | ++ctrl+cmd+space++ | **Bold**, `code`, and [manual](https://example.com/manual) |
+            """;
+        using var output = new MemoryStream();
+
+        new PdfRenderer(new HtmlRenderer()).WritePdf(output, "Table",
+        [new PdfSourceSection("Table", "table/index.html", markdown)], includeFrontMatter: false);
+
+        var pdf = Encoding.Latin1.GetString(output.ToArray());
+        Assert.Contains("<4374726C> Tj", pdf);
+        Assert.Contains("<436D64> Tj", pdf);
+        Assert.Contains("<5370616365> Tj", pdf);
+        Assert.Equal(1, pdf.Split("<4374726C> Tj").Length - 1);
+        Assert.Contains("/F2 8.5 Tf", pdf);
+        Assert.Contains("/F5 8.5 Tf", pdf);
+        Assert.Contains("/URI (https://example.com/manual)", pdf);
+    }
+
+    [Fact]
+    public void AddsInternalPdfLinksForFootnotes()
+    {
+        const string markdown = """
+            A note[^source].
+
+            [^source]: The source for this note.
+            """;
+        using var output = new MemoryStream();
+
+        new PdfRenderer(new HtmlRenderer()).WritePdf(output, "Footnotes",
+        [new PdfSourceSection("Footnotes", "footnotes/index.html", markdown)], includeFrontMatter: false);
+
+        var pdf = Encoding.Latin1.GetString(output.ToArray());
+        Assert.Contains("/Dest [", pdf);
+    }
+
+    [Fact]
+    public void WritesUnsupportedEmojiAsItsShortcode()
+    {
+        using var output = new MemoryStream();
+
+        new PdfRenderer(new HtmlRenderer()).WritePdf(output, "Emoji",
+        [new PdfSourceSection("Emoji", "emoji/index.html", "Ship it 🚀.")], includeFrontMatter: false);
+
+        var pdf = Encoding.Latin1.GetString(output.ToArray());
+        Assert.Contains("<3A726F636B65743A2E> Tj", pdf);
+        Assert.DoesNotContain("3F3F", pdf);
+    }
+
+    [Fact]
     public void WritesMduContentToPdf17WithLinksAndVectors()
     {
         const string markdown = """
