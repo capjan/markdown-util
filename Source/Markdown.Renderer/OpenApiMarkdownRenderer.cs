@@ -134,7 +134,7 @@ public static class OpenApiMarkdownRenderer
 
         var parentHtmlFileName = GetParentHtmlFileName(markdownPath, pageOutputFileName);
         var pageStem = Path.GetFileNameWithoutExtension(parentHtmlFileName);
-        var usedFileNames = CollectReservedHtmlFileNames(markdownPath, parentHtmlFileName, pageStem, reservedFileNames);
+        var usedFileNames = CollectReservedHtmlFileNames(markdownPath, parentHtmlFileName, allowedRootPath, reservedFileNames);
         var generatedPages = new List<OpenApiSpecificationPage>(blocks.Length);
         var replacements = new (int Start, int Length, string Content)[blocks.Length];
 
@@ -164,17 +164,7 @@ public static class OpenApiMarkdownRenderer
                 sourceLabel = $"{(string.IsNullOrWhiteSpace(slug) ? "openapi" : slug)}.{loaded.Format}";
             }
 
-            var baseSlug = string.IsNullOrWhiteSpace(slug) ? "openapi" : slug;
-            var baseFileName = string.Equals(pageStem, baseSlug, StringComparison.OrdinalIgnoreCase)
-                ? $"{pageStem}-spec"
-                : $"{pageStem}-{baseSlug}-spec";
-            var specFileName = $"{baseFileName}.html";
-            if (!usedFileNames.Add(specFileName))
-            {
-                var suffix = 2;
-                while (!usedFileNames.Add($"{baseFileName}-{suffix}.html")) suffix++;
-                specFileName = $"{baseFileName}-{suffix}.html";
-            }
+            var specFileName = AllocateSpecFileName(pageStem, slug, usedFileNames);
 
             var omitTitle = blocks.Length == 1 &&
                             !string.IsNullOrWhiteSpace(loaded.Document.Info?.Title) &&
@@ -301,10 +291,30 @@ public static class OpenApiMarkdownRenderer
             : Path.ChangeExtension(fileName, ".html");
     }
 
+    private static string AllocateSpecFileName(
+        string pageStem,
+        string slug,
+        HashSet<string> usedFileNames)
+    {
+        var baseSlug = string.IsNullOrWhiteSpace(slug) ? "openapi" : slug;
+        var baseFileName = string.Equals(pageStem, baseSlug, StringComparison.OrdinalIgnoreCase)
+            ? $"{pageStem}-spec"
+            : $"{pageStem}-{baseSlug}-spec";
+        var specFileName = $"{baseFileName}.html";
+        if (!usedFileNames.Add(specFileName))
+        {
+            var suffix = 2;
+            while (!usedFileNames.Add($"{baseFileName}-{suffix}.html")) suffix++;
+            specFileName = $"{baseFileName}-{suffix}.html";
+        }
+
+        return specFileName;
+    }
+
     private static HashSet<string> CollectReservedHtmlFileNames(
         string markdownPath,
         string parentHtmlFileName,
-        string pageStem,
+        string? allowedRootPath,
         IEnumerable<string>? reservedFileNames)
     {
         var usedFileNames = new HashSet<string>(StringComparer.OrdinalIgnoreCase)
@@ -315,13 +325,11 @@ public static class OpenApiMarkdownRenderer
         void ReservePageHtmlFileName(string htmlFileName)
         {
             var fileName = Path.GetFileName(htmlFileName);
-            if (string.IsNullOrWhiteSpace(fileName)) return;
-            usedFileNames.Add(fileName);
-            var stem = Path.GetFileNameWithoutExtension(fileName);
-            if (!string.Equals(stem, pageStem, StringComparison.OrdinalIgnoreCase))
-                usedFileNames.Add($"{stem}-spec.html");
+            if (!string.IsNullOrWhiteSpace(fileName))
+                usedFileNames.Add(fileName);
         }
 
+        var siblingMarkdownFiles = new List<(string FilePath, string HtmlFileName)>();
         var markdownDirectory = Path.GetDirectoryName(markdownPath);
         if (!string.IsNullOrEmpty(markdownDirectory) && Directory.Exists(markdownDirectory))
         {
@@ -337,6 +345,7 @@ public static class OpenApiMarkdownRenderer
                     ? "index.html"
                     : Path.ChangeExtension(fileName, ".html");
                 ReservePageHtmlFileName(htmlFileName);
+                siblingMarkdownFiles.Add((Path.GetFullPath(file), htmlFileName));
             }
         }
 
@@ -346,7 +355,77 @@ public static class OpenApiMarkdownRenderer
                 ReservePageHtmlFileName(reserved);
         }
 
+        var fullMarkdownPath = Path.GetFullPath(markdownPath);
+        var currentStem = Path.GetFileNameWithoutExtension(parentHtmlFileName);
+        foreach (var sibling in siblingMarkdownFiles
+                     .OrderBy(item => Path.GetFileNameWithoutExtension(item.HtmlFileName), StringComparer.OrdinalIgnoreCase)
+                     .ThenBy(item => item.FilePath, StringComparer.OrdinalIgnoreCase))
+        {
+            if (string.Equals(sibling.FilePath, fullMarkdownPath, StringComparison.OrdinalIgnoreCase))
+                break;
+            var siblingStem = Path.GetFileNameWithoutExtension(sibling.HtmlFileName);
+            if (StringComparer.OrdinalIgnoreCase.Compare(siblingStem, currentStem) >= 0)
+                continue;
+
+            ReserveSiblingSpecFileNames(sibling.FilePath, sibling.HtmlFileName, allowedRootPath, usedFileNames);
+        }
+
         return usedFileNames;
+    }
+
+    private static void ReserveSiblingSpecFileNames(
+        string siblingMarkdownPath,
+        string siblingHtmlFileName,
+        string? allowedRootPath,
+        HashSet<string> usedFileNames)
+    {
+        string siblingMarkdown;
+        try
+        {
+            siblingMarkdown = File.ReadAllText(siblingMarkdownPath);
+        }
+        catch (Exception exception) when (exception is IOException or UnauthorizedAccessException)
+        {
+            return;
+        }
+
+        if (!siblingMarkdown.Contains(CodeBlockLanguage, StringComparison.OrdinalIgnoreCase))
+            return;
+
+        var parsed = Markdig.Markdown.Parse(siblingMarkdown, CodeBlockPipeline);
+        var blocks = parsed.Descendants<FencedCodeBlock>().Where(IsOpenApiCodeBlock).ToArray();
+        if (blocks.Length == 0) return;
+
+        var siblingStem = Path.GetFileNameWithoutExtension(siblingHtmlFileName);
+        foreach (var block in blocks)
+        {
+            var bodyText = TryGetBlockBodySpan(block, out var bodyStart, out var bodyLength)
+                ? siblingMarkdown.Substring(bodyStart, bodyLength)
+                : string.Empty;
+
+            string slug;
+            try
+            {
+                if (TryParseSpecReferenceSpan(bodyText, out _, out _, out var referencedSpecPath))
+                {
+                    var fullSpecPath = ResolveSpecPath(siblingMarkdownPath, referencedSpecPath, allowedRootPath);
+                    slug = SlugifySchemaName(Path.GetFileNameWithoutExtension(fullSpecPath));
+                }
+                else
+                {
+                    var loaded = LoadInline(bodyText, siblingMarkdownPath);
+                    slug = !string.IsNullOrWhiteSpace(loaded.Document.Info?.Title)
+                        ? SlugifySchemaName(loaded.Document.Info.Title)
+                        : "openapi";
+                }
+            }
+            catch (InvalidOperationException)
+            {
+                continue;
+            }
+
+            AllocateSpecFileName(siblingStem, slug, usedFileNames);
+        }
     }
 
     private static string GetOverviewAnchorId(int blockIndex) =>

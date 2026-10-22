@@ -357,6 +357,60 @@ public class OpenApiMarkdownRendererTest
     }
 
     [Fact]
+    public void SpecificationPageFileNamesAvoidCollidingAcrossSiblingOpenApiPages()
+    {
+        var directory = Path.Combine(Path.GetTempPath(), $"mdu-openapi-sibling-collision-{Guid.NewGuid():N}");
+        Directory.CreateDirectory(directory);
+        try
+        {
+            var firstPage = Path.Combine(directory, "a.md");
+            var secondPage = Path.Combine(directory, "a-b.md");
+            File.WriteAllText(firstPage, """
+                # Page A
+
+                ```openapi
+                openapi: 3.1.0
+                info:
+                  title: B C
+                  version: 1.0.0
+                paths: {}
+                ```
+                """);
+            File.WriteAllText(secondPage, """
+                # Page A-B
+
+                ```openapi
+                openapi: 3.1.0
+                info:
+                  title: C
+                  version: 1.0.0
+                paths: {}
+                ```
+                """);
+
+            var expandedSecond = OpenApiMarkdownRenderer.ExpandCodeBlocks(
+                File.ReadAllText(secondPage),
+                secondPage,
+                out var secondSpecPages);
+            var expandedFirst = OpenApiMarkdownRenderer.ExpandCodeBlocks(
+                File.ReadAllText(firstPage),
+                firstPage,
+                out var firstSpecPages);
+
+            Assert.Single(firstSpecPages);
+            Assert.Single(secondSpecPages);
+            Assert.Equal("a-b-c-spec.html", firstSpecPages[0].FileName);
+            Assert.Equal("a-b-c-spec-2.html", secondSpecPages[0].FileName);
+            Assert.Contains("href=\"a-b-c-spec.html\">OpenAPI specification</a>", expandedFirst);
+            Assert.Contains("href=\"a-b-c-spec-2.html\">OpenAPI specification</a>", expandedSecond);
+        }
+        finally
+        {
+            Directory.Delete(directory, recursive: true);
+        }
+    }
+
+    [Fact]
     public async Task ListsEnumValuesAndDefaultsOnTheRowsThatUseThem()
     {
         var html = await RenderHtml("""
