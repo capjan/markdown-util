@@ -326,20 +326,27 @@ jobs:
           RELEASE_TAG: ${{ needs.prepare-release.outputs.tag }}
         run: gh release edit "$RELEASE_TAG" --draft=false
 
-  publish-docker:
-    name: Publish Docker Hub image
+  publish-docker-image:
+    name: Build Docker Hub image (${{ matrix.platform }})
     needs: [prepare-release, test, build-native, release]
     if: needs.release.result == 'success'
-    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - platform: linux/amd64
+            runner: ubuntu-latest
+            arch: amd64
+          - platform: linux/arm64
+            runner: ubuntu-24.04-arm
+            arch: arm64
+    runs-on: ${{ matrix.runner }}
     permissions:
       contents: read
 
     steps:
       - name: Checkout
         uses: actions/checkout@v7
-
-      - name: Set up QEMU
-        uses: docker/setup-qemu-action@v3
 
       - name: Set up Docker Buildx
         uses: docker/setup-buildx-action@v3
@@ -350,17 +357,64 @@ jobs:
           username: ${{ secrets.DOCKERHUB_USERNAME }}
           password: ${{ secrets.DOCKERHUB_TOKEN }}
 
-      - name: Build and push multi-architecture image
+      - name: Build and push architecture image
+        id: build
         uses: docker/build-push-action@v6
         with:
           context: .
           file: Source/Mdu/Dockerfile
-          platforms: linux/amd64,linux/arm64
-          push: true
-          tags: |
-            capjan/mdu:${{ needs.prepare-release.outputs.package_version }}
-            capjan/mdu:latest
+          platforms: ${{ matrix.platform }}
+          outputs: type=image,name=capjan/mdu,push-by-digest=true,name-canonical=true,push=true
           labels: |
             org.opencontainers.image.source=https://github.com/capjan/mdu
             org.opencontainers.image.version=${{ needs.prepare-release.outputs.package_version }}
             org.opencontainers.image.revision=${{ github.sha }}
+
+      - name: Save image digest
+        env:
+          IMAGE_DIGEST: ${{ steps.build.outputs.digest }}
+        run: |
+          mkdir -p /tmp/digests
+          printf '%s\n' "$IMAGE_DIGEST" > "/tmp/digests/${{ matrix.arch }}"
+
+      - name: Upload image digest
+        uses: actions/upload-artifact@v4
+        with:
+          name: docker-digests-${{ matrix.arch }}
+          path: /tmp/digests/${{ matrix.arch }}
+          if-no-files-found: error
+          retention-days: 1
+
+  publish-docker:
+    name: Publish Docker Hub manifest
+    needs: [prepare-release, publish-docker-image]
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+
+    steps:
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Log in to Docker Hub
+        uses: docker/login-action@v3
+        with:
+          username: ${{ secrets.DOCKERHUB_USERNAME }}
+          password: ${{ secrets.DOCKERHUB_TOKEN }}
+
+      - name: Download image digests
+        uses: actions/download-artifact@v4
+        with:
+          pattern: docker-digests-*
+          path: /tmp/digests
+          merge-multiple: true
+
+      - name: Create and push multi-architecture tags
+        env:
+          PACKAGE_VERSION: ${{ needs.prepare-release.outputs.package_version }}
+        run: |
+          docker buildx imagetools create \
+            --tag "capjan/mdu:$PACKAGE_VERSION" \
+            --tag capjan/mdu:latest \
+            "capjan/mdu@$(cat /tmp/digests/amd64)" \
+            "capjan/mdu@$(cat /tmp/digests/arm64)"
