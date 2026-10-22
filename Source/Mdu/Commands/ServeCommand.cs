@@ -417,7 +417,9 @@ public sealed class ServeCommand
                 return;
             }
 
+            var previousSpecPages = _openApiSpecPagesByPage.GetValueOrDefault(pagePath) ?? Array.Empty<string>();
             UpdatePageAssets(pagePath, page);
+            var specPagesChanged = !previousSpecPages.SequenceEqual(_openApiSpecPagesByPage[pagePath], PathComparer);
             _watchers?.UpdateOpenApiSpecs(_openApiSpecsByPage.Values.SelectMany(paths => paths));
             new LocalAssetsCopy(_rootPath, _outputPath).Process(page, depth);
             var rendererVisitor = new MarkdigVisitor(
@@ -436,6 +438,27 @@ public sealed class ServeCommand
 
             rendererVisitor.Process(page, depth);
             affectedPageUrls.Add(PreviewServer.ToUrlPath(_outputPath, GetPageOutputPath(page)));
+
+            if (specPagesChanged)
+            {
+                var outputDirectory = Path.GetDirectoryName(GetPageOutputPath(page))!;
+                foreach (var (siblingKey, siblingPage) in _pages)
+                {
+                    if (PathComparer.Equals(siblingKey, pagePath) || !File.Exists(siblingPage.FileInfo.FullName))
+                        continue;
+                    var siblingOutputPath = GetPageOutputPath(siblingPage);
+                    if (!PathComparer.Equals(Path.GetDirectoryName(siblingOutputPath), outputDirectory))
+                        continue;
+
+                    var previousSiblingSpecPages = _openApiSpecPagesByPage.GetValueOrDefault(siblingKey) ?? Array.Empty<string>();
+                    UpdatePageOpenApiDependencies(siblingKey, siblingPage, siblingPage.ReadMarkdown());
+                    if (previousSiblingSpecPages.SequenceEqual(_openApiSpecPagesByPage[siblingKey], PathComparer))
+                        continue;
+
+                    rendererVisitor.Process(siblingPage, siblingPage.CountDepth());
+                    affectedPageUrls.Add(PreviewServer.ToUrlPath(_outputPath, siblingOutputPath));
+                }
+            }
         }
 
         if (changedPages.Length > 0)

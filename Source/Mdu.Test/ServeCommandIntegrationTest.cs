@@ -197,6 +197,19 @@ public class ServeCommandIntegrationTest
                 using var response = await client.GetAsync(specPageUrl);
                 return response.StatusCode == HttpStatusCode.NotFound;
             }, process);
+
+            // Creating a sibling page that claims index-orders-spec.html, then editing README.md to claim
+            // index-orders-spec.html, re-renders the sibling page so its link shifts to index-orders-spec-2.html.
+            File.WriteAllText(Path.Combine(docs, "index-orders.md"), $"# Sibling\n\n```openapi\n{OpenApiSpecification("index-orders")}\n```\n");
+            var siblingPageUrl = $"http://127.0.0.1:{port}/index-orders.html";
+            var siblingShiftedSpecUrl = $"http://127.0.0.1:{port}/index-orders-spec-2.html";
+            await WaitUntilAsync(async () => await PageContainsAsync(client, siblingPageUrl, "href=\"index-orders-spec.html\""), process);
+
+            File.WriteAllText(Path.Combine(docs, "README.md"), "# Orders\n\n```openapi\n../second-api/orders.json\n```\n");
+            await WaitUntilAsync(async () => await PageContainsAsync(client, pageUrl, "href=\"index-orders-spec.html\""), process);
+            await WaitUntilAsync(async () => await PageContainsAsync(client, siblingPageUrl, "href=\"index-orders-spec-2.html\""), process);
+            await WaitUntilAsync(async () => await PageContainsAsync(client, specPageUrl, "API Latest"), process);
+            await WaitUntilAsync(async () => await PageContainsAsync(client, siblingShiftedSpecUrl, "index-orders"), process);
         }
         finally
         {
