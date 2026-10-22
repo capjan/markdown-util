@@ -59,6 +59,16 @@ public class MarkdigVisitor : BaseVisitor
         ? StringComparer.OrdinalIgnoreCase
         : StringComparer.Ordinal;
 
+    public static IEnumerable<OpenApiSiblingPage> GetOutputSiblings(
+        IEnumerable<(MarkdownFile Page, string OutputPath)> pageOutputs,
+        string outputDirectory) =>
+        pageOutputs
+            .Where(item => string.Equals(Path.GetDirectoryName(item.OutputPath), outputDirectory, PathComparison))
+            .Select(item => new OpenApiSiblingPage(
+                item.Page.FileInfo.FullName,
+                Path.GetFileName(item.OutputPath),
+                item.Page.SourceRootPath));
+
     protected override bool ProcessFile(MarkdownFile entity, int _, FilePathInfo io)
     {
         Console.WriteLine($"{io.InputRelativeFilePathToRootDirectory} => {io.OutputRelativeFilePathToRootDirectory}");
@@ -80,12 +90,7 @@ public class MarkdigVisitor : BaseVisitor
         }
 
         var outputDirectory = Path.GetDirectoryName(Path.GetFullPath(outputFileName))!;
-        var outputSiblings = _pageOutputs
-            .Where(item => string.Equals(Path.GetDirectoryName(item.OutputPath), outputDirectory, PathComparison))
-            .Select(item => new OpenApiSiblingPage(
-                item.Page.FileInfo.FullName,
-                Path.GetFileName(item.OutputPath),
-                item.Page.SourceRootPath));
+        var outputSiblings = GetOutputSiblings(_pageOutputs, outputDirectory);
         var markdown = OpenApiMarkdownRenderer.ExpandCodeBlocks(
             RemoveFrontMatter(entity.ReadMarkdown(), entity.FrontMatter),
             entity.FileInfo.FullName,

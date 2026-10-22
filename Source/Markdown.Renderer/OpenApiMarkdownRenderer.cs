@@ -95,10 +95,14 @@ public static class OpenApiMarkdownRenderer
         IEnumerable<OpenApiSiblingPage>? siblingPages = null)
     {
         if (!markdown.Contains(CodeBlockLanguage, StringComparison.OrdinalIgnoreCase))
+        {
+            PruneInlineCache(markdownPath, 0);
             return Array.Empty<string>();
+        }
 
         var parsed = Markdig.Markdown.Parse(markdown, CodeBlockPipeline);
         var blocks = parsed.Descendants<FencedCodeBlock>().Where(IsOpenApiCodeBlock).ToArray();
+        PruneInlineCache(markdownPath, blocks.Length);
         if (blocks.Length == 0)
             return Array.Empty<string>();
 
@@ -139,12 +143,14 @@ public static class OpenApiMarkdownRenderer
     {
         if (!markdown.Contains(CodeBlockLanguage, StringComparison.OrdinalIgnoreCase))
         {
+            PruneInlineCache(markdownPath, 0);
             specificationPages = Array.Empty<OpenApiSpecificationPage>();
             return markdown;
         }
 
         var parsed = Markdig.Markdown.Parse(markdown, CodeBlockPipeline);
         var blocks = parsed.Descendants<FencedCodeBlock>().Where(IsOpenApiCodeBlock).ToArray();
+        PruneInlineCache(markdownPath, blocks.Length);
         if (blocks.Length == 0)
         {
             specificationPages = Array.Empty<OpenApiSpecificationPage>();
@@ -585,6 +591,17 @@ public static class OpenApiMarkdownRenderer
         var preamble = Encoding.UTF8.GetPreamble();
         var start = bytes.AsSpan().StartsWith(preamble) ? preamble.Length : 0;
         return Encoding.UTF8.GetString(bytes, start, bytes.Length - start);
+    }
+
+    private static void PruneInlineCache(string markdownPath, int activeBlockCount)
+    {
+        var prefix = $"inline:{Path.GetFullPath(markdownPath)}#";
+        foreach (var key in Cache.Keys)
+        {
+            if (!key.StartsWith(prefix, StringComparison.OrdinalIgnoreCase)) continue;
+            if (int.TryParse(key.AsSpan(prefix.Length), out var blockIndex) && blockIndex >= activeBlockCount)
+                Cache.TryRemove(key, out _);
+        }
     }
 
     private static LoadedSpecification LoadInline(string content, string markdownPath, int blockIndex)

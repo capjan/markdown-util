@@ -275,13 +275,9 @@ public sealed class ServeCommand
 
         var pageOutputPath = GetPageOutputPath(page);
         var outputDirectory = Path.GetDirectoryName(pageOutputPath)!;
-        var outputSiblings = _pages.Values
-            .Select(candidate => (Page: candidate, OutputPath: GetPageOutputPath(candidate)))
-            .Where(candidate => PathComparer.Equals(Path.GetDirectoryName(candidate.OutputPath), outputDirectory))
-            .Select(candidate => new OpenApiSiblingPage(
-                candidate.Page.FileInfo.FullName,
-                Path.GetFileName(candidate.OutputPath),
-                candidate.Page.SourceRootPath));
+        var outputSiblings = MarkdigVisitor.GetOutputSiblings(
+            _pages.Values.Select(candidate => (Page: candidate, OutputPath: GetPageOutputPath(candidate))),
+            outputDirectory);
         var specPages = OpenApiMarkdownRenderer.GetSpecificationPageFileNames(
                 body,
                 page.FileInfo.FullName,
@@ -451,12 +447,19 @@ public sealed class ServeCommand
                         continue;
 
                     var previousSiblingSpecPages = _openApiSpecPagesByPage.GetValueOrDefault(siblingKey) ?? Array.Empty<string>();
-                    UpdatePageOpenApiDependencies(siblingKey, siblingPage, siblingPage.ReadMarkdown());
-                    if (previousSiblingSpecPages.SequenceEqual(_openApiSpecPagesByPage[siblingKey], PathComparer))
-                        continue;
+                    try
+                    {
+                        UpdatePageOpenApiDependencies(siblingKey, siblingPage, siblingPage.ReadMarkdown());
+                        if (previousSiblingSpecPages.SequenceEqual(_openApiSpecPagesByPage[siblingKey], PathComparer))
+                            continue;
 
-                    rendererVisitor.Process(siblingPage, siblingPage.CountDepth());
-                    affectedPageUrls.Add(PreviewServer.ToUrlPath(_outputPath, siblingOutputPath));
+                        rendererVisitor.Process(siblingPage, siblingPage.CountDepth());
+                        affectedPageUrls.Add(PreviewServer.ToUrlPath(_outputPath, siblingOutputPath));
+                    }
+                    catch (Exception exception) when (exception is IOException or UnauthorizedAccessException or ArgumentException or InvalidOperationException or YamlDotNet.Core.YamlException)
+                    {
+                        Console.Error.WriteLine($"Could not update the site: {exception.Message}");
+                    }
                 }
             }
         }
