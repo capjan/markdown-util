@@ -13,12 +13,12 @@ public class GraphBuilder
 {
 
     private readonly DataPreparationVisitor _dataPreparationVisitor;
-    private readonly IGitHubTreeSourceResolver _sourceResolver;
+    private readonly IGitTreeSourceResolver _sourceResolver;
 
-    public GraphBuilder(DataPreparationVisitor dataPreparationVisitor, IGitHubTreeSourceResolver? sourceResolver = null)
+    public GraphBuilder(DataPreparationVisitor dataPreparationVisitor, IGitTreeSourceResolver? sourceResolver = null)
     {
         _dataPreparationVisitor = dataPreparationVisitor;
-        _sourceResolver = sourceResolver ?? new GitHubTreeSourceResolver();
+        _sourceResolver = sourceResolver ?? new GitTreeSourceResolver();
     }
 
     public MarkdownFile[] CreateGraph(IVisitorSettings settings)
@@ -137,13 +137,12 @@ public class GraphBuilder
         fileName.Equals("README.md", StringComparison.OrdinalIgnoreCase) ||
         fileName.Equals("index.md", StringComparison.OrdinalIgnoreCase);
 
-    private static string GetEditPageLink(ResolvedGitHubTreeSource source, FileInfo file)
+    private static string GetEditPageLink(ResolvedGitTreeSource source, FileInfo file)
     {
         var relativePath = Path.GetRelativePath(source.RepositoryPath, file.FullName)
             .Replace(Path.DirectorySeparatorChar, '/');
-        var reference = string.Join('/', source.ReferenceName.Split('/').Select(Uri.EscapeDataString));
         var filePath = string.Join('/', relativePath.Split('/').Select(Uri.EscapeDataString));
-        return $"{source.WebRepositoryUrl}/edit/{reference}/{filePath}";
+        return $"{source.EditPageLinkPrefix}/{filePath}";
     }
 
     private static string RemoveFrontMatter(string markdown, string frontMatter) =>

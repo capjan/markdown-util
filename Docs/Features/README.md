@@ -31,7 +31,7 @@ Everything on these pages is written in ordinary Markdown. Each page shows the s
 
 ## Compose
 
-- [Repository Imports](Repository-Imports.md) - Combine Markdown pages from multiple GitHub repositories
+- [Repository Imports](Repository-Imports.md) - Combine Markdown pages from multiple Git repositories
 
 ## Document APIs
 
