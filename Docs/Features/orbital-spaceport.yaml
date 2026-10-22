@@ -1,0 +1,353 @@
+openapi: 3.1.0
+info:
+  title: Orbital Spaceport API
+  version: 2.4.0
+  description: Schedule orbital launches, assign docking bays, and stream live telemetry from low-orbit and deep-space vessels.
+  license:
+    name: MIT
+    url: https://opensource.org/licenses/MIT
+  contact:
+    name: Mission Control
+    url: https://spaceport.orbital/control
+servers:
+  - url: https://api.spaceport.orbital/v2
+    description: Orbital Station Alpha (Primary)
+  - url: https://lunar-relay.spaceport.orbital/v2
+    description: Lunar Gateway Relay
+tags:
+  - name: Launches
+    description: Countdown windows, orbital trajectories, and launch pad clearance
+  - name: Spacecraft
+    description: Active vessels, docking clamps, and propulsion diagnostics
+  - name: Crew
+    description: Flight crew rosters and EVA suit telemetry
+paths:
+  /launches:
+    get:
+      tags: [Launches]
+      summary: List scheduled launches
+      operationId: listLaunches
+      parameters:
+        - name: orbit
+          in: query
+          description: Filter launches by target orbit regime.
+          schema:
+            $ref: '#/components/schemas/OrbitRegime'
+        - name: limit
+          in: query
+          description: Maximum number of launch windows to return.
+          example: 20
+          schema:
+            type: integer
+            format: int32
+            minimum: 1
+            maximum: 100
+            default: 20
+      responses:
+        '200':
+          description: Upcoming launch manifest.
+          headers:
+            X-Telemetry-Refresh:
+              required: true
+              description: Seconds until the next orbital radar sweep.
+              schema:
+                type: integer
+                format: int32
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/LaunchManifest'
+    post:
+      tags: [Launches]
+      summary: Schedule an orbital launch
+      operationId: scheduleLaunch
+      security:
+        - flightControl: ['launches:write']
+      requestBody:
+        required: true
+        description: Vessel, pad assignment, and target orbital parameters.
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/LaunchManifest'
+      responses:
+        '201':
+          description: Launch window locked in and telemetry stream initialized.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/LaunchManifest'
+        '409':
+          description: Launch pad is already occupied during the requested window.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PadConflict'
+  /launches/{launchId}/vhf-beacon:
+    delete:
+      tags: [Launches]
+      summary: Deactivate legacy VHF range beacon
+      operationId: disableVhfBeacon
+      deprecated: true
+      description: Replaced by optical laser telemetry in v2.2.
+      security:
+        - telemetryKey: []
+      parameters:
+        - name: launchId
+          in: path
+          required: true
+          description: Unique launch mission identifier.
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '204':
+          description: Legacy VHF beacon powered down.
+  /spacecraft/{craftId}:
+    get:
+      tags: [Spacecraft]
+      summary: Inspect spacecraft telemetry
+      operationId: getSpacecraft
+      parameters:
+        - name: craftId
+          in: path
+          required: true
+          description: Transponder UUID of the spacecraft.
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '200':
+          description: Live spacecraft status and propulsion diagnostics.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Spacecraft'
+        '404':
+          description: No vessel responded on the requested transponder ID.
+  /spacecraft/{craftId}/docking:
+    patch:
+      tags: [Spacecraft]
+      summary: Assign or release a docking bay
+      operationId: updateDockingBay
+      security:
+        - flightControl: ['docking:override']
+          telemetryKey: []
+      parameters:
+        - name: craftId
+          in: path
+          required: true
+          description: Transponder UUID of the spacecraft.
+          schema:
+            type: string
+            format: uuid
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/DockingAssignment'
+      responses:
+        '200':
+          description: Docking ring configuration updated.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Spacecraft'
+        '422':
+          description: Docking ring diameter does not match the vessel adapter.
+  /crew/{callsign}:
+    get:
+      tags: [Crew]
+      summary: Get astronaut flight status
+      operationId: getAstronaut
+      parameters:
+        - name: callsign
+          in: path
+          required: true
+          description: Crew member radio callsign.
+          schema:
+            type: string
+            minLength: 2
+            maxLength: 24
+      responses:
+        '200':
+          description: Crew member assignment and EVA suit vitals.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Astronaut'
+        '404':
+          description: Callsign not found on active flight rosters.
+components:
+  securitySchemes:
+    flightControl:
+      type: oauth2
+      description: Mission Control OAuth 2.0 token for flight directors.
+      flows:
+        authorizationCode:
+          authorizationUrl: https://spaceport.orbital/oauth/authorize
+          tokenUrl: https://spaceport.orbital/oauth/token
+          scopes:
+            'launches:write': Lock launch windows and abort countdowns
+            'docking:override': Engage or release station docking clamps
+    telemetryKey:
+      type: apiKey
+      in: header
+      name: X-Telemetry-Key
+      description: Hardware transponder key for automated ground stations.
+  schemas:
+    OrbitRegime:
+      type: string
+      enum: [LEO, SSO, GTO, Lunar, Mars]
+    LaunchManifest:
+      type: object
+      description: Scheduled orbital launch window and trajectory parameters.
+      required: [launchId, vesselName, pad, targetOrbit, payloadMassKg, windowOpenUtc]
+      properties:
+        launchId:
+          type: string
+          format: uuid
+          readOnly: true
+          description: Mission identifier assigned by range control.
+        vesselName:
+          type: string
+          minLength: 2
+          maxLength: 48
+          description: Registered name of the launch vehicle.
+        pad:
+          type: string
+          enum: [Pad-39A, Pad-39B, SeaLaunch-Equatorial, Lunar-South-1]
+          default: Pad-39A
+          description: Assigned launch complex.
+        targetOrbit:
+          $ref: '#/components/schemas/OrbitRegime'
+        payloadMassKg:
+          type: number
+          format: double
+          exclusiveMinimum: 0
+          maximum: 150000
+          description: Total payload mass in kilograms.
+        abortPasscode:
+          type: string
+          writeOnly: true
+          minLength: 12
+          description: Range safety destruct authorization code.
+        windowOpenUtc:
+          type: string
+          format: date-time
+          description: Instantaneous launch window opening in UTC.
+    Spacecraft:
+      type: object
+      description: Active spacecraft state, docking clamp status, and propulsion telemetry.
+      required: [craftId, callsign, hullIntegrityPercent, propulsion]
+      properties:
+        craftId:
+          type: string
+          format: uuid
+          readOnly: true
+          description: Immutable vessel transponder UUID.
+        callsign:
+          type: string
+          minLength: 3
+          maxLength: 32
+          description: Orbital traffic control callsign.
+        dockingBay:
+          type: [string, 'null']
+          description: Assigned station docking ring, or null while in free flight.
+        hullIntegrityPercent:
+          type: number
+          format: double
+          minimum: 0
+          maximum: 100
+          default: 100
+          description: Structural hull integrity percentage.
+        propulsion:
+          $ref: '#/components/schemas/PropulsionStatus'
+        thrusterTemperaturesKelvin:
+          type: object
+          additionalProperties:
+            type: number
+            format: double
+          description: Live nozzle temperature per thruster identifier in Kelvin.
+    PropulsionStatus:
+      type: object
+      description: Main engine cycle and cryogenic propellant reserves.
+      required: [engineCycle, propellantRemainingPercent, specificImpulseSec]
+      properties:
+        engineCycle:
+          type: string
+          enum: [FullFlowStaged, ExpanderBleed, NuclearThermal, HallEffectIon]
+          description: Primary propulsion architecture.
+        propellantRemainingPercent:
+          type: number
+          format: double
+          minimum: 0
+          maximum: 100
+          description: Remaining usable propellant reserve.
+        specificImpulseSec:
+          type: integer
+          format: int32
+          minimum: 180
+          maximum: 4500
+          default: 380
+          description: Vacuum specific impulse in seconds.
+    DockingAssignment:
+      type: object
+      description: Target docking bay and approach velocity limit.
+      required: [dockingBay, maxApproachMetersPerSec]
+      properties:
+        dockingBay:
+          type: string
+          enum: [Ring-North-1, Ring-North-2, Cargo-Zenith, DeepSpace-Port-A]
+          description: Station docking port identifier.
+        maxApproachMetersPerSec:
+          type: number
+          format: double
+          exclusiveMinimum: 0
+          maximum: 0.5
+          default: 0.08
+          description: Maximum relative closing speed in m/s.
+    Astronaut:
+      type: object
+      description: Flight crew member assignment and EVA suit telemetry.
+      required: [callsign, role, evaHours, suitPressureKpa]
+      properties:
+        callsign:
+          type: string
+          description: Crew radio callsign.
+        role:
+          type: string
+          enum: [Commander, Pilot, MissionSpecialist, FlightEngineer]
+          description: Assigned flight deck role.
+        evaHours:
+          type: number
+          format: double
+          minimum: 0
+          default: 0
+          description: Cumulative extravehicular activity hours.
+        suitPressureKpa:
+          type: number
+          format: double
+          minimum: 25
+          maximum: 110
+          default: 56.5
+          description: Nominal EVA suit pressure in kilopascals.
+    PadConflict:
+      type: object
+      description: Details about an occupied launch pad window.
+      required: [pad, conflictingLaunchId, availableAfterUtc]
+      properties:
+        pad:
+          type: string
+          description: Launch pad identifier.
+        conflictingLaunchId:
+          type: string
+          format: uuid
+          description: Mission holding the pad lock.
+        availableAfterUtc:
+          type: string
+          format: date-time
+          description: Earliest UTC timestamp after pad turnaround.

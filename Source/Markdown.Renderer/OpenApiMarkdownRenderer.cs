@@ -7,18 +7,34 @@ using System.Text.Encodings.Web;
 using System.Text.Json;
 using System.Text.Json.Nodes;
 using System.Text.RegularExpressions;
+using Markdig;
+using Markdig.Syntax;
 using Microsoft.OpenApi;
 using Microsoft.OpenApi.Reader;
+using YamlDotNet.RepresentationModel;
 
 namespace Markdown.Renderer;
 
+public sealed record OpenApiSpecificationPage(
+    string FileName,
+    string Title,
+    string SourceLabel,
+    string Language,
+    string Markdown);
+
 public static class OpenApiMarkdownRenderer
 {
+    public const string CodeBlockLanguage = "openapi";
+    internal const string BlockStartMarker = "<!--mdu-openapi-start-->";
+    internal const string BlockEndMarker = "<!--mdu-openapi-end-->";
+
     private static readonly HashSet<string> HttpMethods = new(StringComparer.OrdinalIgnoreCase)
     {
         "GET", "PUT", "POST", "DELETE", "OPTIONS", "HEAD", "PATCH", "TRACE", "QUERY"
     };
     private static readonly Regex PathParameterRegex = new(@"\{[^{}]+\}", RegexOptions.Compiled);
+    private static readonly Regex UrlSchemeRegex = new(@"^[A-Za-z][A-Za-z0-9+.-]*://", RegexOptions.Compiled);
+    private static readonly MarkdownPipeline CodeBlockPipeline = new MarkdownPipelineBuilder().UsePreciseSourceLocation().Build();
 
     private static readonly ConcurrentDictionary<string, CachedDocument> Cache = new(
         OperatingSystem.IsWindows() || OperatingSystem.IsMacOS()
@@ -27,6 +43,9 @@ public static class OpenApiMarkdownRenderer
 
     public static string ResolveSpecPath(string markdownPath, string specPath, string? allowedRootPath = null)
     {
+        if (UrlSchemeRegex.IsMatch(specPath.Trim()))
+            throw new InvalidOperationException($"OpenAPI document '{specPath}' must be a local file path.");
+
         var fullSpecPath = Path.GetFullPath(Path.Combine(Path.GetDirectoryName(markdownPath)!, specPath));
         if (allowedRootPath is not null)
         {
@@ -41,22 +60,268 @@ public static class OpenApiMarkdownRenderer
         return fullSpecPath;
     }
 
-    public static string AppendFromFile(string markdown, string markdownPath, string specPath, string? allowedRootPath = null)
+    public static IReadOnlyList<string> FindReferencedSpecPaths(string markdown) =>
+        FindSpecPathSpans(markdown).Select(span => span.Value).ToArray();
+
+    public static IReadOnlyList<(string Value, int Start, int Length)> FindSpecPathSpans(string markdown)
     {
-        var fullSpecPath = ResolveSpecPath(markdownPath, specPath, allowedRootPath);
-        var generatedMarkdown = RenderFile(fullSpecPath);
-        var overviewTitle = Regex.Match(generatedMarkdown,
-            @"\A## API overview \{\.openapi-overview\}\r?\n(?<title><p class=""openapi-api-title""><strong>(?<name>[^\r\n]+)</strong></p>\r?\n\r?\n)");
-        if (overviewTitle.Success && Regex.Matches(markdown, @"(?m)^#\s+(.+?)\s*#*\r?$")
-                .Cast<Match>().Any(heading => string.Equals(heading.Groups[1].Value.Trim(),
-                    WebUtility.HtmlDecode(overviewTitle.Groups["name"].Value).Trim(), StringComparison.OrdinalIgnoreCase)))
-            generatedMarkdown = generatedMarkdown.Remove(overviewTitle.Groups["title"].Index, overviewTitle.Groups["title"].Length);
-        return string.IsNullOrWhiteSpace(markdown)
-            ? generatedMarkdown
-            : $"{markdown.TrimEnd()}\n\n{generatedMarkdown}";
+        if (!markdown.Contains(CodeBlockLanguage, StringComparison.OrdinalIgnoreCase))
+            return Array.Empty<(string Value, int Start, int Length)>();
+
+        var document = Markdig.Markdown.Parse(markdown, CodeBlockPipeline);
+        var spans = new List<(string Value, int Start, int Length)>();
+        foreach (var block in document.Descendants<FencedCodeBlock>().Where(IsOpenApiCodeBlock))
+        {
+            if (TryGetBlockBodySpan(block, out var bodyStart, out var bodyLength) &&
+                TryParseSpecReferenceSpan(markdown.Substring(bodyStart, bodyLength), out var relativeStart, out var length, out var specPath))
+            {
+                spans.Add((specPath, bodyStart + relativeStart, length));
+            }
+        }
+
+        return spans;
     }
 
-    private static string RenderFile(string path)
+    public static IReadOnlyList<string> GetSpecificationPageFileNames(
+        string markdown,
+        string markdownPath,
+        string? allowedRootPath = null,
+        string? pageOutputFileName = null)
+    {
+        if (!markdown.Contains(CodeBlockLanguage, StringComparison.OrdinalIgnoreCase))
+            return Array.Empty<string>();
+
+        ExpandCodeBlocks(markdown, markdownPath, out var pages, allowedRootPath, pageOutputFileName);
+        return pages.Select(page => page.FileName).ToArray();
+    }
+
+    public static string ExpandCodeBlocks(
+        string markdown,
+        string markdownPath,
+        string? allowedRootPath = null,
+        string? pageOutputFileName = null) =>
+        ExpandCodeBlocks(markdown, markdownPath, out _, allowedRootPath, pageOutputFileName);
+
+    public static string ExpandCodeBlocks(
+        string markdown,
+        string markdownPath,
+        out IReadOnlyList<OpenApiSpecificationPage> specificationPages,
+        string? allowedRootPath = null,
+        string? pageOutputFileName = null)
+    {
+        if (!markdown.Contains(CodeBlockLanguage, StringComparison.OrdinalIgnoreCase))
+        {
+            specificationPages = Array.Empty<OpenApiSpecificationPage>();
+            return markdown;
+        }
+
+        var parsed = Markdig.Markdown.Parse(markdown, CodeBlockPipeline);
+        var blocks = parsed.Descendants<FencedCodeBlock>().Where(IsOpenApiCodeBlock).ToArray();
+        if (blocks.Length == 0)
+        {
+            specificationPages = Array.Empty<OpenApiSpecificationPage>();
+            return markdown;
+        }
+
+        var levelOneHeadings = parsed.OfType<HeadingBlock>()
+            .Where(heading => heading.Level == 1 && heading.Span.Start >= 0 && heading.Span.End < markdown.Length)
+            .Select(heading => Regex.Replace(markdown[heading.Span.Start..(heading.Span.End + 1)], @"^#\s+|\s+#*\r?$", string.Empty).Trim())
+            .Where(title => title.Length > 0)
+            .ToArray();
+
+        var parentHtmlFileName = GetParentHtmlFileName(markdownPath, pageOutputFileName);
+        var pageStem = Path.GetFileNameWithoutExtension(parentHtmlFileName);
+        var usedFileNames = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+        var generatedPages = new List<OpenApiSpecificationPage>(blocks.Length);
+        var replacements = new (int Start, int Length, string Content)[blocks.Length];
+
+        for (var index = 0; index < blocks.Length; index++)
+        {
+            var block = blocks[index];
+            var bodyText = TryGetBlockBodySpan(block, out var bodyStart, out var bodyLength)
+                ? markdown.Substring(bodyStart, bodyLength)
+                : string.Empty;
+
+            LoadedSpecification loaded;
+            string sourceLabel;
+            string slug;
+            if (TryParseSpecReferenceSpan(bodyText, out _, out _, out var referencedSpecPath))
+            {
+                var fullSpecPath = ResolveSpecPath(markdownPath, referencedSpecPath, allowedRootPath);
+                loaded = LoadFromFile(fullSpecPath);
+                sourceLabel = Path.GetFileName(fullSpecPath);
+                slug = SlugifySchemaName(Path.GetFileNameWithoutExtension(fullSpecPath));
+            }
+            else
+            {
+                loaded = LoadInline(bodyText, markdownPath);
+                slug = !string.IsNullOrWhiteSpace(loaded.Document.Info?.Title)
+                    ? SlugifySchemaName(loaded.Document.Info.Title)
+                    : "openapi";
+                sourceLabel = $"{(string.IsNullOrWhiteSpace(slug) ? "openapi" : slug)}.{loaded.Format}";
+            }
+
+            var baseSlug = string.IsNullOrWhiteSpace(slug) ? "openapi" : slug;
+            var baseFileName = string.Equals(pageStem, baseSlug, StringComparison.OrdinalIgnoreCase)
+                ? $"{pageStem}-spec"
+                : $"{pageStem}-{baseSlug}-spec";
+            var specFileName = $"{baseFileName}.html";
+            if (!usedFileNames.Add(specFileName))
+            {
+                var suffix = 2;
+                while (!usedFileNames.Add($"{baseFileName}-{suffix}.html")) suffix++;
+                specFileName = $"{baseFileName}-{suffix}.html";
+            }
+
+            var omitTitle = blocks.Length == 1 &&
+                            !string.IsNullOrWhiteSpace(loaded.Document.Info?.Title) &&
+                            levelOneHeadings.Any(heading => string.Equals(
+                                heading,
+                                loaded.Document.Info.Title.Trim(),
+                                StringComparison.OrdinalIgnoreCase));
+
+            var renderedMarkdown = Render(loaded.Document, index, specFileName, omitTitle);
+            var specPageTitle = string.IsNullOrWhiteSpace(loaded.Document.Info?.Title)
+                ? $"OpenAPI Specification ({sourceLabel})"
+                : $"{loaded.Document.Info.Title.Trim()} — OpenAPI Specification";
+            var specPageMarkdown = BuildSpecificationPageMarkdown(
+                specPageTitle,
+                sourceLabel,
+                loaded.Format,
+                loaded.RawText,
+                parentHtmlFileName,
+                index);
+            generatedPages.Add(new OpenApiSpecificationPage(
+                specFileName,
+                specPageTitle,
+                sourceLabel,
+                loaded.Format,
+                specPageMarkdown));
+
+            replacements[index] = (block.Span.Start, block.Span.Length, renderedMarkdown);
+        }
+
+        var result = markdown;
+        for (var index = replacements.Length - 1; index >= 0; index--)
+        {
+            var replacement = replacements[index];
+            result = result.Remove(replacement.Start, replacement.Length)
+                .Insert(replacement.Start, replacement.Content);
+        }
+
+        specificationPages = generatedPages;
+        return result;
+    }
+
+    private static bool IsOpenApiCodeBlock(FencedCodeBlock block) =>
+        string.Equals(block.Info?.Trim(), CodeBlockLanguage, StringComparison.OrdinalIgnoreCase);
+
+    private static bool TryGetBlockBodySpan(FencedCodeBlock block, out int start, out int length)
+    {
+        start = 0;
+        length = 0;
+        if (block.Lines.Count == 0) return false;
+        var first = block.Lines.Lines[0].Slice;
+        var last = block.Lines.Lines[block.Lines.Count - 1].Slice;
+        if (first.Start < 0 || last.End < first.Start) return false;
+        start = first.Start;
+        length = last.End - first.Start + 1;
+        return true;
+    }
+
+    private static bool TryParseSpecReferenceSpan(string bodyText, out int start, out int length, out string specPath)
+    {
+        start = 0;
+        length = 0;
+        specPath = string.Empty;
+        if (string.IsNullOrWhiteSpace(bodyText)) return false;
+
+        var trimmed = bodyText.Trim();
+        if (trimmed.StartsWith('{')) return false;
+
+        try
+        {
+            var yaml = new YamlStream();
+            yaml.Load(new StringReader(bodyText));
+            var root = yaml.Documents.FirstOrDefault()?.RootNode;
+            if (root is YamlMappingNode mapping)
+            {
+                if (mapping.Children.ContainsKey(new YamlScalarNode("openapi")) ||
+                    mapping.Children.ContainsKey(new YamlScalarNode("swagger")) ||
+                    mapping.Children.ContainsKey(new YamlScalarNode("paths")))
+                    return false;
+
+                if ((mapping.Children.TryGetValue(new YamlScalarNode("spec"), out var specNode) ||
+                     mapping.Children.TryGetValue(new YamlScalarNode("path"), out specNode)) &&
+                    specNode is YamlScalarNode scalarValue &&
+                    !string.IsNullOrWhiteSpace(scalarValue.Value))
+                {
+                    start = checked((int)scalarValue.Start.Index);
+                    length = checked((int)(scalarValue.End.Index - scalarValue.Start.Index));
+                    specPath = scalarValue.Value.Trim();
+                    return true;
+                }
+
+                return false;
+            }
+
+            if (root is YamlScalarNode scalar && !trimmed.Contains('\n') && !string.IsNullOrWhiteSpace(scalar.Value))
+            {
+                start = checked((int)scalar.Start.Index);
+                length = checked((int)(scalar.End.Index - scalar.Start.Index));
+                specPath = scalar.Value.Trim();
+                return true;
+            }
+        }
+        catch (YamlDotNet.Core.YamlException)
+        {
+            if (!trimmed.Contains('\n'))
+            {
+                start = bodyText.IndexOf(trimmed, StringComparison.Ordinal);
+                length = trimmed.Length;
+                specPath = trimmed;
+                return true;
+            }
+        }
+
+        return false;
+    }
+
+    private static string GetParentHtmlFileName(string markdownPath, string? pageOutputFileName)
+    {
+        if (!string.IsNullOrWhiteSpace(pageOutputFileName))
+            return Path.GetFileName(pageOutputFileName);
+
+        var fileName = Path.GetFileName(markdownPath);
+        return fileName.Equals("README.md", StringComparison.OrdinalIgnoreCase)
+            ? "index.html"
+            : Path.ChangeExtension(fileName, ".html");
+    }
+
+    private static string BuildSpecificationPageMarkdown(
+        string headingTitle,
+        string sourceLabel,
+        string language,
+        string rawSpecification,
+        string parentHtmlFileName,
+        int blockIndex)
+    {
+        var backAnchor = blockIndex == 0 ? "#api-overview" : $"#api-overview-{blockIndex}";
+        var backUrl = $"{Uri.EscapeDataString(parentHtmlFileName)}{backAnchor}";
+        var fence = new string('`', Math.Max(3, LongestBacktickRun(rawSpecification) + 1));
+        var safeTitle = sourceLabel.Replace("\"", "\\\"", StringComparison.Ordinal);
+        var output = new StringBuilder(rawSpecification.Length + 256);
+        output.Append("# ").AppendLine(EscapeMarkdown(headingTitle));
+        output.AppendLine();
+        output.Append("[← Back to API reference](").Append(backUrl).AppendLine(")");
+        output.AppendLine();
+        output.Append(fence).Append(language).Append(" title=\"").Append(safeTitle).AppendLine("\"");
+        output.AppendLine(rawSpecification.TrimEnd());
+        output.AppendLine(fence);
+        return output.ToString();
+    }
+
+    private static LoadedSpecification LoadFromFile(string path)
     {
         var extension = Path.GetExtension(path);
         var format = extension.Equals(".yaml", StringComparison.OrdinalIgnoreCase) ||
@@ -71,20 +336,13 @@ public static class OpenApiMarkdownRenderer
         {
             var bytes = File.ReadAllBytes(path);
             var hash = Convert.ToHexString(SHA256.HashData(bytes));
-            if (Cache.TryGetValue(path, out var cached) && cached.Hash == hash) return cached.Markdown;
+            if (Cache.TryGetValue(path, out var cached) && cached.Hash == hash)
+                return new LoadedSpecification(cached.Document, cached.RawText, format);
 
-            using var stream = new MemoryStream(bytes);
-            var settings = new OpenApiReaderSettings { LoadExternalRefs = false };
-            settings.AddJsonReader();
-            settings.AddYamlReader();
-            var result = OpenApiDocument.LoadAsync(stream, format, settings).GetAwaiter().GetResult();
-            var errors = result.Diagnostic?.Errors?.Select(error => error.Message).ToArray() ?? Array.Empty<string>();
-            if (result.Document is null || errors.Length > 0)
-                throw new InvalidOperationException($"Could not parse OpenAPI document '{path}': {string.Join("; ", errors)}");
-
-            var markdown = Render(result.Document);
-            Cache[path] = new CachedDocument(hash, markdown);
-            return markdown;
+            var rawText = Encoding.UTF8.GetString(bytes);
+            var document = ParseOpenApiDocument(bytes, format, path);
+            Cache[path] = new CachedDocument(hash, document, rawText);
+            return new LoadedSpecification(document, rawText, format);
         }
         catch (Exception exception) when (exception is IOException or UnauthorizedAccessException or OpenApiException or JsonException)
         {
@@ -92,16 +350,61 @@ public static class OpenApiMarkdownRenderer
         }
     }
 
-    private static string Render(OpenApiDocument document)
+    private static LoadedSpecification LoadInline(string content, string markdownPath)
+    {
+        var trimmed = content.Trim();
+        if (trimmed.Length == 0)
+            throw new InvalidOperationException($"OpenAPI code block in '{markdownPath}' is empty.");
+
+        var format = trimmed.StartsWith('{') ? "json" : "yaml";
+        var bytes = Encoding.UTF8.GetBytes(trimmed);
+        var hash = Convert.ToHexString(SHA256.HashData(bytes));
+        var cacheKey = $"inline:{hash}";
+        if (Cache.TryGetValue(cacheKey, out var cached) && cached.Hash == hash)
+            return new LoadedSpecification(cached.Document, cached.RawText, format);
+
+        try
+        {
+            var document = ParseOpenApiDocument(bytes, format, markdownPath);
+            Cache[cacheKey] = new CachedDocument(hash, document, trimmed);
+            return new LoadedSpecification(document, trimmed, format);
+        }
+        catch (Exception exception) when (exception is OpenApiException or JsonException)
+        {
+            throw new InvalidOperationException($"Could not read OpenAPI document '{markdownPath}': {exception.Message}", exception);
+        }
+    }
+
+    private static OpenApiDocument ParseOpenApiDocument(byte[] bytes, string format, string sourceDescription)
+    {
+        using var stream = new MemoryStream(bytes);
+        var settings = new OpenApiReaderSettings { LoadExternalRefs = false };
+        settings.AddJsonReader();
+        settings.AddYamlReader();
+        var result = OpenApiDocument.LoadAsync(stream, format, settings).GetAwaiter().GetResult();
+        var errors = result.Diagnostic?.Errors?.Select(error => error.Message).ToArray() ?? Array.Empty<string>();
+        if (result.Document is null || errors.Length > 0)
+            throw new InvalidOperationException($"Could not parse OpenAPI document '{sourceDescription}': {string.Join("; ", errors)}");
+
+        return result.Document;
+    }
+
+    private static string Render(
+        OpenApiDocument document,
+        int blockIndex = 0,
+        string? specificationPageUrl = null,
+        bool omitTitle = false)
     {
         var output = new StringBuilder();
+        output.AppendLine(BlockStartMarker);
+        output.AppendLine();
         var info = document.Info;
         output.AppendLine("## API overview {.openapi-overview}");
-        if (!string.IsNullOrWhiteSpace(info?.Title))
+        if (!omitTitle && !string.IsNullOrWhiteSpace(info?.Title))
             AppendParagraph(output, $"<p class=\"openapi-api-title\"><strong>{HtmlEncoder.Default.Encode(info.Title)}</strong></p>");
         if (!string.IsNullOrWhiteSpace(info?.Version))
             AppendParagraph(output, $"<p class=\"openapi-api-version\">Version <code>{HtmlEncoder.Default.Encode(info.Version)}</code></p>");
-        AppendInfoMeta(output, info);
+        AppendInfoMeta(output, info, specificationPageUrl);
         AppendMarkdown(output, info?.Description);
 
         // Raw HTML keeps the server list from merging into a list that ends the API description.
@@ -130,6 +433,7 @@ public static class OpenApiMarkdownRenderer
         var tags = declaredTags.ToDictionary(tag => tag.Name!, tag => tag.Description ?? string.Empty, StringComparer.Ordinal);
         var tagOrder = declaredTags.Select(tag => tag.Name!).ToList();
         var operations = ReadOperations(document);
+        var blockPrefix = blockIndex == 0 ? string.Empty : $"b{blockIndex + 1}-";
         foreach (var group in operations.GroupBy(operation => operation.Tag)
                      .OrderBy(group => TagOrder(tagOrder, group.Key)))
         {
@@ -139,9 +443,10 @@ public static class OpenApiMarkdownRenderer
                          .OrderBy(operation => OperationMethodOrder(operation.Method))
                          .ThenBy(operation => operation.Method, StringComparer.Ordinal)
                          .ThenBy(operation => operation.Path, StringComparer.Ordinal))
-                AppendOperation(output, operation, document.Components?.Schemas, operation.Data.Security ?? document.Security);
+                AppendOperation(output, operation, document.Components?.Schemas, operation.Data.Security ?? document.Security, blockPrefix);
         }
 
+        output.AppendLine(BlockEndMarker);
         return output.ToString();
     }
 
@@ -177,7 +482,8 @@ public static class OpenApiMarkdownRenderer
         StringBuilder output,
         Operation operation,
         IDictionary<string, IOpenApiSchema>? schemas,
-        IList<OpenApiSecurityRequirement>? security)
+        IList<OpenApiSecurityRequirement>? security,
+        string blockPrefix = "")
     {
         var pathParameterColors = GetPathParameterColors(operation.Path);
         var requirements = (security ?? []).Where(requirement => requirement.Count > 0).ToArray();
@@ -207,8 +513,9 @@ public static class OpenApiMarkdownRenderer
         AppendSecurityRequirements(output, requirements);
 
         AppendParameters(output, operation.PathItem, operation.Data, pathParameterColors, schemas);
-        AppendRequestBody(output, operation.Data, schemas, $"{operation.Method}-{operation.Path}");
-        AppendResponses(output, operation.Data, schemas, $"{operation.Method}-{operation.Path}");
+        var operationKey = $"{blockPrefix}{operation.Method}-{operation.Path}";
+        AppendRequestBody(output, operation.Data, schemas, operationKey);
+        AppendResponses(output, operation.Data, schemas, operationKey);
     }
 
     private static void AppendParameters(
@@ -814,16 +1121,17 @@ public static class OpenApiMarkdownRenderer
         output.AppendLine();
     }
 
-    private static void AppendInfoMeta(StringBuilder output, OpenApiInfo? info)
+    private static void AppendInfoMeta(StringBuilder output, OpenApiInfo? info, string? specificationPageUrl = null)
     {
-        if (info is null) return;
         var items = new List<string>();
-        if (info.License is { Name.Length: > 0 } license)
+        if (info?.License is { Name.Length: > 0 } license)
             items.Add($"License {Link(license.Url, license.Name)}");
-        if (info.Contact is { } contact && (contact.Name ?? contact.Email ?? contact.Url?.ToString()) is { Length: > 0 } contactName)
+        if (info?.Contact is { } contact && (contact.Name ?? contact.Email ?? contact.Url?.ToString()) is { Length: > 0 } contactName)
             items.Add($"Contact {Link(contact.Url ?? (contact.Email is null ? null : new Uri($"mailto:{contact.Email}")), contactName)}");
-        if (info.TermsOfService is { } terms)
+        if (info?.TermsOfService is { } terms)
             items.Add(Link(terms, "Terms of service"));
+        if (!string.IsNullOrWhiteSpace(specificationPageUrl))
+            items.Add($"<a class=\"openapi-spec-link\" href=\"{HtmlEncoder.Default.Encode(specificationPageUrl)}\">OpenAPI specification</a>");
         if (items.Count > 0)
             AppendParagraph(output, $"<p class=\"openapi-api-meta\">{string.Join("<span aria-hidden=\"true\"> · </span>", items)}</p>");
     }
@@ -1262,5 +1570,7 @@ public static class OpenApiMarkdownRenderer
         IOpenApiPathItem PathItem,
         OpenApiOperation Data);
 
-    private sealed record CachedDocument(string Hash, string Markdown);
+    private sealed record LoadedSpecification(OpenApiDocument Document, string RawText, string Format);
+
+    private sealed record CachedDocument(string Hash, OpenApiDocument Document, string RawText);
 }

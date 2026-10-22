@@ -13,7 +13,7 @@ Most commands follow the same pattern: find the Markdown files, build a page tre
 1. It lists the files that match the search pattern, `*.md` by default, folder by folder.
 2. A folder's `README.md`, or else its `index.md`, becomes the parent of the other pages in that folder and of the pages in its subfolders.
 3. A folder without such a page adds its pages to the nearest parent above it.
-4. `DataPreparationVisitor` reads each page's level-one heading and front matter: `title`, `description`, `icon`, `openapi`, `mdu.import.source`, and the `navigation.*` settings.
+4. `DataPreparationVisitor` reads each page's level-one heading and front matter: `title`, `description`, `icon`, `mdu.import.source`, and the `navigation.*` settings.
 5. `GraphBuilder` resolves GitHub imports and mounts each imported folder's page tree at the import page's position. Each imported page keeps its repository source path and its site-relative path.
 
 ```text
@@ -69,7 +69,7 @@ flowchart TD
 
 For each page, `MarkdigVisitor`:
 
-- removes the front matter, appends any generated OpenAPI reference, and adds the page text, split at its headings, to the search index;
+- removes the front matter, expands any `openapi` code blocks into generated API references and companion specification pages, and adds the page text, split at its headings, to the search index;
 - collects the navigation, top navigation, breadcrumbs, and last-changed date from the tree and git;
 - lets `HtmlRenderer` write the page to a temporary file and then moves it into place, so a browser never reads a half-written page;
 - writes `README.md` as `index.html`, and adds a small redirect page so that `Setup/` also reaches `Setup.html`.

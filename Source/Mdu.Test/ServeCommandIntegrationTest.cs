@@ -159,7 +159,7 @@ public class ServeCommandIntegrationTest
         var site = Path.Combine(root, "site");
         Directory.CreateDirectory(docs);
         Directory.CreateDirectory(api);
-        File.WriteAllText(Path.Combine(docs, "README.md"), "---\nopenapi: ../api/orders.json\n---\n# Orders\n");
+        File.WriteAllText(Path.Combine(docs, "README.md"), "# Orders\n\n```openapi\n../api/orders.json\n```\n");
         var specificationPath = Path.Combine(api, "orders.json");
         File.WriteAllText(specificationPath, OpenApiSpecification("API Before"));
 
@@ -180,7 +180,7 @@ public class ServeCommandIntegrationTest
             Directory.CreateDirectory(secondApi);
             var secondSpecificationPath = Path.Combine(secondApi, "orders.json");
             File.WriteAllText(secondSpecificationPath, OpenApiSpecification("API Switched"));
-            File.WriteAllText(Path.Combine(docs, "README.md"), "---\nopenapi: ../second-api/orders.json\n---\n# Orders\n");
+            File.WriteAllText(Path.Combine(docs, "README.md"), "# Orders\n\n```openapi\n../second-api/orders.json\n```\n");
             await WaitUntilAsync(async () => await PageContainsAsync(client, pageUrl, "API Switched"), process);
 
             File.WriteAllText(secondSpecificationPath, OpenApiSpecification("API Latest"));

@@ -49,13 +49,6 @@ public class MarkdigVisitor : BaseVisitor
     {
         Console.WriteLine($"{io.InputRelativeFilePathToRootDirectory} => {io.OutputRelativeFilePathToRootDirectory}");
 
-        var markdown = RemoveFrontMatter(entity.ReadMarkdown(), entity.FrontMatter);
-        if (!string.IsNullOrWhiteSpace(entity.OpenApiSpec))
-            markdown = OpenApiMarkdownRenderer.AppendFromFile(
-                markdown,
-                entity.OpenApiSpecBasePath ?? entity.FileInfo.FullName,
-                entity.OpenApiSpec,
-                entity.OpenApiSpecBasePath is null ? entity.SourceRootPath : null);
         io.CreateOutputDirectory();    // ensures that the output directory exits
 
         var editPageLink = entity.EditPageLink ?? (string.IsNullOrEmpty(_editPageRoot)
@@ -72,10 +65,24 @@ public class MarkdigVisitor : BaseVisitor
             outputFileName = outputFileName.Substring(0, outputFileName.Length - 11) + "index.html";
         }
 
+        var markdown = OpenApiMarkdownRenderer.ExpandCodeBlocks(
+            RemoveFrontMatter(entity.ReadMarkdown(), entity.FrontMatter),
+            entity.FileInfo.FullName,
+            out var specificationPages,
+            entity.SourceRootPath,
+            Path.GetFileName(outputFileName));
+
         _searchIndexBuilder.AddPage(
             GetNavigationTitle(entity),
             GetSiteRelativeUrl(outputFileName),
             markdown);
+
+        var navigation = BuildNavigation(entity, outputFileName);
+        var breadcrumbs = BuildBreadcrumbs(entity, outputFileName);
+        var topNavigation = BuildTopNavigation(entity, outputFileName);
+        var pdfUrl = GetRelativeUrl(
+            GetSiteRelativeSegments(Path.GetDirectoryName(Path.GetFullPath(outputFileName))!),
+            ["documentation.pdf"]);
 
         var temporaryPath = outputFileName + "." + Guid.NewGuid().ToString("N") + ".tmp";
         try
@@ -89,18 +96,17 @@ public class MarkdigVisitor : BaseVisitor
                     nestingDeep,
                     markdown,
                     editPageLink,
-                    BuildNavigation(entity, outputFileName),
-                    BuildBreadcrumbs(entity, outputFileName),
+                    navigation,
+                    breadcrumbs,
                     _siteMediaProviders,
                     entity.Icon,
-                    BuildTopNavigation(entity, outputFileName),
+                    topNavigation,
                     GetLastModified(entity),
-                    GetRelativeUrl(
-                        GetSiteRelativeSegments(Path.GetDirectoryName(Path.GetFullPath(outputFileName))!),
-                        ["documentation.pdf"])).GetAwaiter().GetResult();
+                    pdfUrl).GetAwaiter().GetResult();
 
             File.Move(temporaryPath, outputFileName, true);
             WriteAliasPage(entity, outputFileName);
+            WriteSpecificationPages(entity, outputFileName, nestingDeep, navigation, breadcrumbs, topNavigation, pdfUrl, specificationPages);
         }
         finally
         {
@@ -108,6 +114,58 @@ public class MarkdigVisitor : BaseVisitor
         }
 
         return true;
+    }
+
+    private void WriteSpecificationPages(
+        MarkdownFile entity,
+        string outputFileName,
+        int nestingDeep,
+        IReadOnlyList<NavigationItem> navigation,
+        IReadOnlyList<BreadcrumbItem> pageBreadcrumbs,
+        IReadOnlyList<NavigationItem> topNavigation,
+        string pdfUrl,
+        IReadOnlyList<OpenApiSpecificationPage> specificationPages)
+    {
+        if (specificationPages.Count == 0) return;
+
+        var parentDirectory = Path.GetDirectoryName(outputFileName)!;
+        var parentFile = Path.GetFileName(outputFileName);
+        var specBreadcrumbs = pageBreadcrumbs
+            .Where(item => item.Url is not null)
+            .Append(new BreadcrumbItem(GetNavigationTitle(entity), parentFile))
+            .Append(new BreadcrumbItem("OpenAPI Specification", null))
+            .ToArray();
+
+        foreach (var specPage in specificationPages)
+        {
+            var specOutputPath = Path.Combine(parentDirectory, specPage.FileName);
+            var temporaryPath = specOutputPath + "." + Guid.NewGuid().ToString("N") + ".tmp";
+            try
+            {
+                using (var fs = new FileStream(temporaryPath, FileMode.CreateNew, FileAccess.Write))
+                using (var sw = new StreamWriter(fs))
+                    _htmlFoundation.WriteHtml(
+                        sw,
+                        specPage.Title,
+                        string.Empty,
+                        nestingDeep,
+                        specPage.Markdown,
+                        string.Empty,
+                        navigation,
+                        specBreadcrumbs,
+                        _siteMediaProviders,
+                        string.Empty,
+                        topNavigation,
+                        GetLastModified(entity),
+                        pdfUrl).GetAwaiter().GetResult();
+
+                File.Move(temporaryPath, specOutputPath, true);
+            }
+            finally
+            {
+                if (File.Exists(temporaryPath)) File.Delete(temporaryPath);
+            }
+        }
     }
 
     private void WriteAliasPage(MarkdownFile page, string outputFileName)

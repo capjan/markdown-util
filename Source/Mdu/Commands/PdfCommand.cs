@@ -92,13 +92,10 @@ public sealed class PdfCommand(GraphBuilder graphBuilder, PdfRenderer pdfRendere
         var sections = files.Where(item => IsPdfVisible(item.File.FrontMatter))
             .Select(item =>
             {
-                var markdown = RemoveFrontMatter(item.File.ReadMarkdown(), item.File.FrontMatter);
-                if (!string.IsNullOrWhiteSpace(item.File.OpenApiSpec))
-                    markdown = OpenApiMarkdownRenderer.AppendFromFile(
-                        markdown,
-                        item.File.OpenApiSpecBasePath ?? item.File.FileInfo.FullName,
-                        item.File.OpenApiSpec,
-                        item.File.OpenApiSpecBasePath is null ? item.File.SourceRootPath : null);
+                var markdown = OpenApiMarkdownRenderer.ExpandCodeBlocks(
+                    RemoveFrontMatter(item.File.ReadMarkdown(), item.File.FrontMatter),
+                    item.File.FileInfo.FullName,
+                    item.File.SourceRootPath);
                 return new PdfSourceSection(
                     GetTitle(item.File),
                     GetRelativeHtmlPath(rootPath, item.File),

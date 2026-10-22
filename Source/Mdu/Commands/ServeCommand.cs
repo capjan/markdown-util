@@ -444,13 +444,17 @@ public sealed class ServeCommand
     {
         foreach (var page in _pages.Values)
         {
-            if (string.IsNullOrWhiteSpace(page.OpenApiSpec)) continue;
-            var specPath = OpenApiMarkdownRenderer.ResolveSpecPath(
-                page.OpenApiSpecBasePath ?? page.FileInfo.FullName,
-                page.OpenApiSpec,
-                page.OpenApiSpecBasePath is null ? page.SourceRootPath : null);
-            if (PathComparer.Equals(specPath, change.Path) ||
-                change.OldPath is not null && PathComparer.Equals(specPath, change.OldPath)) return true;
+            if (!File.Exists(page.FileInfo.FullName)) continue;
+            var body = RemoveFrontMatter(page.ReadMarkdown(), page.FrontMatter);
+            foreach (var referencedPath in OpenApiMarkdownRenderer.FindReferencedSpecPaths(body))
+            {
+                var specPath = OpenApiMarkdownRenderer.ResolveSpecPath(
+                    page.FileInfo.FullName,
+                    referencedPath,
+                    page.SourceRootPath);
+                if (PathComparer.Equals(specPath, change.Path) ||
+                    change.OldPath is not null && PathComparer.Equals(specPath, change.OldPath)) return true;
+            }
         }
         return false;
     }
@@ -508,9 +512,20 @@ public sealed class ServeCommand
 
         foreach (var page in _pages.Values)
         {
-            currentFiles.Add(GetPageOutputPath(page));
+            var pageOutputPath = GetPageOutputPath(page);
+            currentFiles.Add(pageOutputPath);
             var aliasPath = GetAliasOutputPath(page);
             if (aliasPath is not null) currentFiles.Add(aliasPath);
+            if (!File.Exists(page.FileInfo.FullName)) continue;
+            var body = RemoveFrontMatter(page.ReadMarkdown(), page.FrontMatter);
+            foreach (var specFileName in OpenApiMarkdownRenderer.GetSpecificationPageFileNames(
+                         body,
+                         page.FileInfo.FullName,
+                         page.SourceRootPath,
+                         Path.GetFileName(pageOutputPath)))
+            {
+                currentFiles.Add(Path.Combine(Path.GetDirectoryName(pageOutputPath)!, specFileName));
+            }
         }
 
         foreach (var assetPath in _configurationAssets)
@@ -608,6 +623,11 @@ public sealed class ServeCommand
         }
     }
 
+    private static string RemoveFrontMatter(string markdown, string frontMatter) =>
+        !string.IsNullOrEmpty(frontMatter) && markdown.StartsWith(frontMatter, StringComparison.Ordinal)
+            ? markdown[frontMatter.Length..].TrimStart('\r', '\n')
+            : markdown;
+
     private sealed record FileChange(string Path, string? OldPath, FileChangeKind Kind);
 
     private enum FileChangeKind
@@ -636,11 +656,13 @@ public sealed class ServeCommand
         public void UpdateOpenApiSpecs(IEnumerable<MarkdownFile> pages)
         {
             var directories = pages
-                .Where(page => !string.IsNullOrWhiteSpace(page.OpenApiSpec))
-                .Select(page => OpenApiMarkdownRenderer.ResolveSpecPath(
-                    page.OpenApiSpecBasePath ?? page.FileInfo.FullName,
-                    page.OpenApiSpec,
-                    page.OpenApiSpecBasePath is null ? page.SourceRootPath : null))
+                .Where(page => File.Exists(page.FileInfo.FullName))
+                .SelectMany(page => OpenApiMarkdownRenderer
+                    .FindReferencedSpecPaths(RemoveFrontMatter(page.ReadMarkdown(), page.FrontMatter))
+                    .Select(specPath => OpenApiMarkdownRenderer.ResolveSpecPath(
+                        page.FileInfo.FullName,
+                        specPath,
+                        page.SourceRootPath)))
                 .Where(path => !IsInsideDirectory(_rootPath, path))
                 .Select(path => Path.GetDirectoryName(path)!)
                 .Where(Directory.Exists)

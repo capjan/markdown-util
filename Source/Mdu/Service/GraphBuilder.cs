@@ -91,7 +91,6 @@ public class GraphBuilder
         var importedMarkdown = importedRoot.ReadMarkdown();
         var importedFrontMatter = importedRoot.FrontMatter;
         importedRoot.MarkdownContent = importPage.FrontMatter + RemoveFrontMatter(importedMarkdown, importedFrontMatter);
-        importedRoot.OpenApiSpecBasePath = importPage.FileInfo.FullName;
 
         var mountDirectory = GetMountDirectory(importPage.SiteRelativePath!);
         var rootRelativePath = Path.Combine(mountDirectory, importedRoot.FileInfo.Name);
@@ -113,10 +112,10 @@ public class GraphBuilder
         _dataPreparationVisitor.Process(importedRoot, importPage.CountDepth());
         importedRoot.ImportSource = null;
 
-        foreach (var page in Flatten(importedPages).Where(page => !ReferenceEquals(page, importedRoot)))
+        foreach (var page in Flatten(importedPages))
         {
-            if (string.IsNullOrWhiteSpace(page.OpenApiSpec)) continue;
-            OpenApiMarkdownRenderer.ResolveSpecPath(page.FileInfo.FullName, page.OpenApiSpec, source.RepositoryPath);
+            foreach (var specPath in OpenApiMarkdownRenderer.FindReferencedSpecPaths(RemoveFrontMatter(page.ReadMarkdown(), page.FrontMatter)))
+                OpenApiMarkdownRenderer.ResolveSpecPath(page.FileInfo.FullName, specPath, source.RepositoryPath);
         }
 
         var localChildren = ExpandImports(importPage.Children, searchPattern, searchOptions);

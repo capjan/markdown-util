@@ -108,7 +108,7 @@ The validators use FluentValidation. Rules that need the whole page tree, such a
 
 ## Markdown.Renderer
 
-Turns Markdown into pages. `HtmlRenderer` holds the Markdig pipeline and the embedded HTML template, stylesheet, and scripts; `OpenApiMarkdownRenderer` reads referenced JSON or YAML specifications and appends their API reference as Markdown; `PdfRenderer` lays out the same content on A4 pages. [Rendering](Rendering.md) describes both in detail.
+Turns Markdown into pages. `HtmlRenderer` holds the Markdig pipeline and the embedded HTML template, stylesheet, and scripts; `OpenApiMarkdownRenderer` expands `openapi` code blocks from local files or inline YAML/JSON into API references and companion specification pages; `PdfRenderer` lays out the same content on A4 pages. [Rendering](Rendering.md) describes both in detail.
 
 ## Markdown.Search
 

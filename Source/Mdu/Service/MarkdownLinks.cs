@@ -18,9 +18,6 @@ public static class MarkdownLinks
         : StringComparer.Ordinal;
 
     private static readonly Regex Scheme = new(@"^[A-Za-z][A-Za-z0-9+.-]*:", RegexOptions.Compiled);
-    private static readonly Regex FrontMatterBlock = new(
-        @"\A---[ \t]*\r?\n(?<yaml>[\s\S]*?)\r?\n---[ \t]*(?:\r?\n|$)",
-        RegexOptions.Compiled);
     private static readonly MarkdownPipeline Pipeline = new MarkdownPipelineBuilder().UsePreciseSourceLocation().Build();
 
     public static bool IsMarkdownFile(string path) =>
@@ -61,7 +58,7 @@ public static class MarkdownLinks
         foreach (var definition in document.GetLinkReferenceDefinitions(true).OfType<LinkReferenceDefinition>())
             AddEdit(definition.UrlSpan, definition.Url);
 
-        if (FindOpenApiSpec(content) is { } openApiSpec)
+        foreach (var openApiSpec in OpenApiMarkdownRenderer.FindSpecPathSpans(content))
         {
             var specPath = OpenApiMarkdownRenderer.ResolveSpecPath(sourcePath, openApiSpec.Value);
             var movedSpecPath = movedPaths.GetValueOrDefault(specPath, specPath);
@@ -118,31 +115,6 @@ public static class MarkdownLinks
                 ? $"<{newDestination}>"
                 : newDestination;
             if (replacement != original) edits[(span.Start, span.Length)] = replacement;
-        }
-
-        (string Value, int Start, int Length)? FindOpenApiSpec(string markdown)
-        {
-            var frontMatter = FrontMatterBlock.Match(markdown);
-            if (!frontMatter.Success) return null;
-
-            var yamlText = frontMatter.Groups["yaml"].Value;
-            var yaml = new YamlStream();
-            try
-            {
-                yaml.Load(new StringReader(yamlText));
-            }
-            catch (YamlDotNet.Core.YamlException)
-            {
-                return null;
-            }
-
-            if (yaml.Documents.FirstOrDefault()?.RootNode is not YamlMappingNode mapping ||
-                !mapping.Children.TryGetValue(new YamlScalarNode("openapi"), out var node) ||
-                node is not YamlScalarNode scalar || string.IsNullOrWhiteSpace(scalar.Value)) return null;
-
-            var span = frontMatter.Groups["yaml"].Index + checked((int)scalar.Start.Index);
-            var length = checked((int)(scalar.End.Index - scalar.Start.Index));
-            return (scalar.Value, span, length);
         }
     }
 
