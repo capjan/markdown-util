@@ -68,3 +68,97 @@ jobs:
         EOF
         "$RUNNER_TEMP/mdu-publish/mdu" fix "$fixture"
         grep -q 'order: 1' "$fixture/Guide/README.md"
+
+  docker-smoke:
+    name: Docker smoke (${{ matrix.platform }})
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    strategy:
+      fail-fast: false
+      matrix:
+        platform: [linux/amd64, linux/arm64]
+
+    steps:
+    - name: Checkout Code
+      uses: actions/checkout@v7
+
+    - name: Set up QEMU
+      uses: docker/setup-qemu-action@v3
+
+    - name: Set up Docker Buildx
+      uses: docker/setup-buildx-action@v3
+
+    - name: Build Docker image
+      uses: docker/build-push-action@v6
+      with:
+        context: .
+        file: Source/Mdu/Dockerfile
+        platforms: ${{ matrix.platform }}
+        load: true
+        tags: mdu:smoke
+
+    - name: Smoke test container commands and mounted files
+      env:
+        PLATFORM: ${{ matrix.platform }}
+      shell: bash
+      run: |
+        docker run --rm --platform "$PLATFORM" mdu:smoke --help
+        docker run --rm --platform "$PLATFORM" --entrypoint git mdu:smoke --version
+
+        fixture="$RUNNER_TEMP/mdu-docker-smoke"
+        mkdir -p "$fixture/docs" "$fixture/import-docs" "$fixture/import-source/Docs"
+        cat > "$fixture/docs/README.md" <<'EOF'
+        # Docker smoke test
+
+        This page verifies that MDU can lint and render mounted Markdown files.
+        EOF
+        git -C "$fixture" init --quiet
+        git -C "$fixture" -c user.name="MDU Docker Smoke" -c user.email="mdu@example.com" add docs/README.md
+        GIT_AUTHOR_DATE=2026-01-02T10:00:00Z GIT_COMMITTER_DATE=2026-01-02T10:00:00Z \
+          git -C "$fixture" -c user.name="MDU Docker Smoke" -c user.email="mdu@example.com" commit --quiet -m "Add Docker smoke page"
+
+        git -C "$fixture/import-source" init --quiet --initial-branch=main
+        cat > "$fixture/import-source/Docs/README.md" <<'EOF'
+        # Imported through Docker
+
+        This page verifies Git-based repository imports in the container.
+        EOF
+        git -C "$fixture/import-source" -c user.name="MDU Docker Smoke" -c user.email="mdu@example.com" add Docs/README.md
+        git -C "$fixture/import-source" -c user.name="MDU Docker Smoke" -c user.email="mdu@example.com" commit --quiet -m "Add import fixture"
+        git clone --quiet --bare "$fixture/import-source" "$fixture/source.git"
+        cat > "$fixture/import-docs/README.md" <<'EOF'
+        ---
+        mdu:
+          import:
+            source: https://github.com/example/repository/tree/main/Docs
+        ---
+        EOF
+
+        docker run --rm --platform "$PLATFORM" \
+          --volume "$fixture:/work" \
+          --workdir /work \
+          --user "$(id -u):$(id -g)" \
+          mdu:smoke lint docs --format json
+
+        docker run --rm --platform "$PLATFORM" \
+          --volume "$fixture:/work" \
+          --workdir /work \
+          --user "$(id -u):$(id -g)" \
+          mdu:smoke render docs site
+
+        test -s "$fixture/site/index.html"
+        grep -q 'Docker smoke test' "$fixture/site/index.html"
+        grep -q 'datetime="2026-01-02"' "$fixture/site/index.html"
+        test "$(stat -c '%u' "$fixture/site/index.html")" = "$(id -u)"
+
+        docker run --rm --platform "$PLATFORM" \
+          --volume "$fixture:/work" \
+          --workdir /work \
+          --user "$(id -u):$(id -g)" \
+          --env GIT_CONFIG_COUNT=1 \
+          --env GIT_CONFIG_KEY_0=url.file:///work/source.git.insteadOf \
+          --env GIT_CONFIG_VALUE_0=https://github.com/example/repository.git \
+          mdu:smoke render import-docs imported-site
+
+        test -s "$fixture/imported-site/index.html"
+        grep -q 'Imported through Docker' "$fixture/imported-site/index.html"

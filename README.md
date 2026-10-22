@@ -24,6 +24,8 @@ dotnet tool install --global mdu
 
 Prefer a standalone executable? Download one for Windows x64, Linux x64, macOS Intel, or Apple silicon from the [GitHub Releases](https://github.com/capjan/mdu/releases/latest). These downloads do not require the .NET SDK or runtime. Linux x64 requires glibc 2.35 or newer; Alpine Linux and other musl-based distributions are not supported.
 
+Prefer Docker? Use the multi-architecture [Docker Hub image](Docs/Setup/Docker-Installation.md) for Linux `amd64` and `arm64`.
+
 **2. Write your docs** in a `docs` folder. Each folder can use a `README.md` as its section page:
 
 ```text
