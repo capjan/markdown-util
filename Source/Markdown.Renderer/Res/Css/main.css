@@ -2641,10 +2641,84 @@ th, td {
     margin-top: 1.5rem;
 }
 
+.markdown-content .openapi-filter-bar {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 0.5rem 1rem;
+    margin-bottom: 0.75rem;
+}
+
 .markdown-content .openapi-path-filter-label {
     position: relative;
     display: block;
-    margin-bottom: 0.75rem;
+    flex: 1 1 16rem;
+}
+
+/* A switch keeps the deprecated filter compact next to the search field. */
+.markdown-content .openapi-deprecated-filter {
+    position: relative;
+    display: inline-flex;
+    flex: 0 0 auto;
+    align-items: center;
+    gap: 0.5rem;
+    color: var(--text-secondary);
+    font-size: 0.85rem;
+    cursor: pointer;
+    user-select: none;
+}
+
+.markdown-content .openapi-show-deprecated {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    opacity: 0;
+}
+
+.markdown-content .openapi-switch {
+    position: relative;
+    width: 2rem;
+    height: 1.15rem;
+    flex: 0 0 auto;
+    border-radius: 999px;
+    background: var(--border);
+    transition: background-color 120ms ease;
+}
+
+.markdown-content .openapi-switch::after {
+    position: absolute;
+    top: 0.15rem;
+    left: 0.15rem;
+    width: 0.85rem;
+    height: 0.85rem;
+    border-radius: 50%;
+    background: var(--page-background);
+    box-shadow: 0 1px 2px rgb(0 0 0 / 25%);
+    content: "";
+    transition: transform 120ms ease;
+}
+
+.markdown-content .openapi-show-deprecated:checked + .openapi-switch {
+    background: var(--link);
+}
+
+.markdown-content .openapi-show-deprecated:checked + .openapi-switch::after {
+    transform: translateX(0.85rem);
+}
+
+.markdown-content .openapi-show-deprecated:focus-visible + .openapi-switch {
+    outline: 2px solid var(--link);
+    outline-offset: 2px;
+}
+
+.markdown-content .openapi-deprecated-filter-count {
+    padding: 0.05rem 0.4rem;
+    border-radius: 999px;
+    background: color-mix(in srgb, var(--alert-warning-accent) 15%, transparent);
+    color: var(--alert-warning-accent);
+    font-size: 0.72rem;
+    font-variant-numeric: tabular-nums;
+    font-weight: 700;
 }
 
 .markdown-content .openapi-path-filter-text {
@@ -3023,6 +3097,206 @@ th, td {
     cursor: pointer;
 }
 
+.markdown-content .openapi-select {
+    position: relative;
+    display: inline-block;
+    max-width: 100%;
+    vertical-align: middle;
+}
+
+.markdown-content .openapi-select-button {
+    display: inline-flex;
+    box-sizing: border-box;
+    min-width: 11rem;
+    max-width: 100%;
+    align-items: center;
+    gap: 0.6rem;
+    padding: 0.42rem 0.55rem 0.42rem 0.75rem;
+    border: 1px solid var(--border-subtle);
+    border-radius: 0.5rem;
+    background: var(--page-background);
+    color: var(--text-primary);
+    font: inherit;
+    font-size: 0.875rem;
+    line-height: 1.3;
+    text-align: left;
+    cursor: pointer;
+    transition: border-color 120ms ease, box-shadow 120ms ease;
+}
+
+.markdown-content .openapi-select-button:hover {
+    border-color: var(--border);
+}
+
+.markdown-content .openapi-select-button:focus-visible {
+    border-color: var(--link);
+    outline: none;
+    box-shadow: 0 0 0 3px color-mix(in srgb, var(--link) 20%, transparent);
+}
+
+/* An open list already shows where focus is, so the button only keeps its accent border. */
+.markdown-content .openapi-select.is-open .openapi-select-button {
+    border-color: var(--link);
+}
+
+.markdown-content .openapi-select[class*="openapi-status-"] .openapi-select-button {
+    border-color: var(--openapi-response-border);
+    background: var(--openapi-response-background);
+    color: var(--openapi-response-color);
+    font-weight: 650;
+}
+
+.markdown-content .openapi-select[class*="openapi-status-"] .openapi-select-button:focus-visible {
+    border-color: var(--openapi-response-color);
+    box-shadow: 0 0 0 3px color-mix(in srgb, var(--openapi-response-color) 20%, transparent);
+}
+
+.markdown-content .openapi-select[class*="openapi-status-"].is-open .openapi-select-button {
+    border-color: var(--openapi-response-color);
+}
+
+.markdown-content .openapi-select-label {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    overflow: hidden;
+    clip-path: inset(50%);
+    white-space: nowrap;
+}
+
+.markdown-content .openapi-select-value {
+    display: grid;
+    min-width: 0;
+    flex: 1 1 auto;
+    overflow: hidden;
+    white-space: nowrap;
+}
+
+.markdown-content .openapi-select-current,
+.markdown-content .openapi-select-sizer,
+.markdown-content .openapi-select-sizer > span {
+    display: inline-flex;
+    min-width: 0;
+    grid-area: 1 / 1;
+    align-items: baseline;
+    gap: 0.45rem;
+}
+
+.markdown-content .openapi-select-current {
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+/* The extra space matches the check mark that options show in place of the chevron. */
+.markdown-content .openapi-select-sizer {
+    display: grid;
+    padding-right: 0.4rem;
+    visibility: hidden;
+}
+
+/* The chevron sits at a fixed distance from the right edge and turns while the list is open. */
+.markdown-content .openapi-select-chevron {
+    width: 1rem;
+    height: 1rem;
+    flex: 0 0 auto;
+    margin-left: auto;
+    fill: none;
+    stroke: currentColor;
+    stroke-linecap: round;
+    stroke-linejoin: round;
+    stroke-width: 1.8;
+    opacity: 0.75;
+    transition: transform 120ms ease;
+}
+
+.markdown-content .openapi-select.is-open .openapi-select-chevron {
+    transform: rotate(180deg);
+}
+
+.markdown-content .openapi-select-list {
+    position: absolute;
+    z-index: 25;
+    top: calc(100% + 0.3rem);
+    left: 0;
+    box-sizing: border-box;
+    width: 100%;
+    max-height: 18rem;
+    margin: 0;
+    padding: 0.3rem;
+    overflow: auto;
+    border: 1px solid var(--border);
+    border-radius: 0.6rem;
+    background: var(--surface-header);
+    box-shadow: 0 12px 32px rgb(0 0 0 / 22%);
+    list-style: none;
+    outline: none;
+}
+
+.markdown-content .openapi-select.opens-up .openapi-select-list {
+    top: auto;
+    bottom: calc(100% + 0.3rem);
+}
+
+.markdown-content .openapi-select-list[hidden] {
+    display: none;
+}
+
+.markdown-content .openapi-select-option {
+    display: flex;
+    align-items: baseline;
+    gap: 0.45rem;
+    margin: 0;
+    padding: 0.45rem 0.6rem;
+    border-radius: 0.4rem;
+    color: var(--text-primary);
+    font-size: 0.875rem;
+    font-weight: 450;
+    white-space: nowrap;
+    cursor: pointer;
+}
+
+.markdown-content .openapi-select-option .openapi-select-text {
+    min-width: 0;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.markdown-content .openapi-select-option.is-active {
+    background: var(--surface-current);
+}
+
+.markdown-content .openapi-select-option[aria-selected="true"] {
+    font-weight: 600;
+}
+
+.markdown-content .openapi-select-code {
+    font-family: var(--font-mono);
+    font-variant-numeric: tabular-nums;
+    font-weight: 700;
+}
+
+.markdown-content .openapi-select-option[class*="openapi-status-"] .openapi-select-code {
+    color: var(--openapi-response-color);
+}
+
+.markdown-content .openapi-select-check {
+    width: 0.95rem;
+    height: 0.95rem;
+    flex: 0 0 auto;
+    align-self: center;
+    margin-left: auto;
+    fill: none;
+    stroke: var(--link);
+    stroke-linecap: round;
+    stroke-linejoin: round;
+    stroke-width: 2;
+    visibility: hidden;
+}
+
+.markdown-content .openapi-select-option[aria-selected="true"] .openapi-select-check {
+    visibility: visible;
+}
+
 .markdown-content .openapi-media-type-control {
     margin: 0.85rem 0 0.35rem;
 }
@@ -3095,9 +3369,16 @@ th, td {
 }
 
 .markdown-content .openapi-request-body > h4:first-child {
-    margin-top: 0.75rem;
-    margin-bottom: 1rem;
-    font-size: 1rem;
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    margin-top: 0.9rem;
+    margin-bottom: 0.6rem;
+    color: var(--text-secondary);
+    font-size: 0.72rem;
+    font-weight: 700;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
 }
 
 .markdown-content .openapi-request-description > :first-child {
@@ -3150,7 +3431,7 @@ th, td {
     margin-top: 0;
 }
 
-.markdown-content .openapi-response-tabpanel > p > strong:only-child > code:only-child,
+.markdown-content .openapi-response-tabpanel > p > strong:first-child > code:only-child,
 .markdown-content .openapi-response-tabpanel > h6 code {
     padding: 0;
     border: 0;
@@ -3199,6 +3480,199 @@ th, td {
     cursor: help;
 }
 
+.markdown-content .openapi-badge {
+    display: inline-flex;
+    align-items: center;
+    padding: 0.12rem 0.42rem;
+    border-radius: 999px;
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Helvetica, Arial, sans-serif;
+    font-size: 0.66rem;
+    font-weight: 700;
+    letter-spacing: 0.05em;
+    line-height: 1.2;
+    text-decoration: none;
+    text-transform: uppercase;
+    vertical-align: 0.1em;
+    white-space: nowrap;
+}
+
+.markdown-content .openapi-badge-deprecated {
+    background: color-mix(in srgb, var(--alert-warning-accent) 15%, transparent);
+    color: var(--alert-warning-accent);
+}
+
+.markdown-content .openapi-badge-required {
+    background: color-mix(in srgb, var(--alert-caution-accent) 13%, transparent);
+    color: var(--alert-caution-accent);
+}
+
+/* Deprecated items stay readable; the badge and a light strike-through carry the status. */
+.markdown-content .openapi-declaration-deprecated > .openapi-declaration-name,
+.markdown-content details.openapi-endpoint-deprecated > summary.openapi-operation .openapi-path {
+    text-decoration: line-through;
+    text-decoration-color: var(--text-secondary);
+    text-decoration-thickness: 1.5px;
+}
+
+.markdown-content details.openapi-endpoint-deprecated > summary.openapi-operation .openapi-path {
+    color: var(--text-secondary);
+}
+
+.markdown-content details.openapi-endpoint-deprecated > summary.openapi-operation > code:first-child {
+    opacity: 0.65;
+}
+
+/* The method stripe fades so active endpoints keep the stronger visual weight. */
+.markdown-content details.openapi-endpoint.openapi-endpoint-deprecated {
+    box-shadow: inset 3px 0 0 color-mix(in srgb, var(--openapi-method-color) 35%, var(--border-subtle));
+}
+
+.markdown-content details.openapi-endpoint-deprecated > summary.openapi-operation .openapi-operation-summary {
+    opacity: 0.8;
+}
+
+.markdown-content details.openapi-endpoint > summary.openapi-operation .openapi-operation-summary {
+    order: 1;
+}
+
+.markdown-content .openapi-deprecated-notice {
+    margin: 0.9rem 0 0;
+    padding: 0.5rem 0.75rem;
+    border-left: 3px solid var(--alert-warning-accent);
+    border-radius: 0.2rem 0.45rem 0.45rem 0.2rem;
+    background: color-mix(in srgb, var(--alert-warning-accent) 9%, transparent);
+    color: var(--text-primary);
+    font-size: 0.85rem;
+}
+
+.markdown-content .openapi-lock {
+    display: inline-flex;
+    flex: 0 0 auto;
+    order: 2;
+    width: 0.95rem;
+    height: 0.95rem;
+    margin-left: auto;
+    color: var(--text-secondary);
+    cursor: help;
+}
+
+.markdown-content .openapi-lock svg,
+.markdown-content .openapi-security-label svg {
+    width: 100%;
+    height: 100%;
+    fill: none;
+    stroke: currentColor;
+    stroke-linecap: round;
+    stroke-linejoin: round;
+    stroke-width: 1.6;
+}
+
+.markdown-content .openapi-security {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: baseline;
+    gap: 0.4rem 0.75rem;
+    margin: 0.85rem 0 0;
+    font-size: 0.85rem;
+}
+
+.markdown-content .openapi-security-label {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.35rem;
+    color: var(--text-secondary);
+    font-size: 0.72rem;
+    font-weight: 700;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+}
+
+.markdown-content .openapi-security-label svg {
+    width: 0.85rem;
+    height: 0.85rem;
+}
+
+.markdown-content .openapi-security ul {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.35rem 0.75rem;
+    margin: 0;
+    padding: 0;
+    list-style: none;
+}
+
+.markdown-content .openapi-security li,
+.markdown-content .openapi-auth li {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: baseline;
+    gap: 0.25rem 0.45rem;
+    margin: 0;
+}
+
+.markdown-content .openapi-security li + li::before {
+    margin-right: 0.3rem;
+    color: var(--text-secondary);
+    content: "or";
+}
+
+.markdown-content .openapi-security code:not(.openapi-enum-value) {
+    padding: 0;
+    border: 0;
+    background: transparent;
+    font-size: 0.82rem;
+    font-weight: 600;
+}
+
+.markdown-content .openapi-security-kind,
+.markdown-content .openapi-security-and {
+    color: var(--text-secondary);
+    font-size: 0.82rem;
+}
+
+.markdown-content .openapi-security-kind code {
+    padding: 0;
+    border: 0;
+    background: transparent;
+    font-size: 0.8rem;
+}
+
+.markdown-content .openapi-api-meta {
+    margin: -0.75rem 0 1.25rem;
+    color: var(--text-secondary);
+    font-size: 0.8rem;
+}
+
+.markdown-content .openapi-response-headers-label {
+    margin: 0.75rem 0 0.25rem;
+    color: var(--text-secondary);
+    font-size: 0.72rem;
+    font-weight: 700;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+}
+
+.markdown-content .openapi-facets {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.15rem 0.5rem;
+    margin-top: 0.3rem;
+    color: var(--text-secondary);
+    font-size: 0.75rem;
+}
+
+.markdown-content .openapi-facet + .openapi-facet::before {
+    margin-right: 0.5rem;
+    color: var(--text-secondary);
+    content: "·";
+    opacity: 0.6;
+}
+
+.markdown-content .openapi-facet code {
+    padding: 0.05rem 0.3rem;
+    font-size: 0.72rem;
+}
+
 .markdown-content .openapi-enum {
     display: flex;
     flex-wrap: wrap;
@@ -3235,7 +3709,9 @@ th, td {
     visibility: hidden;
 }
 
-.markdown-content .openapi-schema-table:not(.descriptions-visible) .openapi-description-label {
+.markdown-content .openapi-schema-table:not(.descriptions-visible) .openapi-description-label,
+.markdown-content .openapi-schema-table-plain > table > thead > tr > th:last-child,
+.markdown-content .openapi-schema-table-plain > table > tbody > tr > td:last-child {
     display: none;
 }
 

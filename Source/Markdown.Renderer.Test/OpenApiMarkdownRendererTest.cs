@@ -46,6 +46,7 @@ public class OpenApiMarkdownRendererTest
         Assert.Contains($"id=\"{link.Groups["anchor"].Value}\"", html);
         Assert.Contains("class=\"openapi-type-optional\">?</span>", cell);
         Assert.DoesNotContain("class=\"openapi-description-toggle\"", html);
+        Assert.Contains("<div class=\"openapi-schema-table openapi-schema-table-plain\">", html);
     }
 
     [Fact]
@@ -91,7 +92,10 @@ public class OpenApiMarkdownRendererTest
         Assert.Contains("<details class=\"openapi-endpoint openapi-method-get\">", html);
         Assert.Contains("<span class=\"openapi-tag-title\"><code>Orders</code></span>", html);
         Assert.Contains("<span class=\"openapi-tag-description\">Order operations</span>", html);
-        Assert.Contains("class=\"openapi-tag-method-count openapi-method-get\" data-method=\"openapi-method-get\" data-count=\"1\" data-tooltip=\"1 GET endpoint\" aria-label=\"1 GET endpoint\">1", html);
+        Assert.Contains("class=\"openapi-tag-method-count openapi-method-get\" data-method=\"openapi-method-get\" data-count=\"1\" data-deprecated=\"0\" data-tooltip=\"1 GET endpoint\" aria-label=\"1 GET endpoint\">1", html);
+        Assert.DoesNotContain("<input type=\"checkbox\" class=\"openapi-show-deprecated\"", html);
+        Assert.Contains("<div class=\"openapi-media-type-label\">", html);
+        Assert.Contains("const enhanceSelects = root =>", html);
         var operationId = System.Text.RegularExpressions.Regex.Match(
             operationHeading.Groups["attributes"].Value,
             "id=\"(?<id>[^\"]+)\"").Groups["id"].Value;
@@ -295,6 +299,103 @@ public class OpenApiMarkdownRendererTest
         Assert.DoesNotContain("openapi-shared-->", html);
         Assert.Contains("<td><span class=\"openapi-declaration\"><span class=\"openapi-declaration-name\">id</span>", html);
         Assert.Contains("template[data-openapi-shared=", html);
+    }
+
+    [Fact]
+    public async Task MarksDeprecationSecurityConstraintsAndHeaders()
+    {
+        var html = await RenderHtml("""
+            {
+              "openapi": "3.1.0",
+              "info": { "title": "Items", "version": "1", "license": { "name": "MIT", "identifier": "MIT" } },
+              "security": [{ "bearer": [] }],
+              "paths": {
+                "/items": { "get": {
+                  "summary": "List items", "description": "List items.",
+                  "parameters": [
+                    { "name": "q", "in": "query", "deprecated": true, "schema": { "type": "string", "minLength": 3, "maxLength": 64 } },
+                    { "name": "limit", "in": "query", "example": 50, "schema": { "type": "integer", "minimum": 1, "maximum": 100 } }
+                  ],
+                  "responses": { "200": {
+                    "description": "Items",
+                    "headers": { "X-Rate-Limit": { "required": true, "schema": { "type": "integer", "format": "int32" } } },
+                    "content": { "application/json": { "schema": { "$ref": "#/components/schemas/Item" } } }
+                  } }
+                } },
+                "/items/{id}": { "delete": {
+                  "deprecated": true, "security": [],
+                  "parameters": [{ "name": "id", "in": "path", "required": true, "schema": { "type": "string" } }],
+                  "responses": { "204": { "description": "Deleted" } }
+                } }
+              },
+              "components": {
+                "securitySchemes": { "bearer": { "type": "http", "scheme": "bearer", "bearerFormat": "JWT" } },
+                "schemas": { "Item": { "type": "object", "properties": {
+                  "id": { "type": "string", "readOnly": true },
+                  "password": { "type": "string", "writeOnly": true },
+                  "price": { "type": "number", "exclusiveMinimum": 0 },
+                  "labels": { "type": "object", "additionalProperties": { "type": "string" } },
+                  "legacyCode": { "type": "string", "deprecated": true },
+                  "legacy": { "$ref": "#/components/schemas/Legacy" }
+                } },
+                "Legacy": { "type": "object", "deprecated": true, "properties": { "code": { "type": "string" } } } }
+              }
+            }
+            """);
+
+        var plain = System.Text.RegularExpressions.Regex.Replace(html, "<[^>]+>", "");
+        Assert.Contains("<details class=\"openapi-endpoint openapi-method-delete openapi-endpoint-deprecated\">", html);
+        Assert.Contains("This operation is deprecated and should no longer be used.", html);
+        Assert.Contains("data-deprecated=\"1\" data-tooltip=\"1 DELETE endpoint, 1 deprecated\"", html);
+        Assert.Contains("<input type=\"checkbox\" class=\"openapi-show-deprecated\" checked><span class=\"openapi-switch\" aria-hidden=\"true\"></span>Show deprecated <span class=\"openapi-deprecated-filter-count\">1</span>", html);
+        Assert.Single(System.Text.RegularExpressions.Regex.Matches(html, "class=\"openapi-lock\""));
+        Assert.Contains("data-tooltip=\"Requires bearer\"", html);
+        Assert.Contains("<span class=\"openapi-security-kind\">Bearer token (JWT)</span>", html);
+        Assert.Contains("License MIT", plain);
+        Assert.DoesNotContain("<p>List items.</p>", html);
+        Assert.Contains("openapi-declaration openapi-declaration-deprecated", html);
+        Assert.Contains("<span class=\"openapi-facet\">length 3–64</span>", html);
+        Assert.Contains("<span class=\"openapi-facet\">≥ 1</span><span class=\"openapi-facet\">≤ 100</span><span class=\"openapi-facet\">example <code>50</code></span>", html);
+        Assert.Contains("<span class=\"openapi-facet\">read-only</span>", html);
+        Assert.Contains("<span class=\"openapi-facet\">&gt; 0</span>", html);
+        Assert.Contains("labels: [string: string]", plain);
+        Assert.Contains("X-Rate-Limit: int32", plain);
+        Assert.Contains("Response headers", html);
+        Assert.Contains("&quot;additionalProp1&quot;", html);
+        Assert.Matches("<h6 id=\"[^\"]+-legacy\" class=\"openapi-response-reference-schema\"><code>Legacy</code> <span class=\"openapi-badge openapi-badge-deprecated\">Deprecated</span>", html);
+    }
+
+    [Theory]
+    [InlineData(true, "password", "id")]
+    [InlineData(false, "id", "password")]
+    public async Task GeneratedExamplesFollowAccessModesAndBounds(bool request, string included, string excluded)
+    {
+        var html = await RenderHtml($$"""
+            {
+              "openapi": "3.1.0",
+              "info": { "title": "Accounts", "version": "1" },
+              "paths": { "/accounts": { "post": {
+                "requestBody": { "content": { "application/json": { "schema": { "$ref": "#/components/schemas/Account" } } } },
+                "responses": { "201": { "description": "Created", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/Account" } } } } }
+              } } },
+              "components": { "schemas": { "Account": { "type": "object", "properties": {
+                "id": { "type": "string", "readOnly": true },
+                "password": { "type": "string", "writeOnly": true },
+                "balance": { "type": "number", "exclusiveMinimum": 0 },
+                "level": { "type": "integer", "minimum": 3 }
+              } } } }
+            }
+            """);
+
+        var section = request
+            ? html[html.IndexOf("class=\"openapi-request-body\"", StringComparison.Ordinal)..html.IndexOf("class=\"openapi-responses\"", StringComparison.Ordinal)]
+            : html[html.IndexOf("class=\"openapi-responses\"", StringComparison.Ordinal)..];
+        var example = System.Text.RegularExpressions.Regex.Replace(
+            System.Text.RegularExpressions.Regex.Match(section, "<pre.*?</pre>", System.Text.RegularExpressions.RegexOptions.Singleline).Value, "<[^>]+>", "");
+        Assert.Contains($"&quot;{included}&quot;", example);
+        Assert.DoesNotContain($"&quot;{excluded}&quot;", example);
+        Assert.Contains("&quot;balance&quot;: 1", example);
+        Assert.Contains("&quot;level&quot;: 3", example);
     }
 
     private static async Task<string> RenderHtml(string specification)

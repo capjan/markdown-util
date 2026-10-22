@@ -27,7 +27,7 @@ public class HtmlRenderer
         @"^Media type\s*<code>(?<mediaType>[^<]+)</code>",
         RegexOptions.Compiled);
     private static readonly Regex OpenApiTagEndpointRegex = new(
-        "<details class=\"openapi-endpoint (?<method>openapi-method-[a-z]+)\"",
+        "<details class=\"openapi-endpoint (?<method>openapi-method-[a-z]+)(?<deprecated> openapi-endpoint-deprecated)?\"",
         RegexOptions.Compiled);
     private static readonly Regex OpenApiOperationSummaryRegex = new(
         @"\A\s*<p class=""openapi-operation-summary"">(?<summary>.*?)</p>\s*",
@@ -595,6 +595,7 @@ public class HtmlRenderer
             output.Append(renderedMarkdown, copiedUntil, heading.Index - copiedUntil);
             output.Append("<details class=\"openapi-endpoint ")
                 .Append(HtmlEncoder.Default.Encode(methodClass))
+                .Append(HasClass(heading, "openapi-deprecated") ? " openapi-endpoint-deprecated" : string.Empty)
                 .AppendLine("\">");
             output.Append("<summary id=\"")
                 .Append(HtmlEncoder.Default.Encode(id.Groups["id"].Value))
@@ -629,7 +630,7 @@ public class HtmlRenderer
             var hasDescriptions = Regex.Matches(match.Value, @"<tr>\s*<td>.*?</td>\s*<td>(?<description>.*?)</td>\s*</tr>", RegexOptions.Singleline)
                 .Cast<Match>().Any(row => !string.IsNullOrWhiteSpace(WebUtility.HtmlDecode(
                     Regex.Replace(row.Groups["description"].Value, "<[^>]+>", string.Empty))));
-            if (!hasDescriptions) return $"<div class=\"openapi-schema-table\">{match.Value}</div>";
+            if (!hasDescriptions) return $"<div class=\"openapi-schema-table openapi-schema-table-plain\">{match.Value}</div>";
             // The toggle sits in the description header cell, which stays visible while the column is collapsed.
             var headers = OpenApiTableHeaderRegex.Matches(match.Value);
             var header = headers[^1];
@@ -654,8 +655,8 @@ public class HtmlRenderer
             {
                 response.Heading,
                 Status = WebUtility.HtmlDecode(response.Code.Groups["status"].Value),
-                Label = WebUtility.HtmlDecode(response.Code.Groups["status"].Value +
-                    OpenApiPermalinkRegex.Replace(response.Code.Groups["suffix"].Value, string.Empty)).Trim()
+                Label = OpenApiResponseLabel(WebUtility.HtmlDecode(response.Code.Groups["status"].Value +
+                    OpenApiPermalinkRegex.Replace(response.Code.Groups["suffix"].Value, string.Empty)).Trim())
             })
             .ToArray();
         if (responseHeadings.Length == 0) return content;
@@ -751,6 +752,15 @@ public class HtmlRenderer
         return output.ToString();
     }
 
+    // "default - Default" says the same twice, so a name that only repeats the status code stands alone.
+    private static string OpenApiResponseLabel(string label)
+    {
+        var separator = label.IndexOf(" - ", StringComparison.Ordinal);
+        return separator > 0 && label[..separator].Equals(label[(separator + 3)..], StringComparison.OrdinalIgnoreCase)
+            ? label[(separator + 3)..]
+            : label;
+    }
+
     private static string WrapOpenApiRequestBodies(string content, string operationScopeId)
     {
         var requestHeadings = HeadingRegex.Matches(content)
@@ -827,7 +837,7 @@ public class HtmlRenderer
     {
         if (mediaTypes.Count == 0) return;
         output.AppendLine("<div class=\"openapi-media-type-control\">");
-        output.Append("<label class=\"openapi-media-type-label\"><span class=\"openapi-media-type-heading\">Media Type <span class=\"openapi-media-type-position\">1 of ")
+        output.Append("<div class=\"openapi-media-type-label\"><span class=\"openapi-media-type-heading\">Media Type <span class=\"openapi-media-type-position\">1 of ")
             .Append(mediaTypes.Count)
             .AppendLine("</span></span>");
         output.AppendLine("<select class=\"openapi-media-type-select\" aria-label=\"Media type\">");
@@ -838,7 +848,7 @@ public class HtmlRenderer
             output.Append('>').Append(HtmlEncoder.Default.Encode(mediaTypes[index].Name)).AppendLine("</option>");
         }
         output.AppendLine("</select>");
-        output.AppendLine("</label>");
+        output.AppendLine("</div>");
         output.AppendLine("</div>");
     }
 
@@ -989,6 +999,7 @@ public class HtmlRenderer
             .ToArray();
         if (!groupHeadings.Any(match => HasClass(match, "openapi-tag"))) return renderedMarkdown;
 
+        var deprecatedEndpoints = OpenApiTagEndpointRegex.Matches(renderedMarkdown).Count(match => match.Groups["deprecated"].Success);
         var output = new StringBuilder(renderedMarkdown.Length);
         var copiedUntil = 0;
         for (var index = 0; index < groupHeadings.Length; index++)
@@ -1013,7 +1024,14 @@ public class HtmlRenderer
             if (index == 0)
             {
                 output.AppendLine("<section class=\"openapi-tag-list\" aria-label=\"API endpoints\">");
+                output.AppendLine("<div class=\"openapi-filter-bar\">");
                 output.AppendLine("<label class=\"openapi-path-filter-label\"><span class=\"openapi-path-filter-text\">Filter endpoints</span><svg class=\"openapi-path-filter-icon\" viewBox=\"0 0 20 20\" aria-hidden=\"true\" focusable=\"false\"><circle cx=\"8.5\" cy=\"8.5\" r=\"5.5\"></circle><path d=\"m12.6 12.6 4.4 4.4\"></path></svg><input type=\"search\" class=\"openapi-path-filter\" placeholder=\"Search endpoint paths…\" autocomplete=\"off\" spellcheck=\"false\"></label>");
+                if (deprecatedEndpoints > 0)
+                    output.Append("<label class=\"openapi-deprecated-filter\"><input type=\"checkbox\" class=\"openapi-show-deprecated\" checked>")
+                        .Append("<span class=\"openapi-switch\" aria-hidden=\"true\"></span>Show deprecated <span class=\"openapi-deprecated-filter-count\">")
+                        .Append(deprecatedEndpoints)
+                        .AppendLine("</span></label>");
+                output.AppendLine("</div>");
                 output.AppendLine("<p class=\"openapi-filter-status\" role=\"status\" hidden></p>");
                 output.AppendLine("<div class=\"openapi-tag-rows\">");
             }
@@ -1046,10 +1064,12 @@ public class HtmlRenderer
     private static void AppendOpenApiTagMethodCounts(StringBuilder output, string groupContent)
     {
         var counts = new Dictionary<string, int>(StringComparer.Ordinal);
+        var deprecatedCounts = new Dictionary<string, int>(StringComparer.Ordinal);
         foreach (Match match in OpenApiTagEndpointRegex.Matches(groupContent))
         {
             var method = match.Groups["method"].Value;
             counts[method] = counts.GetValueOrDefault(method) + 1;
+            if (match.Groups["deprecated"].Success) deprecatedCounts[method] = deprecatedCounts.GetValueOrDefault(method) + 1;
         }
 
         if (counts.Count == 0) return;
@@ -1059,13 +1079,17 @@ public class HtmlRenderer
                      .ThenBy(pair => pair.Key, StringComparer.Ordinal))
         {
             var methodName = method["openapi-method-".Length..].ToUpperInvariant();
-            var label = $"{count} {methodName} {(count == 1 ? "endpoint" : "endpoints")}";
+            var deprecated = deprecatedCounts.GetValueOrDefault(method);
+            var label = $"{count} {methodName} {(count == 1 ? "endpoint" : "endpoints")}" +
+                        (deprecated > 0 ? $", {deprecated} deprecated" : string.Empty);
             output.Append("<span class=\"openapi-tag-method-count ")
                 .Append(method)
                 .Append("\" data-method=\"")
                 .Append(method)
                 .Append("\" data-count=\"")
                 .Append(count)
+                .Append("\" data-deprecated=\"")
+                .Append(deprecated)
                 .Append("\" data-tooltip=\"")
                 .Append(label)
                 .Append("\" aria-label=\"")
@@ -1110,35 +1134,43 @@ public class HtmlRenderer
             });
         };
         document.addEventListener("toggle", event => {
-            if (event.target instanceof HTMLDetailsElement && event.target.matches(".openapi-endpoint"))
-                fillSharedContent(event.target);
+            if (!(event.target instanceof HTMLDetailsElement) || !event.target.matches(".openapi-endpoint")) return;
+            fillSharedContent(event.target);
+            if (event.target.open) enhanceSelects(event.target);
         }, true);
 
         const openApiFilterStates = new WeakMap();
-        document.addEventListener("input", event => {
-            if (!event.target.matches(".openapi-path-filter")) return;
-            const input = event.target;
-            const list = input.closest(".openapi-tag-list");
+        const applyEndpointFilter = list => {
+            const input = list.querySelector(".openapi-path-filter");
             const query = input.value.trim().toLowerCase();
+            const showDeprecated = list.querySelector(".openapi-show-deprecated")?.checked ?? true;
+            const filtered = query.length > 0 || !showDeprecated;
             const groups = [...list.querySelectorAll(".openapi-tag-group")];
             if (query && !openApiFilterStates.has(input))
                 openApiFilterStates.set(input, new Map(groups.map(group => [group, group.open])));
             let matches = 0;
+            let hiddenDeprecated = 0;
             groups.forEach(group => {
                 let visible = 0;
                 const visibleByMethod = new Map();
+                const deprecatedByMethod = new Map();
                 group.querySelectorAll(".openapi-endpoint").forEach(endpoint => {
                     const path = endpoint.querySelector(".openapi-path").textContent.toLowerCase();
-                    endpoint.hidden = !path.includes(query);
+                    const deprecated = endpoint.classList.contains("openapi-endpoint-deprecated");
+                    const matchesQuery = path.includes(query);
+                    endpoint.hidden = !matchesQuery || (deprecated && !showDeprecated);
+                    if (matchesQuery && endpoint.hidden) hiddenDeprecated++;
                     if (endpoint.hidden) return;
                     visible++;
                     const method = [...endpoint.classList].find(name => name.startsWith("openapi-method-"));
                     visibleByMethod.set(method, (visibleByMethod.get(method) ?? 0) + 1);
+                    if (deprecated) deprecatedByMethod.set(method, (deprecatedByMethod.get(method) ?? 0) + 1);
                 });
                 group.querySelectorAll(".openapi-tag-method-count").forEach(counter => {
-                    const count = query ? visibleByMethod.get(counter.dataset.method) ?? 0 : Number(counter.dataset.count);
+                    const count = filtered ? visibleByMethod.get(counter.dataset.method) ?? 0 : Number(counter.dataset.count);
+                    const deprecated = filtered ? deprecatedByMethod.get(counter.dataset.method) ?? 0 : Number(counter.dataset.deprecated);
                     const method = counter.dataset.method.slice("openapi-method-".length).toUpperCase();
-                    const label = `${count} ${method} ${count === 1 ? "endpoint" : "endpoints"}`;
+                    const label = `${count} ${method} ${count === 1 ? "endpoint" : "endpoints"}${deprecated > 0 ? `, ${deprecated} deprecated` : ""}`;
                     counter.hidden = count === 0;
                     counter.textContent = count;
                     counter.dataset.tooltip = label;
@@ -1151,11 +1183,176 @@ public class HtmlRenderer
             });
             if (!query) openApiFilterStates.delete(input);
             const status = list.querySelector(".openapi-filter-status");
-            status.hidden = !query;
-            status.textContent = matches === 0 ? "No matching endpoints." : `${matches} matching ${matches === 1 ? "endpoint" : "endpoints"}`;
+            status.hidden = !filtered;
+            const found = matches === 0
+                ? "No matching endpoints"
+                : `${matches} ${query ? "matching " : ""}${matches === 1 ? "endpoint" : "endpoints"}`;
+            status.textContent = `${found}${hiddenDeprecated > 0 ? `, ${hiddenDeprecated} deprecated hidden` : ""}.`;
+        };
+        document.addEventListener("input", event => {
+            if (event.target.matches(".openapi-path-filter")) applyEndpointFilter(event.target.closest(".openapi-tag-list"));
+        });
+
+        // Response and media type choices use a listbox instead of the native select, which stays hidden as
+        // the source of truth so the change handler below keeps working and the page still works without script.
+        const statusClasses = ["openapi-status-2xx", "openapi-status-4xx", "openapi-status-5xx", "openapi-status-neutral"];
+        let openApiSelectCount = 0;
+        const selectOptionMarkup = option => {
+            const text = option.textContent;
+            const separator = text.indexOf(" - ");
+            const label = separator < 0 || !option.closest(".openapi-response-select")
+                ? `<span class="openapi-select-text"></span>`
+                : `<span class="openapi-select-code"></span> <span class="openapi-select-text"></span>`;
+            const container = document.createElement("span");
+            container.innerHTML = label;
+            const parts = container.children.length === 2 ? [text.slice(0, separator), text.slice(separator + 3)] : [text];
+            [...container.children].forEach((child, index) => child.textContent = parts[index]);
+            return container.innerHTML;
+        };
+        const syncSelect = select => {
+            const control = select.nextElementSibling;
+            if (!control?.matches(".openapi-select")) return;
+            control.querySelector(".openapi-select-current").innerHTML = selectOptionMarkup(select.selectedOptions[0]);
+            control.classList.remove(...statusClasses);
+            const statusClass = statusClasses.find(name => select.classList.contains(name));
+            if (statusClass) control.classList.add(statusClass);
+            control.querySelectorAll("[role=option]").forEach((option, index) =>
+                option.setAttribute("aria-selected", index === select.selectedIndex ? "true" : "false"));
+        };
+        const enhanceSelects = root => {
+            root.querySelectorAll("select.openapi-response-select, select.openapi-media-type-select").forEach(select => {
+                if (select.dataset.enhanced) return;
+                select.dataset.enhanced = "true";
+                const id = `openapi-select-${++openApiSelectCount}`;
+                const label = select.getAttribute("aria-label") ?? "";
+                const control = document.createElement("div");
+                control.className = "openapi-select";
+                control.innerHTML = `<button type="button" class="openapi-select-button" aria-haspopup="listbox" aria-expanded="false" aria-controls="${id}-list" aria-labelledby="${id}-label ${id}-current"><span class="openapi-select-label" id="${id}-label"></span><span class="openapi-select-value"><span class="openapi-select-current" id="${id}-current"></span><span class="openapi-select-sizer" aria-hidden="true"></span></span><svg class="openapi-select-chevron" viewBox="0 0 20 20" aria-hidden="true" focusable="false"><path d="m6 8 4 4 4-4"></path></svg></button><ul class="openapi-select-list" id="${id}-list" role="listbox" tabindex="-1" hidden></ul>`;
+                control.querySelector(".openapi-select-label").textContent = `${label}: `;
+                const list = control.querySelector(".openapi-select-list");
+                list.setAttribute("aria-label", label);
+                // Every label sits invisibly in the button, so it is as wide as its longest option and the list.
+                const sizer = control.querySelector(".openapi-select-sizer");
+                [...select.options].forEach(option => {
+                    const label = document.createElement("span");
+                    label.innerHTML = selectOptionMarkup(option);
+                    sizer.append(label);
+                });
+                [...select.options].forEach((option, index) => {
+                    const item = document.createElement("li");
+                    item.id = `${id}-option-${index}`;
+                    item.className = `openapi-select-option ${option.className}`.trim();
+                    item.setAttribute("role", "option");
+                    item.dataset.index = index;
+                    item.innerHTML = `${selectOptionMarkup(option)}<svg class="openapi-select-check" viewBox="0 0 20 20" aria-hidden="true" focusable="false"><path d="m5 10.5 3.2 3.2L15 7"></path></svg>`;
+                    list.append(item);
+                });
+                select.after(control);
+                select.hidden = true;
+                select.tabIndex = -1;
+                syncSelect(select);
+            });
+        };
+        const setActiveOption = (control, index) => {
+            const options = [...control.querySelectorAll("[role=option]")];
+            const active = options[Math.max(0, Math.min(index, options.length - 1))];
+            options.forEach(option => option.classList.toggle("is-active", option === active));
+            control.querySelector("[role=listbox]").setAttribute("aria-activedescendant", active.id);
+            active.scrollIntoView({ block: "nearest" });
+        };
+        const activeOptionIndex = control =>
+            Number(control.querySelector("[role=option].is-active")?.dataset.index ?? 0);
+        const closeSelect = (control, focusButton) => {
+            const list = control.querySelector("[role=listbox]");
+            if (list.hidden) return;
+            list.hidden = true;
+            control.classList.remove("is-open", "opens-up");
+            control.querySelector(".openapi-select-button").setAttribute("aria-expanded", "false");
+            if (focusButton) control.querySelector(".openapi-select-button").focus();
+        };
+        const openSelect = control => {
+            document.querySelectorAll(".openapi-select.is-open").forEach(other => closeSelect(other, false));
+            const select = control.previousElementSibling;
+            const list = control.querySelector("[role=listbox]");
+            list.hidden = false;
+            control.classList.add("is-open");
+            control.querySelector(".openapi-select-button").setAttribute("aria-expanded", "true");
+            const bounds = control.getBoundingClientRect();
+            const spaceBelow = document.documentElement.clientHeight - bounds.bottom;
+            control.classList.toggle("opens-up", spaceBelow < list.offsetHeight + 12 && bounds.top > spaceBelow);
+            list.focus({ preventScroll: true });
+            setActiveOption(control, select.selectedIndex);
+        };
+        const chooseOption = (control, index) => {
+            const select = control.previousElementSibling;
+            if (select.selectedIndex !== index) {
+                select.selectedIndex = index;
+                select.dispatchEvent(new Event("change", { bubbles: true }));
+            }
+            syncSelect(select);
+            closeSelect(control, true);
+        };
+        let typeahead = "";
+        let typeaheadTimer;
+        document.addEventListener("click", event => {
+            const button = event.target.closest(".openapi-select-button");
+            const option = event.target.closest(".openapi-select-option");
+            document.querySelectorAll(".openapi-select.is-open").forEach(control => {
+                if (!control.contains(event.target)) closeSelect(control, false);
+            });
+            if (option) chooseOption(option.closest(".openapi-select"), Number(option.dataset.index));
+            else if (button) {
+                const control = button.closest(".openapi-select");
+                if (control.classList.contains("is-open")) closeSelect(control, true);
+                else openSelect(control);
+            }
+        });
+        document.addEventListener("pointermove", event => {
+            const option = event.target.closest?.(".openapi-select-option");
+            if (option && !option.classList.contains("is-active")) setActiveOption(option.closest(".openapi-select"), Number(option.dataset.index));
+        });
+        document.addEventListener("focusout", event => {
+            const control = event.target.closest?.(".openapi-select");
+            if (control && !control.contains(event.relatedTarget)) closeSelect(control, false);
+        });
+        document.addEventListener("keydown", event => {
+            const control = event.target.closest?.(".openapi-select");
+            if (!control) return;
+            const open = control.classList.contains("is-open");
+            if (!open) {
+                if (event.target.matches(".openapi-select-button") && ["ArrowDown", "ArrowUp", "Enter", " "].includes(event.key)) {
+                    event.preventDefault();
+                    openSelect(control);
+                }
+                return;
+            }
+            const count = control.querySelectorAll("[role=option]").length;
+            const index = activeOptionIndex(control);
+            if (event.key === "ArrowDown") setActiveOption(control, index + 1);
+            else if (event.key === "ArrowUp") setActiveOption(control, index - 1);
+            else if (event.key === "Home" || event.key === "PageUp") setActiveOption(control, 0);
+            else if (event.key === "End" || event.key === "PageDown") setActiveOption(control, count - 1);
+            else if (event.key === "Enter" || event.key === " ") chooseOption(control, index);
+            else if (event.key === "Escape") closeSelect(control, true);
+            else if (event.key === "Tab") { closeSelect(control, false); return; }
+            else if (event.key.length === 1 && !event.ctrlKey && !event.metaKey && !event.altKey) {
+                window.clearTimeout(typeaheadTimer);
+                typeahead += event.key.toLowerCase();
+                typeaheadTimer = window.setTimeout(() => typeahead = "", 600);
+                const match = [...control.querySelectorAll("[role=option]")]
+                    .find(option => option.textContent.trim().toLowerCase().startsWith(typeahead));
+                if (match) setActiveOption(control, Number(match.dataset.index));
+            }
+            else return;
+            event.preventDefault();
+            event.stopPropagation();
         });
 
         document.addEventListener("change", event => {
+            if (event.target.matches?.(".openapi-show-deprecated")) {
+                applyEndpointFilter(event.target.closest(".openapi-tag-list"));
+                return;
+            }
             const select = event.target;
             if (!(select instanceof HTMLSelectElement)) return;
             if (select.matches(".openapi-response-select")) {
