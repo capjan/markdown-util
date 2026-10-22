@@ -209,12 +209,16 @@ public class OpenApiMarkdownRendererTest
         try
         {
             const string pageContent = "# Orders\n\n```openapi\norders.json\n```\n";
-            File.WriteAllText(specPath, ReferencedSpecification("Order"));
+            File.WriteAllBytes(specPath, [.. Encoding.UTF8.GetPreamble(), .. Encoding.UTF8.GetBytes(ReferencedSpecification("Order"))]);
             var firstRender = OpenApiMarkdownRenderer.ExpandCodeBlocks(pageContent, markdownPath, out var specPages);
             Assert.Single(specPages);
             Assert.Equal("orders-spec.html", specPages[0].FileName);
             Assert.Contains("class=\"openapi-spec-link\" href=\"orders-spec.html\">OpenAPI specification</a>", firstRender);
             Assert.Contains("```json title=\"orders.json\"", specPages[0].Markdown);
+            Assert.DoesNotContain("\uFEFF", specPages[0].Markdown, StringComparison.Ordinal);
+
+            var pdfRender = OpenApiMarkdownRenderer.ExpandCodeBlocks(pageContent, markdownPath, includeSpecificationPageLink: false);
+            Assert.DoesNotContain("openapi-spec-link", pdfRender);
             Assert.Contains("#### Path Parameters", firstRender);
             Assert.DoesNotContain("openapi-api-title", firstRender);
             Assert.Contains("<span class=\"openapi-path-parameter openapi-path-parameter-color-1\">id</span>", firstRender);

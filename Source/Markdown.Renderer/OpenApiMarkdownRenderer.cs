@@ -106,12 +106,13 @@ public static class OpenApiMarkdownRenderer
         var pageStem = Path.GetFileNameWithoutExtension(parentHtmlFileName);
         var usedFileNames = CollectReservedHtmlFileNames(markdownPath, parentHtmlFileName, allowedRootPath, siblingPages);
         var fileNames = new List<string>(blocks.Length);
-        foreach (var block in blocks)
+        for (var index = 0; index < blocks.Length; index++)
         {
+            var block = blocks[index];
             var bodyText = TryExtractBlockBody(block, out var extracted, out _)
                 ? extracted
                 : string.Empty;
-            var slug = ResolveBlockSlug(bodyText, markdownPath, allowedRootPath);
+            var slug = ResolveBlockSlug(bodyText, markdownPath, index, allowedRootPath, out _, out _);
             fileNames.Add(AllocateSpecFileName(pageStem, slug, usedFileNames));
         }
 
@@ -123,8 +124,9 @@ public static class OpenApiMarkdownRenderer
         string markdownPath,
         string? allowedRootPath = null,
         string? pageOutputFileName = null,
-        IEnumerable<OpenApiSiblingPage>? siblingPages = null) =>
-        ExpandCodeBlocks(markdown, markdownPath, out _, allowedRootPath, pageOutputFileName, siblingPages);
+        IEnumerable<OpenApiSiblingPage>? siblingPages = null,
+        bool includeSpecificationPageLink = true) =>
+        ExpandCodeBlocks(markdown, markdownPath, out _, allowedRootPath, pageOutputFileName, siblingPages, includeSpecificationPageLink);
 
     public static string ExpandCodeBlocks(
         string markdown,
@@ -132,7 +134,8 @@ public static class OpenApiMarkdownRenderer
         out IReadOnlyList<OpenApiSpecificationPage> specificationPages,
         string? allowedRootPath = null,
         string? pageOutputFileName = null,
-        IEnumerable<OpenApiSiblingPage>? siblingPages = null)
+        IEnumerable<OpenApiSiblingPage>? siblingPages = null,
+        bool includeSpecificationPageLink = true)
     {
         if (!markdown.Contains(CodeBlockLanguage, StringComparison.OrdinalIgnoreCase))
         {
@@ -167,22 +170,23 @@ public static class OpenApiMarkdownRenderer
                 ? extracted
                 : string.Empty;
 
+            var slug = ResolveBlockSlug(
+                bodyText,
+                markdownPath,
+                index,
+                allowedRootPath,
+                out var fullSpecPath,
+                out var inlineSpecification);
             LoadedSpecification loaded;
             string sourceLabel;
-            string slug;
-            if (TryParseSpecReferenceSpan(bodyText, out _, out _, out var referencedSpecPath))
+            if (fullSpecPath is not null)
             {
-                var fullSpecPath = ResolveSpecPath(markdownPath, referencedSpecPath, allowedRootPath);
                 loaded = LoadFromFile(fullSpecPath);
                 sourceLabel = Path.GetFileName(fullSpecPath);
-                slug = SlugifySchemaName(Path.GetFileNameWithoutExtension(fullSpecPath));
             }
             else
             {
-                loaded = LoadInline(bodyText, markdownPath);
-                slug = !string.IsNullOrWhiteSpace(loaded.Document.Info?.Title)
-                    ? SlugifySchemaName(loaded.Document.Info.Title)
-                    : "openapi";
+                loaded = inlineSpecification!;
                 sourceLabel = $"{(string.IsNullOrWhiteSpace(slug) ? "openapi" : slug)}.{loaded.Format}";
             }
 
@@ -198,7 +202,7 @@ public static class OpenApiMarkdownRenderer
             var renderedMarkdown = ApplyContainerPrefix(
                 markdown,
                 block.Span.Start,
-                Render(loaded.Document, index, specFileName, omitTitle));
+                Render(loaded.Document, index, includeSpecificationPageLink ? specFileName : null, omitTitle));
             var specPageTitle = string.IsNullOrWhiteSpace(loaded.Document.Info?.Title)
                 ? $"OpenAPI Specification ({sourceLabel})"
                 : $"{loaded.Document.Info.Title.Trim()} — OpenAPI Specification";
@@ -291,17 +295,25 @@ public static class OpenApiMarkdownRenderer
         return normalized.Replace("\n", "\n" + continuationPrefix, StringComparison.Ordinal);
     }
 
-    private static string ResolveBlockSlug(string bodyText, string markdownPath, string? allowedRootPath)
+    private static string ResolveBlockSlug(
+        string bodyText,
+        string markdownPath,
+        int blockIndex,
+        string? allowedRootPath,
+        out string? fullSpecPath,
+        out LoadedSpecification? inlineSpecification)
     {
         if (TryParseSpecReferenceSpan(bodyText, out _, out _, out var referencedSpecPath))
         {
-            var fullSpecPath = ResolveSpecPath(markdownPath, referencedSpecPath, allowedRootPath);
+            fullSpecPath = ResolveSpecPath(markdownPath, referencedSpecPath, allowedRootPath);
+            inlineSpecification = null;
             return SlugifySchemaName(Path.GetFileNameWithoutExtension(fullSpecPath));
         }
 
-        var loaded = LoadInline(bodyText, markdownPath);
-        return !string.IsNullOrWhiteSpace(loaded.Document.Info?.Title)
-            ? SlugifySchemaName(loaded.Document.Info.Title)
+        fullSpecPath = null;
+        inlineSpecification = LoadInline(bodyText, markdownPath, blockIndex);
+        return !string.IsNullOrWhiteSpace(inlineSpecification.Document.Info?.Title)
+            ? SlugifySchemaName(inlineSpecification.Document.Info.Title)
             : "openapi";
     }
 
@@ -493,8 +505,9 @@ public static class OpenApiMarkdownRenderer
         if (blocks.Length == 0) return;
 
         var siblingStem = Path.GetFileNameWithoutExtension(siblingHtmlFileName);
-        foreach (var block in blocks)
+        for (var index = 0; index < blocks.Length; index++)
         {
+            var block = blocks[index];
             var bodyText = TryExtractBlockBody(block, out var extracted, out _)
                 ? extracted
                 : string.Empty;
@@ -502,7 +515,7 @@ public static class OpenApiMarkdownRenderer
             string slug;
             try
             {
-                slug = ResolveBlockSlug(bodyText, siblingMarkdownPath, allowedRootPath);
+                slug = ResolveBlockSlug(bodyText, siblingMarkdownPath, index, allowedRootPath, out _, out _);
             }
             catch (InvalidOperationException)
             {
@@ -556,7 +569,7 @@ public static class OpenApiMarkdownRenderer
             if (Cache.TryGetValue(path, out var cached) && cached.Hash == hash)
                 return new LoadedSpecification(cached.Document, cached.RawText, format);
 
-            var rawText = Encoding.UTF8.GetString(bytes);
+            var rawText = DecodeUtf8WithoutBom(bytes);
             var document = ParseOpenApiDocument(bytes, format, path);
             Cache[path] = new CachedDocument(hash, document, rawText);
             return new LoadedSpecification(document, rawText, format);
@@ -567,7 +580,14 @@ public static class OpenApiMarkdownRenderer
         }
     }
 
-    private static LoadedSpecification LoadInline(string content, string markdownPath)
+    private static string DecodeUtf8WithoutBom(byte[] bytes)
+    {
+        var preamble = Encoding.UTF8.GetPreamble();
+        var start = bytes.AsSpan().StartsWith(preamble) ? preamble.Length : 0;
+        return Encoding.UTF8.GetString(bytes, start, bytes.Length - start);
+    }
+
+    private static LoadedSpecification LoadInline(string content, string markdownPath, int blockIndex)
     {
         var trimmed = content.Trim();
         if (trimmed.Length == 0)
@@ -576,7 +596,7 @@ public static class OpenApiMarkdownRenderer
         var format = trimmed.StartsWith('{') ? "json" : "yaml";
         var bytes = Encoding.UTF8.GetBytes(trimmed);
         var hash = Convert.ToHexString(SHA256.HashData(bytes));
-        var cacheKey = $"inline:{hash}";
+        var cacheKey = $"inline:{Path.GetFullPath(markdownPath)}#{blockIndex}";
         if (Cache.TryGetValue(cacheKey, out var cached) && cached.Hash == hash)
             return new LoadedSpecification(cached.Document, cached.RawText, format);
 

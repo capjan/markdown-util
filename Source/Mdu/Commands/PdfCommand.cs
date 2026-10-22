@@ -95,7 +95,8 @@ public sealed class PdfCommand(GraphBuilder graphBuilder, PdfRenderer pdfRendere
                 var markdown = OpenApiMarkdownRenderer.ExpandCodeBlocks(
                     RemoveFrontMatter(item.File.ReadMarkdown(), item.File.FrontMatter),
                     item.File.FileInfo.FullName,
-                    item.File.SourceRootPath);
+                    item.File.SourceRootPath,
+                    includeSpecificationPageLink: false);
                 return new PdfSourceSection(
                     GetTitle(item.File),
                     GetRelativeHtmlPath(rootPath, item.File),
