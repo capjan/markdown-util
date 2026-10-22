@@ -4,13 +4,13 @@ navigation.order: 1
 
 # Components
 
-MDU is one solution, `MarkdownUtils.sln`, with one executable project and several libraries. All projects target .NET 10, and each library has a matching `.Test` project with xUnit tests.
+MDU is one solution, `Mdu.sln`, with one executable project and several libraries. All projects target .NET 10, and each library has a matching `.Test` project with xUnit tests.
 
 ## Overview
 
 | Project | Responsibility | Depends on |
 | --- | --- | --- |
-| [MarkdownUtil](#markdownutil) | `mdu` command line, page tree, orchestration | all libraries below |
+| [mdu](#mdu) | `mdu` command line, page tree, orchestration | all libraries below |
 | [Markdown.Document](#markdown.document) | Reads titles, front matter, and links of a page | Markdig, Cap.Core |
 | [Markdown.Linter](#markdown.linter) | Validators for titles, link casing, and link targets | SuperiorIO, FluentValidation |
 | [Markdown.Renderer](#markdown.renderer) | HTML and PDF rendering, including OpenAPI references | StaticCode.\*, Markdig, Microsoft.OpenApi |
@@ -28,7 +28,7 @@ This diagram shows how the solution projects depend on one another. Select a pro
 ```plantuml
 @startuml
 title MDU projects
-package "MarkdownUtil" {
+package "mdu" {
   [Commands] as Cli
   [Page tree and visitors] as Graph
   [Preview server] as Preview
@@ -62,10 +62,10 @@ Search --> Renderer
 Renderer --> Highlighter
 Renderer --> Diagrams
 Renderer --> Icons
-url of Cli is [[#markdownutil]]
-url of Graph is [[#markdownutil]]
-url of Preview is [[#markdownutil]]
-url of Links is [[#markdownutil]]
+url of Cli is [[#mdu]]
+url of Graph is [[#mdu]]
+url of Preview is [[#mdu]]
+url of Links is [[#mdu]]
 url of Doc is [[#markdown.document]]
 url of Linter is [[#markdown.linter]]
 url of Renderer is [[#markdown.renderer]]
@@ -78,9 +78,9 @@ url of SuperiorIO is [[#superiorio]]
 @enduml
 ```
 
-## MarkdownUtil
+## mdu
 
-The packaged .NET tool `MarkdownUtil` with the command name `mdu`.
+The packaged .NET tool `mdu` with the command name `mdu`.
 
 - `Program.cs` defines all commands, aliases, and options with `System.CommandLine` and registers the services with `Microsoft.Extensions.DependencyInjection`.
 - `Commands/` holds one class per command: `LintCommand`, `FixCommand`, `PrintTreeCommand`, `RenderCommand`, `PdfCommand`, `ServeCommand`, and `PageCommand`.
@@ -104,7 +104,7 @@ Contains the rule codes `MDU001`–`MDU018` and the validators that need only on
 | `Rule3Validator` | `MDU003` LinkCasing |
 | `Rule4Validator` | `MDU004` LocalLinkExists |
 
-The validators use FluentValidation. Rules that need the whole page tree, such as duplicate pages, navigation placement, and MkDocs migration issues, are checked by the `LinterVisitor` in MarkdownUtil. See the [rules reference](../Usage/lint/Rules.md) for every rule.
+The validators use FluentValidation. Rules that need the whole page tree, such as duplicate pages, navigation placement, and MkDocs migration issues, are checked by the `LinterVisitor` in mdu. See the [rules reference](../Usage/lint/Rules.md) for every rule.
 
 ## Markdown.Renderer
 
@@ -146,12 +146,12 @@ Parses paths into elements so the linter can compare a link target with the file
 | Library | Used for | Project |
 | --- | --- | --- |
 | [Markdig](https://github.com/xoofx/markdig) | CommonMark parsing and HTML output | Document, Renderer, Search |
-| [System.CommandLine](https://github.com/dotnet/command-line-api) | Commands, options, and help | MarkdownUtil |
-| [Microsoft.Extensions.DependencyInjection](https://learn.microsoft.com/dotnet/core/extensions/dependency-injection) | Service registration | MarkdownUtil |
-| [YamlDotNet](https://github.com/aaubry/YamlDotNet) | Front matter, `mdu.yml`, and `hero` options | MarkdownUtil, Renderer |
+| [System.CommandLine](https://github.com/dotnet/command-line-api) | Commands, options, and help | mdu |
+| [Microsoft.Extensions.DependencyInjection](https://learn.microsoft.com/dotnet/core/extensions/dependency-injection) | Service registration | mdu |
+| [YamlDotNet](https://github.com/aaubry/YamlDotNet) | Front matter, `mdu.yml`, and `hero` options | mdu, Renderer |
 | [FluentValidation](https://github.com/FluentValidation/FluentValidation) | Lint validators | Linter |
 | [CSharpMath](https://github.com/verybadcat/CSharpMath) and [VectSharp](https://github.com/arklumpus/VectSharp) | Math formulas as SVG | Renderer |
-| Cap.Core | Parser and text helpers | MarkdownUtil, Document, Highlighter |
+| Cap.Core | Parser and text helpers | mdu, Document, Highlighter |
 
 > [!NOTE]
 > The rendered site loads none of these libraries; they run only while MDU works. The notices for the bundled icon sets and the math renderer ship in `THIRD-PARTY-NOTICES.md` inside the package.

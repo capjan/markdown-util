@@ -11,7 +11,7 @@ pages:
   stage: deploy
   image: mcr.microsoft.com/dotnet/sdk:10.0
   script:
-    - dotnet tool install MarkdownUtil --tool-path .tools
+    - dotnet tool install mdu --tool-path .tools
     - .tools/mdu render docs public
   pages:
     publish: public

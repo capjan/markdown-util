@@ -97,7 +97,7 @@ jobs:
           dotnet-version: 10.0.x
 
       - name: Test
-        run: dotnet test MarkdownUtils.sln --configuration Release
+        run: dotnet test Mdu.sln --configuration Release
 
   build-native:
     name: Build ${{ matrix.rid }}
@@ -133,7 +133,7 @@ jobs:
         env:
           PACKAGE_VERSION: ${{ needs.prepare-release.outputs.package_version }}
           RID: ${{ matrix.rid }}
-        run: dotnet publish Source/MarkdownUtil/MarkdownUtil.csproj --configuration Release --runtime $env:RID --self-contained true -p:PublishAot=true -warnaserror:IL2026,IL2104,IL3050,IL3053 "-p:Version=$env:PACKAGE_VERSION" --output "$env:RUNNER_TEMP/publish"
+        run: dotnet publish Source/Mdu/Mdu.csproj --configuration Release --runtime $env:RID --self-contained true -p:PublishAot=true -warnaserror:IL2026,IL2104,IL3050,IL3053 "-p:Version=$env:PACKAGE_VERSION" --output "$env:RUNNER_TEMP/publish"
 
       - name: Import Developer ID Application certificate
         if: runner.os == 'macOS'
@@ -232,7 +232,7 @@ jobs:
       - name: Pack
         env:
           PACKAGE_VERSION: ${{ needs.prepare-release.outputs.package_version }}
-        run: dotnet pack Source/MarkdownUtil/MarkdownUtil.csproj --configuration Release --output artifacts/packages -p:Version="$PACKAGE_VERSION"
+        run: dotnet pack Source/Mdu/Mdu.csproj --configuration Release --output artifacts/packages -p:Version="$PACKAGE_VERSION"
 
       - name: Download native executable archives
         uses: actions/download-artifact@v4
