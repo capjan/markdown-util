@@ -651,7 +651,9 @@ internal sealed class PdfLayout
         }
         if (name == "span" && HasClass(element, "emoji"))
         {
-            runs.Add(new PdfRun(PdfEncoding.PrintableEmojiText(CollapseWhitespace(element.InnerText)), style));
+            var emoji = CollapseWhitespace(element.InnerText);
+            var shortcode = element.GetAttribute("title");
+            runs.Add(new PdfRun(PdfEncoding.PrintableEmojiSpan(emoji, shortcode), style));
             return;
         }
 
@@ -1118,6 +1120,16 @@ internal static class PdfEncoding
             index += rune.Utf16SequenceLength;
         }
         return result.ToString();
+    }
+
+    internal static string PrintableEmojiSpan(string value, string shortcode)
+    {
+        if (ShortcodeExtension.Emojis.TryGetValue(shortcode, out var emoji) &&
+            string.Equals(value, emoji, StringComparison.Ordinal) &&
+            !value.Any(character => FallbackText(character) is not null))
+            return shortcode;
+
+        return PrintableEmojiText(value);
     }
 
     private static bool IsEmoji(string value)
