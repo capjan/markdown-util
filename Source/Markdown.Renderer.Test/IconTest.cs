@@ -180,8 +180,8 @@ public class IconTest
             using var index = JsonDocument.Parse(await File.ReadAllBytesAsync(Path.Combine(outputPath, "js", IconSearch.IndexFileName)));
             var sets = index.RootElement.GetProperty("sets").EnumerateArray().ToArray();
             Assert.Equal(IconCatalog.Sets.Select(set => set.ShortcodePrefix), sets.Select(set => set.GetProperty("prefix").GetString()));
-            Assert.True(index.RootElement.GetProperty("emojis").EnumerateArray()
-                .Any(emoji => emoji[0].GetString() == "rocket" && emoji[1].GetString() == "🚀"));
+            Assert.Contains(index.RootElement.GetProperty("emojis").EnumerateArray(),
+                emoji => emoji[0].GetString() == "rocket" && emoji[1].GetString() == "🚀");
             Assert.True(File.Exists(Path.Combine(outputPath, "js", IconSearch.ScriptFileName)));
         }
         finally
