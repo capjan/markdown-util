@@ -158,6 +158,21 @@ public class PdfRendererTest
     }
 
     [Fact]
+    public void WritesEmojiSpanShortcodesAndKeepsArrowFallback()
+    {
+        using var output = new MemoryStream();
+
+        new PdfRenderer(new HtmlRenderer()).WritePdf(output, "Emoji shortcodes",
+        [new PdfSourceSection("Emoji shortcodes", "emoji-shortcodes/index.html", ":star: :o: :custom_arrow_right:")], includeFrontMatter: false);
+
+        var pdf = Encoding.Latin1.GetString(output.ToArray());
+        Assert.Contains("<3A737461723A> Tj", pdf);
+        Assert.Contains("<3A6F3A> Tj", pdf);
+        Assert.Contains("<2D3E> Tj", pdf);
+        Assert.DoesNotContain(Convert.ToHexString(Encoding.ASCII.GetBytes(":custom_arrow_right:")), pdf);
+    }
+
+    [Fact]
     public void HandlesEmojiAtParagraphAndCodeWrappingBoundaries()
     {
         var paragraph = new string('p', 120) + "🚀";
