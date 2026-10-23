@@ -4,13 +4,21 @@ Markdig's abbreviation syntax adds a tooltip to matching terms. MDU uses the sam
 
 ## Page-local definitions
 
-Define an abbreviation anywhere in a page, then use its label in the text:
+Define abbreviations anywhere in a page, then use their labels in the text:
 
-```markdown
-*[HTML]: Hypertext Markup Language
+*[HTML]: Hyper Text Markup Language
+*[W3C]: World Wide Web Consortium
 
-HTML is the standard markup language for documents designed to be displayed in a web browser.
-```
+~~~markdown title="Markdown with abbreviations"
+The HTML specification is maintained by the W3C.
+
+*[HTML]: Hyper Text Markup Language
+*[W3C]: World Wide Web Consortium
+~~~
+
+Rendered result:
+
+The HTML specification is maintained by the W3C.
 
 Definitions follow Markdig's matching rules. Code remains unchanged. A definition on a page takes precedence over the shared glossary for that page only.
 
