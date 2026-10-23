@@ -30,6 +30,10 @@ public static class SiteConfigurationReader
             configuration.FaviconLight = configuration.LogoLight;
             configuration.FaviconDark = configuration.LogoDark;
         }
+        else
+        {
+            configuration.FaviconLight ??= configuration.LogoLight;
+        }
         configuration.FaviconDark ??= configuration.FaviconLight;
         return configuration;
     }

@@ -5,6 +5,42 @@ namespace Mdu.Test;
 public class SiteConfigurationReaderTest
 {
     [Fact]
+    public void UsesLogoAsDefaultAndMissingLightFavicon()
+    {
+        var root = Path.Combine(Path.GetTempPath(), $"mdu-site-config-test-{Guid.NewGuid():N}");
+        Directory.CreateDirectory(root);
+
+        try
+        {
+            File.WriteAllText(Path.Combine(root, "mdu.yml"), """
+                logo:
+                  light: assets/logo-light.svg
+                  dark: assets/logo-dark.svg
+                """);
+            var configuration = SiteConfigurationReader.Read(root);
+
+            Assert.Equal("assets/logo-light.svg", configuration.FaviconLight);
+            Assert.Equal("assets/logo-dark.svg", configuration.FaviconDark);
+
+            File.WriteAllText(Path.Combine(root, "mdu.yml"), """
+                logo:
+                  light: assets/logo-light.svg
+                  dark: assets/logo-dark.svg
+                favicon:
+                  dark: assets/favicon-dark.svg
+                """);
+            configuration = SiteConfigurationReader.Read(root);
+
+            Assert.Equal("assets/logo-light.svg", configuration.FaviconLight);
+            Assert.Equal("assets/favicon-dark.svg", configuration.FaviconDark);
+        }
+        finally
+        {
+            if (Directory.Exists(root)) Directory.Delete(root, recursive: true);
+        }
+    }
+
+    [Fact]
     public void ReadsBrandingColorsAndCopiesConfiguredAssets()
     {
         var root = Path.Combine(Path.GetTempPath(), $"mdu-site-config-test-{Guid.NewGuid():N}");

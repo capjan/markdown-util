@@ -28,7 +28,7 @@ mdu render ./docs ./site --pattern "*.markdown" --editPageRoot "https://github.c
 
 ## Site configuration
 
-An optional `mdu.yml` in the documentation folder sets the site name, light and dark logos, and theme colors. If no `favicon:` section is provided, MDU uses the logo files as the light and dark favicons. MDU copies the referenced files into the output folder.
+An optional `mdu.yml` in the documentation folder sets the site name, light and dark logos, and theme colors. If no favicon files are specified, MDU uses the light and dark logo files as favicons. MDU copies the referenced files into the output folder. A square logo mark is most legible in a browser tab; MDU uses the logo file as-is.
 
 ```yaml title="docs/mdu.yml"
 site_name: Documentation
