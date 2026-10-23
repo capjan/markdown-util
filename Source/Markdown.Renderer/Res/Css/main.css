@@ -2015,19 +2015,25 @@ pre code {
     padding-right: 3.25rem;
 }
 
-.diagram {
+.diagram,
+.result-block {
     margin: 1.5rem 0;
+}
+
+.diagram {
     text-align: center;
 }
 
-.code-block-titled + .diagram {
+.code-block-titled + .diagram,
+.code-block-titled + .result-block {
     padding: 0.75rem 1.25rem;
     border: 1px solid var(--border);
     border-radius: 8px;
     background: var(--surface-code-block);
 }
 
-.code-block-titled + .diagram::before {
+.code-block-titled + .diagram::before,
+.code-block-titled + .result-block::before {
     display: block;
     margin-bottom: 0.5rem;
     color: var(--text-secondary);
@@ -2036,6 +2042,14 @@ pre code {
     font-weight: 500;
     line-height: 1.5;
     text-align: left;
+}
+
+.result-block > :first-child {
+    margin-top: 0;
+}
+
+.result-block > :last-child {
+    margin-bottom: 0;
 }
 
 .diagram svg {
@@ -2351,6 +2365,22 @@ th, td {
     line-height: 1.45;
     white-space: normal;
     overflow-wrap: anywhere;
+}
+
+.markdown-content abbr[title],
+.markdown-content abbr[data-abbreviation-tooltip] {
+    color: inherit;
+    cursor: help;
+    text-decoration: underline;
+    text-decoration-style: dotted;
+    text-decoration-thickness: 1px;
+    text-underline-offset: 0.2em;
+}
+
+.markdown-content abbr[data-abbreviation-tooltip]:focus-visible {
+    outline: 2px solid var(--link);
+    outline-offset: 2px;
+    border-radius: 2px;
 }
 
 .markdown-content a.footnote-ref:hover {

@@ -10,6 +10,7 @@ Everything on these pages is written in ordinary Markdown. Each page shows the s
 ## Write
 
 - [Formatting](Formatting.md) - Headings, emphasis, lists, links, and collapsible sections
+- [Abbreviations](Abbreviations.md) - Page-local and shared glossary tooltips
 - [Code Blocks](CodeBlocks.md) - Syntax highlighting, titles, and copy buttons
 - [Tables](Tables.md) - Column alignment and formatting inside cells
 - [Callouts](Callouts.md) - Notes, tips, and warnings with GitHub's alert syntax

@@ -54,19 +54,27 @@ public class RenderCommand
         };
         
         Markdown.Renderer.Res.Model.SiteConfiguration siteConfiguration;
+        string? glossaryPath;
         try
         {
             siteConfiguration = SiteConfigurationReader.Read(rootPath);
+            glossaryPath = SiteConfigurationReader.ResolveGlossaryPath(rootPath, siteConfiguration);
+            _renderer.SetGlossary(glossaryPath is null ? null : File.ReadAllText(glossaryPath));
         }
         catch (YamlDotNet.Core.YamlException exception)
         {
             Console.Error.WriteLine($"Could not read mdu.yml: {exception.Message}");
             return 1;
         }
+        catch (Exception exception) when (exception is IOException or UnauthorizedAccessException or InvalidOperationException or ArgumentException)
+        {
+            Console.Error.WriteLine($"Could not read the configured glossary: {exception.Message}");
+            return 1;
+        }
         MarkdownFile[] graph;
         try
         {
-            graph = _graphBuilder.CreateGraph(resolvedSettings);
+            graph = _graphBuilder.CreateGraph(resolvedSettings, glossaryPath);
         }
         catch (Exception exception) when (exception is IOException or UnauthorizedAccessException or ArgumentException or InvalidOperationException)
         {

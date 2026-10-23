@@ -40,6 +40,51 @@ public class GraphBuilderHiddenTest
         }
     }
 
+    [Fact]
+    public void ConfiguredGlossaryIsExcludedFromThePageGraph()
+    {
+        var root = Path.Combine(Path.GetTempPath(), Guid.NewGuid().ToString("N"));
+        Directory.CreateDirectory(root);
+        try
+        {
+            File.WriteAllText(Path.Combine(root, "README.md"), "# Home\n");
+            File.WriteAllText(Path.Combine(root, "Terms.md"), "*[API]: Application Programming Interface\n");
+            File.WriteAllText(Path.Combine(root, "mdu.yml"), "glossary: Terms.md\n");
+
+            var graph = new GraphBuilder(new DataPreparationVisitor(new MarkdownDocumentReader()))
+                .CreateGraph(
+                    new VisitorSettings { RootPath = root, SearchPattern = "*.md", IncludeHidden = true },
+                    SiteConfigurationReader.TryResolveGlossaryPath(root));
+
+            Assert.Equal(["README.md"], Flatten(graph).Select(page => page.FileInfo.Name));
+        }
+        finally
+        {
+            Directory.Delete(root, true);
+        }
+    }
+
+    [Fact]
+    public void GraphBuilderDoesNotRequireValidSiteConfiguration()
+    {
+        var root = Path.Combine(Path.GetTempPath(), Guid.NewGuid().ToString("N"));
+        Directory.CreateDirectory(root);
+        try
+        {
+            File.WriteAllText(Path.Combine(root, "README.md"), "# Home\n");
+            File.WriteAllText(Path.Combine(root, "mdu.yml"), "glossary: [invalid\n");
+
+            var graph = new GraphBuilder(new DataPreparationVisitor(new MarkdownDocumentReader()))
+                .CreateGraph(new VisitorSettings { RootPath = root, SearchPattern = "*.md", IncludeHidden = true });
+
+            Assert.Equal(["README.md"], Flatten(graph).Select(page => page.FileInfo.Name));
+        }
+        finally
+        {
+            Directory.Delete(root, true);
+        }
+    }
+
     private static IEnumerable<MarkdownFile> Flatten(IEnumerable<MarkdownFile> pages) =>
         pages.SelectMany(page => new[] { page }.Concat(Flatten(page.Children ?? [])));
 }

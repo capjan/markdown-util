@@ -39,18 +39,18 @@ public class FixCommand
             return 1;
         }
 
-        var pathComparer = OperatingSystem.IsWindows() || OperatingSystem.IsMacOS()
-            ? StringComparer.OrdinalIgnoreCase
-            : StringComparer.Ordinal;
+        var pathComparer = MarkdownLinks.PathComparer;
         var migrationChanges = MigrateMkDocsContent(rootPath, settings.IncludeHidden, pathComparer);
         if (migrationChanges < 0) return 1;
+        var glossaryMigrationChanges = MigrateMkDocsGlossary(rootPath);
+        migrationChanges += glossaryMigrationChanges;
 
         var graph = _graphBuilder.CreateGraph(new VisitorSettings
         {
             RootPath = rootPath,
             SearchPattern = settings.SearchPattern,
             IncludeHidden = settings.IncludeHidden
-        });
+        }, SiteConfigurationReader.TryResolveGlossaryPath(rootPath));
         _linterVisitor.Prepare(graph, rootPath);
         graph.Visit(_linterVisitor);
 
@@ -88,8 +88,10 @@ public class FixCommand
                 : FileAttributes.Hidden | FileAttributes.System,
             RecurseSubdirectories = true
         };
+        var glossarySourcePaths = GetGlossarySourcePaths(rootPath).ToHashSet(pathComparer);
         var markdownFiles = Directory.EnumerateFiles(rootPath, "*", enumerationOptions)
             .Where(MarkdownLinks.IsMarkdownFile)
+            .Where(path => !glossarySourcePaths.Contains(Path.GetFullPath(path)))
             .ToArray();
         var changedDocuments = new Dictionary<string, string>(pathComparer);
         var updatedLinkCount = 0;
@@ -137,8 +139,12 @@ public class FixCommand
             AttributesToSkip = includeHidden ? FileAttributes.System : FileAttributes.Hidden | FileAttributes.System,
             RecurseSubdirectories = true
         };
+        var glossarySourcePaths = GetGlossarySourcePaths(rootPath).ToHashSet(pathComparer);
         var markdownFiles = Directory.EnumerateFiles(rootPath, "*", enumerationOptions)
-            .Where(MarkdownLinks.IsMarkdownFile).Select(Path.GetFullPath).ToArray();
+            .Where(MarkdownLinks.IsMarkdownFile)
+            .Select(Path.GetFullPath)
+            .Where(path => !glossarySourcePaths.Contains(path))
+            .ToArray();
         var indexMoves = markdownFiles
             .Where(path => Path.GetFileName(path).Equals("index.md", StringComparison.OrdinalIgnoreCase))
             .Select(path => new PageMove(path, Path.Combine(Path.GetDirectoryName(path)!, "README.md")))
@@ -252,6 +258,340 @@ public class FixCommand
         }
         return changes;
     }
+
+    private static int MigrateMkDocsGlossary(string rootPath)
+    {
+        var source = FindMkDocsGlossary(rootPath, out var diagnostic, out _);
+        if (diagnostic is not null)
+        {
+            Console.Error.WriteLine(diagnostic);
+            return 0;
+        }
+        if (source is null) return 0;
+        if (!Path.GetExtension(source.Path).Equals(".md", StringComparison.OrdinalIgnoreCase))
+        {
+            Console.Error.WriteLine($"Could not migrate MkDocs glossary: '{source.Path}' is not a Markdown file.");
+            return 0;
+        }
+        if (!File.Exists(source.Path))
+        {
+            Console.Error.WriteLine($"Could not migrate MkDocs glossary: '{source.Path}' does not exist.");
+            return 0;
+        }
+
+        var mduPath = Path.Combine(rootPath, "mdu.yml");
+        var contents = File.Exists(mduPath) ? File.ReadAllText(mduPath) : string.Empty;
+        var hasFlowMapping = false;
+        if (contents.Length > 0)
+        {
+            var yaml = new YamlStream();
+            try
+            {
+                yaml.Load(new StringReader(contents));
+            }
+            catch (YamlDotNet.Core.YamlException exception)
+            {
+                Console.Error.WriteLine($"Could not migrate MkDocs glossary because mdu.yml is invalid: {exception.Message}");
+                return 0;
+            }
+
+            var root = yaml.Documents.FirstOrDefault()?.RootNode;
+            if (root is YamlMappingNode mapping)
+            {
+                if (mapping.Children.ContainsKey(new YamlScalarNode("glossary"))) return 0;
+                if (mapping.Style == YamlDotNet.Core.Events.MappingStyle.Flow)
+                    hasFlowMapping = true;
+            }
+            else if (root is not null && root is not YamlScalarNode { Value: null or "" })
+            {
+                Console.Error.WriteLine("Could not migrate MkDocs glossary because mdu.yml must contain a YAML mapping.");
+                return 0;
+            }
+        }
+
+        string relativePath;
+        try
+        {
+            relativePath = Path.GetRelativePath(rootPath, source.Path)
+                .Replace(Path.DirectorySeparatorChar, '/');
+        }
+        catch (ArgumentException exception)
+        {
+            Console.Error.WriteLine($"Could not migrate MkDocs glossary because it is on a different volume: {exception.Message}");
+            return 0;
+        }
+        var newline = contents.Contains("\r\n", StringComparison.Ordinal) ? "\r\n" : "\n";
+        var glossaryEntry = $"glossary: '{relativePath.Replace("'", "''", StringComparison.Ordinal)}'";
+        if (hasFlowMapping)
+        {
+            var openingBrace = contents.IndexOf('{');
+            var closingBrace = contents.LastIndexOf('}');
+            if (openingBrace < 0 || closingBrace <= openingBrace ||
+                contents.AsSpan(openingBrace, closingBrace - openingBrace).Contains('\n') ||
+                contents.AsSpan(openingBrace, closingBrace - openingBrace).Contains('\r'))
+            {
+                Console.Error.WriteLine("Could not migrate MkDocs glossary because mdu.yml uses an unsupported multi-line flow mapping.");
+                return 0;
+            }
+
+            var beforeClosingBrace = contents[..closingBrace].TrimEnd();
+            var separator = beforeClosingBrace.EndsWith('{') ? "" : beforeClosingBrace.EndsWith(',') ? " " : ", ";
+            contents = contents.Insert(closingBrace, separator + glossaryEntry);
+        }
+        else
+        {
+            if (contents.Length > 0 && !contents.EndsWith('\n')) contents += newline;
+            contents += glossaryEntry + newline;
+        }
+        try
+        {
+            var migratedYaml = new YamlStream();
+            migratedYaml.Load(new StringReader(contents));
+            var migratedRoot = migratedYaml.Documents.FirstOrDefault()?.RootNode;
+            if (migratedRoot is not YamlMappingNode migratedMapping ||
+                !migratedMapping.Children.TryGetValue(new YamlScalarNode("glossary"), out var migratedGlossary) ||
+                migratedGlossary is not YamlScalarNode { Value: var migratedGlossaryPath } ||
+                migratedGlossaryPath != relativePath)
+            {
+                Console.Error.WriteLine("Could not migrate MkDocs glossary because the glossary entry could not be verified in mdu.yml.");
+                return 0;
+            }
+        }
+        catch (YamlDotNet.Core.YamlException exception)
+        {
+            Console.Error.WriteLine($"Could not migrate MkDocs glossary because the updated mdu.yml would be invalid: {exception.Message}");
+            return 0;
+        }
+        File.WriteAllText(mduPath, contents);
+        Console.WriteLine($"Migrated MkDocs glossary configuration to mdu.yml: {relativePath}");
+        return 1;
+    }
+
+    private static IReadOnlyList<string> GetGlossarySourcePaths(string rootPath)
+    {
+        try
+        {
+            var configuration = SiteConfigurationReader.Read(rootPath);
+            if (configuration.Glossary is not null)
+                return [Path.GetFullPath(configuration.Glossary, rootPath)];
+        }
+        catch (Exception exception) when (exception is IOException or YamlDotNet.Core.YamlException or InvalidOperationException or ArgumentException)
+        {
+        }
+
+        FindMkDocsGlossary(rootPath, out _, out var sourcePaths);
+        return sourcePaths;
+    }
+
+    private static MkDocsGlossary? FindMkDocsGlossary(
+        string rootPath,
+        out string? diagnostic,
+        out IReadOnlyList<string> sourcePaths)
+    {
+        diagnostic = null;
+        sourcePaths = Array.Empty<string>();
+        var projectRoot = File.Exists(Path.Combine(rootPath, "mkdocs.yml"))
+            ? rootPath
+            : Directory.GetParent(rootPath)?.FullName;
+        if (projectRoot is null) return null;
+        var mkdocsPath = Path.Combine(projectRoot, "mkdocs.yml");
+        if (!File.Exists(mkdocsPath)) return null;
+
+        var yaml = new YamlStream();
+        try
+        {
+            yaml.Load(new StringReader(File.ReadAllText(mkdocsPath)));
+        }
+        catch (YamlDotNet.Core.YamlException exception)
+        {
+            diagnostic = $"Could not migrate MkDocs glossary because {mkdocsPath} is invalid: {exception.Message}";
+            return null;
+        }
+
+        var configDirectory = Path.GetDirectoryName(mkdocsPath)!;
+        if (yaml.Documents.FirstOrDefault()?.RootNode is not YamlMappingNode root) return null;
+        var snippets = FindMkDocsSnippets(root);
+        var appendSettings = snippets
+            .Where(options => options.Children.ContainsKey(new YamlScalarNode("auto_append")))
+            .ToArray();
+        if (appendSettings.Length == 0) return null;
+        if (appendSettings.Length > 1)
+        {
+            diagnostic = $"Could not migrate MkDocs glossary from {mkdocsPath}: configure auto_append in only one pymdownx.snippets configuration.";
+            return null;
+        }
+
+        if (!ReadSnippetBasePaths(appendSettings[0], root, configDirectory, out var basePaths, out diagnostic))
+            return null;
+
+        var appendNode = appendSettings[0].Children[new YamlScalarNode("auto_append")];
+        string?[] configuredPaths;
+        if (appendNode is YamlScalarNode scalar)
+        {
+            configuredPaths = [scalar.Value];
+        }
+        else if (appendNode is YamlSequenceNode sequence)
+        {
+            if (sequence.Children.Any(node => node is not YamlScalarNode))
+            {
+                diagnostic = $"Could not migrate MkDocs glossary from {mkdocsPath}: auto_append entries must be paths.";
+                return null;
+            }
+            configuredPaths = sequence.Children.Cast<YamlScalarNode>().Select(node => node.Value).ToArray();
+        }
+        else
+        {
+            diagnostic = $"Could not migrate MkDocs glossary from {mkdocsPath}: auto_append must be a path or a list of paths.";
+            return null;
+        }
+
+        if (configuredPaths.Length == 0) return null;
+        if (configuredPaths.Any(string.IsNullOrWhiteSpace))
+        {
+            diagnostic = $"Could not migrate MkDocs glossary from {mkdocsPath}: auto_append contains an empty path.";
+            return null;
+        }
+
+        var resolvedPaths = new List<string>();
+        foreach (var configuredPath in configuredPaths)
+        {
+            try
+            {
+                var resolvedPath = ResolveAutoAppendPath(configuredPath!, basePaths);
+                if (resolvedPath is not null) resolvedPaths.Add(resolvedPath);
+            }
+            catch (Exception exception) when (exception is ArgumentException or IOException or NotSupportedException)
+            {
+                diagnostic = $"Could not migrate MkDocs glossary from {mkdocsPath}: {exception.Message}";
+                return null;
+            }
+        }
+
+        sourcePaths = resolvedPaths.Distinct(MarkdownLinks.PathComparer).ToArray();
+        if (configuredPaths.Length > 1)
+        {
+            diagnostic = $"Could not migrate MkDocs glossary from {mkdocsPath}: auto_append must contain exactly one glossary path.";
+            return null;
+        }
+        if (sourcePaths.Count == 0)
+        {
+            diagnostic = $"Could not migrate MkDocs glossary from {mkdocsPath}: auto_append file was not found under the configured base_path.";
+            return null;
+        }
+
+        return new MkDocsGlossary(sourcePaths[0]);
+    }
+
+    private static IReadOnlyList<YamlMappingNode> FindMkDocsSnippets(YamlMappingNode root)
+    {
+        if (!root.Children.TryGetValue(new YamlScalarNode("markdown_extensions"), out var extensions))
+            return Array.Empty<YamlMappingNode>();
+
+        if (extensions is YamlMappingNode mapping)
+            return TryGetMapping(mapping, "pymdownx.snippets", out var mappedOptions)
+                ? [mappedOptions]
+                : Array.Empty<YamlMappingNode>();
+
+        if (extensions is not YamlSequenceNode sequence) return Array.Empty<YamlMappingNode>();
+
+        var result = new List<YamlMappingNode>();
+        foreach (var extension in sequence.Children.OfType<YamlMappingNode>())
+            if (TryGetMapping(extension, "pymdownx.snippets", out var options)) result.Add(options);
+        return result;
+    }
+
+    private static bool TryGetMapping(YamlMappingNode mapping, string key, out YamlMappingNode value)
+    {
+        if (mapping.Children.TryGetValue(new YamlScalarNode(key), out var node) && node is YamlMappingNode child)
+        {
+            value = child;
+            return true;
+        }
+        value = null!;
+        return false;
+    }
+
+    private static bool ReadSnippetBasePaths(
+        YamlMappingNode snippets,
+        YamlMappingNode mkdocs,
+        string configDirectory,
+        out string[] paths,
+        out string? diagnostic)
+    {
+        diagnostic = null;
+        if (!snippets.Children.TryGetValue(new YamlScalarNode("base_path"), out var node))
+        {
+            paths = [configDirectory];
+            return true;
+        }
+
+        var values = node switch
+        {
+            YamlScalarNode scalar => new[] { scalar },
+            YamlSequenceNode sequence when sequence.Children.All(child => child is YamlScalarNode) =>
+                sequence.Children.Cast<YamlScalarNode>().ToArray(),
+            _ => Array.Empty<YamlScalarNode>()
+        };
+        if (values.Length == 0 || values.Any(value => string.IsNullOrWhiteSpace(value.Value)))
+        {
+            paths = [];
+            diagnostic = "Could not migrate MkDocs glossary: base_path must contain one or more non-empty paths.";
+            return false;
+        }
+
+        try
+        {
+            paths = values.Select(value => ResolveSnippetBasePath(value, mkdocs, configDirectory)).ToArray();
+            return true;
+        }
+        catch (InvalidOperationException exception)
+        {
+            paths = [];
+            diagnostic = exception.Message;
+            return false;
+        }
+    }
+
+    private static string ResolveSnippetBasePath(YamlScalarNode value, YamlMappingNode mkdocs, string configDirectory)
+    {
+        var path = value.Value!;
+        if (value.Tag == "!relative")
+        {
+            if (path == "$config_dir") return configDirectory;
+            if (path.StartsWith("$config_dir/", StringComparison.Ordinal))
+                return Path.GetFullPath(path["$config_dir/".Length..], configDirectory);
+
+            var docsDirectory = mkdocs.Children.TryGetValue(new YamlScalarNode("docs_dir"), out var docsNode) &&
+                                docsNode is YamlScalarNode docsScalar && !string.IsNullOrWhiteSpace(docsScalar.Value)
+                ? docsScalar.Value
+                : "docs";
+            var fullDocsDirectory = Path.GetFullPath(docsDirectory!, configDirectory);
+            if (path == "$docs_dir") return fullDocsDirectory;
+            if (path.StartsWith("$docs_dir/", StringComparison.Ordinal))
+                return Path.GetFullPath(path["$docs_dir/".Length..], fullDocsDirectory);
+
+            throw new InvalidOperationException(
+                "Could not migrate MkDocs glossary: base_path uses !relative to the current Markdown file, which cannot be mapped to one shared glossary path.");
+        }
+
+        return Path.GetFullPath(path, configDirectory);
+    }
+
+    private static string? ResolveAutoAppendPath(string configuredPath, IEnumerable<string> basePaths)
+    {
+        foreach (var basePath in basePaths)
+        {
+            if (File.Exists(basePath) &&
+                Path.GetFileName(configuredPath).Equals(Path.GetFileName(basePath), StringComparison.Ordinal))
+                return Path.GetFullPath(basePath);
+
+            var path = Path.GetFullPath(configuredPath, basePath);
+            if (File.Exists(path)) return path;
+        }
+        return null;
+    }
+
+    private sealed record MkDocsGlossary(string Path);
 
     private static Dictionary<string, Dictionary<string, string>> ReadPagesSettings(
         IEnumerable<string> pagesFiles,

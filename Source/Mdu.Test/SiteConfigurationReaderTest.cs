@@ -5,6 +5,35 @@ namespace Mdu.Test;
 public class SiteConfigurationReaderTest
 {
     [Fact]
+    public void ReadsAndResolvesConfiguredGlossaryRelativeToTheDocumentationRoot()
+    {
+        var root = Path.Combine(Path.GetTempPath(), $"mdu-site-config-test-{Guid.NewGuid():N}");
+        Directory.CreateDirectory(root);
+        try
+        {
+            Directory.CreateDirectory(Path.Combine(root, "includes"));
+            var glossaryPath = Path.Combine(root, "includes", "abbreviations.md");
+            File.WriteAllText(glossaryPath, "*[API]: Application Programming Interface\n");
+            File.WriteAllText(Path.Combine(root, "mdu.yml"), "glossary: includes/abbreviations.md\n");
+
+            var configuration = SiteConfigurationReader.Read(root);
+
+            Assert.Equal("includes/abbreviations.md", configuration.Glossary);
+            Assert.Equal(Path.GetFullPath(glossaryPath), SiteConfigurationReader.ResolveGlossaryPath(root, configuration));
+            Assert.Contains("*[API]", SiteConfigurationReader.ReadGlossary(root, configuration));
+
+            File.Delete(glossaryPath);
+            var exception = Assert.Throws<InvalidOperationException>(
+                () => SiteConfigurationReader.ResolveGlossaryPath(root, configuration));
+            Assert.Contains(glossaryPath, exception.Message);
+        }
+        finally
+        {
+            if (Directory.Exists(root)) Directory.Delete(root, recursive: true);
+        }
+    }
+
+    [Fact]
     public void UsesLogoAsDefaultAndMissingLightFavicon()
     {
         var root = Path.Combine(Path.GetTempPath(), $"mdu-site-config-test-{Guid.NewGuid():N}");

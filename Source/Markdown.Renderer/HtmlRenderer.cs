@@ -4,6 +4,7 @@ using System.Text.Encodings.Web;
 using System.Net;
 using System.Text.RegularExpressions;
 using Markdig;
+using Markdig.Extensions.Abbreviations;
 using Markdig.Renderers.Html;
 using Markdig.Syntax;
 using Markdig.Syntax.Inlines;
@@ -49,7 +50,8 @@ public class HtmlRenderer
     private static readonly Regex FootnoteReferenceRegex = new(
         @"<a\b[^>]*\bclass=""footnote-ref""[^>]*>.*?</a>",
         RegexOptions.Compiled | RegexOptions.Singleline);
-    private readonly MarkdownPipeline _pipeline;
+    private readonly MarkdownPipeline _basePipeline;
+    private MarkdownPipeline _pipeline;
     private readonly LinkReplacer _linkReplacer = new LinkReplacer();
     private string? _basePath;
     private IReadOnlyList<string> _iconSearchAssets = Array.Empty<string>();
@@ -57,10 +59,19 @@ public class HtmlRenderer
 
     public HtmlRenderer()
     {
-        _pipeline = new MarkdownPipelineBuilder()
+        _basePipeline = CreatePipeline();
+        _pipeline = _basePipeline;
+    }
+
+    private static MarkdownPipeline CreatePipeline(SharedAbbreviationsExtension? sharedAbbreviations = null)
+    {
+        var pipelineBuilder = new MarkdownPipelineBuilder();
+        pipelineBuilder
             .UseGridTables()
             .UsePipeTables()
-            .UseAdvancedExtensions()
+            .UseAdvancedExtensions();
+        if (sharedAbbreviations is not null) pipelineBuilder.Extensions.Add(sharedAbbreviations);
+        return pipelineBuilder
             .UseScrollableTables()
             .UseRenderedMath()
             .UseGitHubAlerts()
@@ -68,6 +79,29 @@ public class HtmlRenderer
             .UseKeyboardKeys()
             .UseStaticCodeHighlighter()
             .Build();
+    }
+
+    public void SetGlossary(string? markdown)
+    {
+        if (markdown is null)
+        {
+            _pipeline = _basePipeline;
+            return;
+        }
+
+        var sharedAbbreviations = new SharedAbbreviationsExtension();
+        var pipeline = CreatePipeline(sharedAbbreviations);
+        var document = Markdig.Markdown.Parse(markdown, pipeline);
+        var definitions = document.GetAbbreviations();
+        var sharedDefinitions = definitions?.Select(pair => new SharedAbbreviation(
+            pair.Key,
+            pair.Value.Label ?? pair.Key,
+            pair.Value.Text.ToString())).ToArray() ?? [];
+        if (sharedDefinitions.Length == 0)
+            throw new InvalidOperationException("The configured glossary does not contain any abbreviation definitions.");
+
+        sharedAbbreviations.SetDefinitions(sharedDefinitions);
+        _pipeline = pipeline;
     }
     /// <summary>
     /// The icon search files written to the base path because a rendered page contains an icon search.

@@ -21,7 +21,7 @@ public class GraphBuilder
         _sourceResolver = sourceResolver ?? new GitTreeSourceResolver();
     }
 
-    public MarkdownFile[] CreateGraph(IVisitorSettings settings)
+    public MarkdownFile[] CreateGraph(IVisitorSettings settings, string? excludedMarkdownPath = null)
     {
         var searchOptions = new EnumerationOptions
         {
@@ -33,10 +33,10 @@ public class GraphBuilder
 
         var rootPath = Path.GetFullPath(settings.RootPath ?? Directory.GetCurrentDirectory());
         var searchPattern = settings.SearchPattern ?? Default.SearchPattern;
-        
+
         var rootDirectory = new DirectoryInfo(rootPath);
         
-        var graph = CreateGraph(rootDirectory, searchPattern, searchOptions);
+        var graph = CreateGraph(rootDirectory, searchPattern, searchOptions, excludedMarkdownPath);
         graph.Visit(_dataPreparationVisitor);
         foreach (var page in Flatten(graph))
             page.SiteRelativePath = Path.GetRelativePath(rootPath, page.FileInfo.FullName);
@@ -77,7 +77,7 @@ public class GraphBuilder
             throw new InvalidOperationException("An mdu.import page must contain front matter only; put its content in the imported README.md or index.md.");
 
         var source = _sourceResolver.Resolve(importPage.ImportSource!);
-        var importedPages = GetMarkdownFilesAt(null, new DirectoryInfo(source.SourceFolderPath), searchPattern, searchOptions).ToArray();
+        var importedPages = GetMarkdownFilesAt(null, new DirectoryInfo(source.SourceFolderPath), searchPattern, searchOptions, null).ToArray();
         if (importedPages.Length != 1 ||
             !IsSectionRoot(importedPages[0].FileInfo.Name))
             throw new InvalidOperationException(
@@ -170,15 +170,25 @@ public class GraphBuilder
         }
     }
 
-    private MarkdownFile[] CreateGraph(DirectoryInfo directoryInfo, string searchPattern, EnumerationOptions searchOptions)
+    private MarkdownFile[] CreateGraph(
+        DirectoryInfo directoryInfo,
+        string searchPattern,
+        EnumerationOptions searchOptions,
+        string? excludedMarkdownPath)
     {
-        return GetMarkdownFilesAt(null, directoryInfo, searchPattern, searchOptions).ToArray();
+        return GetMarkdownFilesAt(null, directoryInfo, searchPattern, searchOptions, excludedMarkdownPath).ToArray();
     }
 
-    private static IEnumerable<MarkdownFile> GetMarkdownFilesAt(MarkdownFile? parent, DirectoryInfo directoryInfo, string searchPattern, EnumerationOptions searchOptions)
+    private static IEnumerable<MarkdownFile> GetMarkdownFilesAt(
+        MarkdownFile? parent,
+        DirectoryInfo directoryInfo,
+        string searchPattern,
+        EnumerationOptions searchOptions,
+        string? excludedMarkdownPath)
     {
         var markdownFilesInFolder = directoryInfo
             .GetFiles(searchPattern, searchOptions)
+            .Where(fileInfo => excludedMarkdownPath is null || !PathsEqual(fileInfo.FullName, excludedMarkdownPath))
             .Select(fileInfo => new MarkdownFile(fileInfo, parent))
             .ToList();
         var usedParent = markdownFilesInFolder
@@ -189,7 +199,8 @@ public class GraphBuilder
         {
             foreach (var page in markdownFilesInFolder) page.Parent = parent;
             return markdownFilesInFolder
-                .Concat(directoryInfo.GetDirectories("*", searchOptions).SelectMany(child => GetMarkdownFilesAt(parent, child, searchPattern, searchOptions)))
+                .Concat(directoryInfo.GetDirectories("*", searchOptions).SelectMany(child =>
+                    GetMarkdownFilesAt(parent, child, searchPattern, searchOptions, excludedMarkdownPath)))
                 .ToArray();
         }
 
@@ -199,7 +210,7 @@ public class GraphBuilder
         var directoryPages = directoryInfo
             .GetDirectories("*", searchOptions)
             .SelectMany(dirInfoOfChildren =>
-                GetMarkdownFilesAt(usedParent, dirInfoOfChildren, searchPattern, searchOptions)).ToArray();
+                GetMarkdownFilesAt(usedParent, dirInfoOfChildren, searchPattern, searchOptions, excludedMarkdownPath)).ToArray();
         usedParent.IsOnlyReadmeInSection = siblingPages.Length == 0 && directoryPages.Length == 0;
         usedParent.Children = siblingPages.Concat(directoryPages).ToArray();
 
@@ -208,5 +219,8 @@ public class GraphBuilder
 
         return [usedParent];
     }
+
+    private static bool PathsEqual(string left, string right) =>
+        MarkdownLinks.PathComparer.Equals(Path.GetFullPath(left), Path.GetFullPath(right));
 
 }

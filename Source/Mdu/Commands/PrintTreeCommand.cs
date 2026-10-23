@@ -37,7 +37,7 @@ public class PrintTreeCommand
                 RootPath = rootPath,
                 SearchPattern = settings.SearchPattern,
                 IncludeHidden = settings.IncludeHidden
-            });
+            }, SiteConfigurationReader.TryResolveGlossaryPath(rootPath));
         }
         catch (Exception exception) when (exception is IOException or UnauthorizedAccessException or InvalidOperationException or ArgumentException)
         {
