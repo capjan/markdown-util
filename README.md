@@ -61,9 +61,9 @@
 ## Quick start
 
 ```bash
-dotnet tool install --global mdu   # install the .NET tool
-mdu serve                          # preview ./docs with live reload
-mdu render                         # build the static site into ./site
+dotnet tool install -g mdu   # install
+mdu serve                    # live preview of ./docs
+mdu render                   # build the site into ./site
 ```
 
 Prefer a standalone executable or Docker? See the [installation guide](https://capjan.github.io/mdu/Setup/).
