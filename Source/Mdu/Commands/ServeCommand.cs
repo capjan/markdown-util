@@ -715,7 +715,7 @@ public sealed class ServeCommand
         private readonly string _rootPath;
         private readonly ChannelWriter<FileChange> _writer;
         private readonly FileSystemWatcher _rootWatcher;
-        private readonly Dictionary<string, DirectoryWatcher> _externalWatchers = new(PathComparer);
+        private readonly Dictionary<string, FileSystemWatcher> _externalWatchers = new(PathComparer);
 
         public FileWatcherSet(string rootPath, ChannelWriter<FileChange> writer)
         {
@@ -726,51 +726,44 @@ public sealed class ServeCommand
 
         public void UpdateExternalFiles(IEnumerable<string> specPaths, string? glossaryPath)
         {
-            var watchers = specPaths
+            var directories = specPaths
                 .Where(path => !IsInsideDirectory(_rootPath, path))
                 .Select(path => Path.GetDirectoryName(path)!)
                 .Where(Directory.Exists)
-                .Select(path => (Path: path, IncludeSubdirectories: false))
-                .ToList();
+                .ToHashSet(PathComparer);
             if (glossaryPath is not null && !IsInsideDirectory(_rootPath, glossaryPath))
             {
                 var directory = Path.GetDirectoryName(glossaryPath)!;
-                var includeSubdirectories = false;
                 while (!Directory.Exists(directory))
                 {
                     var parent = Directory.GetParent(directory);
-                    if (parent is null) break;
+                    if (parent is null || PathComparer.Equals(parent.FullName, Path.GetPathRoot(parent.FullName))) break;
                     directory = parent.FullName;
-                    includeSubdirectories = true;
                 }
-                if (Directory.Exists(directory)) watchers.Add((directory, includeSubdirectories));
+                if (Directory.Exists(directory) &&
+                    !PathComparer.Equals(directory, Path.GetPathRoot(directory)))
+                    directories.Add(directory);
             }
 
-            var directories = watchers
-                .GroupBy(watcher => watcher.Path, PathComparer)
-                .ToDictionary(group => group.Key, group => group.Any(watcher => watcher.IncludeSubdirectories), PathComparer);
-
             foreach (var directory in _externalWatchers.Keys
-                         .Where(directory => !directories.TryGetValue(directory, out var recursive) ||
-                                             recursive != _externalWatchers[directory].IncludeSubdirectories)
+                         .Where(directory => !directories.Contains(directory))
                          .ToArray())
             {
-                _externalWatchers[directory].Watcher.Dispose();
+                _externalWatchers[directory].Dispose();
                 _externalWatchers.Remove(directory);
             }
 
-            foreach (var (directory, includeSubdirectories) in directories)
+            foreach (var directory in directories)
             {
                 if (_externalWatchers.ContainsKey(directory)) continue;
-                _externalWatchers.Add(directory, new DirectoryWatcher(
-                    Create(directory, includeSubdirectories), includeSubdirectories));
+                _externalWatchers.Add(directory, Create(directory, includeSubdirectories: false));
             }
         }
 
         public void Dispose()
         {
             _rootWatcher.Dispose();
-            foreach (var watcher in _externalWatchers.Values) watcher.Watcher.Dispose();
+            foreach (var watcher in _externalWatchers.Values) watcher.Dispose();
             _externalWatchers.Clear();
         }
 
@@ -793,6 +786,5 @@ public sealed class ServeCommand
             return watcher;
         }
 
-        private sealed record DirectoryWatcher(FileSystemWatcher Watcher, bool IncludeSubdirectories);
     }
 }

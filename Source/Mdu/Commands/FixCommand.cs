@@ -281,6 +281,7 @@ public class FixCommand
 
         var mduPath = Path.Combine(rootPath, "mdu.yml");
         var contents = File.Exists(mduPath) ? File.ReadAllText(mduPath) : string.Empty;
+        var hasFlowMapping = false;
         if (contents.Length > 0)
         {
             var yaml = new YamlStream();
@@ -298,8 +299,10 @@ public class FixCommand
             if (root is YamlMappingNode mapping)
             {
                 if (mapping.Children.ContainsKey(new YamlScalarNode("glossary"))) return 0;
+                if (mapping.Style == YamlDotNet.Core.Events.MappingStyle.Flow)
+                    hasFlowMapping = true;
             }
-            else if (root is not YamlScalarNode { Value: null or "" })
+            else if (root is not null && root is not YamlScalarNode { Value: null or "" })
             {
                 Console.Error.WriteLine("Could not migrate MkDocs glossary because mdu.yml must contain a YAML mapping.");
                 return 0;
@@ -318,8 +321,38 @@ public class FixCommand
             return 0;
         }
         var newline = contents.Contains("\r\n", StringComparison.Ordinal) ? "\r\n" : "\n";
-        if (contents.Length > 0 && !contents.EndsWith('\n')) contents += newline;
-        contents += $"glossary: '{relativePath.Replace("'", "''", StringComparison.Ordinal)}'{newline}";
+        var glossaryEntry = $"glossary: '{relativePath.Replace("'", "''", StringComparison.Ordinal)}'";
+        if (hasFlowMapping)
+        {
+            var openingBrace = contents.IndexOf('{');
+            var closingBrace = contents.LastIndexOf('}');
+            if (openingBrace < 0 || closingBrace <= openingBrace ||
+                contents.AsSpan(openingBrace, closingBrace - openingBrace).Contains('\n') ||
+                contents.AsSpan(openingBrace, closingBrace - openingBrace).Contains('\r'))
+            {
+                Console.Error.WriteLine("Could not migrate MkDocs glossary because mdu.yml uses an unsupported multi-line flow mapping.");
+                return 0;
+            }
+
+            var beforeClosingBrace = contents[..closingBrace].TrimEnd();
+            var separator = beforeClosingBrace.EndsWith('{') ? "" : beforeClosingBrace.EndsWith(',') ? " " : ", ";
+            contents = contents.Insert(closingBrace, separator + glossaryEntry);
+        }
+        else
+        {
+            if (contents.Length > 0 && !contents.EndsWith('\n')) contents += newline;
+            contents += glossaryEntry + newline;
+        }
+        try
+        {
+            var migratedYaml = new YamlStream();
+            migratedYaml.Load(new StringReader(contents));
+        }
+        catch (YamlDotNet.Core.YamlException exception)
+        {
+            Console.Error.WriteLine($"Could not migrate MkDocs glossary because the updated mdu.yml would be invalid: {exception.Message}");
+            return 0;
+        }
         File.WriteAllText(mduPath, contents);
         Console.WriteLine($"Migrated MkDocs glossary configuration to mdu.yml: {relativePath}");
         return 1;
@@ -442,9 +475,15 @@ public class FixCommand
 
     private static IReadOnlyList<YamlMappingNode> FindMkDocsSnippets(YamlMappingNode root)
     {
-        if (!root.Children.TryGetValue(new YamlScalarNode("markdown_extensions"), out var extensions) ||
-            extensions is not YamlSequenceNode sequence)
+        if (!root.Children.TryGetValue(new YamlScalarNode("markdown_extensions"), out var extensions))
             return Array.Empty<YamlMappingNode>();
+
+        if (extensions is YamlMappingNode mapping)
+            return TryGetMapping(mapping, "pymdownx.snippets", out var mappedOptions)
+                ? [mappedOptions]
+                : Array.Empty<YamlMappingNode>();
+
+        if (extensions is not YamlSequenceNode sequence) return Array.Empty<YamlMappingNode>();
 
         var result = new List<YamlMappingNode>();
         foreach (var extension in sequence.Children.OfType<YamlMappingNode>())

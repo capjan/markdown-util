@@ -542,10 +542,10 @@ public class FixCommandTest
         File.WriteAllText(Path.Combine(root, "mkdocs.yml"), """
             docs_dir: Docs
             markdown_extensions:
-              - pymdownx.snippets:
-                  base_path: !relative $config_dir/shared
-                  auto_append:
-                    - abbreviations.md
+              pymdownx.snippets:
+                base_path: !relative $config_dir/shared
+                auto_append:
+                  - abbreviations.md
             """);
         try
         {
@@ -559,6 +559,66 @@ public class FixCommandTest
             }));
 
             Assert.Contains("glossary: '../shared/abbreviations.md'", File.ReadAllText(Path.Combine(docs, "mdu.yml")));
+        }
+        finally
+        {
+            Directory.Delete(root, recursive: true);
+        }
+    }
+
+    [Fact]
+    public void MigratesMkDocsGlossaryIntoCommentOnlyMduConfiguration()
+    {
+        var root = Path.Combine(Path.GetTempPath(), Guid.NewGuid().ToString("N"));
+        Directory.CreateDirectory(Path.Combine(root, "includes"));
+        File.WriteAllText(Path.Combine(root, "README.md"), "# Docs\n");
+        File.WriteAllText(Path.Combine(root, "includes", "terms.md"), "*[API]: Application Programming Interface\n");
+        File.WriteAllText(Path.Combine(root, "mdu.yml"), "# Existing configuration\n# Keep this comment\n");
+        File.WriteAllText(Path.Combine(root, "mkdocs.yml"), """
+            markdown_extensions:
+              - pymdownx.snippets:
+                  auto_append:
+                    - includes/terms.md
+            """);
+        try
+        {
+            var command = new FixCommand(CreateGraphBuilder(), new LinterVisitor(new ConsoleLintErrorReceiver()));
+
+            Assert.Equal(0, command.Execute(new VisitorSettings { RootPath = root, SearchPattern = "*.md", IncludeHidden = true }));
+
+            var configuration = File.ReadAllText(Path.Combine(root, "mdu.yml"));
+            Assert.Contains("# Keep this comment", configuration);
+            Assert.Equal("includes/terms.md", SiteConfigurationReader.Read(root).Glossary);
+        }
+        finally
+        {
+            Directory.Delete(root, recursive: true);
+        }
+    }
+
+    [Fact]
+    public void MigratesMkDocsGlossaryIntoFlowStyleMduConfiguration()
+    {
+        var root = Path.Combine(Path.GetTempPath(), Guid.NewGuid().ToString("N"));
+        Directory.CreateDirectory(Path.Combine(root, "includes"));
+        File.WriteAllText(Path.Combine(root, "README.md"), "# Docs\n");
+        File.WriteAllText(Path.Combine(root, "includes", "terms.md"), "*[API]: Application Programming Interface\n");
+        File.WriteAllText(Path.Combine(root, "mdu.yml"), "{site_name: Docs}\n");
+        File.WriteAllText(Path.Combine(root, "mkdocs.yml"), """
+            markdown_extensions:
+              - pymdownx.snippets:
+                  auto_append:
+                    - includes/terms.md
+            """);
+        try
+        {
+            var command = new FixCommand(CreateGraphBuilder(), new LinterVisitor(new ConsoleLintErrorReceiver()));
+
+            Assert.Equal(0, command.Execute(new VisitorSettings { RootPath = root, SearchPattern = "*.md", IncludeHidden = true }));
+
+            var configuration = SiteConfigurationReader.Read(root);
+            Assert.Equal("Docs", configuration.SiteName);
+            Assert.Equal("includes/terms.md", configuration.Glossary);
         }
         finally
         {
