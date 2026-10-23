@@ -1,114 +1,97 @@
-# MDU
+<p align="center">
+  <a href="https://capjan.github.io/mdu/">
+    <picture>
+      <source media="(prefers-color-scheme: dark)" srcset="Docs/assets/mdu-logo-dark.svg">
+      <source media="(prefers-color-scheme: light)" srcset="Docs/assets/mdu-logo-light.svg">
+      <img alt="MDU" src="Docs/assets/mdu-logo-light.svg" width="96" height="96">
+    </picture>
+  </a>
+</p>
 
-### Markdown Documentation Utility
+<h1 align="center">MDU</h1>
 
-[![.NET 10](https://github.com/capjan/mdu/actions/workflows/dotnet.yml/badge.svg)](https://github.com/capjan/mdu/actions/workflows/dotnet.yml)
-[![NuGet](https://img.shields.io/nuget/v/mdu)](https://www.nuget.org/packages/mdu)
-[![License: MIT](https://img.shields.io/badge/license-MIT-blue)](https://opensource.org/licenses/MIT)
+<p align="center">
+  <strong>Plain Markdown, beautifully published.</strong>
+</p>
 
-**Turn a folder of Markdown files into a documentation website. One command, zero configuration.**
+<p align="center">
+  <a href="https://github.com/capjan/mdu/actions/workflows/dotnet.yml"><img
+    src="https://github.com/capjan/mdu/actions/workflows/dotnet.yml/badge.svg"
+    alt="Build"
+  /></a>
+  <a href="https://www.nuget.org/packages/mdu"><img
+    src="https://img.shields.io/nuget/v/mdu?logo=nuget&logoColor=white&label=NuGet"
+    alt="NuGet"
+  /></a>
+  <a href="https://hub.docker.com/r/capjan/mdu"><img
+    src="https://img.shields.io/docker/pulls/capjan/mdu?logo=docker&logoColor=white&label=Docker"
+    alt="Docker Pulls"
+  /></a>
+  <a href="https://github.com/capjan/mdu/releases/latest"><img
+    src="https://img.shields.io/github/v/release/capjan/mdu?logo=github&label=Release"
+    alt="Latest Release"
+  /></a>
+  <a href="LICENSE"><img
+    src="https://img.shields.io/badge/license-MIT-blue"
+    alt="License: MIT"
+  /></a>
+</p>
 
-[![MDU Callouts documentation in light and dark themes, split diagonally](https://raw.githubusercontent.com/capjan/mdu/main/.github/assets/screenshot.png)](https://capjan.github.io/mdu/)
+<p align="center">
+  <a href="https://capjan.github.io/mdu/"><strong>Documentation</strong></a>
+  &middot;
+  <a href="https://capjan.github.io/mdu/Setup/"><strong>Get started</strong></a>
+  &middot;
+  <a href="https://capjan.github.io/mdu/Features/"><strong>Features</strong></a>
+  &middot;
+  <a href="https://capjan.github.io/mdu/Usage/"><strong>Commands</strong></a>
+  &middot;
+  <a href="https://capjan.github.io/mdu/Publish/"><strong>Publish</strong></a>
+  &middot;
+  <a href="https://github.com/capjan/mdu/releases"><strong>Releases</strong></a>
+</p>
 
-MDU (`mdu`) turns a `docs` folder into a static HTML site with top navigation, a collapsible sidebar, breadcrumbs, client-side search, light and dark themes, and syntax highlighting. Search results jump to matching sections and highlight the found text. Add an animated hero banner or optional site configuration when you want to customize the site. Your files stay plain Markdown that still reads well on GitHub, and there is no Node.js or Python build toolchain to install.
+<p align="center">
+  Turn a folder of ordinary Markdown files into a fast, searchable documentation
+  site – with navigation, diagrams, a linter, and PDF export built in.
+  One .NET tool, zero configuration, no Node.js or Python toolchain.
+</p>
 
-👉 **[See a live example](https://capjan.github.io/mdu/)**: the MDU documentation, rendered by `mdu` itself.
+<p align="center">
+  <a href="https://capjan.github.io/mdu/">
+    <img alt="MDU documentation in light and dark themes" src=".github/assets/screenshot.png">
+  </a>
+</p>
 
-## From Markdown to website in a minute
+<p align="center">
+  <em>
+    Visit the documentation at
+    <a href="https://capjan.github.io/mdu/">capjan.github.io/mdu</a>
+    – rendered by MDU itself.
+  </em>
+</p>
 
-**1. Install the `mdu` .NET tool package** (requires the [.NET 10 SDK](https://dotnet.microsoft.com/download)):
+## Quick start
 
 ```bash
 dotnet tool install --global mdu
-```
-
-Prefer a standalone executable? Download one for Windows x64, Linux x64, macOS Intel, or Apple silicon from the [GitHub Releases](https://github.com/capjan/mdu/releases/latest). These downloads do not require the .NET SDK or runtime. Linux x64 requires glibc 2.35 or newer; Alpine Linux and other musl-based distributions are not supported.
-
-Prefer Docker? Use the multi-architecture [Docker Hub image](Docs/Setup/Docker-Installation.md) for Linux `amd64` and `arm64`.
-
-**2. Write your docs** in a `docs` folder. Each folder can use a `README.md` as its section page:
-
-```text
-docs/
-├── README.md            → start page
-├── Setup/
-│   └── README.md        → "Setup" section
-└── Usage/
-    ├── README.md        → "Usage" section
-    └── Configuration.md → page inside "Usage"
-```
-
-**3. Preview it** with live reload:
-
-```bash
 mdu serve
 ```
 
-Your site opens at <http://localhost:4173> and refreshes when you save a Markdown file or linked local asset.
+MDU renders the `docs` folder and opens a live-reloading preview. Run `mdu render` to write the static site.
+Prefer a standalone executable or Docker? See [Setup](https://capjan.github.io/mdu/Setup/).
 
-**4. Publish it:**
+## Documentation
 
-```bash
-mdu render
-```
+| Section | What you will find |
+| --- | --- |
+| [**Setup**](https://capjan.github.io/mdu/Setup/) | Install MDU as a .NET tool, standalone executable, or Docker image. |
+| [**Usage**](https://capjan.github.io/mdu/Usage/) | Preview, lint, render, and export your docs with the `mdu` commands. |
+| [**Features**](https://capjan.github.io/mdu/Features/) | Callouts, diagrams, OpenAPI, math, icons, code highlighting, and more. |
+| [**Navigation**](https://capjan.github.io/mdu/Features/Navigation.html) | Build tabs, sidebar, and breadcrumbs from your folder structure. |
+| [**Publish**](https://capjan.github.io/mdu/Publish/) | Host the generated site on GitHub Pages, GitLab Pages, or any web server. |
+| [**Architecture**](https://capjan.github.io/mdu/Architecture/) | Learn how MDU parses, validates, and renders your documentation. |
 
-Upload the generated `site` folder to GitHub Pages, GitLab Pages, Netlify, or any plain web server. It's just static HTML.
+## License
 
-## What you get
-
-- 🧭 **Navigation from your folders.** Top tabs, the sidebar, and breadcrumbs follow your folder structure. Use `navigation.*` front matter to order, label, or hide entries.
-- 🌗 **Light and dark theme** that follows the visitor's system setting.
-- 🔎 **Fast client-side search** with section links and highlighted matches.
-- 📱 **Responsive layout** that works on phones, tablets, and desktops.
-- 🎨 **Rich Markdown rendering.** Code highlighting, supported diagrams, math, icons, emoji, callouts, and an optional animated hero banner.
-- 🖼️ **Assets included.** Linked images and files are copied to the site automatically.
-- ✅ **Built-in linter.** `mdu lint` catches missing titles, broken local links and assets, and path casing issues before you publish.
-- 📄 **PDF export.** Create one PDF from a documentation folder or a single Markdown file.
-
-## Why MDU?
-
-- **One .NET workflow for your docs.** `mdu tree`, `mdu lint`, `mdu fix`, `mdu serve`, `mdu render`, and `mdu pdf` run from the .NET 10 tool; there is no separate Node.js or Python build toolchain.
-- **Your folder structure becomes navigation.** MDU builds tabs, the sidebar, and breadcrumbs from the folder tree. Use `navigation.order` when you want a custom order.
-- **Catch problems before publishing.** The linter checks page titles, directory names, link casing, and missing local links or assets, then points to the source file and line.
-- **Keep your content and hosting portable.** Your source stays Markdown and the generated site is static HTML you can host anywhere. The optional `navigation.*` front matter and `mdu.yml` site configuration are MDU-specific.
-
-## Commands
-
-| Command           | What it does                                       |
-| ----------------- | -------------------------------------------------- |
-| `mdu serve`       | Renders, serves, and live-reloads the site.        |
-| `mdu render`      | Writes the static site to `./site`.                |
-| `mdu pdf`         | Writes a documentation folder or one Markdown file to a PDF. |
-| `mdu lint`        | Checks documentation and local links.              |
-| `mdu fix`         | Migrates supported MkDocs Markdown and applies automatic fixes. |
-| `mdu tree`        | Prints detected Markdown files as a tree.          |
-
-By default, commands use `./docs` as the source folder. Rendering writes to `./site`; PDF export writes to `./documentation.pdf` for a folder or a file named after a single Markdown input; and the preview server uses port `4173`. If the source folder does not exist, pass its path explicitly:
-
-```bash
-mdu serve ./manual ./public --port 8080 --no-browser
-```
-
-Lint problems point straight to the file and line:
-
-```text
-/project/docs/Usage/README.md:7: MDU004 LocalLinkExists: Local link target './intro.md' does not exist.
-Linter detected 1 error.
-```
-
-## Install per repository
-
-To pin the tool to a repository instead of installing it globally:
-
-```bash
-dotnet new tool-manifest
-dotnet tool install --local mdu
-```
-
-Skip the first command if `.config/dotnet-tools.json` already exists. Run the local tool with `dotnet mdu`, for example `dotnet mdu serve`.
-
-## Learn more
-
-- [Documentation](https://capjan.github.io/mdu/)
-- [Usage](https://github.com/capjan/mdu/blob/main/Docs/Usage/README.md), [linter rules](https://github.com/capjan/mdu/blob/main/Docs/Usage/lint/README.md), and [navigation settings](https://github.com/capjan/mdu/blob/main/Docs/Features/Navigation.md)
-- [Features](https://github.com/capjan/mdu/blob/main/Docs/Features/README.md) and [PDF export](https://github.com/capjan/mdu/blob/main/Docs/Usage/pdf.md)
+MDU is released under the [MIT License](LICENSE).
