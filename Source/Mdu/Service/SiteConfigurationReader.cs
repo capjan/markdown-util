@@ -17,6 +17,7 @@ public static class SiteConfigurationReader
         var configuration = new SiteConfiguration
         {
             SiteName = ReadScalar(root, "site_name") ?? "Documentation",
+            Glossary = ReadGlossary(root),
             LogoLight = ReadAsset(root, "logo", "light"),
             LogoDark = ReadAsset(root, "logo", "dark"),
             FaviconLight = ReadAsset(root, "favicon", "light"),
@@ -36,6 +37,22 @@ public static class SiteConfigurationReader
         }
         configuration.FaviconDark ??= configuration.FaviconLight;
         return configuration;
+    }
+
+    public static string? ResolveGlossaryPath(string rootPath, SiteConfiguration configuration)
+    {
+        if (configuration.Glossary is null) return null;
+
+        var path = Path.GetFullPath(configuration.Glossary, rootPath);
+        if (!File.Exists(path))
+            throw new InvalidOperationException($"Configured glossary file does not exist: {path}");
+        return path;
+    }
+
+    public static string? ReadGlossary(string rootPath, SiteConfiguration configuration)
+    {
+        var path = ResolveGlossaryPath(rootPath, configuration);
+        return path is null ? null : File.ReadAllText(path);
     }
 
     public static void CopyAssets(string rootPath, string outputPath, SiteConfiguration configuration)
@@ -73,6 +90,14 @@ public static class SiteConfigurationReader
         if (node is YamlScalarNode scalar) return scalar.Value;
         if (node is YamlMappingNode mapping) return ReadScalar(mapping, theme);
         return null;
+    }
+
+    private static string? ReadGlossary(YamlMappingNode root)
+    {
+        if (!root.Children.TryGetValue(new YamlScalarNode("glossary"), out var node)) return null;
+        if (node is not YamlScalarNode scalar || string.IsNullOrWhiteSpace(scalar.Value))
+            throw new InvalidOperationException("The 'glossary' setting in mdu.yml must be a Markdown file path.");
+        return scalar.Value;
     }
 
     private static string? ReadScalar(YamlMappingNode mapping, string key) =>

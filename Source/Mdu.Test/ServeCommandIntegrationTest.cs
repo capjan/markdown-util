@@ -218,6 +218,53 @@ public class ServeCommandIntegrationTest
         }
     }
 
+    [Fact]
+    public async Task ReloadsExternalGlossaryChangesAndConfigurationPathChanges()
+    {
+        var root = Path.Combine(Path.GetTempPath(), Guid.NewGuid().ToString("N"));
+        var docs = Path.Combine(root, "Docs");
+        var shared = Path.Combine(root, "shared");
+        var alternate = Path.Combine(root, "alternate");
+        var site = Path.Combine(root, "site");
+        Directory.CreateDirectory(docs);
+        Directory.CreateDirectory(shared);
+        Directory.CreateDirectory(alternate);
+        File.WriteAllText(Path.Combine(docs, "README.md"), "# Home\n\nCPU.\n");
+        File.WriteAllText(Path.Combine(docs, "mdu.yml"), "glossary: ../shared/terms.md\n");
+        var glossaryPath = Path.Combine(shared, "terms.md");
+        var alternateGlossaryPath = Path.Combine(alternate, "terms.md");
+        File.WriteAllText(glossaryPath, "*[CPU]: Central processing unit\n");
+        File.WriteAllText(alternateGlossaryPath, "*[CPU]: Alternate processing unit\n");
+
+        var port = FindAvailablePort();
+        using var process = StartServer(docs, site, port);
+        using var client = new HttpClient { Timeout = TimeSpan.FromSeconds(2) };
+        var pageUrl = $"http://127.0.0.1:{port}/index.html";
+
+        try
+        {
+            await WaitUntilAsync(async () => await PageContainsAsync(client, pageUrl,
+                "title=\"Central processing unit\""), process);
+
+            File.WriteAllText(glossaryPath, "*[CPU]: General processing unit\n");
+            await WaitUntilAsync(async () => await PageContainsAsync(client, pageUrl,
+                "title=\"General processing unit\""), process);
+
+            File.WriteAllText(Path.Combine(docs, "mdu.yml"), "glossary: ../alternate/terms.md\n");
+            await WaitUntilAsync(async () => await PageContainsAsync(client, pageUrl,
+                "title=\"Alternate processing unit\""), process);
+
+            File.WriteAllText(alternateGlossaryPath, "*[CPU]: Updated alternate processing unit\n");
+            await WaitUntilAsync(async () => await PageContainsAsync(client, pageUrl,
+                "title=\"Updated alternate processing unit\""), process);
+        }
+        finally
+        {
+            StopServer(process);
+            Directory.Delete(root, recursive: true);
+        }
+    }
+
     private static async Task<bool> PageContainsAsync(HttpClient client, string url, string text)
     {
         using var response = await client.GetAsync(url);

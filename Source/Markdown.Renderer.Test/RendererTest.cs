@@ -23,6 +23,47 @@ public class RendererTest
     }
 
     [Fact]
+    public void RendersLocalAbbreviationsWithoutReplacingCode()
+    {
+        var renderer = new HtmlRenderer();
+
+        var html = renderer.RenderMarkdownFragment(
+            "*[HTML]: Hypertext Markup Language\n\nHTML and `HTML`; **bold** and *italic*.\n\n```text\nHTML\n```\n");
+
+        Assert.Contains("<abbr title=\"Hypertext Markup Language\">HTML</abbr> and <code>HTML</code>", html);
+        Assert.Contains("<strong>bold</strong> and <em>italic</em>", html);
+        Assert.Contains("<pre><code>HTML</code></pre>", html);
+    }
+
+    [Fact]
+    public void SharedAbbreviationsAreAddedOnceAndLocalDefinitionsTakePrecedencePerDocument()
+    {
+        var renderer = new HtmlRenderer();
+        renderer.SetGlossary("*[CPU]: Central processing unit\n*[GPU]: Graphics processing unit\n");
+
+        var localOverride = renderer.RenderMarkdownFragment(
+            "*[CPU]: Local processor\n\nCPU and GPU.\n");
+        var anotherPage = renderer.RenderMarkdownFragment("CPU.\n");
+
+        Assert.Contains("<abbr title=\"Local processor\">CPU</abbr>", localOverride);
+        Assert.Contains("<abbr title=\"Graphics processing unit\">GPU</abbr>", localOverride);
+        Assert.Contains("<abbr title=\"Central processing unit\">CPU</abbr>", anotherPage);
+    }
+
+    [Fact]
+    public void InvalidGlossaryLeavesTheLastValidGlossaryActive()
+    {
+        var renderer = new HtmlRenderer();
+        renderer.SetGlossary("*[CPU]: Central processing unit\n");
+
+        Assert.Throws<InvalidOperationException>(() => renderer.SetGlossary("No abbreviation definitions here."));
+
+        Assert.Contains(
+            "<abbr title=\"Central processing unit\">CPU</abbr>",
+            renderer.RenderMarkdownFragment("CPU."));
+    }
+
+    [Fact]
     public async Task AppliesConfiguredBackgroundToHeaderSurfacesForLightAndDarkThemes()
     {
         var outputPath = Path.Combine(Path.GetTempPath(), Guid.NewGuid().ToString("N"));

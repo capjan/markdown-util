@@ -493,6 +493,84 @@ public class FixCommandTest
         }
     }
 
+    [Fact]
+    public void MigratesSingleMkDocsAutoAppendGlossaryIdempotently()
+    {
+        var root = Path.Combine(Path.GetTempPath(), Guid.NewGuid().ToString("N"));
+        Directory.CreateDirectory(Path.Combine(root, "includes"));
+        var glossary = Path.Combine(root, "includes", "abbreviations.md");
+        const string glossaryContent = "*[API]: Application Programming Interface\n";
+        File.WriteAllText(Path.Combine(root, "README.md"), "# Docs\n\nAPI\n");
+        File.WriteAllText(glossary, glossaryContent);
+        File.WriteAllText(Path.Combine(root, "mkdocs.yml"), """
+            markdown_extensions:
+              - pymdownx.snippets
+            pymdownx:
+              snippets:
+                auto_append:
+                  - includes/abbreviations.md
+            """);
+        try
+        {
+            var command = new FixCommand(CreateGraphBuilder(), new LinterVisitor(new ConsoleLintErrorReceiver()));
+            var settings = new VisitorSettings { RootPath = root, SearchPattern = "*.md", IncludeHidden = true };
+
+            Assert.Equal(0, command.Execute(settings));
+            var configuration = File.ReadAllText(Path.Combine(root, "mdu.yml"));
+            Assert.Contains("glossary: 'includes/abbreviations.md'", configuration);
+            Assert.Equal(glossaryContent, File.ReadAllText(glossary));
+
+            Assert.Equal(0, command.Execute(settings));
+            Assert.Equal(configuration, File.ReadAllText(Path.Combine(root, "mdu.yml")));
+            var graph = CreateGraphBuilder().CreateGraph(settings);
+            Assert.DoesNotContain(Flatten(graph), page => page.FileInfo.FullName == glossary);
+        }
+        finally
+        {
+            Directory.Delete(root, recursive: true);
+        }
+    }
+
+    [Fact]
+    public void LeavesAmbiguousMkDocsGlossaryConfigurationUnchanged()
+    {
+        var root = Path.Combine(Path.GetTempPath(), Guid.NewGuid().ToString("N"));
+        var terms = Path.Combine(root, "terms");
+        Directory.CreateDirectory(terms);
+        File.WriteAllText(Path.Combine(root, "README.md"), "# Docs\n");
+        const string glossaryContent = "!!! note\n\n    Keep the source unchanged.\n";
+        File.WriteAllText(Path.Combine(terms, "one.md"), glossaryContent);
+        File.WriteAllText(Path.Combine(terms, "two.md"), glossaryContent);
+        File.WriteAllText(Path.Combine(root, "mkdocs.yml"), """
+            pymdownx:
+              snippets:
+                auto_append:
+                  - terms/one.md
+                  - terms/two.md
+            """);
+        try
+        {
+            var command = new FixCommand(CreateGraphBuilder(), new LinterVisitor(new ConsoleLintErrorReceiver()));
+
+            Assert.Equal(0, command.Execute(new VisitorSettings
+            {
+                RootPath = root,
+                SearchPattern = "*.md",
+                IncludeHidden = true
+            }));
+            Assert.False(File.Exists(Path.Combine(root, "mdu.yml")));
+            Assert.Equal(glossaryContent, File.ReadAllText(Path.Combine(terms, "one.md")));
+            Assert.Equal(glossaryContent, File.ReadAllText(Path.Combine(terms, "two.md")));
+        }
+        finally
+        {
+            Directory.Delete(root, recursive: true);
+        }
+    }
+
     private static GraphBuilder CreateGraphBuilder() =>
         new(new DataPreparationVisitor(new MarkdownDocumentReader()));
+
+    private static IEnumerable<MarkdownFile> Flatten(IEnumerable<MarkdownFile> pages) =>
+        pages.SelectMany(page => new[] { page }.Concat(Flatten(page.Children ?? [])));
 }

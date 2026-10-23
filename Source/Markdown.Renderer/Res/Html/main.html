@@ -598,7 +598,110 @@
     }));
     content.addEventListener("input", hideTooltip);
 
-    const footnotePreviewClosers = [hideTooltip];
+    const abbreviationTooltip = document.createElement("span");
+    abbreviationTooltip.className = "footnote-preview";
+    abbreviationTooltip.id = "abbreviation-tooltip";
+    abbreviationTooltip.setAttribute("role", "tooltip");
+    document.body.append(abbreviationTooltip);
+    let abbreviationAnchor;
+    let abbreviationHovered = false;
+    let abbreviationFocused = false;
+    let abbreviationHideTimer;
+    let abbreviationPositionFrame;
+    const cancelAbbreviationHide = () => {
+        if (abbreviationHideTimer === undefined) return;
+        window.clearTimeout(abbreviationHideTimer);
+        abbreviationHideTimer = undefined;
+    };
+    const scheduleAbbreviationPosition = () => {
+        if (abbreviationPositionFrame !== undefined) return;
+        abbreviationPositionFrame = window.requestAnimationFrame(() => {
+            abbreviationPositionFrame = undefined;
+            if (abbreviationAnchor && !positionFloating(abbreviationTooltip, abbreviationAnchor, { maxWidth: 420, gap: 12 }))
+                hideAbbreviationTooltip();
+        });
+    };
+    const hideAbbreviationTooltip = () => {
+        cancelAbbreviationHide();
+        if (abbreviationPositionFrame !== undefined) {
+            window.cancelAnimationFrame(abbreviationPositionFrame);
+            abbreviationPositionFrame = undefined;
+        }
+        if (abbreviationAnchor) abbreviationAnchor.removeAttribute("aria-describedby");
+        abbreviationAnchor = undefined;
+        abbreviationHovered = false;
+        abbreviationFocused = false;
+        abbreviationTooltip.classList.remove("is-visible");
+        resetFloating(abbreviationTooltip);
+        window.removeEventListener("resize", scheduleAbbreviationPosition);
+        window.removeEventListener("scroll", scheduleAbbreviationPosition, true);
+    };
+    const showAbbreviationTooltip = (anchor) => {
+        if (abbreviationAnchor !== anchor) {
+            hideAbbreviationTooltip();
+            abbreviationAnchor = anchor;
+            abbreviationTooltip.textContent = anchor.dataset.abbreviationTooltip;
+        }
+        cancelAbbreviationHide();
+        anchor.setAttribute("aria-describedby", abbreviationTooltip.id);
+        abbreviationTooltip.classList.add("is-visible");
+        if (!positionFloating(abbreviationTooltip, anchor, { maxWidth: 420, gap: 12 })) {
+            hideAbbreviationTooltip();
+            return;
+        }
+        window.addEventListener("resize", scheduleAbbreviationPosition);
+        window.addEventListener("scroll", scheduleAbbreviationPosition, true);
+    };
+    const scheduleAbbreviationHide = () => {
+        cancelAbbreviationHide();
+        abbreviationHideTimer = window.setTimeout(() => {
+            abbreviationHideTimer = undefined;
+            if (!abbreviationHovered && !abbreviationFocused) hideAbbreviationTooltip();
+        }, 125);
+    };
+    const abbreviationAnchorOf = (target) => {
+        const anchor = target instanceof Element ? target.closest("abbr[data-abbreviation-tooltip]") : null;
+        return anchor && content.contains(anchor) ? anchor : null;
+    };
+    content.querySelectorAll("abbr[title]").forEach((abbreviation) => {
+        abbreviation.dataset.abbreviationTooltip = abbreviation.getAttribute("title");
+        abbreviation.removeAttribute("title");
+        if (!abbreviation.hasAttribute("tabindex")) abbreviation.tabIndex = 0;
+    });
+    content.addEventListener("pointerover", (event) => {
+        const anchor = abbreviationAnchorOf(event.target);
+        if (!anchor) return;
+        abbreviationHovered = true;
+        showAbbreviationTooltip(anchor);
+    });
+    content.addEventListener("pointerout", (event) => {
+        const anchor = abbreviationAnchorOf(event.target);
+        if (anchor !== abbreviationAnchor || anchor.contains(event.relatedTarget)) return;
+        abbreviationHovered = false;
+        scheduleAbbreviationHide();
+    });
+    content.addEventListener("focusin", (event) => {
+        const anchor = abbreviationAnchorOf(event.target);
+        if (!anchor) return;
+        abbreviationFocused = true;
+        showAbbreviationTooltip(anchor);
+    });
+    content.addEventListener("focusout", (event) => {
+        const anchor = abbreviationAnchorOf(event.target);
+        if (anchor !== abbreviationAnchor || anchor.contains(event.relatedTarget)) return;
+        abbreviationFocused = false;
+        scheduleAbbreviationHide();
+    });
+    abbreviationTooltip.addEventListener("pointerenter", () => {
+        abbreviationHovered = true;
+        cancelAbbreviationHide();
+    });
+    abbreviationTooltip.addEventListener("pointerleave", () => {
+        abbreviationHovered = false;
+        scheduleAbbreviationHide();
+    });
+
+    const footnotePreviewClosers = [hideTooltip, hideAbbreviationTooltip];
     const referencesByFootnote = new Map();
     const footnoteReferences = [...content.querySelectorAll("a.footnote-ref")];
     footnoteReferences.forEach((link) => {

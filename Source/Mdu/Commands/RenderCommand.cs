@@ -57,10 +57,16 @@ public class RenderCommand
         try
         {
             siteConfiguration = SiteConfigurationReader.Read(rootPath);
+            _renderer.SetGlossary(SiteConfigurationReader.ReadGlossary(rootPath, siteConfiguration));
         }
         catch (YamlDotNet.Core.YamlException exception)
         {
             Console.Error.WriteLine($"Could not read mdu.yml: {exception.Message}");
+            return 1;
+        }
+        catch (Exception exception) when (exception is IOException or UnauthorizedAccessException or InvalidOperationException or ArgumentException)
+        {
+            Console.Error.WriteLine($"Could not read the configured glossary: {exception.Message}");
             return 1;
         }
         MarkdownFile[] graph;

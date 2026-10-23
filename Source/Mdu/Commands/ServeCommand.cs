@@ -39,6 +39,7 @@ public sealed class ServeCommand
     private RenderCommandSettings _settings = new();
     private string _rootPath = string.Empty;
     private string _outputPath = string.Empty;
+    private string? _glossaryPath;
     private bool _hasPdfLink;
 
     public ServeCommand(
@@ -123,7 +124,7 @@ public sealed class ServeCommand
         var changes = Channel.CreateUnbounded<FileChange>();
         using var watcher = new FileWatcherSet(_rootPath, changes.Writer);
         _watchers = watcher;
-        watcher.UpdateOpenApiSpecs(_openApiSpecsByPage.Values.SelectMany(paths => paths));
+        watcher.UpdateOpenApiSpecs(_openApiSpecsByPage.Values.SelectMany(paths => paths), _glossaryPath);
         if (!noBrowser) OpenBrowser(url);
 
         using var cancellation = new CancellationTokenSource();
@@ -169,10 +170,14 @@ public sealed class ServeCommand
     private void RebuildSite()
     {
         var previousFiles = new HashSet<string>(_generatedFiles, PathComparer);
+        var siteConfiguration = SiteConfigurationReader.Read(_rootPath);
+        var glossaryPath = SiteConfigurationReader.ResolveGlossaryPath(_rootPath, siteConfiguration);
+        var glossaryMarkdown = glossaryPath is null ? null : File.ReadAllText(glossaryPath);
+        _renderer.SetGlossary(glossaryMarkdown);
+        _glossaryPath = glossaryPath;
         var graph = _graphBuilder.CreateGraph(_settings);
         _navigationRoots = graph;
 
-        var siteConfiguration = SiteConfigurationReader.Read(_rootPath);
         _renderer.PrepareBasePath(_outputPath, siteConfiguration);
         SiteConfigurationReader.CopyAssets(_rootPath, _outputPath, siteConfiguration);
         _configurationAssets.Clear();
@@ -222,7 +227,7 @@ public sealed class ServeCommand
         foreach (var (pagePath, page) in _pages)
             UpdatePageAssets(pagePath, page);
 
-        _watchers?.UpdateOpenApiSpecs(_openApiSpecsByPage.Values.SelectMany(paths => paths));
+        _watchers?.UpdateOpenApiSpecs(_openApiSpecsByPage.Values.SelectMany(paths => paths), _glossaryPath);
     }
 
     private static IEnumerable<MarkdownFile> Flatten(IEnumerable<MarkdownFile> pages)
@@ -342,6 +347,15 @@ public sealed class ServeCommand
             return;
         }
 
+        if (_glossaryPath is not null && relevantChanges.Any(change =>
+                PathComparer.Equals(change.Path, _glossaryPath) ||
+                change.OldPath is not null && PathComparer.Equals(change.OldPath, _glossaryPath)))
+        {
+            RebuildSite();
+            server.Publish(reloadAll: true);
+            return;
+        }
+
         var importMarkers = _pages.Values
             .Where(page => page.ImportMarkerPath is not null)
             .Select(page => Path.GetFullPath(page.ImportMarkerPath!))
@@ -416,7 +430,7 @@ public sealed class ServeCommand
             var previousSpecPages = _openApiSpecPagesByPage.GetValueOrDefault(pagePath) ?? Array.Empty<string>();
             UpdatePageAssets(pagePath, page);
             var specPagesChanged = !previousSpecPages.SequenceEqual(_openApiSpecPagesByPage[pagePath], PathComparer);
-            _watchers?.UpdateOpenApiSpecs(_openApiSpecsByPage.Values.SelectMany(paths => paths));
+            _watchers?.UpdateOpenApiSpecs(_openApiSpecsByPage.Values.SelectMany(paths => paths), _glossaryPath);
             new LocalAssetsCopy(_rootPath, _outputPath).Process(page, depth);
             var rendererVisitor = new MarkdigVisitor(
                 _rootPath,
@@ -703,9 +717,10 @@ public sealed class ServeCommand
             _rootWatcher = Create(_rootPath, includeSubdirectories: true);
         }
 
-        public void UpdateOpenApiSpecs(IEnumerable<string> specPaths)
+        public void UpdateOpenApiSpecs(IEnumerable<string> specPaths, string? glossaryPath)
         {
             var directories = specPaths
+                .Concat(glossaryPath is null ? Array.Empty<string>() : [glossaryPath])
                 .Where(path => !IsInsideDirectory(_rootPath, path))
                 .Select(path => Path.GetDirectoryName(path)!)
                 .Where(Directory.Exists)
