@@ -149,13 +149,10 @@
             brandLogo.src = useDark ? brandLogo.dataset.darkSrc : brandLogo.dataset.lightSrc;
         }
     };
-    const updateBranding = () => {
-        updateLogo();
-    };
     if (darkLogo) new MutationObserver(updateLogo).observe(root, { attributes: true, attributeFilter: ["class"] });
 
     updateThemeLabel();
-    updateBranding();
+    updateLogo();
     themeToggle.addEventListener("click", () => {
         const currentTheme = root.dataset.theme;
         const nextTheme = themes[(themes.indexOf(currentTheme) + 1) % themes.length];
@@ -164,9 +161,9 @@
             localStorage.setItem("mdu-theme", nextTheme);
         } catch { }
         updateThemeLabel();
-        updateBranding();
+        updateLogo();
     });
-    systemDark.addEventListener("change", updateBranding);
+    systemDark.addEventListener("change", updateLogo);
 
     const layout = document.getElementById("site-layout");
     const header = document.getElementById("site-header");
