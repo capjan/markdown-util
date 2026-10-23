@@ -22,8 +22,10 @@ You can also provide a directory that does not exist yet:
 
 ```bash
 mdu new ./my-docs
+cd ./my-docs
+mdu serve
 ```
 
 MDU creates the target directory and its `docs/README.md` page. Existing files are left untouched. If the target already contains a folder named `docs`, MDU stops without changing it.
 
-Run `mdu serve` from the project directory to preview the starter page, or `mdu lint` to check it.
+When you create the project in the current directory, run `mdu serve` to preview the starter page or `mdu lint` to check it.
