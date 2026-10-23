@@ -16,9 +16,9 @@ The HTML specification is maintained by the W3C.
 *[W3C]: World Wide Web Consortium
 ~~~
 
-Rendered result:
-
-The HTML specification is maintained by the W3C.
+<div class="result-block">
+<p>The <abbr title="Hyper Text Markup Language">HTML</abbr> specification is maintained by the <abbr title="World Wide Web Consortium">W3C</abbr>.</p>
+</div>
 
 Definitions follow Markdig's matching rules. Code remains unchanged. A definition on a page takes precedence over the shared glossary for that page only.
 
