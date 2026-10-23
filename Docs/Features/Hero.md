@@ -2,7 +2,7 @@
 
 ## Overview
 
-A hero banner opens a landing page with an animated scene: waves roll in, break into whitewater, and wash up the beach while your title and calls to action sit on top. The scene is rendered live in the browser with self-contained WebGL and adapts to the light and dark theme.
+A hero banner opens a landing page with an animated scene: waves roll in, break into whitewater, and wash up the beach while your title and calls to action sit on top. The scene is rendered live in the browser with procedural WebGL, adapts to the light and dark theme, and runs entirely from inline code without external images, fonts, or scripts.
 
 ```hero
 title: Hero banner

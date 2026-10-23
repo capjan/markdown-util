@@ -87,4 +87,4 @@ paths:
 | **Tooling** | `mdu serve` watches referenced spec files for live reload, `mdu page move` updates relative paths in `openapi` blocks, and `mdu pdf` includes the reference in the PDF export. |
 
 > [!NOTE]
-> Local `$ref` pointers within a specification are resolved and linked inline. To keep builds fast and reproducible offline, MDU works with self-contained local specification files.
+> Local specification files and internal `$ref` pointers (`#/...`) are resolved and linked inline; external `$ref` files and remote `http(s)` specification URLs are skipped so builds stay fast and reproducible offline.

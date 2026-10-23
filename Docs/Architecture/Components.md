@@ -154,4 +154,4 @@ Parses paths into elements so the linter can compare a link target with the file
 | Cap.Core | Parser and text helpers | mdu, Document, Highlighter |
 
 > [!NOTE]
-> These libraries run at build time inside MDU, keeping the rendered site lightweight and self-contained. The notices for the bundled icon sets and the math renderer ship in `THIRD-PARTY-NOTICES.md` inside the package.
+> These libraries run inside the `mdu` CLI; the rendered site stays plain static HTML, CSS, and JavaScript. The notices for the bundled icon sets and the math renderer ship in `THIRD-PARTY-NOTICES.md` inside the package.

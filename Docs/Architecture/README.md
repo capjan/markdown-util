@@ -13,7 +13,7 @@ MDU is a single .NET tool. It reads a folder of ordinary Markdown files, builds 
 | --- | --- |
 | **Portable sources** | Pages stay plain Markdown that reads well on GitHub. MDU features use code blocks, shortcodes, or front matter that degrade to readable text elsewhere. |
 | **Static output** | Diagrams, math, icons, and syntax highlighting become HTML and SVG at build time, ready for any static web host and offline viewing. |
-| **Self-contained CLI** | One CLI tool handles linting, live preview, HTML rendering, and built-in PDF export. |
+| **Built-in renderers** | One `dotnet tool` renders HTML, diagrams, math, syntax highlighting, and PDF files directly in .NET, without external language runtimes or a browser engine. |
 | **Scriptable CLI** | Commands print plain text and return exit codes; `mdu lint` also writes JSON and GitHub annotations. |
 
 ## System context

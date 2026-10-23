@@ -43,7 +43,7 @@
 
 <p align="center">
   Turn a folder of plain Markdown into a fast, searchable documentation site.<br>
-  One self-contained CLI. Sensible defaults. Easy configuration.
+  One CLI tool. Sensible defaults. Easy configuration.
 </p>
 
 <p align="center">
