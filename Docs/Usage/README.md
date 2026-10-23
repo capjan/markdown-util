@@ -7,7 +7,13 @@ navigation.placement: top
 
 ## Quick start
 
-Run the commands from your project folder. MDU finds the `docs` folder on its own.
+To start a documentation project in the current directory, create it first:
+
+```bash
+mdu new .
+```
+
+Then run the commands from your project folder. MDU finds the `docs` folder on its own.
 
 ```bash
 mdu tree     # show the page structure
@@ -47,6 +53,7 @@ Linter detected 1 error.
 
 | Command | Syntax | Purpose |
 | --- | --- | --- |
+| [new](new.md) | `mdu new [directory]` | Create a starter documentation project |
 | [tree](tree.md) | `mdu tree [path]` | Print the detected page structure. Alias: `print` |
 | [lint](./lint/README.md) | `mdu lint [path]` | Check pages and local links against the [rules](./lint/Rules.md). Alias: `l` |
 | [fix](fix.md) | `mdu fix [path]` | Migrate MkDocs syntax and apply automatic fixes |
@@ -60,7 +67,7 @@ Linter detected 1 error.
 
 | | Default |
 | --- | --- |
-| Source folder | `./docs`. Pass the path explicitly if it does not exist. |
+| Source folder | `./docs`. Run `mdu new .` to create a starter project, or pass the path explicitly. |
 | Output of `render` and `serve` | `./site`, with `documentation.pdf` when a page contains a PDF Link |
 | Output of `pdf` | `./documentation.pdf` |
 | Pages | Files matching `*.md` |

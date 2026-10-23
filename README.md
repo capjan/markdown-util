@@ -62,6 +62,7 @@
 
 ```bash
 dotnet tool install -g mdu   # install
+mdu new .                    # create a starter docs project
 mdu serve                    # live preview of ./docs
 mdu render                   # build the site into ./site
 ```
