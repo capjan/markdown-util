@@ -1,0 +1,12 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="880" height="250" viewBox="0 0 880 250" fill="none">
+  <defs>
+    <linearGradient id="accent" gradientUnits="userSpaceOnUse" x1="390" y1="0" x2="740" y2="0">
+      <stop offset="0" stop-color="#0071E3"/>
+      <stop offset="1" stop-color="#AF52DE"/>
+    </linearGradient>
+  </defs>
+  <path transform="translate(285 24) scale(1.5)" fill="#1D1D1F" fill-rule="evenodd" d="M18 4h19l19 19v27a10 10 0 0 1-10 10H18A10 10 0 0 1 8 50V14A10 10 0 0 1 18 4Zm19 0v11a8 8 0 0 0 8 8h11L37 4ZM18 18h7l7 9 7-9h7v28h-6V29l-8 10-8-10v17h-6V18Z"/>
+  <text x="393" y="102" textLength="190" lengthAdjust="spacingAndGlyphs" fill="#1D1D1F" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', Helvetica, Arial, sans-serif" font-size="84" font-weight="700" letter-spacing="-1">MDU</text>
+  <text x="440" y="182" text-anchor="middle" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', Helvetica, Arial, sans-serif" font-size="36" font-weight="600" letter-spacing="-0.5"><tspan fill="#1D1D1F">Plain Markdown, </tspan><tspan fill="url(#accent)">beautifully published.</tspan></text>
+  <text x="440" y="226" text-anchor="middle" fill="#6E6E73" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', Helvetica, Arial, sans-serif" font-size="15" font-weight="600" letter-spacing="3">MARKDOWN DOCUMENTATION UTILITY</text>
+</svg>
