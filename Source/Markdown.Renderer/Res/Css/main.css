@@ -2355,11 +2355,10 @@ th, td {
 
 .markdown-content abbr[title],
 .markdown-content abbr[data-abbreviation-tooltip] {
-    color: var(--link);
+    color: inherit;
     cursor: help;
     text-decoration: underline;
-    text-decoration-style: solid;
-    text-underline-offset: 0.15em;
+    text-decoration-style: dotted;
 }
 
 .markdown-content abbr[data-abbreviation-tooltip]:focus-visible {
