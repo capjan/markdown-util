@@ -38,6 +38,17 @@ public class FaviconTest
         Assert.DoesNotContain("<link rel=\"icon\"", html);
     }
 
+    [Fact]
+    public async Task RendersDarkLinkWhenOnlyDarkFaviconIsConfigured()
+    {
+        var html = await RenderAsync(new SiteConfiguration
+        {
+            FaviconDark = "assets/dark.svg"
+        });
+
+        Assert.Contains("<link rel=\"icon\" href=\"assets/dark.svg\" media=\"(prefers-color-scheme: dark)\">", html);
+    }
+
     private static async Task<string> RenderAsync(SiteConfiguration configuration)
     {
         var outputPath = Path.Combine(Path.GetTempPath(), Guid.NewGuid().ToString("N"));
