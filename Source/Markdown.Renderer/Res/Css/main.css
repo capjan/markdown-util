@@ -2359,6 +2359,8 @@ th, td {
     cursor: help;
     text-decoration: underline;
     text-decoration-style: dotted;
+    text-decoration-thickness: 1px;
+    text-underline-offset: 0.2em;
 }
 
 .markdown-content abbr[data-abbreviation-tooltip]:focus-visible {
