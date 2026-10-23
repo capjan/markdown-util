@@ -82,7 +82,7 @@ jobs:
         run: git cliff --tag "$RELEASE_TAG" --strip all "$LATEST_TAG..HEAD" --output "$RUNNER_TEMP/release-notes.md"
 
       - name: Upload release notes
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: release-notes
           path: ${{ runner.temp }}/release-notes.md
@@ -211,7 +211,7 @@ jobs:
         run: Compress-Archive -Path "$env:RUNNER_TEMP/release-files/*" -DestinationPath "$env:RUNNER_TEMP/mdu-$env:PACKAGE_VERSION-$env:RID.zip"
 
       - name: Upload executable archive
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: mdu-${{ matrix.rid }}
           path: ${{ runner.temp }}/mdu-${{ needs.prepare-release.outputs.package_version }}-${{ matrix.rid }}.*
@@ -241,7 +241,7 @@ jobs:
         run: dotnet pack Source/Mdu/Mdu.csproj --configuration Release --output artifacts/packages -p:Version="$PACKAGE_VERSION"
 
       - name: Download native executable archives
-        uses: actions/download-artifact@v4
+        uses: actions/download-artifact@v8
         with:
           pattern: mdu-*
           path: artifacts/native
@@ -272,7 +272,7 @@ jobs:
           (cd artifacts/native && sha256sum "${expected[@]}" > SHA256SUMS)
 
       - name: Download release notes
-        uses: actions/download-artifact@v4
+        uses: actions/download-artifact@v8
         with:
           name: release-notes
           path: ${{ runner.temp }}/release-notes
@@ -349,17 +349,17 @@ jobs:
         uses: actions/checkout@v7
 
       - name: Set up Docker Buildx
-        uses: docker/setup-buildx-action@v3
+        uses: docker/setup-buildx-action@v4
 
       - name: Log in to Docker Hub
-        uses: docker/login-action@v3
+        uses: docker/login-action@v4
         with:
           username: ${{ secrets.DOCKERHUB_USERNAME }}
           password: ${{ secrets.DOCKERHUB_TOKEN }}
 
       - name: Build and push architecture image
         id: build
-        uses: docker/build-push-action@v6
+        uses: docker/build-push-action@v7
         with:
           context: .
           file: Source/Mdu/Dockerfile
@@ -378,7 +378,7 @@ jobs:
           printf '%s\n' "$IMAGE_DIGEST" > "/tmp/digests/${{ matrix.arch }}"
 
       - name: Upload image digest
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: docker-digests-${{ matrix.arch }}
           path: /tmp/digests/${{ matrix.arch }}
@@ -394,16 +394,16 @@ jobs:
 
     steps:
       - name: Set up Docker Buildx
-        uses: docker/setup-buildx-action@v3
+        uses: docker/setup-buildx-action@v4
 
       - name: Log in to Docker Hub
-        uses: docker/login-action@v3
+        uses: docker/login-action@v4
         with:
           username: ${{ secrets.DOCKERHUB_USERNAME }}
           password: ${{ secrets.DOCKERHUB_TOKEN }}
 
       - name: Download image digests
-        uses: actions/download-artifact@v4
+        uses: actions/download-artifact@v8
         with:
           pattern: docker-digests-*
           path: /tmp/digests
