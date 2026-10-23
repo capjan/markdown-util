@@ -2353,6 +2353,21 @@ th, td {
     overflow-wrap: anywhere;
 }
 
+.markdown-content abbr[title],
+.markdown-content abbr[data-abbreviation-tooltip] {
+    color: var(--link);
+    cursor: help;
+    text-decoration: underline;
+    text-decoration-style: solid;
+    text-underline-offset: 0.15em;
+}
+
+.markdown-content abbr[data-abbreviation-tooltip]:focus-visible {
+    outline: 2px solid var(--link);
+    outline-offset: 2px;
+    border-radius: 2px;
+}
+
 .markdown-content a.footnote-ref:hover {
     text-decoration: none;
 }
