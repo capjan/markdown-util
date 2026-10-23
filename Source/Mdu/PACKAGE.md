@@ -2,7 +2,7 @@
 
 **Plain Markdown, beautifully published.**
 
-MDU turns a folder of ordinary Markdown files into a fast, searchable documentation site – with navigation, diagrams, a linter, and PDF export built in. One .NET tool, zero configuration, no Node.js or Python toolchain.
+MDU turns a folder of ordinary Markdown files into a fast, searchable documentation site – with navigation, diagrams, a linter, and PDF export built in. One .NET tool with sensible defaults and easy configuration.
 
 ## Quick start
 

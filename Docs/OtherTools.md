@@ -5,7 +5,7 @@ navigation.placement: top
 
 # Other Tools
 
-MDU focuses on one job: publishing a folder of plain Markdown with a single .NET tool and no theme or plugin setup. If you need a plugin ecosystem, custom components, versioned documentation, or translations, one of these generators may suit you better.
+MDU focuses on one job: publishing a folder of plain Markdown with a single tool, a built-in theme, and easy configuration. If you are looking for a plugin ecosystem, custom UI components, versioned documentation, or translations, one of these generators is a great fit.
 
 | Tool | Built on | Typical use |
 | --- | --- | --- |

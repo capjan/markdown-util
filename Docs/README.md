@@ -2,7 +2,7 @@
 
 ```hero
 title: Plain Markdown, beautifully published
-text: Lint, inspect, and render your Markdown files into a fast static documentation site – no lock-in, no build plugins.
+text: Lint, inspect, and render your Markdown files into a fast static documentation site – portable Markdown with everything built in.
 time: auto
 actions:
   - text: Get started

@@ -125,7 +125,7 @@ Parses diagram sources and writes SVG. `DiagramRenderer.TryRenderSvg` handles Me
 - Flowcharts use their own layered (Sugiyama) layout in `Layout/LayeredLayout.cs`.
 - PlantUML containers are laid out from the inside out, so nested packages size to their content.
 - Context diagrams place the central system in the middle and its neighbors around it.
-- The SVG carries only CSS classes and no colors; the site stylesheet themes it for light and dark mode.
+- The SVG uses semantic CSS classes so the site stylesheet can theme it for light and dark mode.
 
 When a source uses unsupported syntax, `TryRenderSvg` returns `false` and the block stays a code block.
 
@@ -154,4 +154,4 @@ Parses paths into elements so the linter can compare a link target with the file
 | Cap.Core | Parser and text helpers | mdu, Document, Highlighter |
 
 > [!NOTE]
-> The rendered site loads none of these libraries; they run only while MDU works. The notices for the bundled icon sets and the math renderer ship in `THIRD-PARTY-NOTICES.md` inside the package.
+> These libraries run inside the `mdu` CLI; the rendered site stays plain static HTML, CSS, and JavaScript. The notices for the bundled icon sets and the math renderer ship in `THIRD-PARTY-NOTICES.md` inside the package.

@@ -18,4 +18,4 @@ MDU resolves the link to the generated PDF, including on pages in nested folders
 
 The PDF follows the documentation navigation order and honors [`pdf.visible`](../Usage/pdf.md#exclude-pages) in page front matter.
 
-The PDF uses the same Markdown rendering pipeline as [`mdu pdf`](../Usage/pdf.md), including syntax highlighting, math, callouts, and supported diagrams. See [PDF output](../Usage/pdf.md) for the layout and its limitations.
+The PDF uses the same Markdown rendering pipeline as [`mdu pdf`](../Usage/pdf.md), including syntax highlighting, math, callouts, and supported diagrams. See [PDF output](../Usage/pdf.md) for the layout and element rendering.
