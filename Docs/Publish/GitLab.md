@@ -9,10 +9,11 @@ GitLab CI/CD can render your documentation and publish it with GitLab Pages. Add
 ```yaml title=".gitlab-ci.yml"
 pages:
   stage: deploy
-  image: mcr.microsoft.com/dotnet/sdk:10.0
+  image:
+    name: capjan/mdu:latest
+    entrypoint: [""]
   script:
-    - dotnet tool install mdu --tool-path .tools
-    - .tools/mdu render docs public
+    - mdu render docs public
   pages:
     publish: public
   rules:
@@ -21,7 +22,7 @@ pages:
         - docs/**/*
 ```
 
-GitLab publishes the generated `public` folder; since GitLab 17.10 it is included as a job artifact automatically. Make sure a GitLab Runner is enabled for the project.
+The job uses the MDU image published on Docker Hub, so it does not need to install the .NET SDK or the `mdu` tool. The image has an MDU entrypoint; clearing it lets GitLab Runner start the job shell. GitLab publishes the generated `public` folder; since GitLab 17.10 it is included as a job artifact automatically. Make sure a GitLab Runner is enabled for the project.
 
 > [!NOTE]
 > If your source folder has another name, update both `docs` and `docs/**/*` to match.
