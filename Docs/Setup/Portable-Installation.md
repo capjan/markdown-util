@@ -2,12 +2,12 @@
 navigation:
   title: "Portable Binary"
   order: 2
-description: Run MDU from a self-contained executable without installing .NET.
+description: Run MDU as a standalone executable on Windows, Linux, and macOS.
 ---
 
 # Portable Installation
 
-Each [GitHub release](https://github.com/capjan/mdu/releases/latest) includes self-contained executables that do not require the .NET SDK or runtime. Download the archive for your system, extract it, and run `mdu` or `mdu.exe`. To use the command from any folder, put the extracted executable on your `PATH`.
+Each [GitHub release](https://github.com/capjan/mdu/releases/latest) includes self-contained executables with the runtime built in — ready to run in any project or CI environment. Download the archive for your system, extract it, and run `mdu` or `mdu.exe`. To use the command from any folder, put the extracted executable on your `PATH`.
 
 | Operating system | Architecture | Notes |
 | --- | --- | --- |

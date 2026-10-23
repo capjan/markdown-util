@@ -22,7 +22,7 @@ pages:
         - docs/**/*
 ```
 
-The job uses the MDU image published on Docker Hub, so it does not need to install the .NET SDK or the `mdu` tool. The image has an MDU entrypoint; clearing it lets GitLab Runner start the job shell. GitLab publishes the generated `public` folder; since GitLab 17.10 it is included as a job artifact automatically. Make sure a GitLab Runner is enabled for the project.
+The job uses the ready-to-run MDU image from Docker Hub, which already includes the `mdu` CLI. The image has an MDU entrypoint; clearing it lets GitLab Runner start the job shell. GitLab publishes the generated `public` folder; since GitLab 17.10 it is included as a job artifact automatically. Make sure a GitLab Runner is enabled for the project.
 
 > [!NOTE]
 > If your source folder has another name, update both `docs` and `docs/**/*` to match.

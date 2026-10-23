@@ -43,7 +43,7 @@
 
 <p align="center">
   Turn a folder of plain Markdown into a fast, searchable documentation site.<br>
-  One .NET tool. Zero configuration. No Node.js or Python toolchain.
+  One self-contained CLI. Sensible defaults. Easy configuration.
 </p>
 
 <p align="center">

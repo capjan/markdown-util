@@ -4,7 +4,7 @@ navigation.order: 45
 
 # pdf
 
-`mdu pdf` combines the Markdown pages of a folder into one PDF file. It uses the same Markdown pipeline as `mdu render`, so code highlighting, icons, keyboard keys, math, callouts, and supported diagrams appear in the PDF too. MDU writes the file itself, without a PDF library, browser, or network service.
+`mdu pdf` combines the Markdown pages of a folder into one PDF file. It uses the same Markdown pipeline as `mdu render`, so code highlighting, icons, keyboard keys, math, callouts, and supported diagrams appear in the PDF too. MDU includes a built-in PDF writer, so PDF export works out of the box and offline.
 
 For automatic PDF generation when a page contains a PDF Link, and for placing links to it inside rendered pages, see the [PDF Link feature](../Features/Pdf-Link.md).
 
@@ -48,9 +48,9 @@ pdf.visible: false
 
 The nested form `pdf: { visible: false }` works as well.
 
-## Limitations
+## How elements appear in PDF
 
-The PDF contains only what MDU can draw without downloading anything:
+To keep PDF generation fast and self-contained, MDU renders interactive and external elements as static equivalents:
 
 - Images appear as their alt text; remote image URLs stay clickable.
 - Embedded videos appear as their link.

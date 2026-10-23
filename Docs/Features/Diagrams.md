@@ -2,7 +2,7 @@
 
 Write diagrams as text; MDU turns supported code blocks into static SVG in the rendered page.
 
-- Rendered at build time, without JavaScript
+- Rendered to static SVG at build time
 - Works offline
 - Follows the light or dark theme
 - Keeps diagram sources portable Markdown

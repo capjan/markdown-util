@@ -1,6 +1,6 @@
 # Icons and Emojis
 
-MDU turns shortcodes such as `:rocket:` or `:material-account-circle:` into emojis and icons while it renders your Markdown. Seven open source icon sets and GitHub-compatible emoji shortcodes are built in. You do not need to configure anything, and the rendered pages load nothing from a CDN.
+MDU turns shortcodes such as `:rocket:` or `:material-account-circle:` into emojis and icons while it renders your Markdown. Seven open source icon sets and GitHub-compatible emoji shortcodes are built in. They are ready to use out of the box and embedded directly into the rendered pages.
 
 :rocket: :material-account-circle: :dashboard-github:
 

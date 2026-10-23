@@ -1,6 +1,6 @@
 # Math
 
-MDU renders GitHub-compatible math syntax to static SVG while it builds the site. The pages contain the formulas directly, so browsers need no JavaScript math renderer or font service.
+MDU renders GitHub-compatible math syntax to static SVG while it builds the site. The pages contain the formulas directly as inline SVG, so they display instantly in any browser.
 
 ## Inline math
 
