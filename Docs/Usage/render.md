@@ -30,7 +30,7 @@ mdu render ./docs ./site --pattern "*.markdown" --editPageRoot "https://github.c
 
 An optional `mdu.yml` in the documentation folder sets the site name, light and dark logos, and theme colors. If no favicon files are specified, MDU uses the light and dark logo files as favicons. MDU copies the referenced files into the output folder. A square logo mark is most legible in a browser tab; MDU uses the logo file as-is.
 
-An optional `favicon:` value can be a single asset path for both themes, or a mapping with separate `light` and `dark` paths. MDU emits separate light and dark favicon links, and the browser selects between them based on its color scheme, independently of the page theme. A single SVG that uses `prefers-color-scheme` internally is the simplest option because it adapts to the browser's color scheme itself. Safari support for SVG favicons and dark-mode styling varies by version; verify the versions you support and use PNG or ICO if they do not display SVG favicons.
+An optional `favicon:` value can be a single asset path for both themes, or a mapping with separate `light` and `dark` paths. MDU emits separate light and dark favicon links, and the browser selects between them based on its color scheme, independently of the page theme. With separate paths, dark-link selection relies on browser support for the `media` attribute on favicon links; Safari behavior can vary by version, so verify the versions you support. A single SVG that uses `prefers-color-scheme` internally is the simplest option for browsers that apply this query to SVG favicons. Use PNG or ICO if a browser you support does not display SVG favicons.
 
 ```yaml title="docs/mdu.yml"
 site_name: Documentation
