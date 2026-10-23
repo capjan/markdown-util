@@ -258,7 +258,9 @@ public class HtmlRenderer
         var light = ResolveAssetUrl(prefix, configuration.FaviconLight);
         if (light.Length == 0) return string.Empty;
         var dark = ResolveAssetUrl(prefix, configuration.FaviconDark);
-        return $"<link rel=\"icon\" href=\"{HtmlEncoder.Default.Encode(light)}\" data-light-href=\"{HtmlEncoder.Default.Encode(light)}\" data-dark-href=\"{HtmlEncoder.Default.Encode(dark)}\">";
+        var lightLink = $"<link rel=\"icon\" href=\"{HtmlEncoder.Default.Encode(light)}\">";
+        if (dark.Length == 0 || string.Equals(light, dark, StringComparison.Ordinal)) return lightLink;
+        return lightLink + $"<link rel=\"icon\" href=\"{HtmlEncoder.Default.Encode(dark)}\" media=\"(prefers-color-scheme: dark)\">";
     }
 
     private static string ResolveAssetUrl(string prefix, string? asset)

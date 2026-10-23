@@ -1,4 +1,5 @@
 site_name: MDU
+favicon: assets/favicon.svg
 logo:
   light: assets/mdu-logo-light.svg
   dark: assets/mdu-logo-dark.svg

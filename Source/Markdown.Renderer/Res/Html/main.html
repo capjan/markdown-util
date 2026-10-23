@@ -130,7 +130,6 @@
     };
 
     const brandLogo = document.querySelector(".site-brand-logo");
-    const favicon = document.querySelector('link[rel="icon"]');
     const systemDark = window.matchMedia("(prefers-color-scheme: dark)");
     const isDark = () => root.dataset.theme === "dark" || root.dataset.theme === "auto" && systemDark.matches;
     // On a page with a full-width hero both logo variants are in the header, so the logo can fade between them.
@@ -152,7 +151,6 @@
     };
     const updateBranding = () => {
         updateLogo();
-        if (favicon) favicon.href = isDark() ? favicon.dataset.darkHref : favicon.dataset.lightHref;
     };
     if (darkLogo) new MutationObserver(updateLogo).observe(root, { attributes: true, attributeFilter: ["class"] });
 
