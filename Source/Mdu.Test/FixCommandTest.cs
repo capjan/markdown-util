@@ -627,6 +627,35 @@ public class FixCommandTest
     }
 
     [Fact]
+    public void LeavesFlowStyleMduConfigurationUnchangedWhenTrailingCommentContainsBraces()
+    {
+        var root = Path.Combine(Path.GetTempPath(), Guid.NewGuid().ToString("N"));
+        Directory.CreateDirectory(Path.Combine(root, "includes"));
+        File.WriteAllText(Path.Combine(root, "README.md"), "# Docs\n");
+        File.WriteAllText(Path.Combine(root, "includes", "terms.md"), "*[API]: Application Programming Interface\n");
+        const string configuration = "{site_name: Docs} # {x}\n";
+        File.WriteAllText(Path.Combine(root, "mdu.yml"), configuration);
+        File.WriteAllText(Path.Combine(root, "mkdocs.yml"), """
+            markdown_extensions:
+              - pymdownx.snippets:
+                  auto_append:
+                    - includes/terms.md
+            """);
+        try
+        {
+            var command = new FixCommand(CreateGraphBuilder(), new LinterVisitor(new ConsoleLintErrorReceiver()));
+
+            Assert.Equal(0, command.Execute(new VisitorSettings { RootPath = root, SearchPattern = "*.md", IncludeHidden = true }));
+            Assert.Equal(configuration, File.ReadAllText(Path.Combine(root, "mdu.yml")));
+            Assert.Null(SiteConfigurationReader.Read(root).Glossary);
+        }
+        finally
+        {
+            Directory.Delete(root, recursive: true);
+        }
+    }
+
+    [Fact]
     public void LeavesAmbiguousMkDocsGlossaryConfigurationUnchanged()
     {
         var root = Path.Combine(Path.GetTempPath(), Guid.NewGuid().ToString("N"));

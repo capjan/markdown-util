@@ -347,6 +347,15 @@ public class FixCommand
         {
             var migratedYaml = new YamlStream();
             migratedYaml.Load(new StringReader(contents));
+            var migratedRoot = migratedYaml.Documents.FirstOrDefault()?.RootNode;
+            if (migratedRoot is not YamlMappingNode migratedMapping ||
+                !migratedMapping.Children.TryGetValue(new YamlScalarNode("glossary"), out var migratedGlossary) ||
+                migratedGlossary is not YamlScalarNode { Value: var migratedGlossaryPath } ||
+                migratedGlossaryPath != relativePath)
+            {
+                Console.Error.WriteLine("Could not migrate MkDocs glossary because the glossary entry could not be verified in mdu.yml.");
+                return 0;
+            }
         }
         catch (YamlDotNet.Core.YamlException exception)
         {
