@@ -130,7 +130,6 @@
     };
 
     const brandLogo = document.querySelector(".site-brand-logo");
-    const favicon = document.querySelector('link[rel="icon"]');
     const systemDark = window.matchMedia("(prefers-color-scheme: dark)");
     const isDark = () => root.dataset.theme === "dark" || root.dataset.theme === "auto" && systemDark.matches;
     // On a page with a full-width hero both logo variants are in the header, so the logo can fade between them.
@@ -150,14 +149,10 @@
             brandLogo.src = useDark ? brandLogo.dataset.darkSrc : brandLogo.dataset.lightSrc;
         }
     };
-    const updateBranding = () => {
-        updateLogo();
-        if (favicon) favicon.href = isDark() ? favicon.dataset.darkHref : favicon.dataset.lightHref;
-    };
     if (darkLogo) new MutationObserver(updateLogo).observe(root, { attributes: true, attributeFilter: ["class"] });
 
     updateThemeLabel();
-    updateBranding();
+    updateLogo();
     themeToggle.addEventListener("click", () => {
         const currentTheme = root.dataset.theme;
         const nextTheme = themes[(themes.indexOf(currentTheme) + 1) % themes.length];
@@ -166,9 +161,9 @@
             localStorage.setItem("mdu-theme", nextTheme);
         } catch { }
         updateThemeLabel();
-        updateBranding();
+        updateLogo();
     });
-    systemDark.addEventListener("change", updateBranding);
+    systemDark.addEventListener("change", updateLogo);
 
     const layout = document.getElementById("site-layout");
     const header = document.getElementById("site-header");

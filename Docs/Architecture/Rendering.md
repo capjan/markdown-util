@@ -73,7 +73,7 @@ Every page links the shared `css/main.css`. Everything else is added only to the
 | Icon search script and index in `js/` | A page contains an `icon-search` block |
 | Hero styles and WebGL scene, inline | A page contains a `hero` block |
 | Media consent script, inline | A page contains a standalone YouTube or Vimeo link |
-| Logos and favicons from `mdu.yml` | They are configured |
+| Logo and favicon assets from `mdu.yml` | A logo or favicon is configured |
 
 A rendered site looks like this:
 

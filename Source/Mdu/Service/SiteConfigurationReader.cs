@@ -25,6 +25,15 @@ public static class SiteConfigurationReader
             Dark = ReadPalette(root, "dark")
         };
         configuration.LogoDark ??= configuration.LogoLight;
+        if (configuration.FaviconLight is null && configuration.FaviconDark is null)
+        {
+            configuration.FaviconLight = configuration.LogoLight;
+            configuration.FaviconDark = configuration.LogoDark;
+        }
+        else
+        {
+            configuration.FaviconLight ??= configuration.LogoLight;
+        }
         configuration.FaviconDark ??= configuration.FaviconLight;
         return configuration;
     }
