@@ -37,10 +37,20 @@ using var services = registrations.BuildServiceProvider();
 
 var rootCommand = new RootCommand("MDU — Markdown Documentation Utility for linting, rendering, and managing Markdown documentation.");
 
+var newCommand = new Command("new", "Creates a starter MDU documentation project.");
+var newDirectory = new Argument<string?>("directory")
+{
+    Arity = ArgumentArity.ZeroOrOne,
+    Description = "Directory to initialize. Defaults to the current directory."
+};
+newCommand.Arguments.Add(newDirectory);
+newCommand.SetAction(parseResult => NewCommand.Execute(parseResult.GetValue(newDirectory)));
+rootCommand.Subcommands.Add(newCommand);
+
 var lintCommand = new Command("lint", "Runs the linter and prints the results.");
 lintCommand.Aliases.Add("l");
 var (lintPattern, lintHidden) = AddVisitorOptions(lintCommand);
-var lintPath = AddRootPathArgument(lintCommand, "Root folder containing Markdown files. Defaults to ./docs or ./Docs.");
+var lintPath = AddRootPathArgument(lintCommand, "Root folder containing Markdown files. Defaults to ./docs.");
 var lintPretty = new Option<bool>("--pretty")
 {
     Description = "Group lint results by file and use relative paths."
@@ -68,7 +78,7 @@ rootCommand.Subcommands.Add(lintCommand);
 
 var fixCommand = new Command("fix", "Migrates MkDocs-specific Markdown to supported Markdown and applies automatic fixes.");
 var (fixPattern, fixHidden) = AddVisitorOptions(fixCommand);
-var fixPath = AddRootPathArgument(fixCommand, "Root folder containing Markdown files. Defaults to ./docs or ./Docs.");
+var fixPath = AddRootPathArgument(fixCommand, "Root folder containing Markdown files. Defaults to ./docs.");
 fixCommand.SetAction(parseResult =>
     services.GetRequiredService<FixCommand>().Execute(
         GetVisitorSettings(parseResult, fixPath, fixPattern, fixHidden)));
@@ -78,7 +88,7 @@ var treeCommand = new Command("tree", "Prints the detected Markdown files as a t
 treeCommand.Aliases.Add("print");
 treeCommand.Aliases.Add("print-tree");
 var (treePattern, treeHidden) = AddVisitorOptions(treeCommand);
-var treePath = AddRootPathArgument(treeCommand, "Root folder containing Markdown files. Defaults to ./docs or ./Docs.");
+var treePath = AddRootPathArgument(treeCommand, "Root folder containing Markdown files. Defaults to ./docs.");
 treeCommand.SetAction(parseResult =>
     services.GetRequiredService<PrintTreeCommand>().Execute(
         GetVisitorSettings(parseResult, treePath, treePattern, treeHidden)));
@@ -89,7 +99,7 @@ var (renderPattern, renderHidden) = AddVisitorOptions(renderCommand);
 var renderRootPath = new Argument<string?>("path")
 {
     Arity = ArgumentArity.ZeroOrOne,
-    Description = "Root folder containing Markdown files. Defaults to ./docs or ./Docs."
+    Description = "Root folder containing Markdown files. Defaults to ./docs."
 };
 var outputPath = new Argument<string?>("outpath")
 {
@@ -120,7 +130,7 @@ var (pdfPattern, pdfHidden) = AddVisitorOptions(pdfCommand);
 var pdfRootPath = new Argument<string?>("path")
 {
     Arity = ArgumentArity.ZeroOrOne,
-    Description = "Root folder containing Markdown files or one Markdown file. Defaults to ./docs or ./Docs."
+    Description = "Root folder containing Markdown files or one Markdown file. Defaults to ./docs."
 };
 var pdfOutputPath = new Argument<string?>("outpath")
 {
@@ -144,7 +154,7 @@ var (servePattern, serveHidden) = AddVisitorOptions(serveCommand);
 var serveRootPath = new Argument<string?>("path")
 {
     Arity = ArgumentArity.ZeroOrOne,
-    Description = "Root folder containing the Markdown files. Defaults to ./docs or ./Docs."
+    Description = "Root folder containing the Markdown files. Defaults to ./docs."
 };
 var serveOutputPath = new Argument<string?>("outpath")
 {
@@ -251,7 +261,7 @@ static (Option<string?> Root, Option<bool> IncludeHidden) AddPageOptions(Command
 {
     var root = new Option<string?>("--root")
     {
-        Description = "Documentation folder whose pages are updated or searched. Defaults to ./docs or ./Docs."
+        Description = "Documentation folder whose pages are updated or searched. Defaults to ./docs."
     };
     var includeHidden = new Option<bool>("--hidden")
     {

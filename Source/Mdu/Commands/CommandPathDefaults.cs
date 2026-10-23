@@ -20,9 +20,9 @@ internal static class CommandPathDefaults
         {
             1 => Path.TrimEndingDirectorySeparator(Path.GetFullPath(candidates[0])),
             0 => throw new InvalidOperationException(
-                "No ./docs or ./Docs folder found. Pass the Markdown root folder as the first argument."),
+                "No ./docs folder found. Run 'mdu new .' to create a starter project, or specify a Markdown folder in the command."),
             _ => throw new InvalidOperationException(
-                "Both ./docs and ./Docs folders exist. Pass the desired Markdown root folder explicitly.")
+                "Multiple folders named docs found. Specify the desired Markdown folder in the command.")
         };
     }
 

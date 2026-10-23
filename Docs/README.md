@@ -23,6 +23,7 @@ MDU is a .NET tool that turns a folder of ordinary Markdown files into a documen
 
 | Command | Does |
 | --- | --- |
+| [mdu new](./Usage/new.md) | Creates a starter documentation project |
 | [mdu tree](./Usage/tree.md) | Shows the page structure |
 | [mdu lint](./Usage/lint/README.md) | Finds broken links and structure problems |
 | [mdu fix](./Usage/fix.md) | Migrates MkDocs syntax and applies automatic fixes |

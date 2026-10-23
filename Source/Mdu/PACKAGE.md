@@ -8,10 +8,11 @@ MDU turns a folder of ordinary Markdown files into a fast, searchable documentat
 
 ```bash
 dotnet tool install --global mdu
+mdu new .
 mdu serve
 ```
 
-MDU renders the `docs` folder and opens a live-reloading preview. Run `mdu render` to write the static site.
+`mdu new .` creates a starter page in `docs/README.md`. Run `mdu serve` to open a live-reloading preview, or `mdu render` to write the static site.
 
 ## Documentation
 
