@@ -257,6 +257,15 @@ public class ServeCommandIntegrationTest
             File.WriteAllText(alternateGlossaryPath, "*[CPU]: Updated alternate processing unit\n");
             await WaitUntilAsync(async () => await PageContainsAsync(client, pageUrl,
                 "title=\"Updated alternate processing unit\""), process);
+
+            File.WriteAllText(Path.Combine(docs, "mdu.yml"), "glossary: ../missing/nested/terms.md\n");
+            await Task.Delay(250);
+            var missingGlossaryDirectory = Path.Combine(root, "missing", "nested");
+            Directory.CreateDirectory(missingGlossaryDirectory);
+            await Task.Delay(100);
+            File.WriteAllText(Path.Combine(missingGlossaryDirectory, "terms.md"), "*[CPU]: Recreated glossary\n");
+            await WaitUntilAsync(async () => await PageContainsAsync(client, pageUrl,
+                "title=\"Recreated glossary\""), process);
         }
         finally
         {

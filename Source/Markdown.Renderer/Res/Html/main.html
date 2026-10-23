@@ -604,8 +604,12 @@
     abbreviationTooltip.setAttribute("role", "tooltip");
     document.body.append(abbreviationTooltip);
     let abbreviationAnchor;
-    let abbreviationHovered = false;
-    let abbreviationFocused = false;
+    let hoveredAbbreviation;
+    let focusedAbbreviation;
+    let focusedElement;
+    let tooltipHovered = false;
+    let describedElement;
+    let previousDescribedBy;
     let abbreviationHideTimer;
     let abbreviationPositionFrame;
     const cancelAbbreviationHide = () => {
@@ -621,16 +625,35 @@
                 hideAbbreviationTooltip();
         });
     };
+    const clearAbbreviationDescription = () => {
+        if (!describedElement) return;
+        if (previousDescribedBy === null) describedElement.removeAttribute("aria-describedby");
+        else describedElement.setAttribute("aria-describedby", previousDescribedBy);
+        describedElement = undefined;
+        previousDescribedBy = undefined;
+    };
+    const describeAbbreviationTooltipOn = (element) => {
+        if (describedElement === element) return;
+        clearAbbreviationDescription();
+        if (!element) return;
+        previousDescribedBy = element.getAttribute("aria-describedby");
+        const describedBy = new Set((previousDescribedBy || "").split(/\s+/).filter(Boolean));
+        describedBy.add(abbreviationTooltip.id);
+        element.setAttribute("aria-describedby", [...describedBy].join(" "));
+        describedElement = element;
+    };
     const hideAbbreviationTooltip = () => {
         cancelAbbreviationHide();
         if (abbreviationPositionFrame !== undefined) {
             window.cancelAnimationFrame(abbreviationPositionFrame);
             abbreviationPositionFrame = undefined;
         }
-        if (abbreviationAnchor) abbreviationAnchor.removeAttribute("aria-describedby");
+        clearAbbreviationDescription();
         abbreviationAnchor = undefined;
-        abbreviationHovered = false;
-        abbreviationFocused = false;
+        hoveredAbbreviation = undefined;
+        focusedAbbreviation = undefined;
+        focusedElement = undefined;
+        tooltipHovered = false;
         abbreviationTooltip.classList.remove("is-visible");
         resetFloating(abbreviationTooltip);
         window.removeEventListener("resize", scheduleAbbreviationPosition);
@@ -638,12 +661,12 @@
     };
     const showAbbreviationTooltip = (anchor) => {
         if (abbreviationAnchor !== anchor) {
-            hideAbbreviationTooltip();
+            clearAbbreviationDescription();
             abbreviationAnchor = anchor;
             abbreviationTooltip.textContent = anchor.dataset.abbreviationTooltip;
         }
         cancelAbbreviationHide();
-        anchor.setAttribute("aria-describedby", abbreviationTooltip.id);
+        describeAbbreviationTooltipOn(focusedAbbreviation === anchor ? focusedElement : anchor);
         abbreviationTooltip.classList.add("is-visible");
         if (!positionFloating(abbreviationTooltip, anchor, { maxWidth: 420, gap: 12 })) {
             hideAbbreviationTooltip();
@@ -656,50 +679,63 @@
         cancelAbbreviationHide();
         abbreviationHideTimer = window.setTimeout(() => {
             abbreviationHideTimer = undefined;
-            if (!abbreviationHovered && !abbreviationFocused) hideAbbreviationTooltip();
+            if (!hoveredAbbreviation && !focusedAbbreviation && !tooltipHovered) hideAbbreviationTooltip();
         }, 125);
     };
     const abbreviationAnchorOf = (target) => {
         const anchor = target instanceof Element ? target.closest("abbr[data-abbreviation-tooltip]") : null;
         return anchor && content.contains(anchor) ? anchor : null;
     };
+    const abbreviationForFocus = (target) => {
+        const abbreviation = abbreviationAnchorOf(target);
+        if (abbreviation) return abbreviation;
+        if (!(target instanceof Element) || !target.matches("a[href],button,input,select,textarea,[tabindex]")) return null;
+        return target.querySelector("abbr[data-abbreviation-tooltip]");
+    };
     content.querySelectorAll("abbr[title]").forEach((abbreviation) => {
         abbreviation.dataset.abbreviationTooltip = abbreviation.getAttribute("title");
         abbreviation.removeAttribute("title");
-        if (!abbreviation.hasAttribute("tabindex")) abbreviation.tabIndex = 0;
+        if (!abbreviation.hasAttribute("tabindex") &&
+            !abbreviation.closest("a[href],button,input,select,textarea,[tabindex]")) abbreviation.tabIndex = 0;
     });
     content.addEventListener("pointerover", (event) => {
         const anchor = abbreviationAnchorOf(event.target);
         if (!anchor) return;
-        abbreviationHovered = true;
+        hoveredAbbreviation = anchor;
         showAbbreviationTooltip(anchor);
     });
     content.addEventListener("pointerout", (event) => {
         const anchor = abbreviationAnchorOf(event.target);
-        if (anchor !== abbreviationAnchor || anchor.contains(event.relatedTarget)) return;
-        abbreviationHovered = false;
-        scheduleAbbreviationHide();
+        if (anchor !== hoveredAbbreviation || anchor.contains(event.relatedTarget)) return;
+        hoveredAbbreviation = undefined;
+        updateAbbreviationTooltip();
     });
     content.addEventListener("focusin", (event) => {
-        const anchor = abbreviationAnchorOf(event.target);
+        const anchor = abbreviationForFocus(event.target);
         if (!anchor) return;
-        abbreviationFocused = true;
+        focusedAbbreviation = anchor;
+        focusedElement = event.target;
         showAbbreviationTooltip(anchor);
     });
     content.addEventListener("focusout", (event) => {
-        const anchor = abbreviationAnchorOf(event.target);
-        if (anchor !== abbreviationAnchor || anchor.contains(event.relatedTarget)) return;
-        abbreviationFocused = false;
-        scheduleAbbreviationHide();
+        if (focusedElement !== event.target || event.target.contains(event.relatedTarget)) return;
+        focusedAbbreviation = undefined;
+        focusedElement = undefined;
+        updateAbbreviationTooltip();
     });
     abbreviationTooltip.addEventListener("pointerenter", () => {
-        abbreviationHovered = true;
+        tooltipHovered = true;
         cancelAbbreviationHide();
     });
     abbreviationTooltip.addEventListener("pointerleave", () => {
-        abbreviationHovered = false;
-        scheduleAbbreviationHide();
+        tooltipHovered = false;
+        updateAbbreviationTooltip();
     });
+    function updateAbbreviationTooltip() {
+        const anchor = hoveredAbbreviation || focusedAbbreviation;
+        if (anchor) showAbbreviationTooltip(anchor);
+        else if (!tooltipHovered) scheduleAbbreviationHide();
+    }
 
     const footnotePreviewClosers = [hideTooltip, hideAbbreviationTooltip];
     const referencesByFootnote = new Map();

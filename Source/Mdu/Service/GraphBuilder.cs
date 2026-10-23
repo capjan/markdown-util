@@ -21,7 +21,7 @@ public class GraphBuilder
         _sourceResolver = sourceResolver ?? new GitTreeSourceResolver();
     }
 
-    public MarkdownFile[] CreateGraph(IVisitorSettings settings)
+    public MarkdownFile[] CreateGraph(IVisitorSettings settings, string? excludedMarkdownPath = null)
     {
         var searchOptions = new EnumerationOptions
         {
@@ -34,21 +34,9 @@ public class GraphBuilder
         var rootPath = Path.GetFullPath(settings.RootPath ?? Directory.GetCurrentDirectory());
         var searchPattern = settings.SearchPattern ?? Default.SearchPattern;
 
-        string? glossaryPath;
-        try
-        {
-            glossaryPath = SiteConfigurationReader.ResolveGlossaryPath(
-                rootPath,
-                SiteConfigurationReader.Read(rootPath));
-        }
-        catch (YamlDotNet.Core.YamlException exception)
-        {
-            throw new InvalidOperationException($"Could not read mdu.yml: {exception.Message}", exception);
-        }
-        
         var rootDirectory = new DirectoryInfo(rootPath);
         
-        var graph = CreateGraph(rootDirectory, searchPattern, searchOptions, glossaryPath);
+        var graph = CreateGraph(rootDirectory, searchPattern, searchOptions, excludedMarkdownPath);
         graph.Visit(_dataPreparationVisitor);
         foreach (var page in Flatten(graph))
             page.SiteRelativePath = Path.GetRelativePath(rootPath, page.FileInfo.FullName);
@@ -233,10 +221,6 @@ public class GraphBuilder
     }
 
     private static bool PathsEqual(string left, string right) =>
-        Path.GetFullPath(left).Equals(
-            Path.GetFullPath(right),
-            OperatingSystem.IsWindows() || OperatingSystem.IsMacOS()
-                ? StringComparison.OrdinalIgnoreCase
-                : StringComparison.Ordinal);
+        MarkdownLinks.PathComparer.Equals(Path.GetFullPath(left), Path.GetFullPath(right));
 
 }

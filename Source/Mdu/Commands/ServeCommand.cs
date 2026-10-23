@@ -15,10 +15,7 @@ namespace Mdu.Commands;
 
 public sealed class ServeCommand
 {
-    private static readonly StringComparer PathComparer =
-        OperatingSystem.IsWindows() || OperatingSystem.IsMacOS()
-            ? StringComparer.OrdinalIgnoreCase
-            : StringComparer.Ordinal;
+    private static readonly StringComparer PathComparer = MarkdownLinks.PathComparer;
 
     private readonly GraphBuilder _graphBuilder;
     private readonly DataPreparationVisitor _dataPreparationVisitor;
@@ -124,7 +121,7 @@ public sealed class ServeCommand
         var changes = Channel.CreateUnbounded<FileChange>();
         using var watcher = new FileWatcherSet(_rootPath, changes.Writer);
         _watchers = watcher;
-        watcher.UpdateOpenApiSpecs(_openApiSpecsByPage.Values.SelectMany(paths => paths), _glossaryPath);
+        watcher.UpdateExternalFiles(_openApiSpecsByPage.Values.SelectMany(paths => paths), _glossaryPath);
         if (!noBrowser) OpenBrowser(url);
 
         using var cancellation = new CancellationTokenSource();
@@ -171,11 +168,12 @@ public sealed class ServeCommand
     {
         var previousFiles = new HashSet<string>(_generatedFiles, PathComparer);
         var siteConfiguration = SiteConfigurationReader.Read(_rootPath);
+        _glossaryPath = SiteConfigurationReader.GetGlossaryPath(_rootPath, siteConfiguration);
+        _watchers?.UpdateExternalFiles(_openApiSpecsByPage.Values.SelectMany(paths => paths), _glossaryPath);
         var glossaryPath = SiteConfigurationReader.ResolveGlossaryPath(_rootPath, siteConfiguration);
         var glossaryMarkdown = glossaryPath is null ? null : File.ReadAllText(glossaryPath);
         _renderer.SetGlossary(glossaryMarkdown);
-        _glossaryPath = glossaryPath;
-        var graph = _graphBuilder.CreateGraph(_settings);
+        var graph = _graphBuilder.CreateGraph(_settings, glossaryPath);
         _navigationRoots = graph;
 
         _renderer.PrepareBasePath(_outputPath, siteConfiguration);
@@ -227,7 +225,7 @@ public sealed class ServeCommand
         foreach (var (pagePath, page) in _pages)
             UpdatePageAssets(pagePath, page);
 
-        _watchers?.UpdateOpenApiSpecs(_openApiSpecsByPage.Values.SelectMany(paths => paths), _glossaryPath);
+        _watchers?.UpdateExternalFiles(_openApiSpecsByPage.Values.SelectMany(paths => paths), _glossaryPath);
     }
 
     private static IEnumerable<MarkdownFile> Flatten(IEnumerable<MarkdownFile> pages)
@@ -348,8 +346,7 @@ public sealed class ServeCommand
         }
 
         if (_glossaryPath is not null && relevantChanges.Any(change =>
-                PathComparer.Equals(change.Path, _glossaryPath) ||
-                change.OldPath is not null && PathComparer.Equals(change.OldPath, _glossaryPath)))
+                IsGlossaryPathChange(change, _glossaryPath)))
         {
             RebuildSite();
             server.Publish(reloadAll: true);
@@ -430,7 +427,7 @@ public sealed class ServeCommand
             var previousSpecPages = _openApiSpecPagesByPage.GetValueOrDefault(pagePath) ?? Array.Empty<string>();
             UpdatePageAssets(pagePath, page);
             var specPagesChanged = !previousSpecPages.SequenceEqual(_openApiSpecPagesByPage[pagePath], PathComparer);
-            _watchers?.UpdateOpenApiSpecs(_openApiSpecsByPage.Values.SelectMany(paths => paths), _glossaryPath);
+            _watchers?.UpdateExternalFiles(_openApiSpecsByPage.Values.SelectMany(paths => paths), _glossaryPath);
             new LocalAssetsCopy(_rootPath, _outputPath).Process(page, depth);
             var rendererVisitor = new MarkdigVisitor(
                 _rootPath,
@@ -672,6 +669,16 @@ public sealed class ServeCommand
                !relativePath.StartsWith(".." + Path.DirectorySeparatorChar, StringComparison.Ordinal);
     }
 
+    private static bool IsGlossaryPathChange(FileChange change, string glossaryPath)
+    {
+        if (PathComparer.Equals(change.Path, glossaryPath) ||
+            change.OldPath is not null && PathComparer.Equals(change.OldPath, glossaryPath))
+            return true;
+
+        return change.Kind is (FileChangeKind.Created or FileChangeKind.Renamed) &&
+               Directory.Exists(change.Path) && IsInsideDirectory(change.Path, glossaryPath);
+    }
+
     private bool IsGeneratedOutputPath(string path) =>
         IsInsideDirectory(_rootPath, _outputPath) && IsInsideDirectory(_outputPath, path);
 
@@ -708,7 +715,7 @@ public sealed class ServeCommand
         private readonly string _rootPath;
         private readonly ChannelWriter<FileChange> _writer;
         private readonly FileSystemWatcher _rootWatcher;
-        private readonly Dictionary<string, FileSystemWatcher> _openApiWatchers = new(PathComparer);
+        private readonly Dictionary<string, DirectoryWatcher> _externalWatchers = new(PathComparer);
 
         public FileWatcherSet(string rootPath, ChannelWriter<FileChange> writer)
         {
@@ -717,30 +724,54 @@ public sealed class ServeCommand
             _rootWatcher = Create(_rootPath, includeSubdirectories: true);
         }
 
-        public void UpdateOpenApiSpecs(IEnumerable<string> specPaths, string? glossaryPath)
+        public void UpdateExternalFiles(IEnumerable<string> specPaths, string? glossaryPath)
         {
-            var directories = specPaths
-                .Concat(glossaryPath is null ? Array.Empty<string>() : [glossaryPath])
+            var watchers = specPaths
                 .Where(path => !IsInsideDirectory(_rootPath, path))
                 .Select(path => Path.GetDirectoryName(path)!)
                 .Where(Directory.Exists)
-                .ToHashSet(PathComparer);
-
-            foreach (var directory in _openApiWatchers.Keys.Except(directories, PathComparer).ToArray())
+                .Select(path => (Path: path, IncludeSubdirectories: false))
+                .ToList();
+            if (glossaryPath is not null && !IsInsideDirectory(_rootPath, glossaryPath))
             {
-                _openApiWatchers[directory].Dispose();
-                _openApiWatchers.Remove(directory);
+                var directory = Path.GetDirectoryName(glossaryPath)!;
+                var includeSubdirectories = false;
+                while (!Directory.Exists(directory))
+                {
+                    var parent = Directory.GetParent(directory);
+                    if (parent is null) break;
+                    directory = parent.FullName;
+                    includeSubdirectories = true;
+                }
+                if (Directory.Exists(directory)) watchers.Add((directory, includeSubdirectories));
             }
 
-            foreach (var directory in directories.Except(_openApiWatchers.Keys, PathComparer))
-                _openApiWatchers.Add(directory, Create(directory, includeSubdirectories: false));
+            var directories = watchers
+                .GroupBy(watcher => watcher.Path, PathComparer)
+                .ToDictionary(group => group.Key, group => group.Any(watcher => watcher.IncludeSubdirectories), PathComparer);
+
+            foreach (var directory in _externalWatchers.Keys
+                         .Where(directory => !directories.TryGetValue(directory, out var recursive) ||
+                                             recursive != _externalWatchers[directory].IncludeSubdirectories)
+                         .ToArray())
+            {
+                _externalWatchers[directory].Watcher.Dispose();
+                _externalWatchers.Remove(directory);
+            }
+
+            foreach (var (directory, includeSubdirectories) in directories)
+            {
+                if (_externalWatchers.ContainsKey(directory)) continue;
+                _externalWatchers.Add(directory, new DirectoryWatcher(
+                    Create(directory, includeSubdirectories), includeSubdirectories));
+            }
         }
 
         public void Dispose()
         {
             _rootWatcher.Dispose();
-            foreach (var watcher in _openApiWatchers.Values) watcher.Dispose();
-            _openApiWatchers.Clear();
+            foreach (var watcher in _externalWatchers.Values) watcher.Watcher.Dispose();
+            _externalWatchers.Clear();
         }
 
         private FileSystemWatcher Create(string path, bool includeSubdirectories)
@@ -761,5 +792,7 @@ public sealed class ServeCommand
             watcher.EnableRaisingEvents = true;
             return watcher;
         }
+
+        private sealed record DirectoryWatcher(FileSystemWatcher Watcher, bool IncludeSubdirectories);
     }
 }

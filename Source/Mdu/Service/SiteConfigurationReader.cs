@@ -41,12 +41,26 @@ public static class SiteConfigurationReader
 
     public static string? ResolveGlossaryPath(string rootPath, SiteConfiguration configuration)
     {
-        if (configuration.Glossary is null) return null;
-
-        var path = Path.GetFullPath(configuration.Glossary, rootPath);
+        var path = GetGlossaryPath(rootPath, configuration);
+        if (path is null) return null;
         if (!File.Exists(path))
             throw new InvalidOperationException($"Configured glossary file does not exist: {path}");
         return path;
+    }
+
+    public static string? GetGlossaryPath(string rootPath, SiteConfiguration configuration) =>
+        configuration.Glossary is null ? null : Path.GetFullPath(configuration.Glossary, rootPath);
+
+    public static string? TryResolveGlossaryPath(string rootPath)
+    {
+        try
+        {
+            return ResolveGlossaryPath(rootPath, Read(rootPath));
+        }
+        catch (Exception exception) when (exception is IOException or UnauthorizedAccessException or YamlDotNet.Core.YamlException or InvalidOperationException or ArgumentException)
+        {
+            return null;
+        }
     }
 
     public static string? ReadGlossary(string rootPath, SiteConfiguration configuration)
