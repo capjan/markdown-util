@@ -217,11 +217,11 @@ public class HtmlRenderer
         var hasCurrentTopSection = model.NavigationItems.Any(item =>
             item.IsTopNavigationItem && item.IsInCurrentTopSection);
         var currentTopNavigationItem = model.TopNavigationItems.FirstOrDefault(item => item.IsCurrent || item.IsCurrentSection);
-        var hasNavigationOutsideTopSections = model.NavigationItems.Any(item => !item.IsInTopNavigationSection);
-        var hasWideSidebar = !hasTopNavigation || hasNavigationOutsideTopSections ||
-                             (hasCurrentTopSection
-                                 ? model.NavigationItems.Any(item => item.IsInCurrentTopSection && !item.IsTopNavigationItem)
-                                 : model.NavigationItems.Any(item => item.IsCurrent && item.Depth > 0));
+        var hasUnassignedSidebarPages = model.NavigationItems.Any(item =>
+            item.IsOutsideTopNavigationSection && !item.IsAncestorOfCurrentTopSection);
+        var hasWideSidebar = !hasTopNavigation || (hasCurrentTopSection
+            ? hasUnassignedSidebarPages || model.NavigationItems.Any(item => item.IsInCurrentTopSection && !item.IsTopNavigationItem)
+            : model.NavigationItems.Any(item => item.IsCurrent && item.Depth > 0));
 
         var values = new Dictionary<string, string>
         {
@@ -237,7 +237,7 @@ public class HtmlRenderer
             ["TOC_LAYOUT_CLASS"] = " has-on-this-page",
             ["NAVIGATION_ITEMS"] = RenderNavigationItems(model.NavigationItems),
             ["TOP_NAVIGATION_ITEMS"] = RenderTopNavigationItems(model.TopNavigationItems),
-            ["SIDEBAR_SECTION_TITLE"] = currentTopNavigationItem is not null && hasWideSidebar
+            ["SIDEBAR_SECTION_TITLE"] = currentTopNavigationItem is not null && hasWideSidebar && !hasUnassignedSidebarPages
                 ? $"<div class=\"site-nav-section-title\">{HtmlEncoder.Default.Encode(currentTopNavigationItem.Title)}</div>"
                 : string.Empty,
             ["TOP_NAVIGATION_CLASS"] = hasTopNavigation ? string.Empty : " is-empty",
@@ -402,7 +402,7 @@ public class HtmlRenderer
 
                 var itemClass = item.IsTopNavigationItem ? "site-nav-item top-navigation-entry" : "site-nav-item";
                 if (item.IsCurrentSection) itemClass += " is-current-section";
-                if (!item.IsInTopNavigationSection) itemClass += " is-outside-top-navigation-section";
+                if (item.IsOutsideTopNavigationSection) itemClass += " is-outside-top-navigation-section";
                 if (item.IsInCurrentTopSection) itemClass += " is-in-current-top-section";
                 if (item.IsAncestorOfCurrentTopSection) itemClass += " is-top-navigation-ancestor";
                 output.Append(itemIndent).AppendLine($"<li class=\"{itemClass}\" style=\"--indent-depth: {indentDepth}; --wide-indent-depth: {Math.Max(0, item.TopNavigationDepth)}\">");

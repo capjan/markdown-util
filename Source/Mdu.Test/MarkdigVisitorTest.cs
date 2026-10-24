@@ -203,6 +203,49 @@ public class MarkdigVisitorTest
     }
 
     [Fact]
+    public void TopNavigationDoesNotCountAnUnplacedRootReadmeAsSidebarContent()
+    {
+        var rootPath = Path.Combine(Path.GetTempPath(), $"mdu-render-test-{Guid.NewGuid():N}");
+        var docsPath = Path.Combine(rootPath, "Docs");
+        var outputPath = Path.Combine(rootPath, "site");
+        Directory.CreateDirectory(docsPath);
+        var homePath = Path.Combine(docsPath, "README.md");
+        var pagePath = Path.Combine(docsPath, "Seite1.md");
+        File.WriteAllText(homePath, "# Dashboard\n");
+        File.WriteAllText(pagePath, "# Seite 1\n");
+
+        try
+        {
+            var home = new MarkdownFile(new FileInfo(homePath), null) { Title = "Dashboard" };
+            var page = new MarkdownFile(new FileInfo(pagePath), home)
+            {
+                Title = "Seite 1",
+                NavigationPlacement = NavigationPlacement.Top
+            };
+            home.Children = [page];
+
+            var renderer = new HtmlRenderer();
+            renderer.PrepareBasePath(outputPath);
+            var visitor = new MarkdigVisitor(docsPath, outputPath, renderer, string.Empty,
+                new SearchIndexBuilder(), [home]);
+
+            visitor.Process(page, 1);
+            var pageHtml = File.ReadAllText(Path.Combine(outputPath, "Seite1.html"));
+            Assert.Contains("class=\"site-layout has-top-navigation no-wide-sidebar\"", pageHtml);
+            Assert.DoesNotContain("site-nav-section-title", pageHtml);
+
+            visitor.Process(home, 0);
+            var homeHtml = File.ReadAllText(Path.Combine(outputPath, "index.html"));
+            Assert.Contains("class=\"site-layout has-top-navigation no-wide-sidebar\"", homeHtml);
+            Assert.DoesNotContain("site-nav-section-title", homeHtml);
+        }
+        finally
+        {
+            if (Directory.Exists(rootPath)) Directory.Delete(rootPath, recursive: true);
+        }
+    }
+
+    [Fact]
     public void TopNavigationKeepsPagesWithoutPlacementVisibleInTheSidebar()
     {
         var rootPath = Path.Combine(Path.GetTempPath(), $"mdu-render-test-{Guid.NewGuid():N}");
@@ -243,6 +286,8 @@ public class MarkdigVisitorTest
             Assert.Contains("is-outside-top-navigation-section", NavigationItemClass(sidebarNavigation, "Seite 2"));
             Assert.Contains("is-outside-top-navigation-section", NavigationItemClass(sidebarNavigation, "Seite 3"));
             Assert.DoesNotContain("is-outside-top-navigation-section", NavigationItemClass(sidebarNavigation, "Seite 1"));
+            Assert.Contains("is-top-navigation-ancestor", NavigationItemClass(sidebarNavigation, "Dashboard"));
+            Assert.DoesNotContain("site-nav-section-title", html);
         }
         finally
         {
