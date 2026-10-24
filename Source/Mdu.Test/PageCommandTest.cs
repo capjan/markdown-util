@@ -20,6 +20,29 @@ public class PageCommandTest : IDisposable
     public void Dispose() => Directory.Delete(_root, recursive: true);
 
     [Fact]
+    public void PageLinkToolsIgnoreFootnoteDefinitions()
+    {
+        const string content = "# Overview\n\n[^note]: Guide.md\n";
+        Write("Overview.md", content);
+        Write("Guide.md", "# Guide\n");
+
+        var sourcePath = Path.Combine(_root, "Overview.md");
+        var newSourcePath = Path.Combine(_root, "Moved", "Overview.md");
+        var targetPath = Path.Combine(_root, "Guide.md");
+        var movedTargetPath = Path.Combine(_root, "MovedGuide.md");
+        var movedPaths = new Dictionary<string, string>(StringComparer.Ordinal)
+        {
+            [targetPath] = movedTargetPath
+        };
+
+        var rewritten = MarkdownLinks.Rewrite(content, sourcePath, newSourcePath, movedPaths, StringComparer.Ordinal, out var changedLinkCount);
+
+        Assert.Equal(content, rewritten);
+        Assert.Equal(0, changedLinkCount);
+        Assert.Empty(MarkdownLinks.Find(content, sourcePath));
+    }
+
+    [Fact]
     public void MovesAPageAndRewritesLinksToItAndInsideIt()
     {
         var result = Move("Setup.md", "Start/Setup.md");

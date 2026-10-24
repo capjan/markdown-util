@@ -1,6 +1,7 @@
 using System.Text.RegularExpressions;
 using Markdown.Renderer;
 using Markdig;
+using Markdig.Extensions.Footnotes;
 using Markdig.Syntax;
 using Markdig.Syntax.Inlines;
 using YamlDotNet.RepresentationModel;
@@ -18,7 +19,7 @@ public static class MarkdownLinks
         : StringComparer.Ordinal;
 
     private static readonly Regex Scheme = new(@"^[A-Za-z][A-Za-z0-9+.-]*:", RegexOptions.Compiled);
-    private static readonly MarkdownPipeline Pipeline = new MarkdownPipelineBuilder().UsePreciseSourceLocation().Build();
+    private static readonly MarkdownPipeline Pipeline = new MarkdownPipelineBuilder().UseFootnotes().UsePreciseSourceLocation().Build();
 
     public static bool IsMarkdownFile(string path) =>
         Path.GetExtension(path).Equals(".md", StringComparison.OrdinalIgnoreCase) ||
@@ -55,7 +56,8 @@ public static class MarkdownLinks
         foreach (var link in document.Descendants<LinkInline>())
             AddEdit(link.UrlSpan, link.Url);
 
-        foreach (var definition in document.GetLinkReferenceDefinitions(true).OfType<LinkReferenceDefinition>())
+        foreach (var definition in document.GetLinkReferenceDefinitions(true).OfType<LinkReferenceDefinition>()
+                     .Where(definition => definition is not FootnoteLinkReferenceDefinition))
             AddEdit(definition.UrlSpan, definition.Url);
 
         foreach (var openApiSpec in OpenApiMarkdownRenderer.FindSpecPathSpans(content))
@@ -137,7 +139,8 @@ public static class MarkdownLinks
         var links = new List<LocalLink>();
         foreach (var link in document.Descendants<LinkInline>())
             Add(link.Line, link.Span, link.Url);
-        foreach (var definition in document.GetLinkReferenceDefinitions(true).OfType<LinkReferenceDefinition>())
+        foreach (var definition in document.GetLinkReferenceDefinitions(true).OfType<LinkReferenceDefinition>()
+                     .Where(definition => definition is not FootnoteLinkReferenceDefinition))
             Add(definition.Line, definition.Span, definition.Url);
         foreach (var openApiSpec in OpenApiMarkdownRenderer.FindSpecPathSpans(content))
         {

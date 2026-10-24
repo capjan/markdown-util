@@ -2,6 +2,7 @@
 using Core.Extensions.ParserRelated;
 using Core.Parser;
 using Markdig;
+using Markdig.Extensions.Footnotes;
 using Markdig.Syntax;
 using Markdig.Syntax.Inlines;
 using Markdown.Document.Model;
@@ -12,7 +13,7 @@ namespace Markdown.Document.Impl;
 public class MarkdownDocumentReader : IMarkdownDocumentReader
 {
     private static readonly MarkdownPipeline LinkParsingPipeline =
-        new MarkdownPipelineBuilder().UsePreciseSourceLocation().Build();
+        new MarkdownPipelineBuilder().UseFootnotes().UsePreciseSourceLocation().Build();
     private static readonly Regex MermaidFlowchartHeaderRegex = new(
         @"^(?:flowchart|graph)(?:[ \t]+(?:TB|TD|BT|LR|RL))?[ \t]*(?:;.*)?$",
         RegexOptions.Compiled | RegexOptions.CultureInvariant);
@@ -38,11 +39,12 @@ public class MarkdownDocumentReader : IMarkdownDocumentReader
         return new MarkdownHeader(title, frontMatter);
     }
 
-    public IEnumerable<IMarkdownLink> ReadLinks(IParserInput input)
+    public IEnumerable<IMarkdownLink> ReadLinks(IParserInput input) => ReadAnalysis(input).Links;
+
+    public MarkdownDocumentAnalysis ReadAnalysis(IParserInput input)
     {
         var content = input.ReadAll();
         var document = Markdig.Parsers.MarkdownParser.Parse(content, LinkParsingPipeline);
-
         var markdownLinks = document.Descendants<LinkInline>().Select(link =>
         {
             var url = link.Url ?? "";
@@ -52,11 +54,65 @@ public class MarkdownDocumentReader : IMarkdownDocumentReader
             var lineNumber = link.Line + 1;
             return new MarkdownLink(text, url, isImage, lineNumber);
         });
+        var diagramLinks = document.Descendants<FencedCodeBlock>().SelectMany(ReadDiagramLinks);
+        var footnotes = ReadFootnotes(document);
 
-        var diagramLinks = document.Descendants<FencedCodeBlock>()
-            .SelectMany(ReadDiagramLinks);
+        return new MarkdownDocumentAnalysis(
+            markdownLinks.Concat(diagramLinks).ToArray(),
+            footnotes.UnusedFootnotes,
+            footnotes.DuplicateFootnotes);
+    }
 
-        return markdownLinks.Concat(diagramLinks);
+    private static (IReadOnlyList<MarkdownFootnote> UnusedFootnotes, IReadOnlyList<MarkdownFootnote> DuplicateFootnotes)
+        ReadFootnotes(Markdig.Syntax.MarkdownDocument document)
+    {
+        var definitions = Markdig.Syntax.LinkReferenceDefinitionExtensions
+            .GetLinkReferenceDefinitions(document, addGroup: false);
+        if (definitions is null) return ([], []);
+
+        var definitionNodes = definitions.OfType<FootnoteLinkReferenceDefinition>().ToArray();
+        var duplicateFootnotes = definitionNodes
+            .GroupBy(definition => definition.Footnote.Label!, StringComparer.OrdinalIgnoreCase)
+            .SelectMany(group => group.Skip(1).Select(definition =>
+                new MarkdownFootnote(definition.Footnote.Label!, definition.Line + 1)))
+            .ToArray();
+
+        var footnotes = definitions.Links.Values
+            .OfType<FootnoteLinkReferenceDefinition>()
+            .Select(definition => definition.Footnote)
+            .ToArray();
+        var reachableFootnotes = FindReachableFootnotes(document,
+            definitionNodes.Select(definition => definition.Footnote).ToArray());
+        var unusedFootnotes = footnotes
+            .Where(footnote => !reachableFootnotes.Contains(footnote))
+            .Select(footnote => new MarkdownFootnote(footnote.Label!, footnote.Line + 1))
+            .ToArray();
+
+        return (unusedFootnotes, duplicateFootnotes);
+    }
+
+    private static HashSet<Footnote> FindReachableFootnotes(
+        Markdig.Syntax.MarkdownDocument document,
+        IReadOnlyCollection<Footnote> footnotes)
+    {
+        var reachable = new HashSet<Footnote>();
+        var referencesInsideFootnotes = footnotes
+            .SelectMany(footnote => footnote.Descendants<FootnoteLink>())
+            .ToHashSet();
+        var pending = new Stack<Footnote>(document.Descendants<FootnoteLink>()
+            .Where(reference => !reference.IsBackLink && !referencesInsideFootnotes.Contains(reference))
+            .Select(reference => reference.Footnote));
+
+        while (pending.TryPop(out var footnote))
+        {
+            if (!reachable.Add(footnote)) continue;
+            foreach (var reference in footnote.Descendants<FootnoteLink>())
+            {
+                if (!reference.IsBackLink) pending.Push(reference.Footnote);
+            }
+        }
+
+        return reachable;
     }
 
     private static IEnumerable<IMarkdownLink> ReadDiagramLinks(FencedCodeBlock block)
