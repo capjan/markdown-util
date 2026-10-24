@@ -6,7 +6,6 @@ using Markdown.Linter.Rules.Rule2;
 using Markdown.Linter.Rules.Rule3;
 using Markdown.Linter.Rules.Rule4;
 using Mdu.Model;
-using Mdu.Service;
 using YamlDotNet.Core;
 using YamlDotNet.RepresentationModel;
 
@@ -59,8 +58,12 @@ public class LinterVisitor: IVisitor<MarkdownFile>
                     var title = NavigationPage.GetTitle(page);
                     if (siblingTitles.Titles.TryGetValue(title, out var existingPage))
                     {
+                        var existingPath = GetNavigationEntryPath(existingPage);
+                        var message = string.IsNullOrEmpty(title)
+                            ? $"Navigation title has no visible text and matches sibling page '{existingPath}'. Add text to navigation.title."
+                            : $"Navigation title '{title}' duplicates sibling page '{existingPath}'. Set a unique navigation.title.";
                         ErrorReceiver.Add(page.FileInfo.FullName, 1,
-                            $"{RuleCodes.DuplicateNavigationTitle}: Navigation title '{title}' duplicates sibling page '{GetNavigationEntryPath(existingPage)}'. Set a unique navigation.title.");
+                            $"{RuleCodes.DuplicateNavigationTitle}: {message}");
                     }
                     else
                     {

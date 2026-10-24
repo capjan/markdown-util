@@ -3,7 +3,6 @@ using Markdown.Renderer;
 using Markdown.Renderer.Res.Model;
 using Markdown.Search;
 using Mdu.Model;
-using Mdu.Service;
 
 namespace Mdu.Service.Visitors;
 

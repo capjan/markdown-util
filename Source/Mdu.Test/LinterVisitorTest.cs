@@ -89,6 +89,23 @@ public class LinterVisitorTest
     }
 
     [Fact]
+    public void DuplicateIconOnlyNavigationTitlesHaveHelpfulMessage()
+    {
+        WithGraph(root =>
+        {
+            var first = CreateGraphPage(root, "First.md", "First", ":material-book:");
+            var duplicate = CreateGraphPage(root, "Second.md", "Second", ":fontawesome-book:");
+
+            var error = Assert.Single(PrepareGraph(root, first, duplicate).Errors);
+
+            Assert.Equal(RuleCodes.DuplicateNavigationTitle, CodeOf(error));
+            Assert.Contains("Navigation title has no visible text", error.Message);
+            Assert.Contains("Add text to navigation.title", error.Message);
+            Assert.DoesNotContain("''", error.Message);
+        });
+    }
+
+    [Fact]
     public void SameNavigationTitleAtDifferentLevelsPasses()
     {
         WithGraph(root =>
