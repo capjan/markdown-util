@@ -41,6 +41,40 @@ public class LinterVisitorTest
     }
 
     [Fact]
+    public void SameTitleUnderDifferentVisibleParentsPasses()
+    {
+        WithGraph(root =>
+        {
+            var guide = CreateGraphPage(root, Path.Combine("Guide", "README.md"), "Guide");
+            var guideOverview = CreateGraphPage(root, Path.Combine("Guide", "Overview.md"), "Overview");
+            var reference = CreateGraphPage(root, Path.Combine("Reference", "README.md"), "Reference");
+            var referenceOverview = CreateGraphPage(root, Path.Combine("Reference", "Overview.md"), "Overview");
+            guide.Children = [guideOverview];
+            guideOverview.Parent = guide;
+            reference.Children = [referenceOverview];
+            referenceOverview.Parent = reference;
+
+            var receiver = PrepareGraph(root, guide, reference);
+
+            Assert.Empty(receiver.Errors);
+        });
+    }
+
+    [Fact]
+    public void DuplicateTitleErrorFollowsNavigationOrder()
+    {
+        WithGraph(root =>
+        {
+            var first = CreateGraphPage(root, "Zulu.md", "Shared", navigationOrder: 1);
+            var duplicate = CreateGraphPage(root, "Alpha.md", "Shared", navigationOrder: 2);
+
+            var error = Assert.Single(PrepareGraph(root, duplicate, first).Errors);
+
+            Assert.Equal(duplicate.FileInfo.FullName, error.FilePath);
+        });
+    }
+
+    [Fact]
     public void DuplicateNavigationTitlesAreRejectedEvenWhenHeadingsDiffer()
     {
         WithGraph(root =>
@@ -265,7 +299,8 @@ public class LinterVisitorTest
         string relativePath,
         string title,
         string navigationTitle = "",
-        bool visible = true)
+        bool visible = true,
+        int? navigationOrder = null)
     {
         var path = Path.Combine(root, relativePath);
         Directory.CreateDirectory(Path.GetDirectoryName(path)!);
@@ -276,6 +311,7 @@ public class LinterVisitorTest
             HeadingTitle = title,
             NavigationTitle = navigationTitle,
             NavigationVisible = visible,
+            NavigationOrder = navigationOrder,
             SiteRelativePath = Path.GetRelativePath(root, path)
         };
     }

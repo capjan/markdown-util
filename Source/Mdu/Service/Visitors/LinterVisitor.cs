@@ -6,6 +6,7 @@ using Markdown.Linter.Rules.Rule2;
 using Markdown.Linter.Rules.Rule3;
 using Markdown.Linter.Rules.Rule4;
 using Mdu.Model;
+using Mdu.Service;
 using YamlDotNet.Core;
 using YamlDotNet.RepresentationModel;
 
@@ -40,74 +41,50 @@ public class LinterVisitor: IVisitor<MarkdownFile>
     {
         _rootPath = Path.GetFullPath(rootPath ?? graph.FirstOrDefault()?.FileInfo.DirectoryName ?? Directory.GetCurrentDirectory());
         var pages = new List<MarkdownFile>();
-        var pagesByNavigationLevel = new Dictionary<int, List<MarkdownFile>>();
         var visited = new HashSet<string>(PathComparer);
-        Visit(graph, 0);
+        Visit(graph, new NavigationTitleGroup());
         _allPages = pages;
-        ReportDuplicateNavigationTitles(pagesByNavigationLevel);
         ReportMissingSectionReadmes(pages);
         ReportMkDocsPagesFiles(pages);
         return;
 
-        void Visit(IEnumerable<MarkdownFile> currentPages, int navigationLevel)
+        void Visit(IEnumerable<MarkdownFile> currentPages, NavigationTitleGroup siblingTitles)
         {
-            foreach (var page in currentPages)
+            foreach (var page in NavigationPage.OrderPages(currentPages))
             {
                 if (!visited.Add(Path.GetFullPath(page.FileInfo.FullName))) continue;
                 pages.Add(page);
                 if (page.NavigationVisible)
                 {
-                    if (!pagesByNavigationLevel.TryGetValue(navigationLevel, out var pagesAtLevel))
-                        pagesByNavigationLevel.Add(navigationLevel, pagesAtLevel = new List<MarkdownFile>());
-                    pagesAtLevel.Add(page);
-                }
+                    var title = NavigationPage.GetTitle(page);
+                    if (siblingTitles.Titles.TryGetValue(title, out var existingPage))
+                    {
+                        ErrorReceiver.Add(page.FileInfo.FullName, 1,
+                            $"{RuleCodes.DuplicateNavigationTitle}: Navigation title '{title}' duplicates sibling page '{GetNavigationEntryPath(existingPage)}'. Set a unique navigation.title.");
+                    }
+                    else
+                    {
+                        siblingTitles.Titles.Add(title, page);
+                    }
 
-                Visit(page.Children, navigationLevel + (page.NavigationVisible ? 1 : 0));
+                    Visit(page.Children, new NavigationTitleGroup());
+                }
+                else
+                {
+                    Visit(page.Children, siblingTitles);
+                }
             }
         }
     }
 
-    private void ReportDuplicateNavigationTitles(IReadOnlyDictionary<int, List<MarkdownFile>> pagesByLevel)
+    private sealed class NavigationTitleGroup
     {
-        foreach (var pagesAtLevel in pagesByLevel.Values)
-        {
-            var titles = new Dictionary<string, MarkdownFile>(StringComparer.OrdinalIgnoreCase);
-            foreach (var page in pagesAtLevel
-                         .OrderBy(page => Path.GetFileNameWithoutExtension(GetNavigationEntryPath(page)), StringComparer.OrdinalIgnoreCase)
-                         .ThenBy(GetNavigationEntryPath, StringComparer.OrdinalIgnoreCase))
-            {
-                var title = GetNavigationTitle(page);
-                if (string.IsNullOrWhiteSpace(title)) continue;
-
-                if (titles.TryGetValue(title, out var existingPage))
-                {
-                    ErrorReceiver.Add(page.FileInfo.FullName, 1,
-                        $"{RuleCodes.DuplicateNavigationTitle}: Navigation title '{title}' is also used by '{GetNavigationEntryPath(existingPage)}' at the same level. Set a unique navigation.title.");
-                }
-                else
-                {
-                    titles.Add(title, page);
-                }
-            }
-        }
+        public Dictionary<string, MarkdownFile> Titles { get; } = new(StringComparer.OrdinalIgnoreCase);
     }
 
     private string GetNavigationEntryPath(MarkdownFile page) =>
         (page.SiteRelativePath ?? Path.GetRelativePath(_rootPath, page.FileInfo.FullName))
         .Replace(Path.DirectorySeparatorChar, '/');
-
-    private static string GetNavigationTitle(MarkdownFile page)
-    {
-        var title = page.NavigationTitle;
-        if (string.IsNullOrWhiteSpace(title)) title = page.Title;
-        if (string.IsNullOrWhiteSpace(title))
-            title = page.FileInfo.Name.Equals("README.md", StringComparison.OrdinalIgnoreCase)
-                ? page.FileInfo.Directory?.Name ?? "Documentation"
-                : Path.GetFileNameWithoutExtension(page.FileInfo.Name);
-
-        return System.Text.RegularExpressions.Regex.Replace(title,
-            @"(?::(?:material|simple|octicons|fontawesome|dashboard)-[\w-]+:\s*)+", string.Empty).Trim();
-    }
 
     private void ReportMissingSectionReadmes(IReadOnlyCollection<MarkdownFile> pages)
     {

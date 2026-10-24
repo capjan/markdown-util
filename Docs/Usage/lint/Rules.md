@@ -29,7 +29,7 @@ navigation:
 | `MDU016` | `InvalidNavigationPlacement` | Error | `navigation` must be a mapping and `placement` must be `sidebar` or `top`. | — |
 | `MDU017` | `NavigationPlacementLevel` | Error | `placement: top` is only valid on first-level pages or section indexes. | — |
 | `MDU018` | `ExpandedTopNavigationRoot` | Error | A top navigation root is always expanded; remove its ineffective `navigation.expanded`. | — |
-| `MDU019` | `DuplicateNavigationTitle` | Error | Visible page titles are unique within each navigation level. | — |
+| `MDU019` | `DuplicateNavigationTitle` | Error | Visible sibling pages have unique navigation titles. | — |
 
 ## MDU001: HeadingRequired
 
@@ -69,7 +69,7 @@ Rules `MDU007`–`MDU014` identify MkDocs-specific syntax and structure that nee
 
 ## MDU019: DuplicateNavigationTitle
 
-Visible pages at the same navigation level must have unique names, ignoring letter case. The name comes from `navigation.title` when set, or otherwise from the page title. Set a distinct `navigation.title` on one of the pages when two entries would otherwise look the same. Hidden pages are excluded, and their visible children keep the same navigation level.
+Visible sibling pages must have unique navigation names, ignoring letter case. The name comes from `navigation.title` when set, or otherwise from the page title. Set a distinct `navigation.title` on one of the pages when two entries would otherwise look the same. Hidden pages are excluded, and their visible children are compared under the next visible parent.
 
 ## Informational output
 
